@@ -7,8 +7,9 @@
 //
 
 import Cocoa
+import MASPreferences
 
-class PrefControlViewController: NSViewController {
+class PrefControlViewController: NSViewController, MASPreferencesViewController {
 
   override var nibName: String? {
     get {
