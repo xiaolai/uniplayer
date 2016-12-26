@@ -26,7 +26,7 @@ class PrefUIViewController: NSViewController, MASPreferencesViewController {
   
   var toolbarItemImage: NSImage {
     get {
-      return NSImage(named: "toolbar_control")!
+      return NSImage(named: "toolbar_play")!
     }
   }
   
