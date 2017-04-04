@@ -11,7 +11,7 @@ import Cocoa
 class TimeLabelOverflowedView: NSView {
 
   override var alignmentRectInsets: EdgeInsets {
-    return EdgeInsets(top: 5, left: 0, bottom: 0, right: 0)
+    return EdgeInsets(top: 6, left: 0, bottom: 0, right: 0)
   }
     
 }
