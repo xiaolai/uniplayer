@@ -931,7 +931,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
           noteNewRecentDocumentURL(url)
         }
       }
-      let isAlternative = (sender as? NSMenuItem)?.tag == AlternativeMenuItemTag
       if PlayerCore.openURLs(panel.urls) == 0 {
         Utility.showAlert("nothing_to_open")
       }

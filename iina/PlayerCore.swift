@@ -94,7 +94,8 @@ class PlayerCore: NSObject {
    */
   @discardableResult
   static func openURLs(_ urls: [URL]) -> Int? {
-    if !Preference.bool(for: .alwaysOpenInNewWindow) { // preference now means "allow opening multiple windows"
+    let openInCurrentWindow = !Preference.bool(for: .alwaysOpenInNewWindow)
+    if openInCurrentWindow {
       // open all urls in the active window if any (or, all in one new window)
       return activeOrNew.openURLs(urls)
     } else if
