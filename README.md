@@ -51,8 +51,9 @@ IINA uses mpv for media playback. To build IINA, you can either fetch copies of 
 ```
 
 > [!TIP]
-> - Change the URL in the shell script if you want to download arch-specific binaries. By default, it will download the universal ones. You can download other binaries from `https://iina.io/dylibs/${ARCH}/filelist.txt` where `ARCH` can be `universal`, `arm64` and `x86_64`.
-> - If you want to build an older IINA version, make sure to download the corresponding dylibs. For example, `https://iina.io/dylibs/1.2.0/universal/filelist.txt`.
+> - By default the shell script downloads universal binaries. You can download arch-specific binaries using `--arch <ARCH>` (`universal`, `arm64` or `x86_64`)
+> - Files are downloaded in parallel (5 concurrent downloads by default). You can change this using `--parallel <N>` (from 1 to...)
+> - If you want to build an older IINA version you must change `DYLIBS_DOWNLOAD_PATH` in the script to download the corresponding dylibs. For example, `https://iina.io/dylibs/1.2.0/universal/fileList.txt`.
 
 2. Open iina.xcodeproj in the [latest public version of Xcode](https://apps.apple.com/app/xcode/id497799835). *IINA may not build if you use any other version.*
 
