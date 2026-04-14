@@ -183,7 +183,7 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
         for (k, v) in strProperties {
           var value = controller.getString(k)
           if value == "" { value = nil }
-          v.stringValue = value ?? "N/A"
+          v.stringValue = value ?? NSLocalizedString("general.na", comment: "N/A")
           self.setLabelColor(v, by: value != nil)
         }
 
@@ -249,14 +249,14 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
 
       for (k, v) in dynamicStrProperties {
         let value = controller.getString(k)
-        v.stringValue = value ?? "N/A"
+        v.stringValue = value ?? NSLocalizedString("general.na", comment: "N/A")
         self.setLabelColor(v, by: value != nil)
       }
 
       let sigPeak = controller.getDouble(MPVProperty.videoParamsSigPeak);
       self.vprimariesField.stringValue = sigPeak > 0
         ? "\(controller.getString(MPVProperty.videoParamsPrimaries) ?? "?") / \(controller.getString(MPVProperty.videoParamsGamma) ?? "?") (\(sigPeak > 1 ? "H" : "S")DR)"
-        : "N/A";
+        : NSLocalizedString("general.na", comment: "N/A");
       self.setLabelColor(self.vprimariesField, by: sigPeak > 0)
 
       let player = PlayerCore.lastActive
@@ -279,7 +279,7 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
           self.vcolorspaceField.stringValue = "Unspecified (SDR)"
         }
       } else {
-        self.vcolorspaceField.stringValue = "N/A"
+        self.vcolorspaceField.stringValue = NSLocalizedString("general.na", comment: "N/A")
       }
       self.setLabelColor(self.vcolorspaceField, by: player.info.state.loaded)
 
@@ -289,7 +289,7 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
         } else if let swPf = controller.getString(MPVProperty.videoParamsPixelformat) {
           self.vPixelFormat.stringValue = "\(swPf) (SW)"
         } else {
-          self.vPixelFormat.stringValue = "N/A"
+          self.vPixelFormat.stringValue = NSLocalizedString("general.na", comment: "N/A")
         }
       }
       self.setLabelColor(self.vPixelFormat, by: player.info.state.loaded)
@@ -329,7 +329,7 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
     ]
 
     for (str, field) in strProperties {
-      field.stringValue = str ?? "N/A"
+      field.stringValue = str ?? NSLocalizedString("general.na", comment: "N/A")
       setLabelColor(field, by: str != nil)
     }
   }
