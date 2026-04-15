@@ -127,6 +127,7 @@ fileprivate class ConfigEditor: SettingsAccessory.Base {
     self.kbTableView = NSTableView()
     self.kbTableMenu = NSMenu()
     self.searchField = NSSearchField()
+    searchField.translatesAutoresizingMaskIntoConstraints = false
 
     self.chooserPopupButton = NSPopUpButton()
     chooserPopupButton.translatesAutoresizingMaskIntoConstraints = false
@@ -169,17 +170,27 @@ fileprivate class ConfigEditor: SettingsAccessory.Base {
     chooserView.addSubview(chooserStackView)
     chooserStackView.padding(.all(8))
     
-    let addKeyMappingBtn = makeButton(.text_AddKeyMapping)
-    addKeyMappingBtn.imagePosition = .imageLeading
+    let addKeyMappingBtn = NSButton()
+    addKeyMappingBtn.translatesAutoresizingMaskIntoConstraints = false
+    addKeyMappingBtn.imagePosition = .imageOnly
+    addKeyMappingBtn.bezelStyle = .circular
     addKeyMappingBtn.image = .findSFSymbol(["plus"])
     addKeyMappingBtn.target = self
     addKeyMappingBtn.action = #selector(addKeyMappingAction)
-    
-    let editorStackView = makeStackView([searchField, kbTableView, addKeyMappingBtn], orientation: .vertical)
+    addKeyMappingBtn.size(width: 26, height: 26)
+
+    let headerViewContainer = NSView()
+    headerViewContainer.translatesAutoresizingMaskIntoConstraints = false
+    headerViewContainer.size(height: 36)
+    let headerView = makeStackView([searchField, addKeyMappingBtn])
+    headerViewContainer.addSubview(headerView)
+    headerView.padding(.top(12), .leading(16), .trailing(16))
+
+    let editorStackView = makeStackView([headerViewContainer, kbTableView], orientation: .vertical)
     editorStackView.alignment = .leading
     editorStackView.spacing = 0
     
-    searchField.padding(.top(16), .horizontal(16))
+    searchField.setContentHuggingPriority(.defaultLow, for: .horizontal)
     searchField.bind(
       .predicate, to: mappingController, withKeyPath: "filterPredicate",
       options: [
@@ -187,7 +198,6 @@ fileprivate class ConfigEditor: SettingsAccessory.Base {
       ]
     )
 
-    addKeyMappingBtn.padding(.leading(16))
     editorView.addSubview(editorStackView)
     editorStackView.padding(.leading(16), .trailing(0), .top(0), .bottom(12))
     
