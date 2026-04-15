@@ -1005,6 +1005,43 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     NSWorkspace.shared.open(URL(string: AppData.websiteLink)!)
   }
 
+  /// Dump contents of all player cores to a txt file. Strictly for debugging. No localization needed.
+  @IBAction func dumpDebugInfo(_ sender: AnyObject) {
+    struct FileStream: TextOutputStream {
+      let handle: FileHandle
+      mutating func write(_ string: String) {
+        handle.write(Data(string.utf8))
+      }
+    }
+
+    let alert = NSAlert()
+    let path = NSString(string: "~/Downloads/iina-debug-dump-\(Date.timeIntervalSinceReferenceDate).txt").expandingTildeInPath
+    let url = URL(fileURLWithPath: path)
+    FileManager.default.createFile(atPath: path, contents: nil)
+    guard let handle = try? FileHandle(forWritingTo: url) else {
+      alert.messageText = "Error"
+      alert.informativeText = "Cannot get file handle at \(path)."
+      alert.alertStyle = .critical
+      alert.runModal()
+      return
+    }
+
+    var stream = FileStream(handle: handle)
+    for player in PlayerCore.playerCores {
+      dump(player, to: &stream)
+      stream.write("\n\n")
+    }
+
+    alert.messageText = "Completed"
+    alert.informativeText = """
+      Dumped debug info to \(path).\n
+      The file contains filenames and URLs in your playlist! \
+      For your privacy, please consider removing them before sharing.
+      """
+    alert.alertStyle = .informational
+    alert.runModal()
+  }
+
   private func registerUserDefaultValues() {
     UserDefaults.standard.register(defaults: [String: Any](uniqueKeysWithValues: Preference.defaultPreference.map { ($0.0.rawValue, $0.1) }))
   }

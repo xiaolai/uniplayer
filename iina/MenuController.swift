@@ -201,6 +201,8 @@ class MenuController: NSObject, NSMenuDelegate {
   @IBOutlet weak var inspector: NSMenuItem!
   @IBOutlet weak var miniPlayer: NSMenuItem!
 
+  @IBOutlet weak var debugDump: NSMenuItem!
+
   /// If `true` then all menu items are disabled.
   private var isDisabled = false
 
@@ -418,6 +420,11 @@ class MenuController: NSObject, NSMenuDelegate {
 
     inspector.action = #selector(MainMenuActionHandler.menuShowInspector(_:))
     miniPlayer.action = #selector(MainWindowController.menuSwitchToMiniPlayer(_:))
+
+    // Debug
+
+    debugDump.isAlternate = true
+    debugDump.keyEquivalentModifierMask = .option
   }
 
   // MARK: - Update Menus
