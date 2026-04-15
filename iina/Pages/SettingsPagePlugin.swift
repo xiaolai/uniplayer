@@ -109,6 +109,7 @@ extension PluginListView: NSTableViewDelegate, NSTableViewDataSource {
     var nameLabel: NSTextField!
     var enabledSwitch: NSSwitch!
     var versionLabel: NSTextField!
+    var devLabel: NSTextField!
     var descLabel: NSTextField!
     var aboutBtn: NSButton!
     var actionsBtn: NSButton!
@@ -131,22 +132,26 @@ extension PluginListView: NSTableViewDelegate, NSTableViewDataSource {
         enabledSwitch.state = plugin.enabled ? .on : .off
         enabledSwitch.controlSize = .mini
         
-        versionLabel = NSTextField(labelWithString: plugin.version + (plugin.isExternal ? " DEV" : ""))
+        versionLabel = NSTextField(labelWithString: plugin.version)
         versionLabel.textColor = .tertiaryLabelColor
         versionLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
-        
+
+        devLabel = NSTextField(labelWithString: plugin.isExternal ? "DEV" : "")
+        devLabel.textColor = .systemOrange
+        devLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
+
         let nameStackView = NSStackView()
         nameStackView.translatesAutoresizingMaskIntoConstraints = false
         nameStackView.orientation = .horizontal
         nameStackView.distribution = .fill
         
         self.actionsBtn = NSButton()
-        actionsBtn.image = .findSFSymbol(["gearshape.fill"])
+        actionsBtn.image = .findSFSymbol(["ellipsis"])
         actionsBtn.isBordered = false
         actionsBtn.target = self
         actionsBtn.action = #selector(actionsBtnAction)
         
-        [enabledSwitch, nameLabel, versionLabel, actionsBtn].forEach {
+        [enabledSwitch, nameLabel, versionLabel, devLabel, actionsBtn].forEach {
           nameStackView.addArrangedSubview($0)
         }
         
@@ -179,6 +184,7 @@ extension PluginListView: NSTableViewDelegate, NSTableViewDataSource {
       } else {
         nameLabel.stringValue = plugin.name
         versionLabel.stringValue = plugin.version
+        devLabel.stringValue = plugin.isExternal ? "DEV" : ""
         enabledSwitch.state = plugin.enabled ? .on : .off
         descLabel.stringValue = plugin.desc ?? "No description"
       }
@@ -279,30 +285,49 @@ extension PluginListView {
 
 
 fileprivate class PluginDetailsWindow: NSWindow {
-  private let plugin: JavascriptPlugin
+  private unowned let l10n: SettingsLocalization.Context
+  private unowned let plugin: JavascriptPlugin
   private let okButton: NSButton
   private var webView: WKWebView!
+  private let segControl: NSSegmentedControl
+  private let loadingIndicator: NSProgressIndicator
+  private let loadingFailedView: NSTextField
   private var currentTab: Tab = .about
   
   unowned let window: NSWindow
   
-  enum Tab {
-    case about, help, settings
+  enum Tab: Int {
+    case settings = 0, about, help
   }
   
   init(l10n: SettingsLocalization.Context, plugin: JavascriptPlugin, window: NSWindow) {
+    self.l10n = l10n
     self.window = window
     self.plugin = plugin
     let style: NSWindow.StyleMask = [.titled, .resizable, .fullSizeContentView]
-    
+
     self.okButton = NSButton(title: l10n.localized(.text_OK), target: nil, action: nil)
     okButton.translatesAutoresizingMaskIntoConstraints = false
     
+    self.loadingIndicator = NSProgressIndicator()
+    loadingIndicator.translatesAutoresizingMaskIntoConstraints = false
+
+    self.segControl = NSSegmentedControl()
+    segControl.translatesAutoresizingMaskIntoConstraints = false
+
+    self.loadingFailedView = NSTextField(labelWithString: l10n.localized(.text_FailedToLoadThePage))
+    loadingFailedView.translatesAutoresizingMaskIntoConstraints = false
+
     super.init(contentRect: NSRect(x: 0, y: 0, width: 600, height: 450),
                styleMask: style,
                backing: .buffered,
                defer: false)
-    
+
+    guard let contentView = contentView else {
+      Logger.log("Content view is nil in plugin details window", level: .error)
+      return
+    }
+
     okButton.target = self
     okButton.action = #selector(dismissSheet)
     
@@ -320,7 +345,6 @@ fileprivate class PluginDetailsWindow: NSWindow {
     iconView.translatesAutoresizingMaskIntoConstraints = false
     iconView.size(width: 24, height: 24)
     
-    let segControl = NSSegmentedControl()
     segControl.segmentCount = 3
     segControl.segmentStyle = .texturedSquare
     if #available(macOS 26.0, *) {
@@ -328,38 +352,66 @@ fileprivate class PluginDetailsWindow: NSWindow {
     } else {
       segControl.size(width: 360)
     }
-    segControl.translatesAutoresizingMaskIntoConstraints = false
-    
+    segControl.target = self
+    segControl.action = #selector(changeTab)
+
     let segments: [(String, SettingsLocalization.Key)] = [
+      ("gearshape.circle", .text_Settings),
       ("info.circle", .text_About),
       ("questionmark.circle", .text_Help),
-      ("gearshape.circle", .text_Settings)
     ]
     for (i, seg) in segments.enumerated() {
       segControl.setImage(NSImage(systemSymbolName: seg.0, accessibilityDescription: nil), forSegment: i)
       segControl.setLabel(l10n.localized(seg.1), forSegment: i)
     }
     
-    contentView?.addSubview(iconView)
+    contentView.addSubview(iconView)
     iconView.padding(.leading(16), .top(20))
-    contentView?.addSubview(nameLabel)
+    contentView.addSubview(nameLabel)
     nameLabel.padding(.top(16)).spacing(to: iconView, .leading(8))
-    contentView?.addSubview(versionLabel)
+    contentView.addSubview(versionLabel)
     versionLabel.spacing(to: nameLabel, .top(4)).spacing(to: iconView, .leading(8))
-    contentView?.addSubview(segControl)
+    contentView.addSubview(segControl)
     segControl.padding(.top(16), .trailing(16))
-    contentView?.addSubview(okButton)
+    contentView.addSubview(okButton)
     okButton.padding(.bottom(16), .trailing(16))
     
     createWebView()
-    contentView?.addSubview(webView)
+    contentView.addSubview(webView)
     webView.padding(.horizontal(16))
       .spacing(to: segControl, .top(12))
       .spacing(to: okButton, .bottom(16))
-    
-    generateAboutPage(plugin: plugin)
+
+    loadingIndicator.style = .spinning
+    loadingIndicator.isHidden = true
+    contentView.addSubview(loadingIndicator)
+    loadingIndicator.center(with: contentView, x: true).padding(.top(80))
+
+    loadingFailedView.textColor = .systemRed
+    loadingFailedView.isHidden = true
+    contentView.addSubview(loadingFailedView)
+    loadingFailedView.center(with: contentView, x: true).padding(.top(80))
+
+    // select settings tab by default
+    segControl.selectedSegment = 0
+    changeTab(segControl)
   }
-  
+
+  @objc private func changeTab(_ sender: NSSegmentedControl) {
+    guard sender.selectedSegment != currentTab.rawValue else { return }
+    // save settings to disk on tab change; it's fast so no need to check current tab
+    plugin.syncPreferences()
+
+    currentTab = .init(rawValue: sender.selectedSegment)!
+
+    switch segControl.selectedSegment {
+    case 0: generateSettingsPage()
+    case 1: generateAboutPage()
+    case 2: generateHelpPage()
+    default: return
+    }
+  }
+
   private func createWebView() {
     let config = WKWebViewConfiguration()
     config.userContentController.addUserScript(
@@ -376,7 +428,7 @@ fileprivate class PluginDetailsWindow: NSWindow {
 
     config.userContentController.add(self, name: "iina")
     
-    webView = WKWebView(frame: .zero, configuration: config)
+    self.webView = WKWebView(frame: .zero, configuration: config)
     if #available(macOS 13.3, *) {
       webView.isInspectable = true
     }
@@ -385,24 +437,56 @@ fileprivate class PluginDetailsWindow: NSWindow {
     webView.setValue(false, forKey: "drawsBackground")
   }
 
-  private func generateAboutPage(plugin: JavascriptPlugin) {
-    var body = """
-    <div class="small secondary">Identifier</div>
-    <div class="pd">\(plugin.identifier)</div> 
-    <div class="small secondary">Author</div>
-    <div class="pd">\(plugin.authorName)</div> 
-    """
-    if let url = plugin.authorURL, !url.isEmpty {
-      body += """
-      <div class="small secondary>Website</div>
-      <div class="pd">\(url)</div> 
+  private func generateSettingsPage() {
+    guard let prefURL = plugin.preferencesPageURL else {
+      webView.loadHTMLString(generateHTML(body: "This plugin does not have a settings page."), baseURL: nil)
+      return
+    }
+    webView.loadFileURL(prefURL, allowingReadAccessTo: plugin.root)
+  }
+
+  private func generateAboutPage() {
+    func entry(_ key: String, _ value: String) -> String {
+      return """
+      <div class="small secondary">\(key)</div>
+      <div class="pd">\(value)</div>
       """
+    }
+
+    func a(_ url: String) -> String {
+      return "<a href='\(url)'>\(url)</a></div>"
+    }
+
+    var body = entry(l10n.localized(.text_Identifier), plugin.identifier) +
+    entry(l10n.localized(.text_Author), plugin.authorName)
+
+    if let url = plugin.authorURL, !url.isEmpty {
+      body += entry(l10n.localized(.text_Website), a(url))
+    }
+    if let url = plugin.githubURLString {
+      body += entry(l10n.localized(.text_Source), a(url))
+    } else {
+      body += entry(l10n.localized(.text_Source), NSLocalizedString("plugin.local", comment: ""))
+    }
+    if let subProviders = plugin.subProviders {
+      body += entry(
+        "Registered Subtitle Providers",
+        subProviders.map { $0["name"] ?? "?" }.joined(separator: "<br>")
+      )
     }
     webView.loadHTMLString(generateHTML(body: body), baseURL: nil)
   }
   
-  private func generateHelpPage(plugin: JavascriptPlugin) {
-    
+  private func generateHelpPage() {
+    if let helpURL = plugin.helpPageURL {
+      if helpURL.isFileURL {
+        webView.loadFileURL(helpURL, allowingReadAccessTo: plugin.root)
+      } else {
+        webView.load(URLRequest(url: helpURL))
+      }
+    } else {
+      webView.loadHTMLString(generateHTML(body: "This plugin does not have a help page."), baseURL: nil)
+    }
   }
   
   private func generateHTML(body: String) -> String {
@@ -412,21 +496,63 @@ fileprivate class PluginDetailsWindow: NSWindow {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Help</title>
+        <title>\(plugin.name)</title>
     </head>
-    <body>
-    \(body)
-    </body>
+    <body>\(body)</body>
     </html>
     """
   }
 
   @objc func dismissSheet() {
+    plugin.syncPreferences()
     window.endSheet(self)
   }
 }
 
 extension PluginDetailsWindow: WKScriptMessageHandler, WKNavigationDelegate {
+  func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+    // don't allow remote pages in settings or about tab
+    if currentTab != .help {
+      guard let url = navigationAction.request.url,
+            url.absoluteString.starts(with: plugin.preferencesPageURL?.absoluteString ?? "000") || url.absoluteString == "about:blank"
+      else {
+        Logger.log("Loading page from \(navigationAction.request.url?.absoluteString ?? "?") is not allowed", level: .error)
+        decisionHandler(.cancel)
+        return
+      }
+    }
+    decisionHandler(.allow)
+  }
+
+  func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+    webView.alphaValue = 0
+    loadingFailedView.isHidden = true
+    if let scheme = webView.url?.scheme, scheme.starts(with: "http") {
+      loadingIndicator.isHidden = false
+      loadingIndicator.startAnimation(self)
+    }
+  }
+
+  func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+    loadingIndicator.stopAnimation(self)
+    loadingIndicator.isHidden = true
+    webView.alphaValue = 1
+  }
+
+  func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+    failedLoadingWebViewPage()
+  }
+
+  func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+    failedLoadingWebViewPage()
+  }
+
+  private func failedLoadingWebViewPage() {
+    loadingFailedView.isHidden = false
+    loadingIndicator.stopAnimation(self)
+    loadingIndicator.isHidden = true
+  }
+
   func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
     // Since all tabs share the same webview, we don't want uncontrolled message from anywhere, e.g. the help page
     guard currentTab == .settings else { return }
