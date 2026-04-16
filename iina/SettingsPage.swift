@@ -60,7 +60,8 @@ class SettingsPage {
   var title: String { "" }
   var localizationTable: String { "" }
   var image: NSImage { NSImage() }
-  
+  var sectionSpacing: CGFloat { 16 }
+
   static var corderRadius: CGFloat = {
     if #available(macOS 26, *) {
       12
@@ -98,7 +99,7 @@ class SettingsPage {
     let stackView = NSStackView(views: views)
     stackView.translatesAutoresizingMaskIntoConstraints = false
     stackView.orientation = .vertical
-    stackView.spacing = 16
+    stackView.spacing = self.sectionSpacing
     views.forEach {
       $0.padding(.horizontal)
       stackView.setVisibilityPriority(.mustHold, for: $0)

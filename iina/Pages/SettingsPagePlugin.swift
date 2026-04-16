@@ -7,6 +7,7 @@
 //
 
 import WebKit
+import Just
 
 class SettingsPagePlugin: SettingsPage {
   override var title: String {
@@ -20,10 +21,15 @@ class SettingsPagePlugin: SettingsPage {
   override var localizationTable: String {
     "SettingsPluginLocalizable"
   }
-  
-  private lazy var installView: PluginInstallView = .init(l10n: localizationContext)
-  private lazy var pluginList: PluginListView = .init(l10n: localizationContext)
-  
+
+  override var sectionSpacing: CGFloat {
+    8
+  }
+
+  fileprivate lazy var installView: PluginInstallView = .init(l10n: localizationContext, page: self)
+  fileprivate lazy var listView: PluginListView = .init(l10n: localizationContext, page: self)
+  fileprivate lazy var updateView: PluginUpdateView = .init(l10n: localizationContext, page: self)
+
   override func content() -> NSView {
     return sections {
       sectionInstall()
@@ -39,12 +45,13 @@ class SettingsPagePlugin: SettingsPage {
       }
     }
   }
-  
+
   private func sectionPluginList() -> [NSView] {
     return section {
+      updateView
       SettingsListView() {
         SettingsItem.Custom()
-          .view(pluginList.view)
+          .view(listView.view)
       }
     }
   }
@@ -52,11 +59,20 @@ class SettingsPagePlugin: SettingsPage {
 
 
 fileprivate class PluginInstallView: SettingsAccessory.Base {
-  override init(l10n: SettingsLocalization.Context) {
+  unowned let page: SettingsPagePlugin
+  private lazy var pluginManager: PluginManager = PluginManager(window: self.view.window!)
+
+  init(l10n: SettingsLocalization.Context, page: SettingsPagePlugin) {
+    self.page = page
     super.init(l10n: l10n)
     
     let githubBtn = makeButton(.text_InstallFromGitHub)
+    githubBtn.target = self
+    githubBtn.action = #selector(installPluginFromGitHub)
     let localBtn = makeButton(.text_InstallPackage)
+    localBtn.target = self
+    localBtn.action = #selector(installPluginFromLocalPackage)
+
     let btnStackView = makeStackView([githubBtn, localBtn])
     
     let installLabel = makeLabel(.text_YouCanInstallANew).makeMultiLine()
@@ -67,8 +83,93 @@ fileprivate class PluginInstallView: SettingsAccessory.Base {
     view.addSubview(stackView)
     stackView.padding(.all(12))
   }
+
+  @IBAction func installPluginFromLocalPackage(_ sender: Any) {
+    Utility.quickOpenPanel(title: "Install from local package",
+                           chooseDir: false, sheetWindow: view.window, allowedFileTypes: ["iinaplgz"]) { url in
+      Task {
+        await self.pluginManager.install(localPackageURL: url)
+        self.page.listView.tableView.reloadData()
+      }
+    }
+  }
+
+  @IBAction func installPluginFromGitHub(_ sender: Any) {
+//    let panel = PluginStorePanel()
+//    view.window!.beginSheet(panel)
+  }
 }
 
+
+fileprivate class PluginUpdateView: NSView, SettingsContainer {
+  func getContainer() -> NSView {
+    return self
+  }
+
+  enum Status {
+    case refreshing
+    case error
+    case foundUpdate(UInt)
+  }
+
+  let checkUpdateLabel: NSTextField
+  let checkUpdateButton: NSButton
+  unowned let page: SettingsPagePlugin
+
+  init(l10n: SettingsLocalization.Context, page: SettingsPagePlugin) {
+    self.page = page
+    self.checkUpdateLabel = NSTextField(labelWithString: "Checking for updates…")
+    self.checkUpdateButton = NSButton()
+    checkUpdateButton.translatesAutoresizingMaskIntoConstraints = false
+    super.init(frame: .zero)
+
+    checkUpdateLabel.font = .systemFont(ofSize: NSFont.smallSystemFontSize, weight: .bold)
+    checkUpdateLabel.textColor = .secondaryLabelColor
+    checkUpdateLabel.translatesAutoresizingMaskIntoConstraints = false
+
+    checkUpdateButton.image = .findSFSymbol(["arrow.clockwise.circle"])
+    checkUpdateButton.imagePosition = .imageOnly
+    checkUpdateButton.isBordered = false
+    checkUpdateButton.size(width: 16, height: 16)
+    checkUpdateButton.target = self
+    checkUpdateButton.action = #selector(checkForUpdates)
+
+    let checkUpdateStackView = NSStackView(views: [checkUpdateLabel, checkUpdateButton])
+    checkUpdateStackView.translatesAutoresizingMaskIntoConstraints = false
+    checkUpdateStackView.orientation = .horizontal
+
+    self.translatesAutoresizingMaskIntoConstraints = false
+    self.addSubview(checkUpdateStackView)
+
+    checkUpdateStackView.padding(.top(8), .bottom, .horizontal(16))
+  }
+  
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+
+  @objc func checkForUpdates(_ sender: AnyObject) {
+    page.listView.checkForAllPluginUpdates()
+  }
+
+  func update(_ status: Status) {
+    switch status {
+    case .error:
+      checkUpdateLabel.stringValue = "Error checking for updates."
+      checkUpdateButton.isHidden = false
+    case .foundUpdate(let numOfUpdates):
+      if numOfUpdates == 0 {
+        checkUpdateLabel.stringValue = "All plugins are up to date."
+      } else {
+        checkUpdateLabel.stringValue = "Plugin updates available: \(numOfUpdates)"
+      }
+      checkUpdateButton.isHidden = false
+    case .refreshing:
+      checkUpdateLabel.stringValue = "Checking for updates…"
+      checkUpdateButton.isHidden = true
+    }
+  }
+}
 
 fileprivate extension NSUserInterfaceItemIdentifier {
   static let pluginItem = NSUserInterfaceItemIdentifier("PluginCell")
@@ -80,13 +181,19 @@ fileprivate extension NSPasteboard.PasteboardType {
   static let iinaPluginID = NSPasteboard.PasteboardType(rawValue: "com.colliderli.iina.pluginID")
 }
 
+
 fileprivate class PluginListView: SettingsAccessory.Base {
   static var currentPlugin: JavascriptPlugin?
-  let tableView: NSTableView
+  static var pluginHasUpdate: [String: Bool] = [:]
+  static var isCheckingForUpdates: Bool = false
 
-  override init(l10n: SettingsLocalization.Context) {
+  let tableView: NSTableView
+  unowned let page: SettingsPagePlugin
+
+  init(l10n: SettingsLocalization.Context, page: SettingsPagePlugin) {
     self.tableView = NSTableView()
-    
+    self.page = page
+
     super.init(l10n: l10n)
     
     let column = NSTableColumn(identifier: .pluginItem)
@@ -101,20 +208,55 @@ fileprivate class PluginListView: SettingsAccessory.Base {
 
     view.addSubview(tableView)
     tableView.padding(.all(0))
+
+    checkForAllPluginUpdates()
+  }
+
+  func checkForAllPluginUpdates() {
+    Task { @MainActor in
+      let updateView = page.updateView
+      do {
+        guard PluginListView.isCheckingForUpdates == false else { return }
+        PluginListView.isCheckingForUpdates = true
+        updateView.update(.refreshing)
+        defer {
+          PluginListView.isCheckingForUpdates = false
+        }
+
+        var dict: [String: Bool] = [:]
+        for plugin in JavascriptPlugin.plugins {
+          let version = try await plugin.checkNewVersion()
+          dict[plugin.identifier] = version != nil
+        }
+        PluginListView.pluginHasUpdate = dict
+
+        let numOfUpdates = UInt(dict.values.filter{ $0 }.count)
+        Logger.log("Finished checking for plugin updates, \(numOfUpdates) updates found")
+
+        updateView.update(.foundUpdate(numOfUpdates))
+        self.tableView.reloadData()
+      } catch let error {
+        Logger.log("Error checking for plugin updates: \(error)", level: .error)
+        updateView.update(.error)
+      }
+    }
   }
 }
 
 extension PluginListView: NSTableViewDelegate, NSTableViewDataSource {
-  class ItemView: NSTableCellView {
+  private class ItemView: NSTableCellView {
     var nameLabel: NSTextField!
     var enabledSwitch: NSSwitch!
     var versionLabel: NSTextField!
+    var updateBtn: NSButton!
     var devLabel: NSTextField!
     var descLabel: NSTextField!
     var aboutBtn: NSButton!
     var actionsBtn: NSButton!
+    var progressIndicator: NSProgressIndicator!
     weak var plugin: JavascriptPlugin!
-    
+
+    private lazy var pluginManager: PluginManager = PluginManager(window: self.nameLabel.window!)
     weak private var listView: PluginListView!
     
     func setup(plugin: JavascriptPlugin, listView: PluginListView) {
@@ -131,27 +273,48 @@ extension PluginListView: NSTableViewDelegate, NSTableViewDataSource {
         enabledSwitch = NSSwitch()
         enabledSwitch.state = plugin.enabled ? .on : .off
         enabledSwitch.controlSize = .mini
-        
+        enabledSwitch.target = self
+        enabledSwitch.action = #selector(enabledSwitchAction)
+
         versionLabel = NSTextField(labelWithString: plugin.version)
         versionLabel.textColor = .tertiaryLabelColor
         versionLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
 
-        devLabel = NSTextField(labelWithString: plugin.isExternal ? "DEV" : "")
-        devLabel.textColor = .systemOrange
-        devLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
+        updateBtn = NSButton()
+        updateBtn.isBordered = false
+        updateBtn.image = .findSFSymbol(["arrow.up.circle"])
+        updateBtn.contentTintColor = .systemOrange
+        updateBtn.isHidden = !PluginListView.pluginHasUpdate[plugin.identifier, default: false]
+        updateBtn.target = self
+        updateBtn.action = #selector(updateBtnAction)
+
+        devLabel = NSTextField(labelWithString: "DEV")
+        devLabel.isHidden = !plugin.isExternal
+        devLabel.textColor = .black
+        devLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize * 0.8, weight: .bold)
+        devLabel.drawsBackground = true
+        devLabel.backgroundColor = .systemIndigo
+        devLabel.wantsLayer = true
+        devLabel.layer?.cornerRadius = 3
 
         let nameStackView = NSStackView()
         nameStackView.translatesAutoresizingMaskIntoConstraints = false
         nameStackView.orientation = .horizontal
         nameStackView.distribution = .fill
-        
+
+        self.progressIndicator = NSProgressIndicator()
+        progressIndicator.style = .spinning
+        progressIndicator.isHidden = true
+        progressIndicator.controlSize = .mini
+
         self.actionsBtn = NSButton()
         actionsBtn.image = .findSFSymbol(["ellipsis"])
         actionsBtn.isBordered = false
         actionsBtn.target = self
         actionsBtn.action = #selector(actionsBtnAction)
-        
-        [enabledSwitch, nameLabel, versionLabel, devLabel, actionsBtn].forEach {
+        actionsBtn.size(width: 16, height: 16)
+
+        [enabledSwitch, nameLabel, progressIndicator, versionLabel, updateBtn, devLabel, actionsBtn].forEach {
           nameStackView.addArrangedSubview($0)
         }
         
@@ -184,12 +347,19 @@ extension PluginListView: NSTableViewDelegate, NSTableViewDataSource {
       } else {
         nameLabel.stringValue = plugin.name
         versionLabel.stringValue = plugin.version
-        devLabel.stringValue = plugin.isExternal ? "DEV" : ""
+        updateBtn.isHidden = !PluginListView.pluginHasUpdate[plugin.identifier, default: false]
+        devLabel.isHidden = !plugin.isExternal
         enabledSwitch.state = plugin.enabled ? .on : .off
         descLabel.stringValue = plugin.desc ?? "No description"
+        progressIndicator.isHidden = true
+        progressIndicator.stopAnimation(nil)
       }
     }
-    
+
+    @objc func enabledSwitchAction(_ sender: NSSwitch) {
+      plugin.enabled = sender.state == .on
+    }
+
     @objc func actionsBtnAction(_ sender: NSButton) {
       PluginListView.currentPlugin = plugin
       
@@ -208,6 +378,34 @@ extension PluginListView: NSTableViewDelegate, NSTableViewDataSource {
       
       let sheetWindow = PluginDetailsWindow(l10n: listView.l10n, plugin: plugin, window: window!)
       window!.beginSheet(sheetWindow)
+    }
+
+    @objc func updateBtnAction(_ sender: NSButton) {
+      self.versionLabel.stringValue = NSLocalizedString("plugin.updating", comment: "")
+      self.updateBtn.isHidden = true
+      self.progressIndicator.isHidden = false
+      self.progressIndicator.startAnimation(nil)
+      Task { @MainActor in
+        let (res, newPlugin) = await self.pluginManager.update(self.plugin)
+
+        if res == .noUpdate {
+          PluginListView.pluginHasUpdate[plugin.identifier] = false
+        } else if res == .installed, let newPlugin = newPlugin {
+          self.plugin = newPlugin
+          PluginListView.pluginHasUpdate[newPlugin.identifier] = false
+        }
+        // labels and buttons will be reset on reload
+        reloadRow()
+      }
+    }
+
+    private func reloadRow() {
+      if let row = JavascriptPlugin.plugins.firstIndex(of: plugin) {
+        self.listView.tableView.reloadData(forRowIndexes: IndexSet([row]), columnIndexes: IndexSet([0]))
+      } else {
+        Logger.log("New plugin not found in plugin list after update")
+        self.listView.tableView.reloadData()
+      }
     }
   }
 

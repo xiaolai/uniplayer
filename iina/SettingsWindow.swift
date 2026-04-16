@@ -49,6 +49,8 @@ class SettingsWindow: NSWindow {
                styleMask: [.closable, .miniaturizable, .resizable, .titled, .fullSizeContentView],
                backing: .buffered, defer: false)
 
+    self.isReleasedWhenClosed = false
+
     let splitViewController = NSSplitViewController()
     self.contentViewController = splitViewController
 
