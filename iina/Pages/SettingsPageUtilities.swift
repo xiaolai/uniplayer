@@ -68,7 +68,7 @@ class SettingsPageUtilities: SettingsPage {
   
   private func actionButton(action: Selector) -> NSButton {
     let btn = NSButton()
-    btn.image = NSImage(systemSymbolName: "arrow.right", accessibilityDescription: nil)
+    btn.image = .findSFSymbol(["arrow.right"])
     btn.target = self
     btn.action = action
     return btn
@@ -272,12 +272,12 @@ fileprivate class BrowserExtensionView: SettingsAccessory.Base {
     super.init(l10n: l10n)
     
     let chromeBtn = makeButton(.text_Chrome)
-    chromeBtn.image = NSImage(systemSymbolName: "arrow.right", accessibilityDescription: nil)
+    chromeBtn.image = .findSFSymbol(["arrow.right"])
     chromeBtn.imagePosition = .imageTrailing
     chromeBtn.target = self
     chromeBtn.action = #selector(extChromeBtnAction)
     let ffBtn = makeButton(.text_Firefox)
-    ffBtn.image = NSImage(systemSymbolName: "arrow.right", accessibilityDescription: nil)
+    ffBtn.image = .findSFSymbol(["arrow.right"])
     ffBtn.imagePosition = .imageTrailing
     ffBtn.target = self
     ffBtn.action = #selector(extFirefoxBtnAction)

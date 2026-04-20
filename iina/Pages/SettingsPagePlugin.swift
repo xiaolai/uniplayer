@@ -539,7 +539,7 @@ fileprivate class PluginDetailsWindow: NSWindow {
     versionLabel.font = .systemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
 
     let iconView = NSImageView()
-    iconView.image = NSImage(systemSymbolName: "puzzlepiece.extension", accessibilityDescription: nil)
+    iconView.image = .findSFSymbol(["puzzlepiece.extension"])
     iconView.translatesAutoresizingMaskIntoConstraints = false
     iconView.size(width: 24, height: 24)
     
@@ -559,7 +559,7 @@ fileprivate class PluginDetailsWindow: NSWindow {
       ("questionmark.circle", .text_Help),
     ]
     for (i, seg) in segments.enumerated() {
-      segControl.setImage(NSImage(systemSymbolName: seg.0, accessibilityDescription: nil), forSegment: i)
+      segControl.setImage(.findSFSymbol([seg.0]), forSegment: i)
       segControl.setLabel(l10n.localized(seg.1), forSegment: i)
     }
     
@@ -867,7 +867,7 @@ for (const name of radioNames.values()) {
 
 
 /// The CSS for About/Preference view.
-/// The Help view can be a cusotm webpage so we don't want to apply additional CSS.
+/// The Help view can be a custom webpage so we don't want to apply additional CSS.
 fileprivate let WebViewCSS = """
 * {
   box-sizing: border-box;

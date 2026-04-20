@@ -76,7 +76,7 @@ class Dialog<T> {
     self.panel = panel
   }
 
-  func supressable(by key: PK) -> Self {
+  func suppressible(by key: PK) -> Self {
     self.suppressionKey = key
     return self
   }

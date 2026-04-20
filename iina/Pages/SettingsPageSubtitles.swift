@@ -277,13 +277,13 @@ fileprivate class SubtitlesFontView: SettingsAccessory.Base {
 
     let sizeInput = makeInput(.subTextSize)
 
-    let boldButton = SButton(image: NSImage(systemSymbolName: "bold", accessibilityDescription: nil)!)
+    let boldButton = SButton(image: .findSFSymbol(["bold"]))
     boldButton.translatesAutoresizingMaskIntoConstraints = false
     boldButton.setButtonType(.toggle)
     boldButton.cell!.bind(.state, to: UserDefaults.standard, withKeyPath: Preference.Key.subBold.rawValue)
     boldButton.size(width: 32, height: 25)
 
-    let italicButton = SButton(image: NSImage(systemSymbolName: "italic", accessibilityDescription: nil)!)
+    let italicButton = SButton(image: .findSFSymbol(["italic"]))
     italicButton.translatesAutoresizingMaskIntoConstraints = false
     italicButton.setButtonType(.toggle)
     italicButton.cell!.bind(.state, to: UserDefaults.standard, withKeyPath: Preference.Key.subItalic.rawValue)

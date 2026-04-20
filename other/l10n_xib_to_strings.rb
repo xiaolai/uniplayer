@@ -138,13 +138,13 @@ res_dict.each do |key, value|
   end
 end
 
-new_ket_set = Set.new
+new_key_set = Set.new
 
 en_dict.each do |key, value|
   newKey = value.gsub(/[^A-Za-z ]/, '').split(' ').first(5).join('-').to_camel
-  next if new_ket_set.include?(newKey)
+  next if new_key_set.include?(newKey)
 
-  new_ket_set.add(newKey)
+  new_key_set.add(newKey)
   string_file.puts %Q{/* key="#{key}" */}
   string_file.puts %Q{"$#{newKey}" = "#{value.sub_quote}";}
   swift_file.puts %Q{  static let text_#{newKey} = SettingsLocalization.Key("$#{newKey}")}

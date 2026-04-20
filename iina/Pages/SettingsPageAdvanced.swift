@@ -118,10 +118,10 @@ fileprivate class MPVOptionsEditor: SettingsAccessory.Base, NSTableViewDelegate,
     view.addSubview(stackView)
     stackView.padding(.leading(SettingsSubListView.padding), .trailing(0), .bottom(0), .top(0))
     
-    addBtn.image = NSImage(systemSymbolName: "plus", accessibilityDescription: nil)
+    addBtn.image = .findSFSymbol(["plus"])
     addBtn.target = self
     addBtn.action = #selector(addOptionAction)
-    delBtn.image = NSImage(systemSymbolName: "minus", accessibilityDescription: nil)
+    delBtn.image = .findSFSymbol(["minus"])
     delBtn.isEnabled = false
     delBtn.target = self
     delBtn.action = #selector(removeOptionAction)

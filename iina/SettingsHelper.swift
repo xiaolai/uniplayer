@@ -19,6 +19,7 @@ extension NSTextField {
 
 }
 
+@available(macOS 11.0, *)
 class SettingsUIHelper {
   private var l10n: SettingsLocalization.Context
 
@@ -77,7 +78,7 @@ class SettingsUIHelper {
   }
 
   func image(_ symbol: String, size: CGFloat = 16) -> NSImageView {
-    let imageView = NSImageView(image: NSImage(systemSymbolName: symbol, accessibilityDescription: nil)!)
+    let imageView = NSImageView(image: .findSFSymbol([symbol])!)
     imageView.size(width: size, height: size)
     return imageView
   }

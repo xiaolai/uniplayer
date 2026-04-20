@@ -9,7 +9,7 @@
 import Foundation
 
 class SettingsPageVideoAudio: SettingsPage {
-  private lazy var audioOutputDevideView: AudioOutputDevideView = AudioOutputDevideView(l10n: localizationContext)
+  private lazy var audioOutputDeviceView: AudioOutputDeviceView = AudioOutputDeviceView(l10n: localizationContext)
 
   override var title: String {
     return NSLocalizedString("preference.video_audio", comment: "Codec")
@@ -115,7 +115,7 @@ class SettingsPageVideoAudio: SettingsPage {
       SettingsListView {
         SettingsItem.General(title: .text_PreferredAudioDevice)
           .image(name: "hifispeaker.and.homepod")
-          .withDetailView(audioOutputDevideView.view)
+          .withDetailView(audioOutputDeviceView.view)
         SettingsItem.General(title: .text_SPDIFOutput)
           .image(name: "audio.jack.stereo")
           .withExpandingDetailView {
@@ -180,7 +180,7 @@ fileprivate enum AudioDriver: Int, InitializingFromKey, CaseIterable {
 }
 
 
-fileprivate class AudioOutputDevideView: WithSettingsLocalizationContext {
+fileprivate class AudioOutputDeviceView: WithSettingsLocalizationContext {
   var l10n: SettingsLocalization.Context!
   lazy var ui: SettingsUIHelper = SettingsUIHelper(l10n)
 
