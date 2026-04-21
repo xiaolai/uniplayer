@@ -11,6 +11,7 @@ import MediaPlayer
 import Sparkle
 
 let IINA_ENABLE_PLUGIN_SYSTEM = true
+let IINA_ENABLE_NEW_SETTINGS = false
 
 /** Max time interval for repeated `application(_:openFile:)` calls. */
 fileprivate let OpenFileRepeatTime = TimeInterval(0.2)
@@ -962,7 +963,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   }
 
   @IBAction func showPreferences(_ sender: AnyObject) {
-    preferenceWindowController.showWindow(self)
+    if #available(macOS 11.0, *), IINA_ENABLE_NEW_SETTINGS {
+      SettingsWindow.default.show()
+    } else {
+      preferenceWindowController.showWindow(self)
+    }
   }
 
   @objc func showPluginPreferences(_ sender: NSMenuItem) {
