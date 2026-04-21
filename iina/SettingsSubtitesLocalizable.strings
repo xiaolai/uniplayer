@@ -63,9 +63,9 @@
 /* key="LiG-iV-AQK" */
 "$Other" = "Other";
 /* key="Luv-2B-9v8" */
-"$DirectoriesAreSeparatedByColons" = "Directories are separated by colons (:). Relative paths and wildcards (*) at the end are allowed.";
+"subAutoLoadSearchPath.desc" = "Directories are separated by colons (:). Relative paths and wildcards (*) at the end are allowed.";
 /* key="Mk1-sv-QB8" */
-"$PleaseEnterACommaseparatedList" = "Please enter a comma-separated list of strings.";
+"subAutoLoadPriorityString.desc" = "Please enter a comma-separated list of strings.";
 /* key="Qda-dp-nhg" */
 "$TextSubtitles" = "Text Subtitles";
 /* key="QsS-wD-2hY" */

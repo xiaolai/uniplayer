@@ -7,7 +7,11 @@
 /* id="JfZ-D8-aF2" */
 "actionAfterLaunch.items.2" = "Do nothing";
 /* id="M0z-bI-88d" */
-"alwaysOpenInNewWindow.label" = "Always open media in new window";
+"alwaysOpenInNewWindow.label" = "Allow multiple player windows";
+/* id="WZE-pS-9ne" */
+"groupSimultaneousOpensInPlaylist.label" = "Group media in playlist when opening multiple files at once";
+/* id="Z7U-cf-ezr" */
+"allowDuplicatePlayers.label" = "Allow opening the same file in multiple windows";
 /* id="YLo-6E-tT7" */
 "quitWhenNoOpenedWindow.label" = "Quit after all windows are closed";
 /* id="2iM-j7-AzQ" */

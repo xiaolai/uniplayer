@@ -308,7 +308,7 @@ extension NSMenu {
     menuItem.state = stateOn ? .on : .off
     menuItem.isEnabled = enabled
     
-    if let image = image {
+    if #available(macOS 11.0, *), let image = image {
       menuItem.image = NSImage.findSFSymbol(image)
     }
     

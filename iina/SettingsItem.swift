@@ -8,6 +8,7 @@
 
 import Cocoa
 
+@available(macOS 11.0, *)
 struct SettingsItem {
   class Base: NSView, WithSettingsLocalizationContext  {
     var l10n: SettingsLocalization.Context!
@@ -142,6 +143,7 @@ struct SettingsItem {
         descLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
         descLabel.textColor = .secondaryLabelColor
         stackView.addArrangedSubview(descLabel)
+        descLabel.makeMultiLine()
         descLabel.padding(.leading(30))
       }
       
@@ -905,6 +907,7 @@ struct SettingsItem {
 }
 
 
+@available(macOS 11.0, *)
 fileprivate class ClickableView: NSView {
   var showBottomRoundCorner = false {
     didSet { setRoundCorners() }
@@ -980,6 +983,7 @@ fileprivate class NonClickableButton: NSButton {
 }
 
 
+@available(macOS 11.0, *)
 class SettingsAccessory {
   /// A Base class for customized controls.
   class Base: NSObject, WithSettingsLocalizationContext {
@@ -1009,13 +1013,16 @@ class SettingsAccessory {
       return btn
     }
 
-    func makeColorWell() -> NSColorWell {
+    func makeColorWell(_ key: Preference.Key) -> NSColorWell {
       let colorWell = NSColorWell()
       colorWell.translatesAutoresizingMaskIntoConstraints = false
       if #available(macOS 13.0, *) {
         colorWell.colorWellStyle = .expanded
       }
       colorWell.size(height: 24)
+      colorWell.bind(.value, to: UserDefaults.standard,
+                     withKeyPath: key.rawValue,
+                     options: [.valueTransformer: MPVColorStringTransformer()])
       return colorWell
     }
 

@@ -6,6 +6,7 @@
 //  Copyright © 2026 lhc. All rights reserved.
 //
 
+@available(macOS 11.0, *)
 class SettingsPageAdvanced: SettingsPage {
   override var title: String {
     return NSLocalizedString("preference.advanced", comment: "Advanced")
@@ -86,7 +87,7 @@ class SettingsPageAdvanced: SettingsPage {
   }
 }
 
-
+@available(macOS 11.0, *)
 fileprivate class MPVOptionsEditor: SettingsAccessory.Base, NSTableViewDelegate, NSTableViewDataSource {
   let tableView: NSTableView
   let addBtn: NSButton
@@ -107,12 +108,14 @@ fileprivate class MPVOptionsEditor: SettingsAccessory.Base, NSTableViewDelegate,
     tableView.dataSource = self
     let columnKey = NSTableColumn(identifier: .key)
     columnKey.title = "Key"
+    columnKey.minWidth = 140
     (columnKey.dataCell as? NSCell)?.font = monoFont
     tableView.addTableColumn(columnKey)
     let columnValue = NSTableColumn(identifier: .value)
     columnValue.title = "Value"
     (columnValue.dataCell as? NSCell)?.font = monoFont
     tableView.addTableColumn(columnValue)
+    tableView.columnAutoresizingStyle = .sequentialColumnAutoresizingStyle
 
     let stackView = makeStackView([tableView], orientation: .vertical)
     view.addSubview(stackView)

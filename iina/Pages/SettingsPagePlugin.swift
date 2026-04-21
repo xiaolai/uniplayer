@@ -9,6 +9,7 @@
 import WebKit
 import Just
 
+@available(macOS 11.0, *)
 class SettingsPagePlugin: SettingsPage {
   override var title: String {
     return NSLocalizedString("preference.plugins", comment: "Plugins")
@@ -58,6 +59,7 @@ class SettingsPagePlugin: SettingsPage {
 }
 
 
+@available(macOS 11.0, *)
 fileprivate class PluginInstallView: SettingsAccessory.Base {
   unowned let page: SettingsPagePlugin
   private lazy var pluginManager: PluginManager = PluginManager(window: self.view.window!)
@@ -101,6 +103,7 @@ fileprivate class PluginInstallView: SettingsAccessory.Base {
 }
 
 
+@available(macOS 11.0, *)
 fileprivate class PluginUpdateView: NSView, SettingsContainer {
   func getContainer() -> NSView {
     return self
@@ -182,6 +185,7 @@ fileprivate extension NSPasteboard.PasteboardType {
 }
 
 
+@available(macOS 11.0, *)
 fileprivate class PluginListView: SettingsAccessory.Base {
   static var currentPlugin: JavascriptPlugin?
   static var pluginHasUpdate: [String: Bool] = [:]
@@ -243,6 +247,7 @@ fileprivate class PluginListView: SettingsAccessory.Base {
   }
 }
 
+@available(macOS 11.0, *)
 extension PluginListView: NSTableViewDelegate, NSTableViewDataSource {
   private class ItemView: NSTableCellView {
     var nameLabel: NSTextField!
@@ -463,6 +468,7 @@ extension PluginListView: NSTableViewDelegate, NSTableViewDataSource {
   }
 }
 
+@available(macOS 11.0, *)
 extension PluginListView {
   @objc func uninstallAction() {
     guard let currentPlugin = PluginListView.currentPlugin else { return }
@@ -482,6 +488,7 @@ extension PluginListView {
 }
 
 
+@available(macOS 11.0, *)
 fileprivate class PluginDetailsWindow: NSWindow {
   private unowned let l10n: SettingsLocalization.Context
   private unowned let plugin: JavascriptPlugin
@@ -707,6 +714,7 @@ fileprivate class PluginDetailsWindow: NSWindow {
   }
 }
 
+@available(macOS 11.0, *)
 extension PluginDetailsWindow: WKScriptMessageHandler, WKNavigationDelegate {
   func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
     // don't allow remote pages in settings or about tab

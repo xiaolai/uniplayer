@@ -68,6 +68,16 @@
 "themeMaterial.items.4" = "Match System Appearance";
 /* id="baY-O6-fcB" */
 "togglePipByMinimizingWindow.label" = "Toggle Picture-in-Picture by minimizing/un-minimizing the window";
+/* id="cib-Cg-9kn"; */
+"togglePipByMinimizingWindowForVideoOnly.label" = "Only for video files";
+/* id="kCe-Ck-dUJ" */
+"enableThumbnailForRemoteFiles.label" = "Include files on a mounted remote drive";
+/* id="Ufv-Hk-vL5" */
+"disableVolumeSliderScrolling.label" = "Prevent scroll wheel from changing volume";
+/* id="vnb-DF-4g5" */
+"disablePlaySliderScrolling.label" = "Prevent scroll wheel from changing playback position";
+/* id="5Nk-Mu-V2I" */
+"scaleRemainingTime.label" = "Base remaining time on playback speed";
 /* id="EUd-RD-g0T" */
 "$WhenEnteringPIP" = "When entering Picture-in-Picture";
 /* key="GKy-3g-4MB" */

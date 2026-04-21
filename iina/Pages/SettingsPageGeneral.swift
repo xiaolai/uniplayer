@@ -8,6 +8,7 @@
 
 import Foundation
 
+@available(macOS 11.0, *)
 class SettingsPageGeneral: SettingsPage {
   private lazy var fileChooseView: SettingsAccessory.FileChooserView = .init(.screenshotFolder)
 
@@ -64,6 +65,12 @@ class SettingsPageGeneral: SettingsPage {
         SettingsItem.Switch()
           .image(name: "macwindow.badge.plus")
           .bindTo(.alwaysOpenInNewWindow)
+          .withDetailView {
+            SettingsItem.Switch()
+              .bindTo(.groupSimultaneousOpensInPlaylist)
+            SettingsItem.Switch()
+              .bindTo(.allowDuplicatePlayers)
+          }
         SettingsItem.Switch()
           .bindTo(.quitWhenNoOpenedWindow)
         SettingsItem.Switch()

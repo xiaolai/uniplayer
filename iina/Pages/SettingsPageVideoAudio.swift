@@ -8,6 +8,7 @@
 
 import Foundation
 
+@available(macOS 11.0, *)
 class SettingsPageVideoAudio: SettingsPage {
   private lazy var audioOutputDeviceView: AudioOutputDeviceView = AudioOutputDeviceView(l10n: localizationContext)
 
@@ -180,6 +181,7 @@ fileprivate enum AudioDriver: Int, InitializingFromKey, CaseIterable {
 }
 
 
+@available(macOS 11.0, *)
 fileprivate class AudioOutputDeviceView: WithSettingsLocalizationContext {
   var l10n: SettingsLocalization.Context!
   lazy var ui: SettingsUIHelper = SettingsUIHelper(l10n)
@@ -252,8 +254,8 @@ fileprivate class AudioOutputDeviceView: WithSettingsLocalizationContext {
   }
 
   @objc func audioDeviceAction(_ sender: Any) {
-    let device = audioDevicePopUp.selectedItem!.representedObject as! [String: String]
-    Preference.set(device["name"]!, for: .audioDevice)
-    Preference.set(device["description"]!, for: .audioDeviceDesc)
+    let device = audioDevicePopUp.selectedItem!.representedObject as! MPVAudioDevice
+    Preference.set(device.name, for: .audioDevice)
+    Preference.set(device.desc, for: .audioDeviceDesc)
   }
 }

@@ -19,6 +19,7 @@ fileprivate extension NSView {
   }
 }
 
+@available(macOS 11.0, *)
 class SettingsWindow: NSWindow {
   static let `default`: SettingsWindow = SettingsWindow([
     SettingsPageGeneral(),
@@ -219,7 +220,7 @@ class SettingsWindow: NSWindow {
     let titleIndex = sectionNames.firstIndex(of: firstVisibleTitle) ?? 0
 
     NSAnimationContext.runAnimationGroup({ context in
-      context.duration = 0.1
+      context.duration = AccessibilityPreferences.adjustedDuration(0.1)
       context.timingFunction = CAMediaTimingFunction(name: .linear)
       sectionIndicatorTopConstraint?.animator().constant = CGFloat(8 + 22 * titleIndex)
       sectionNameStackView.arrangedSubviews.forEach {
@@ -242,6 +243,7 @@ class SettingsWindow: NSWindow {
 }
 
 
+@available(macOS 11.0, *)
 extension SettingsWindow: NSTableViewDataSource, NSTableViewDelegate {
   func numberOfRows(in tableView: NSTableView) -> Int {
     return pages.count + 1
@@ -279,7 +281,7 @@ extension SettingsWindow: NSTableViewDataSource, NSTableViewDelegate {
     }
     
     NSAnimationContext.runAnimationGroup({ context in
-      context.duration = 0.25
+      context.duration = AccessibilityPreferences.adjustedDuration(0.25)
       clipView.animator().setBoundsOrigin(newOrigin)
     }, completionHandler: {
       self.contentScrollView.reflectScrolledClipView(clipView)
@@ -385,8 +387,10 @@ extension SettingsWindow: NSTableViewDataSource, NSTableViewDelegate {
        prevIndex.count > 0 {
       let prevRow = prevIndex.firstIndex
       loadPage(at: tableView.selectedRow > prevRow ? tableView.selectedRow - 1 : tableView.selectedRow)
-      tableView.removeRows(at: IndexSet(integer: prevRow + 1), withAnimation: [.effectFade, .slideUp])
-      tableView.insertRows(at: IndexSet(integer: tableView.selectedRow + 1), withAnimation: [.effectFade, .slideDown])
+      let options: NSTableView.AnimationOptions = Preference.bool(for: PK.disableAnimations) ?
+        [] : [.effectFade, .slideDown]
+      tableView.removeRows(at: IndexSet(integer: prevRow + 1), withAnimation: options)
+      tableView.insertRows(at: IndexSet(integer: tableView.selectedRow + 1), withAnimation: options)
     }
   }
 }
@@ -399,6 +403,7 @@ fileprivate class FlippedClipView: NSClipView {
 }
 
 
+@available(macOS 11.0, *)
 fileprivate class VerticalLine: NSView {
   override func draw(_ dirtyRect: NSRect) {
     let color = NSAppearance.currentDrawing().isDark ? NSColor.white : NSColor.black

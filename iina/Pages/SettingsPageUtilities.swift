@@ -8,6 +8,7 @@
 
 import UniformTypeIdentifiers
 
+@available(macOS 11.0, *)
 class SettingsPageUtilities: SettingsPage {
   override var title: String {
     return NSLocalizedString("preference.utilities", comment: "Utilities")
@@ -266,7 +267,7 @@ fileprivate class SetAsDefaultSheetWindow: NSWindow {
   }
 }
 
-
+@available(macOS 11.0, *)
 fileprivate class BrowserExtensionView: SettingsAccessory.Base {
   override init(l10n: SettingsLocalization.Context) {
     super.init(l10n: l10n)
