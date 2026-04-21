@@ -69,11 +69,8 @@ class SettingsWindow: NSWindow {
     let searchBox = NSSearchField()
     sidebarBackground.addSubview(searchBox)
     searchBox.translatesAutoresizingMaskIntoConstraints = false
-    
-    if #available(macOS 11.0, *) {
-      searchBox.controlSize = .large
-    }
-    
+    searchBox.controlSize = .large
+
     let sidebarScrollView = NSScrollView()
     sidebarScrollView.hasVerticalScroller = true
     sidebarScrollView.autohidesScrollers = true
@@ -81,11 +78,7 @@ class SettingsWindow: NSWindow {
     sidebarScrollView.borderType = .noBorder
     sidebarScrollView.drawsBackground = false
     let sidebarList = NSTableView()
-    if #available(macOS 11.0, *) {
-      sidebarList.style = .sourceList
-    } else {
-      sidebarList.selectionHighlightStyle = .sourceList
-    }
+    sidebarList.style = .sourceList
     sidebarList.autoresizingMask = [.width, .height]
     sidebarList.headerView = nil
     sidebarList.dataSource = self
@@ -130,22 +123,16 @@ class SettingsWindow: NSWindow {
     contentSplitItem.minimumThickness = 400
     splitViewController.addSplitViewItem(contentSplitItem)
 
-    if #available(macOS 11.0, *) {
-      sidebarSplitItem.titlebarSeparatorStyle = .automatic
-      contentSplitItem.titlebarSeparatorStyle = .automatic
-    } else {
-      // Fallback on earlier versions
-    }
+    sidebarSplitItem.titlebarSeparatorStyle = .automatic
+    contentSplitItem.titlebarSeparatorStyle = .automatic
 
     self.title = "Settings"
     self.isOpaque = false
     self.isMovableByWindowBackground = true
     self.titlebarAppearsTransparent = true
-    if #available(macOS 11.0, *) {
-      self.toolbarStyle = .unified
-      self.toolbar = NSToolbar()
-      self.toolbar?.displayMode = .iconOnly
-    }
+    self.toolbarStyle = .unified
+    self.toolbar = NSToolbar()
+    self.toolbar?.displayMode = .iconOnly
 
     loadPage(at: 0)
     sidebarList.addTableColumn(col)

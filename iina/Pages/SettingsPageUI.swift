@@ -315,7 +315,7 @@ fileprivate class ResizeWindowView: WithSettingsLocalizationContext {
   init(l10n: SettingsLocalization.Context) {
     self.l10n = l10n
     self.view = NSView()
-    let buttons = ui.radioGroup(target: self, action: #selector(radioButtonSelected), size: .regular, [
+    let buttons = ui.radioGroup(.resizeWindowTiming, size: .regular, [
       (.text_AlwaysWhenPlaying, 0), (.text_WhenMediaIsOpenedManually, 1), (.text_DoNotResize, 2)
     ])
 
@@ -324,11 +324,6 @@ fileprivate class ResizeWindowView: WithSettingsLocalizationContext {
       $0.padding(.leading(20))
     }
     SettingsUIHelper.vEquallySpaced(buttons, 8, top: 0, bottom: 12)
-  }
-
-  @objc func radioButtonSelected(_ sender: NSButton) {
-      // Handle selection, if needed
-      // All radio buttons in the same group will automatically deselect each other
   }
 }
 
@@ -365,7 +360,7 @@ fileprivate class OSCLayoutView: WithSettingsLocalizationContext {
     }
     SettingsUIHelper.hEquallySpaced(imageViews, 8, leading: SettingsSubListView.padding, trailing: 8)
 
-    let buttons = ui.radioGroup(target: self, action: #selector(radioButtonSelected), size: .regular, [
+    let buttons = ui.radioGroup(.oscPosition, size: .regular, [
       (.oscPositionItem0, 0), (.oscPositionItem1, 1), (.oscPositionItem2, 2)
     ])
 
@@ -377,11 +372,6 @@ fileprivate class OSCLayoutView: WithSettingsLocalizationContext {
 
     view.addSubview(container)
     container.padding(.vertical).center(x: true)
-  }
-
-  @objc func radioButtonSelected(_ sender: NSButton) {
-      // Handle selection, if needed
-      // All radio buttons in the same group will automatically deselect each other
   }
 }
 

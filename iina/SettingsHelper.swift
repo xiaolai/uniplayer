@@ -83,11 +83,34 @@ class SettingsUIHelper {
     return imageView
   }
 
-  func radioGroup(target: AnyObject?, action: Selector?, size: NSControl.ControlSize = .small, _ items: [(SettingsLocalization.Key, Int)]) -> [NSButton] {
+  private class RadioTagTransformer: ValueTransformer {
+    let tag: Int
+
+    init(tag: Int) {
+      self.tag = tag
+    }
+
+    override class func transformedValueClass() -> AnyClass { NSNumber.self }
+    override class func allowsReverseTransformation() -> Bool { true }
+
+    override func transformedValue(_ value: Any?) -> Any? {
+      (value as? Int) == tag ? NSControl.StateValue.on.rawValue
+      : NSControl.StateValue.off.rawValue
+    }
+
+    override func reverseTransformedValue(_ value: Any?) -> Any? {
+      tag
+    }
+  }
+
+  func radioGroup(_ prefKey: Preference.Key, size: NSControl.ControlSize = .small, _ items: [(SettingsLocalization.Key, Int)]) -> [NSButton] {
     return items.map { key, value in
-      let button = NSButton(radioButtonWithTitle: l10n.localized(key), target: target, action: action)
+      let button = NSButton(radioButtonWithTitle: l10n.localized(key), target: nil, action: nil)
       button.translatesAutoresizingMaskIntoConstraints = false
       button.controlSize = size
+      button.bind(.value, to: UserDefaults.standard, withKeyPath: prefKey.rawValue, options: [
+        .valueTransformer: RadioTagTransformer(tag: value)
+      ])
       return button
     }
   }
