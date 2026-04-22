@@ -19,7 +19,6 @@ fileprivate extension NSView {
   }
 }
 
-@available(macOS 11.0, *)
 class SettingsWindow: NSWindow {
   static let `default`: SettingsWindow = SettingsWindow([
     SettingsPageGeneral(),
@@ -230,7 +229,6 @@ class SettingsWindow: NSWindow {
 }
 
 
-@available(macOS 11.0, *)
 extension SettingsWindow: NSTableViewDataSource, NSTableViewDelegate {
   func numberOfRows(in tableView: NSTableView) -> Int {
     return pages.count + 1
@@ -390,7 +388,6 @@ fileprivate class FlippedClipView: NSClipView {
 }
 
 
-@available(macOS 11.0, *)
 fileprivate class VerticalLine: NSView {
   override func draw(_ dirtyRect: NSRect) {
     let color = NSAppearance.currentDrawing().isDark ? NSColor.white : NSColor.black

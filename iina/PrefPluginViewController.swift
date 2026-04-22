@@ -294,6 +294,41 @@ class PrefPluginViewController: PreferenceViewController, PreferenceWindowEmbedd
     }
   }
 
+  private func showPermissionsSheet(forPlugin plugin: JavascriptPlugin, previousPlugin: JavascriptPlugin?, handler: @escaping (Bool) -> Void) {
+    let block = {
+      let alert = NSAlert()
+      let permissionListView = PrefPluginPermissionListView()
+      let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 500, height: 300))
+      permissionListView.translatesAutoresizingMaskIntoConstraints = false
+      alert.messageText = NSLocalizedString("alert.title_warning", comment: "Warning")
+      alert.informativeText = NSLocalizedString(previousPlugin == nil ? "alert.plugin_permission" : "alert.plugin_permission_added", comment: "")
+      alert.alertStyle = .warning
+      alert.accessoryView = scrollView
+      scrollView.drawsBackground = false
+      scrollView.documentView = permissionListView
+      Utility.quickConstraints(["H:|-0-[v]-0-|", "V:|-0-[v]"], ["v": permissionListView])
+      alert.addButton(withTitle: NSLocalizedString("plugin.install", comment: "Install"))
+      alert.addButton(withTitle: NSLocalizedString("general.cancel", comment: "Cancel"))
+      permissionListView.setPlugin(plugin, onlyShowAddedFrom: previousPlugin)
+      alert.layout()
+      let height = permissionListView.frame.height
+      if height < 300 {
+        scrollView.frame.size.height = height
+        alert.layout()
+      }
+      alert.beginSheetModal(for: self.view.window!) { result in
+        handler(result == .alertFirstButtonReturn)
+      }
+    }
+    if Thread.isMainThread {
+      block()
+    } else {
+      DispatchQueue.main.sync {
+        block()
+      }
+    }
+  }
+
   @IBAction func websiteBtnAction(_ sender: NSButton) {
     if let website = currentPlugin?.authorURL, let url = URL(string: website) {
       NSWorkspace.shared.open(url)
