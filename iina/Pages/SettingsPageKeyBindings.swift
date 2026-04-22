@@ -512,7 +512,16 @@ fileprivate class KeyMappingCell: NSTableCellView {
       keyBox.fillColor = .controlBackgroundColor
       keyBox.cornerRadius = 4
       keyBox.contentViewMargins = .zero
-      let keyLabel = NSTextField(labelWithString: km.keyForDisplay)
+
+      // When highlighting, the text will become color due to `NSColor.selectedTextColor`.
+      // Since we have a custom NSBox underneith the text, we don't want the text field
+      // to change color to selected text color. The only way to prevent the system from
+      // changing color is use `NSAttributedString` in the text field.
+      let attributedString = NSAttributedString(
+          string: km.keyForDisplay,
+          attributes: [.foregroundColor: NSColor.textColor]
+      )
+      let keyLabel = NSTextField(labelWithAttributedString: attributedString)
       keyLabel.translatesAutoresizingMaskIntoConstraints = false
       keyBox.contentView?.addSubview(keyLabel)
       keyLabel.padding(.horizontal(4)).center(with: keyBox.contentView, y: true)
