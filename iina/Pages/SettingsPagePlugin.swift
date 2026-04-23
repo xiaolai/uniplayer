@@ -15,7 +15,7 @@ class SettingsPagePlugin: SettingsPage {
   }
   
   override var image: NSImage {
-    return makeSymbol("puzzlepiece.extension", fallbackImage: "pref_plugin")
+    return makeSymbol("puzzlepiece.extension", fallbackImage: "plugin")
   }
   
   override var localizationTable: String {

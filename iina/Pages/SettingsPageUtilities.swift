@@ -67,11 +67,7 @@ class SettingsPageUtilities: SettingsPage {
   }
   
   private func actionButton(action: Selector) -> NSButton {
-    let btn = NSButton()
-    btn.image = .findSFSymbol(["arrow.right"])
-    btn.target = self
-    btn.action = action
-    return btn
+    return NSButton(title: "", image: .findSFSymbol(["arrow.right"])!, target: self, action: action)
   }
   
   private func updateThumbnailCacheStat() {

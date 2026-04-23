@@ -701,6 +701,11 @@ extension NSImage {
         }
         return symbol
       }
+      for name in names {
+        if let symbol = NSImage(named: name) {
+          return symbol
+        }
+      }
     }
     fatalError("Could not find SF Symbol: \(names)")
   }
@@ -709,6 +714,11 @@ extension NSImage {
   static func findSFSymbol(_ names: [String]) -> NSImage? {
     for name in names {
       if let symbol = NSImage(systemSymbolName: name, accessibilityDescription: nil) {
+        return symbol
+      }
+    }
+    for name in names {
+      if let symbol = NSImage(named: name) {
         return symbol
       }
     }
