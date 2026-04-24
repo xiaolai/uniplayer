@@ -353,15 +353,18 @@ fileprivate class ConfigEditor: SettingsAccessory.Base {
 
   @objc func deleteConfFileAction(_ sender: AnyObject) {
     guard isCurrentConfigEditable() else { return }
-    do {
-      try FileManager.default.removeItem(atPath: currentConfFilePath)
-    } catch {
-      Utility.showAlert("error_deleting_file", sheetWindow: view.window)
+    Task { @MainActor in
+      guard await Dialogs.ask("delete_keybindingset").show(in: kbTableView.window!) else { return }
+      do {
+        try FileManager.default.removeItem(atPath: currentConfFilePath)
+      } catch {
+        await Dialogs.alert("error_deleting_file").show(in: view.window!)
+      }
+      // Fallback to default
+      loadConfigFile(fallbackDefault)
     }
-    // Fallback to default
-    loadConfigFile(fallbackDefault)
   }
-  
+
   @objc func addKeyMappingAction(_ sender: AnyObject) {
     showKeyBindingPanel { key, action in
       guard !key.isEmpty && !action.isEmpty else { return }
