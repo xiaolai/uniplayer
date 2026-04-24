@@ -2815,31 +2815,19 @@ class PlayerCore: NSObject {
     info.videoTracks.removeAll(keepingCapacity: true)
     info.$subTracks.withLock {
       $0.removeAll(keepingCapacity: true)
-      let trackCount = mpv.getInt(MPVProperty.trackListCount)
-      for index in 0..<trackCount {
-        // get info for each track
-        guard let trackType = mpv.getString(MPVProperty.trackListNType(index)) else { continue }
-        let track = MPVTrack(id: mpv.getInt(MPVProperty.trackListNId(index)),
-                             type: MPVTrack.TrackType(rawValue: trackType)!,
-                             isDefault: mpv.getFlag(MPVProperty.trackListNDefault(index)),
-                             isForced: mpv.getFlag(MPVProperty.trackListNForced(index)),
-                             isImage: mpv.getFlag(MPVProperty.trackListNImage(index)),
-                             isSelected: mpv.getFlag(MPVProperty.trackListNSelected(index)),
-                             isExternal: mpv.getFlag(MPVProperty.trackListNExternal(index)))
-        track.srcId = mpv.getInt(MPVProperty.trackListNSrcId(index))
-        track.title = mpv.getString(MPVProperty.trackListNTitle(index))
-        track.lang = mpv.getString(MPVProperty.trackListNLang(index))
-        track.codec = mpv.getString(MPVProperty.trackListNCodec(index))
-        track.externalFilename = mpv.getString(MPVProperty.trackListNExternalFilename(index))
-        track.isAlbumart = mpv.getString(MPVProperty.trackListNAlbumart(index)) == "yes"
-        track.decoderDesc = mpv.getString(MPVProperty.trackListNDecoderDesc(index))
-        track.demuxW = mpv.getInt(MPVProperty.trackListNDemuxW(index))
-        track.demuxH = mpv.getInt(MPVProperty.trackListNDemuxH(index))
-        track.demuxFps = mpv.getDouble(MPVProperty.trackListNDemuxFps(index))
-        track.demuxChannelCount = mpv.getInt(MPVProperty.trackListNDemuxChannelCount(index))
-        track.demuxChannels = mpv.getString(MPVProperty.trackListNDemuxChannels(index))
-        track.demuxSamplerate = mpv.getInt(MPVProperty.trackListNDemuxSamplerate(index))
-
+      let raw = mpv.getNode(MPVProperty.trackList)
+      guard let list = raw as? [[String: Any]] else {
+        // Internal error, should not occur.
+        log("Cast of mpv node failed while getting track list: \(String(describing: raw))",
+            level: .error)
+        return
+      }
+      for dict in list {
+        guard let track = MPVTrack(dict) else {
+          // Internal error, should not occur.
+          log("Unable to construct MPVTrack from mpv node map: \(dict)", level: .error)
+          continue
+        }
         // add to lists
         switch track.type {
         case .audio:
