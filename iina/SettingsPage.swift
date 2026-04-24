@@ -155,7 +155,7 @@ class SettingsListView: NSBox, SettingsContainer, WithSettingsLocalizationContex
         }
         titleField.translatesAutoresizingMaskIntoConstraints = false
         self.addSubview(titleField)
-        titleField.padding(.top, .horizontal(8))
+        titleField.padding(.top, .leading(16), .trailing(8))
         titleField.textColor = NSColor.secondaryLabelColor
         listView.spacing(to: titleField, .top(SMALL_TITLE ? 8 : 12))
         listView.padding(.bottom, .horizontal(8))

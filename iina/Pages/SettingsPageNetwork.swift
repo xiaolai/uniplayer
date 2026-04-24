@@ -31,6 +31,7 @@ class SettingsPageNetwork: SettingsPage {
     return section {
       SettingsListView(title: .text_Cache) {
         SettingsItem.Switch()
+          .image(name: ["inset.filled.topthird.middlethird.bottomthird.rectangle", ""])
           .bindTo(.enableCache)
         SettingsItem.Input()
           .bindTo(.secPrefech)
@@ -39,6 +40,7 @@ class SettingsPageNetwork: SettingsPage {
           .bindTo(.cacheBufferSize)
           .hasDescription()
         SettingsItem.Switch()
+          .image(name: "custom.progress.indicator.rectangle")
           .bindTo(.showBufferingThrobber)
         SettingsItem.Switch()
           .bindTo(.showSeekingThrobber)

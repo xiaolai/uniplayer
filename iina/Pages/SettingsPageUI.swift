@@ -51,7 +51,7 @@ class SettingsPageUI: SettingsPage {
     return section {
       SettingsListView(title: .text_Window) {
         SettingsItem.Switch(title: .text_InitialWindowSize)
-          .image(name: "macwindow")
+          .image(name: "custom.arrow.up.left.and.down.right.and.arrow.up.right.and.down.left.rectangle")
           .withExpandingDetailView(windowInitialSizeView.container)
           .bindExpandableView()
         SettingsItem.Switch(title: .text_InitialWindowPosition)
@@ -118,6 +118,7 @@ class SettingsPageUI: SettingsPage {
         SettingsItem.Switch()
           .bindTo(.scaleRemainingTime)
         SettingsItem.Switch()
+          .image(name: "custom.computermouse.slash")
           .bindTo(.disablePlaySliderScrolling)
         SettingsItem.Switch()
           .bindTo(.disableVolumeSliderScrolling)
@@ -164,7 +165,7 @@ class SettingsPageUI: SettingsPage {
     return section {
       SettingsListView(title: .text_ThumbnailPreview) {
         SettingsItem.Switch()
-          .image(name: "photo")
+          .image(name: "custom.photo.bubble.left")
           .bindTo(.enableThumbnailPreview)
           .withDetailView {
             SettingsItem.Input()
