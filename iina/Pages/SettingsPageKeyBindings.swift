@@ -376,23 +376,25 @@ fileprivate class ConfigEditor: SettingsAccessory.Base {
   }
 
   @objc func addKeyMappingAction(_ sender: AnyObject) {
-    guard isCurrentConfigEditable() else {
-      Utility.showAlert("duplicate_config", sheetWindow: view.window)
-      return
-    }
-    showKeyBindingPanel { key, action in
-      guard !key.isEmpty && !action.isEmpty else { return }
-      if action.hasPrefix("@iina") {
-        let trimmedAction = action[action.index(action.startIndex, offsetBy: "@iina".count)...].trimmingCharacters(in: .whitespaces)
-        self.mappingController.addObject(KeyMapping(rawKey: key,
-                                        rawAction: trimmedAction,
-                                        isIINACommand: true))
-      } else {
-        self.mappingController.addObject(KeyMapping(rawKey: key, rawAction: action))
+    Task { @MainActor in
+      guard isCurrentConfigEditable() else {
+        await Dialogs.alert("duplicate_config").show(in: kbTableView.window!)
+        return
       }
+      showKeyBindingPanel { key, action in
+        guard !key.isEmpty && !action.isEmpty else { return }
+        if action.hasPrefix("@iina") {
+          let trimmedAction = action[action.index(action.startIndex, offsetBy: "@iina".count)...].trimmingCharacters(in: .whitespaces)
+          self.mappingController.addObject(KeyMapping(rawKey: key,
+                                                      rawAction: trimmedAction,
+                                                      isIINACommand: true))
+        } else {
+          self.mappingController.addObject(KeyMapping(rawKey: key, rawAction: action))
+        }
 
-      self.kbTableView.scrollRowToVisible((self.mappingController.arrangedObjects as! [AnyObject]).count - 1)
-      NotificationCenter.default.post(Notification(name: .iinaKeyBindingChanged))
+        self.kbTableView.scrollRowToVisible((self.mappingController.arrangedObjects as! [AnyObject]).count - 1)
+        NotificationCenter.default.post(Notification(name: .iinaKeyBindingChanged))
+      }
     }
   }
 
@@ -403,17 +405,25 @@ fileprivate class ConfigEditor: SettingsAccessory.Base {
   }
 
   @objc func editKeyMappingAction(_ sender: ButtonWithObject) {
-    guard isCurrentConfigEditable() else {
-      Utility.showAlert("duplicate_config", sheetWindow: view.window)
-      return
+    Task { @MainActor in
+      guard isCurrentConfigEditable() else {
+        await Dialogs.alert("duplicate_config").show(in: kbTableView.window!)
+        return
+      }
+      guard let km = sender.object else { return }
+      showKeyBindingPanel(key: km.rawKey, action: km.readableAction) { key, action in
+        guard !key.isEmpty && !action.isEmpty else { return }
+        km.rawKey = key
+        km.rawAction = action
+        self.kbTableView.reloadData()
+        NotificationCenter.default.post(Notification(name: .iinaKeyBindingChanged))
+      }
     }
-    guard let km = sender.object else { return }
-    showKeyBindingPanel(key: km.rawKey, action: km.readableAction) { key, action in
-      guard !key.isEmpty && !action.isEmpty else { return }
-      km.rawKey = key
-      km.rawAction = action
-      self.kbTableView.reloadData()
-      NotificationCenter.default.post(Notification(name: .iinaKeyBindingChanged))
+  }
+
+  @objc func showHelpForLockedSetAction(_ sender: ButtonWithObject) {
+    Task {
+      await Dialogs.alert("duplicate_config").show(in: kbTableView.window!)
     }
   }
 
@@ -503,6 +513,7 @@ fileprivate class KeyMappingCell: NSTableCellView {
   var actionLabel: NSTextField!
   var editButton: ButtonWithObject!
   var removeButton: ButtonWithObject!
+  var lockHelpButton: ButtonWithObject!
   weak var editor: ConfigEditor!
 
   func setup(keyMapping km: KeyMapping, _ editor: ConfigEditor) {
@@ -518,23 +529,21 @@ fileprivate class KeyMappingCell: NSTableCellView {
       spacer.translatesAutoresizingMaskIntoConstraints = false
       spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
 
-      let editButton = ButtonWithObject(
-        title: "", image: .findSFSymbol(["gearshape.fill"])!,
-        target: editor, action: #selector(editor.editKeyMappingAction)
-      )
-      editButton.bezelStyle = .circular
-      editButton.size(width: 20, height: 20)
-      editButton.isHidden = true
-      self.editButton = editButton
+      func createActionButton(symbol: String, action: Selector) -> ButtonWithObject {
+        let button = ButtonWithObject(
+          title: "", image: .findSFSymbol([symbol])!, target: editor, action: action)
+        button.bezelStyle = .circular
+        button.size(width: 20, height: 20)
+        button.isHidden = true
+        return button
+      }
 
-      let removeButton = ButtonWithObject(
-        title: "", image: .findSFSymbol(["trash.fill"])!,
-        target: editor, action: #selector(editor.removeKeyMappingAction)
-      )
-      removeButton.bezelStyle = .circular
-      removeButton.size(width: 20, height: 20)
-      removeButton.isHidden = true
-      self.removeButton = removeButton
+      self.editButton = createActionButton(
+        symbol: "gearshape.fill", action: #selector(editor.editKeyMappingAction))
+      self.removeButton = createActionButton(
+        symbol: "trash.fill", action: #selector(editor.removeKeyMappingAction))
+      self.lockHelpButton = createActionButton(
+        symbol: "custom.lock.badge.questionmark", action: #selector(editor.showHelpForLockedSetAction))
 
       let keyBox = NSBox()
       keyBox.translatesAutoresizingMaskIntoConstraints = false
@@ -554,7 +563,7 @@ fileprivate class KeyMappingCell: NSTableCellView {
       self.keyLabel = keyLabel
       self.actionLabel = actionLabel
 
-      let stackView = NSStackView(views: [actionLabel, spacer, removeButton, editButton, keyBox])
+      let stackView = NSStackView(views: [actionLabel, spacer, lockHelpButton, removeButton, editButton, keyBox])
       stackView.translatesAutoresizingMaskIntoConstraints = false
       stackView.orientation = .horizontal
       stackView.alignment = .centerY
@@ -581,9 +590,13 @@ fileprivate class KeyMappingCell: NSTableCellView {
   }
 
   func selectionChanged(_ selected: Bool) {
-    guard editor.isCurrentConfigEditable() else { return }
-    editButton.isHidden = !selected
-    removeButton.isHidden = !selected
+    if editor.isCurrentConfigEditable() {
+      editButton.isHidden = !selected
+      removeButton.isHidden = !selected
+      lockHelpButton.isHidden = true
+    } else {
+      lockHelpButton.isHidden = !selected
+    }
   }
 }
 
