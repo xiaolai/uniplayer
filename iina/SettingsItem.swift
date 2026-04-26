@@ -1071,7 +1071,6 @@ class SettingsAccessory {
     private var valueTypes: [(Int, String)] = []
     @objc private var selectedValue: Int = 0 {
       didSet {
-        print(selectedValue)
         updateSelection()
       }
     }
@@ -1093,7 +1092,9 @@ class SettingsAccessory {
       stackView.orientation = .vertical
       stackView.spacing = 4
       stackView.setHuggingPriority(.defaultLow, for: .horizontal)
-      stackView.padding(.top(-4), .bottom(0), .horizontal)
+      // not sure from which version, need further tests
+      let topConstraint: CGFloat = if #available(macOS 26, *) { -4 } else { 0 }
+      stackView.padding(.top(topConstraint), .bottom(0), .horizontal)
     }
 
     @MainActor required init?(coder: NSCoder) {
@@ -1219,10 +1220,13 @@ class SettingsAccessory {
     init(_ key: Preference.Key) {
       textField = NSTextField(labelWithString: "")
       textField.bind(.value, to: UserDefaults.standard, withKeyPath: key.rawValue)
-      chooseButton = NSButton()
-      chooseButton.image = .init(systemSymbolName: "folder.fill", accessibilityDescription: nil)!
+      chooseButton = NSButton(
+        title: "",
+        image: .init(systemSymbolName: "folder.fill", accessibilityDescription: nil)!,
+        target: nil,
+        action: #selector(chooseFolder)
+      )
       chooseButton.target = self
-      chooseButton.action = #selector(chooseFolder)
     }
 
     @objc func chooseFolder(_ sender: AnyObject) {

@@ -22,9 +22,8 @@ class SettingsPageAdvanced: SettingsPage {
   private lazy var fileChooseView: SettingsAccessory.FileChooserView = .init(.userDefinedConfDir)
   private lazy var mpvOptionsEditor: MPVOptionsEditor = .init(l10n: localizationContext)
   private lazy var openLogFolderBtn: NSButton = {
-    let btn = NSButton()
+    let btn = NSButton(title: localizationContext.localized(.text_OpenLogDirectory), target: nil, action: nil)
     btn.translatesAutoresizingMaskIntoConstraints = false
-    btn.title = localizationContext.localized(.text_OpenLogDirectory)
     return btn
   }()
 
@@ -97,7 +96,9 @@ fileprivate class MPVOptionsEditor: SettingsAccessory.Base, NSTableViewDelegate,
     self.tableView = NSTableView()
     self.addBtn = NSButton()
     self.delBtn = NSButton()
-    
+    addBtn.bezelStyle = .push
+    delBtn.bezelStyle = .push
+
     super.init(l10n: l10n)
     
     let monoFont = NSFont.monospacedSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)

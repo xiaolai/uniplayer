@@ -40,6 +40,8 @@ class SettingsWindow: NSWindow {
   private var sectionNameStackView: NSStackView?
   private var sectionIndicatorTopConstraint: NSLayoutConstraint?
 
+  private var prevPageIndex: Int?
+
   init(_ pages: [SettingsPage]) {
     self.pages = pages
     contentScrollView = NSScrollView()
@@ -368,15 +370,14 @@ extension SettingsWindow: NSTableViewDataSource, NSTableViewDelegate {
   func tableViewSelectionDidChange(_ notification: Notification) {
     let tableView = notification.object as! NSTableView
 
-    if let prevIndex = (notification.userInfo?["NSTableViewPreviousRowSelectionUserInfoKey"] as? NSIndexSet),
-       prevIndex.count > 0 {
-      let prevRow = prevIndex.firstIndex
+    if let prevRow = prevPageIndex {
       loadPage(at: tableView.selectedRow > prevRow ? tableView.selectedRow - 1 : tableView.selectedRow)
       let options: NSTableView.AnimationOptions = Preference.bool(for: PK.disableAnimations) ?
         [] : [.effectFade, .slideDown]
       tableView.removeRows(at: IndexSet(integer: prevRow + 1), withAnimation: options)
       tableView.insertRows(at: IndexSet(integer: tableView.selectedRow + 1), withAnimation: options)
     }
+    prevPageIndex = tableView.selectedRow
   }
 }
 

@@ -36,9 +36,10 @@ class SettingsPageGeneral: SettingsPage {
     return section {
       SettingsListView(title: .text_Behavior) {
         SettingsItem.PopupButton()
-          .image(name: "restart.circle")
+          .image(name: "custom.menubar.rectangle.badge.sparkles")
           .bindTo(.actionAfterLaunch, ofType: Preference.ActionAfterLaunch.self)
         SettingsItem.General(title: .text_WhenMediaIsOpened)
+          .image(name: "custom.document.badge.play")
           .withExpandingDetailView {
             SettingsItem.Switch()
               .bindTo(.pauseWhenOpen)
@@ -46,6 +47,7 @@ class SettingsPageGeneral: SettingsPage {
               .bindTo(.fullScreenWhenOpen)
           }
         SettingsItem.General(title: .text_PauseresumeWhen)
+          .image(name: "custom.playpause.arrow.trianglehead.clockwise")
           .withExpandingDetailView {
             SettingsItem.Switch()
               .bindTo(.pauseWhenMinimized)
@@ -62,7 +64,7 @@ class SettingsPageGeneral: SettingsPage {
 
       SettingsListView {
         SettingsItem.Switch()
-          .image(name: "macwindow.badge.plus")
+          .image(name: "macwindow.on.rectangle")
           .bindTo(.alwaysOpenInNewWindow)
           .withDetailView {
             SettingsItem.Switch()
@@ -71,19 +73,22 @@ class SettingsPageGeneral: SettingsPage {
               .bindTo(.allowDuplicatePlayers)
           }
         SettingsItem.Switch()
+          .image(name: "custom.macwindow.badge.xmark")
           .bindTo(.quitWhenNoOpenedWindow)
         SettingsItem.Switch()
+          .image(name: "custom.macwindow.badge.pause")
           .bindTo(.keepOpenOnFileEnd)
       }
 
       SettingsListView {
         SettingsItem.Switch()
-          .image(name: "rectangle.expand.diagonal")
+          .image(name: ["arrow.up.left.and.arrow.down.right.rectangle", "rectangle.expand.diagonal"])
           .bindTo(.useLegacyFullScreen)
         SettingsItem.Switch()
           .image(name: "lock.display")
           .bindTo(.blackOutMonitor)
         SettingsItem.Switch()
+          .image(name: "custom.photo.tv.slash")
           .bindTo(.preventScreenSaver)
           .withDetailView {
             SettingsItem.Switch()
@@ -119,13 +124,13 @@ class SettingsPageGeneral: SettingsPage {
     return section {
       SettingsListView(title: .text_History) {
         SettingsItem.Switch()
-          .image(name: "timer")
+          .image(name: "custom.arrow.clockwise.badge.clock")
           .bindTo(.resumeLastPosition)
         SettingsItem.Switch()
-          .image(name: "list.clipboard")
+          .image(name: "custom.play.rectangle.badge.clock")
           .bindTo(.recordPlaybackHistory)
         SettingsItem.Switch()
-          .image(name: "menucard")
+          .image(name: "custom.filemenu.and.selection.badge.clock")
           .bindTo(.recordRecentFiles)
           .withDetailView {
             SettingsItem.Switch()
@@ -140,13 +145,13 @@ class SettingsPageGeneral: SettingsPage {
     return section {
       SettingsListView(title: .text_Playlist) {
         SettingsItem.Switch()
-          .image(name: "list.and.film")
+          .image(name: "custom.list.bullet.badge.plus")
           .bindTo(.playlistAutoAdd)
         SettingsItem.Switch()
-          .image(name: "play.circle")
+          .image(name: "custom.list.bullet.badge.play")
           .bindTo(.playlistAutoPlayNext)
         SettingsItem.Switch()
-          .image(name: "music.microphone")
+          .image(name: "custom.music.microphone.badge.person.crop")
           .bindTo(.playlistShowMetadata)
           .withDetailView {
             SettingsItem.Switch()
@@ -177,7 +182,7 @@ class SettingsPageGeneral: SettingsPage {
           .image(name: "captions.bubble")
           .bindTo(.screenshotIncludeSubtitle)
         SettingsItem.Switch()
-          .image(name: "photo.on.rectangle.angled")
+          .image(name: "custom.photo.badge.eye")
           .bindTo(.screenshotShowPreview)
       }
     }

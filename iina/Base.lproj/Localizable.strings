@@ -277,6 +277,8 @@
 "alert.add_filter.message" = "Please enter a filter string in format of mpv's vf or af command.";
 
 "alert.keybinding_config.error" = "Error parsing keybinding configuration file \"%@\"! Fallback to IINA Default keybinding setting. Please check your configuration.";
+"alert.delete_keybindingset.title" = "Delete Key Binding Set";
+"alert.delete_keybindingset.message" = "Are you sure to delete this key binding set?";
 
 "alert.extra_option.cannot_read" = "Cannot read user defined extra mpv options.";
 "alert.extra_option.empty" = "Key or value cannot be empty!";
