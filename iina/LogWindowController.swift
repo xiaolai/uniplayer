@@ -14,9 +14,10 @@ extension NSToolbarItem.Identifier {
   static let logLevelButton = NSToolbarItem.Identifier("iina.logWindow.toolbar.logLevelButton")
   static let subsystemButton = NSToolbarItem.Identifier("iina.logWindow.toolbar.subsystemButton")
   static let saveButton = NSToolbarItem.Identifier("iina.logWindow.toolbar.saveButton")
+  static let searchField = NSToolbarItem.Identifier("iina.logWindow.toolbar.searchField")
 }
 
-class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate {
+class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate, NSSearchFieldDelegate {
   override var windowNibName: NSNib.Name {
     return NSNib.Name("LogWindowController")
   }
@@ -28,6 +29,8 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
   let subsystemMenu = NSMenu()
   var filteredLogLevel = Logger.Level.preferred
   var filteredSubsystems: [String] = []
+  let searchField = NSSearchField()
+  var filterString = ""
 
   @objc dynamic var logs: [Logger.Log] = []
   @objc dynamic var predicate = NSPredicate(value: true)
@@ -70,11 +73,11 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
   // MARK: - NSToolbarDelegate
 
   func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-    return [.logLevelButton, .subsystemButton, .saveButton]
+    return [.logLevelButton, .subsystemButton, .saveButton, .searchField]
   }
 
   func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-    return [.logLevelButton, .subsystemButton, .saveButton]
+    return [.logLevelButton, .subsystemButton, .saveButton, .searchField]
   }
 
   func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier itemIdentifier: NSToolbarItem.Identifier, willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
@@ -85,6 +88,8 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
       return makeSubsystemButton()
     case .saveButton:
       return makeSaveButton()
+    case .searchField:
+      return makeSearchField()
     default:
       return nil
     }
@@ -135,6 +140,17 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
     return item
   }
 
+  private func makeSearchField() -> NSSearchToolbarItem {
+    let item = NSSearchToolbarItem(itemIdentifier: .searchField)
+    item.label = "Filter"
+    item.paletteLabel = "Filter"
+    item.toolTip = "Filter"
+    searchField.placeholderString = "Filter"
+    searchField.delegate = self
+    item.searchField = searchField
+    return item
+  }
+
   // MARK: - NSMenuDelegate
 
   func menuNeedsUpdate(_ menu: NSMenu) {
@@ -148,14 +164,18 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
   }
 
   private func updatePredicate() {
-    let subsystemPredicate = filteredSubsystems.isEmpty
-        ? NSPredicate(value: true)
-        : NSCompoundPredicate(orPredicateWithSubpredicates: filteredSubsystems.map {
-            NSPredicate(format: "subsystem == %@", $0)
-        })
-
-    let levelPredicate = NSPredicate(format: "level >= %d", filteredLogLevel.rawValue)
-    predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [subsystemPredicate, levelPredicate])
+    var predicates: [NSPredicate] = []
+    if !filteredSubsystems.isEmpty {
+      let subsystemPredicate = NSCompoundPredicate(orPredicateWithSubpredicates: filteredSubsystems.map {
+          NSPredicate(format: "subsystem == %@", $0)
+      })
+      predicates.append(subsystemPredicate)
+    }
+    predicates.append(NSPredicate(format: "level >= %d", filteredLogLevel.rawValue))
+    if !filterString.isEmpty {
+      predicates.append(NSPredicate(format: "message CONTAINS[c] %@", filterString))
+    }
+    predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
     updateSubtitle()
   }
 
@@ -188,6 +208,11 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
       sender.state = .on
       filteredSubsystems.append(sender.title)
     }
+    updatePredicate()
+  }
+
+  func controlTextDidChange(_ notification: Notification) {
+    filterString = searchField.stringValue
     updatePredicate()
   }
 
