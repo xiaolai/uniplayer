@@ -130,6 +130,8 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
     item.toolTip = "Save"
     item.image = NSImage(systemSymbolName: "square.and.arrow.down", accessibilityDescription: "Save")!
     item.action = #selector(save)
+    item.menu = NSMenu()
+    item.menu.addItem(withTitle: "Save filtered logs...", action: #selector(save), keyEquivalent: "")
     return item
   }
 
@@ -190,8 +192,11 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
   }
 
   @objc func save(_ sender: Any) {
-    Utility.quickSavePanel(title: "Log", filename: "iina.log", sheetWindow: window) { url in
-      let logs = (self.logArrayController.content as! [Logger.Log]).map { $0.logString }.joined()
+    let saveAll = sender is NSToolbarItem
+    let filename = saveAll ? "iina.log" : (window?.subtitle ?? "filtered") + " iina.log"
+    Utility.quickSavePanel(title: "Log", filename: filename, sheetWindow: window) { url in
+      let content: Any? = saveAll ? self.logArrayController.content : self.logArrayController.arrangedObjects
+      let logs = (content as! [Logger.Log]).map { $0.logString }.joined()
       try? logs.write(to: url, atomically: true, encoding: .utf8)
     }
   }
