@@ -22,4 +22,5 @@ extension SettingsLocalization.Key {
   static let text_BrowserExtensions = SettingsLocalization.Key("$BrowserExtensions")
   static let text_GetBrowserExtensionsForIINA = SettingsLocalization.Key("$GetBrowserExtensionsForIINA")
   static let text_DeleteAllWatchLater = SettingsLocalization.Key("$DeleteAllWatchLater")
+  static let text_Safari = SettingsLocalization.Key("$Safari")
 }

@@ -50,3 +50,5 @@
 "$GetBrowserExtensionsForIINA" = "Get Browser Extensions for IINA";
 /* key="pPC-q2-9Gh" */
 "$DeleteAllWatchLater" = "The button below will delete all files in the \"watch later\" folder. These files contain all saved playback progress and settings applied during playback.";
+
+"$Safari" = "Safari";
