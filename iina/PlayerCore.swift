@@ -134,7 +134,7 @@ class PlayerCore: NSObject {
 
   // MARK: - Fields
 
-  lazy var subsystem = Logger.makeSubsystem("player\(label!)")
+  lazy var subsystem = Logger.makeSubsystem("player\(label!)", ["play.circle"])
 
   func log(_ message: @autoclosure () -> String, level: Logger.Level = .debug) {
     Logger.log(message, level: level, subsystem: subsystem)

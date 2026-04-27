@@ -29,7 +29,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
 
   init(playerCore: PlayerCore) {
     self.player = playerCore
-    subsystem = Logger.makeSubsystem("window\(player.playerNumber)")
+    subsystem = Logger.makeSubsystem("window\(player.playerNumber)", ["macwindow"])
     super.init(window: nil)
   }
 

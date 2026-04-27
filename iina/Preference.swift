@@ -1525,6 +1525,8 @@ struct Preference {
     }
   }
 
+  private static let subsystem = Logger.makeSubsystem("settings", ["pencil.and.list.clipboard"])
+
   /// Log a message using the `settings` logger subsystem.
   ///
   /// This is a wrapper function that merely avoids the need to include the `settings` subsystem in calls to the logger.
@@ -1533,10 +1535,6 @@ struct Preference {
   ///   - message: A closure that when executed gives the message to log.
   ///   - level: The log level of the message.
   private static func log(_ message: @autoclosure () -> String, level: Logger.Level = .debug) {
-    Logger.log(message, level: level, subsystem: Logger.Sub.settings)
+    Logger.log(message, level: level, subsystem: subsystem)
   }
-}
-
-extension Logger.Sub {
-  static let settings = Logger.makeSubsystem("settings")
 }

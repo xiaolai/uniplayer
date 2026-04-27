@@ -8,7 +8,7 @@
 
 import Cocoa
 
-fileprivate let subsystem = Logger.makeSubsystem("thumbcache")
+fileprivate let subsystem = Logger.makeSubsystem("thumbcache", ["photo.stack"])
 
 class ThumbnailCache {
   private typealias CacheVersion = UInt8

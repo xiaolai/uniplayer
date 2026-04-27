@@ -517,5 +517,5 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
 }
 
 extension Logger.Sub {
-  static let inspector = Logger.makeSubsystem("inspector")
+  static let inspector = Logger.makeSubsystem("inspector", ["tablecells"])
 }

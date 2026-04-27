@@ -746,5 +746,5 @@ extension MPNowPlayingPlaybackState: @retroactive CustomStringConvertible {
 }
 
 extension Logger.Sub {
-  static let nowPlaying = Logger.makeSubsystem("now-playing")
+  static let nowPlaying = Logger.makeSubsystem("now-playing", ["play.laptopcomputer"])
 }

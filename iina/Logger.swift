@@ -45,31 +45,37 @@ class Logger: NSObject {
 
   class Subsystem: RawRepresentable {
     let rawValue: String
+    let image: NSImage?
     var added = false
 
-    static let general = Subsystem(rawValue: "iina")
+    static let general = Subsystem(rawValue: "iina", symbolName: ["star.fill"])
 
-    required init(rawValue: String) {
+    required convenience init(rawValue: String) {
+      self.init(rawValue: rawValue, symbolName: [])
+    }
+
+    init(rawValue: String, symbolName: [String] = []) {
       self.rawValue = rawValue
+      self.image = .findSFSymbol(symbolName)
     }
   }
 
   @Atomic static var subsystems: [Subsystem] = [.general]
 
-  static func makeSubsystem(_ rawValue: String) -> Subsystem {
+  static func makeSubsystem(_ rawValue: String, _ symbolName: [String] = []) -> Subsystem {
     $subsystems.withLock() { subsystems in
       for (index, subsystem) in subsystems.enumerated() {
         // The first subsystem will always be "iina"
         if index == 0 { continue }
         if rawValue < subsystem.rawValue {
-          let newSubsystem = Subsystem(rawValue: rawValue)
+          let newSubsystem = Subsystem(rawValue: rawValue, symbolName: symbolName)
           subsystems.insert(newSubsystem, at: index)
           return newSubsystem
         } else if rawValue == subsystem.rawValue {
           return subsystem
         }
       }
-      let newSubsystem = Subsystem(rawValue: rawValue)
+      let newSubsystem = Subsystem(rawValue: rawValue, symbolName: symbolName)
       subsystems.append(newSubsystem)
       return newSubsystem
     }
@@ -109,6 +115,15 @@ class Logger: NSObject {
       case .debug: return "d"
       case .warning: return "w"
       case .error: return "e"
+      }
+    }
+
+    var color: NSColor {
+      switch self {
+      case .verbose: return .systemGray
+      case .debug: return .systemGreen
+      case .warning: return .systemYellow
+      case .error: return .systemRed
       }
     }
   }

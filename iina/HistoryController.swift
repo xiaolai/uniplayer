@@ -110,5 +110,5 @@ class HistoryController: NSObject {
 }
 
 extension Logger.Sub {
-  static let history = Logger.makeSubsystem("history")
+  static let history = Logger.makeSubsystem("history", ["clock"])
 }

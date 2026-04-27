@@ -179,7 +179,7 @@ class MPVController: NSObject {
   ///   - playerCore: The player this `MPVController` will be associated with.
   init(playerCore: PlayerCore) {
     self.player = playerCore
-    subsystem = Logger.makeSubsystem("mpv\(player.playerNumber)")
+    subsystem = Logger.makeSubsystem("mpv\(player.playerNumber)", ["building.columns"])
     super.init()
   }
 

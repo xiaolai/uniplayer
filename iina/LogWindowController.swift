@@ -8,8 +8,6 @@
 
 import Foundation
 
-fileprivate let colorMap: [Int: NSColor] = [0: .lightGray, 1: .systemGreen, 2: .systemYellow, 3: .systemRed]
-
 extension NSToolbarItem.Identifier {
   static let logLevelButton = NSToolbarItem.Identifier("iina.logWindow.toolbar.logLevelButton")
   static let subsystemButton = NSToolbarItem.Identifier("iina.logWindow.toolbar.subsystemButton")
@@ -55,7 +53,7 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
     for level in Logger.Level.allCases {
       let item = NSMenuItem(title: level.description, action: #selector(logLevelChanged), keyEquivalent: "")
       item.tag = level.rawValue
-      item.image = LogWindowController.indicatorIcon(withColor: colorMap[level.rawValue]!)
+      item.image = LogWindowController.indicatorIcon(withColor: level.color)
       logLevelMenu.addItem(item)
     }
 
@@ -95,12 +93,16 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
     }
   }
 
+  private func toolbarItem(withID id: NSToolbarItem.Identifier) -> NSToolbarItem? {
+    return window?.toolbar?.items.first(where: { $0.itemIdentifier == id })
+  }
+
   // MARK: - Item Factory
 
   private func updateLogLevelButtonImage(toolBarItem: NSToolbarItem? = nil) {
-    let item = toolBarItem ?? window?.toolbar?.items.first(where: { $0.itemIdentifier == .logLevelButton })
+    let item = toolBarItem ?? toolbarItem(withID: .logLevelButton)
     if let item {
-      item.image = LogWindowController.indicatorIcon(withColor: colorMap[filteredLogLevel.rawValue]!).withSymbolConfiguration(.init(scale: .medium))
+      item.image = LogWindowController.indicatorIcon(withColor: filteredLogLevel.color).withSymbolConfiguration(.init(scale: .medium))
     }
   }
 
@@ -158,7 +160,9 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
       for (index, subsystem) in subsystems.enumerated() {
         guard !subsystem.added else { continue }
         subsystem.added = true
-        menu.insertItem(withTitle: subsystem.rawValue, action: #selector(subsystemChanged), keyEquivalent: "", at: index + 1)
+        let item = NSMenuItem.init(title: subsystem.rawValue, action: #selector(subsystemChanged), keyEquivalent: "")
+        item.image = subsystem.image
+        menu.insertItem(item, at: index + 1)
       }
     }
   }
@@ -243,7 +247,7 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
   // MARK: - Logs
 
   @objc func syncLogs() {
-    guard isWindowLoaded else { return }
+    guard window?.isVisible == true else { return }
     Logger.$logs.withLock() { logs in
       guard !logs.isEmpty else { return }
       var scroll = false
@@ -275,8 +279,8 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
   }
 
   override func transformedValue(_ value: Any?) -> Any? {
-    guard let value = value as? Int else { return nil }
-    return LogWindowController.indicatorIcon(withColor: colorMap[value]!)
+    guard let intValue = value as? Int, let level = Logger.Level(rawValue: intValue) else { return nil }
+    return LogWindowController.indicatorIcon(withColor: level.color)
   }
 }
 

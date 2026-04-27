@@ -139,5 +139,5 @@ class MemoryUsage {
 // MARK: - Extensions
 
 extension Logger.Sub {
-  static let memory = Logger.makeSubsystem("memory")
+  static let memory = Logger.makeSubsystem("memory", ["memorychip"])
 }
