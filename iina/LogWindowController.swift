@@ -8,26 +8,37 @@
 
 import Foundation
 
-fileprivate let colorMap: [Int: NSColor] = [0: .lightGray, 1: .green, 2: .yellow, 3: .red]
-fileprivate var circleDict: [NSColor: NSImage] = [:]
-fileprivate let kIconSize = 17.0
-fileprivate let kBorderWidth = 1.25
+fileprivate let colorMap: [Int: NSColor] = [0: .lightGray, 1: .systemGreen, 2: .systemYellow, 3: .systemRed]
 
-class LogWindowController: NSWindowController, NSMenuDelegate {
+extension NSToolbarItem.Identifier {
+  static let logLevelButton = NSToolbarItem.Identifier("iina.logWindow.toolbar.logLevelButton")
+  static let subsystemButton = NSToolbarItem.Identifier("iina.logWindow.toolbar.subsystemButton")
+  static let saveButton = NSToolbarItem.Identifier("iina.logWindow.toolbar.saveButton")
+}
+
+class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate {
   override var windowNibName: NSNib.Name {
     return NSNib.Name("LogWindowController")
   }
 
   @IBOutlet weak var logTableView: NSTableView!
   @IBOutlet var logArrayController: NSArrayController!
-  @IBOutlet weak var subsystemPopUpButton: NSPopUpButton!
-  @IBOutlet weak var levelPopUpButton: NSPopUpButton!
+
+  let logLevelMenu = NSMenu()
+  let subsystemMenu = NSMenu()
+  var filteredLogLevel = Logger.Level.preferred
+  var filteredSubsystems: [String] = []
 
   @objc dynamic var logs: [Logger.Log] = []
   @objc dynamic var predicate = NSPredicate(value: true)
 
   override func windowDidLoad() {
     super.windowDidLoad()
+    let toolbar = NSToolbar(identifier: "iina.logWindow.toolbar")
+    toolbar.delegate = self
+    toolbar.autosavesConfiguration = true
+    toolbar.displayMode = .iconOnly
+    window?.toolbar = toolbar
 
     logTableView.userInterfaceLayoutDirection = .leftToRight
     logTableView.sizeLastColumnToFit()
@@ -35,67 +46,150 @@ class LogWindowController: NSWindowController, NSMenuDelegate {
     tableViewMenu.addItem(withTitle: "Copy", action: #selector(menuCopy), keyEquivalent: "")
     logTableView.menu = tableViewMenu
 
-    levelPopUpButton.menu?.items.forEach {
-      $0.image = LogWindowController.indicatorIcon(withColor: colorMap[$0.tag]!)
+    logLevelMenu.addItem(withTitle: "Dummy", action: nil, keyEquivalent: "")
+    subsystemMenu.addItem(withTitle: "Dummy", action: nil, keyEquivalent: "")
+
+    for level in Logger.Level.allCases {
+      let item = NSMenuItem(title: level.description, action: #selector(logLevelChanged), keyEquivalent: "")
+      item.tag = level.rawValue
+      item.image = LogWindowController.indicatorIcon(withColor: colorMap[level.rawValue]!)
+      logLevelMenu.addItem(item)
     }
-    levelPopUpButton.selectItem(withTag: Logger.Level.preferred.rawValue)
-    subsystemPopUpButton.menu!.delegate = self
+
+    subsystemMenu.delegate = self
 
     syncLogs()
+    updateSubtitle()
   }
 
   fileprivate static func indicatorIcon(withColor color: NSColor) -> NSImage {
-    if let cached = circleDict[color] {
-      return cached
+    return NSImage(systemSymbolName: "circle.fill", accessibilityDescription: nil)!.withSymbolConfiguration(.init(scale: .small))!.tinted(color)
+  }
+
+
+  // MARK: - NSToolbarDelegate
+
+  func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+    return [.logLevelButton, .subsystemButton, .saveButton]
+  }
+
+  func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+    return [.logLevelButton, .subsystemButton, .saveButton]
+  }
+
+  func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier itemIdentifier: NSToolbarItem.Identifier, willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
+    switch itemIdentifier {
+    case .logLevelButton:
+      return makeLogLevelButton()
+    case .subsystemButton:
+      return makeSubsystemButton()
+    case .saveButton:
+      return makeSaveButton()
+    default:
+      return nil
     }
-    let image = NSImage(size: NSMakeSize(kIconSize, kIconSize), flipped: false) { rect in
-      let inset = NSInsetRect(rect, kBorderWidth / 2 + rect.size.width * 0.25, kBorderWidth / 2 + rect.size.height * 0.25)
-      let path = NSBezierPath.init(ovalIn: inset)
-      path.lineWidth = kBorderWidth
+  }
 
-      let fractionOfBlendedColor = (NSApp.appearance?.isDark ?? false) ? 0.15 : 0.3
-      let borderColor = color.blended(withFraction: fractionOfBlendedColor, of: .controlTextColor)
+  // MARK: - Item Factory
 
-      borderColor?.setStroke()
-      path.stroke()
-
-      color.setFill()
-      path.fill()
-
-      return true
+  private func updateLogLevelButtonImage(toolBarItem: NSToolbarItem? = nil) {
+    let item = toolBarItem ?? window?.toolbar?.items.first(where: { $0.itemIdentifier == .logLevelButton })
+    if let item {
+      item.image = LogWindowController.indicatorIcon(withColor: colorMap[filteredLogLevel.rawValue]!).withSymbolConfiguration(.init(scale: .medium))
     }
-    circleDict[color] = image
-    return image
+  }
+
+  private func makeLogLevelButton() -> NSMenuToolbarItem {
+    let item = NSMenuToolbarItem(itemIdentifier: .logLevelButton)
+    item.label = "Log Level"
+    item.paletteLabel = "Log Level"
+    item.toolTip = "Log Level"
+    item.showsIndicator = true
+    item.title = "Log Level"
+    item.menu = logLevelMenu
+    updateLogLevelButtonImage(toolBarItem: item)
+    return item
+  }
+
+  private func makeSubsystemButton() -> NSMenuToolbarItem {
+    let item = NSMenuToolbarItem(itemIdentifier: .subsystemButton)
+    item.label = "Subsystem"
+    item.paletteLabel = "Subsystem"
+    item.toolTip = "Subsystem"
+    item.image = NSImage(systemSymbolName: "square.stack.3d.up", accessibilityDescription: "Subsystem")!
+    item.showsIndicator = true
+    item.title = "Subsystem"
+    item.menu = subsystemMenu
+    return item
+  }
+
+  private func makeSaveButton() -> NSToolbarItem {
+    let item = NSMenuToolbarItem(itemIdentifier: .saveButton)
+    item.label = "Save"
+    item.paletteLabel = "Save"
+    item.toolTip = "Save"
+    item.image = NSImage(systemSymbolName: "square.and.arrow.down", accessibilityDescription: "Save")!
+    item.action = #selector(save)
+    return item
   }
 
   // MARK: - NSMenuDelegate
 
   func menuNeedsUpdate(_ menu: NSMenu) {
-    // The first menu item is "All"
-    let offset = 1
     Logger.$subsystems.withLock() { subsystems in
       for (index, subsystem) in subsystems.enumerated() {
         guard !subsystem.added else { continue }
         subsystem.added = true
-        menu.insertItem(withTitle: subsystem.rawValue, action: nil, keyEquivalent: "", at: index + offset)
+        menu.insertItem(withTitle: subsystem.rawValue, action: #selector(subsystemChanged), keyEquivalent: "", at: index + 1)
       }
     }
   }
 
   private func updatePredicate() {
-    var subsystemPredicate = NSPredicate(value: true)
-    if subsystemPopUpButton.indexOfSelectedItem != 0 {
-      subsystemPredicate = NSPredicate(format: "subsystem = %@", subsystemPopUpButton.titleOfSelectedItem!)
-    }
-    let levelPredicate = NSPredicate(format: "level >= %d", levelPopUpButton.selectedTag())
+    let subsystemPredicate = filteredSubsystems.isEmpty
+        ? NSPredicate(value: true)
+        : NSCompoundPredicate(orPredicateWithSubpredicates: filteredSubsystems.map {
+            NSPredicate(format: "subsystem == %@", $0)
+        })
+
+    let levelPredicate = NSPredicate(format: "level >= %d", filteredLogLevel.rawValue)
     predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [subsystemPredicate, levelPredicate])
+    updateSubtitle()
   }
 
-  @IBAction func subsystemUpdated(_ sender: Any) {
+  func updateSubtitle() {
+    if let window {
+      var subtitleString = ""
+      if filteredSubsystems.isEmpty {
+        subtitleString = "All subsystems"
+      } else {
+        subtitleString = String(describing: filteredSubsystems)
+      }
+      subtitleString += " - "
+      subtitleString += filteredLogLevel.description
+      window.subtitle = subtitleString
+    }
+  }
+
+  @objc func logLevelChanged(_ sender: NSMenuItem) {
+    guard let newLevel = Logger.Level(rawValue: sender.tag) else { return }
+    filteredLogLevel = newLevel
+    updateLogLevelButtonImage()
     updatePredicate()
   }
 
-  @IBAction func save(_ sender: Any) {
+  @objc func subsystemChanged(_ sender: NSMenuItem) {
+    if let index = filteredSubsystems.firstIndex(of: sender.title) {
+      sender.state = .off
+      filteredSubsystems.remove(at: index)
+    } else {
+      sender.state = .on
+      filteredSubsystems.append(sender.title)
+    }
+    updatePredicate()
+  }
+
+  @objc func save(_ sender: Any) {
     Utility.quickSavePanel(title: "Log", filename: "iina.log", sheetWindow: window) { url in
       let logs = (self.logArrayController.content as! [Logger.Log]).map { $0.logString }.joined()
       try? logs.write(to: url, atomically: true, encoding: .utf8)
