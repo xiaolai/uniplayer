@@ -48,15 +48,15 @@ class SettingsPageUtilities: SettingsPage {
       SettingsListView(title: .text_ClearCache) {
         SettingsItem.General(title: .text_ClearSavedPlaybackProgress)
           .image(name: "clock")
-          .extraViews(actionButton(action: #selector(clearWatchLaterBtnAction)))
+          .extraViews(actionButton(action: #selector(clearWatchLaterBtnAction), symbolName: ["trash"]))
           .hasDescription(content: .text_DeleteAllWatchLater)
         SettingsItem.General(title: .text_ClearPlaybackHistory)
           .image(name: ["document.badge.clock", "doc.badge.clock", "doc"])
-          .extraViews(actionButton(action: #selector(clearHistoryBtnAction)))
+          .extraViews(thumbCacheSizeLabel, actionButton(action: #selector(clearCacheBtnAction), symbolName: ["trash"]))
           .hasDescription(content: .text_DeleteAllPlaybackHistories)
         SettingsItem.General(title: .text_ClearThumbnailCache)
           .image(name: "photo")
-          .extraViews(thumbCacheSizeLabel, actionButton(action: #selector(clearCacheBtnAction)))
+          .extraViews(thumbCacheSizeLabel, actionButton(action: #selector(clearCacheBtnAction), symbolName: ["trash"]))
       }
       SettingsListView(title: .text_BrowserExtensions) {
         SettingsItem.General(title: .text_GetBrowserExtensionsForIINA)
@@ -67,8 +67,8 @@ class SettingsPageUtilities: SettingsPage {
     }
   }
   
-  private func actionButton(action: Selector) -> NSButton {
-    return NSButton(title: "", image: .findSFSymbol(["arrow.right"])!, target: self, action: action)
+  private func actionButton(action: Selector, symbolName: [String] = []) -> NSButton {
+    return NSButton(title: "", image: .findSFSymbol(symbolName + ["arrow.right"])!, target: self, action: action)
   }
   
   private func updateThumbnailCacheStat() {
@@ -260,25 +260,22 @@ fileprivate class SetAsDefaultSheetWindow: NSWindow {
 }
 
 fileprivate class BrowserExtensionView: SettingsAccessory.Base {
+  func linkButton(_ key: SettingsLocalization.Key, _ selector: Selector, _ symbolName: [String] = []) -> NSButton {
+    let button = makeButton(key)
+    button.image = .findSFSymbol(symbolName + ["square.and.arrow.down"])
+    button.imagePosition = .imageTrailing
+    button.target = self
+    button.action = selector
+    return button
+  }
+
   override init(l10n: SettingsLocalization.Context) {
     super.init(l10n: l10n)
     
-    let chromeBtn = makeButton(.text_Chrome)
-    chromeBtn.image = .findSFSymbol(["arrow.right"])
-    chromeBtn.imagePosition = .imageTrailing
-    chromeBtn.target = self
-    chromeBtn.action = #selector(extChromeBtnAction)
-    let ffBtn = makeButton(.text_Firefox)
-    ffBtn.image = .findSFSymbol(["arrow.right"])
-    ffBtn.imagePosition = .imageTrailing
-    ffBtn.target = self
-    ffBtn.action = #selector(extFirefoxBtnAction)
-    let safariBtn = makeButton(.text_Safari)
-    safariBtn.image = .findSFSymbol(["arrow.right"])
-    safariBtn.imagePosition = .imageTrailing
-    safariBtn.target = self
-    safariBtn.action = #selector(extSafariBtnAction)
-    let stackView = makeStackView([chromeBtn, ffBtn, safariBtn])
+    let chromeBtn = linkButton(.text_Chrome, #selector(extChromeBtnAction))
+    let firefoxBtn = linkButton(.text_Firefox, #selector(extFirefoxBtnAction))
+    let safariBtn = linkButton(.text_Safari, #selector(extSafariBtnAction), ["safari"])
+    let stackView = makeStackView([safariBtn, chromeBtn, firefoxBtn])
     view.addSubview(stackView)
     stackView.padding(.top(0), .bottom(16), .leading(SettingsSubListView.padding), .trailing(8))
   }
