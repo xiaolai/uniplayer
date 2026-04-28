@@ -19,16 +19,17 @@ import Foundation
 /// - Important: The `createDirIfNotExist` method in `Utilities` **must not** be used by the logger. If an error occurs
 ///     that method will attempt to report it using the logger. If the logger is still being initialized this will result in a crash. For that reason
 ///     the logger uses its own similar method.
+@objc
 class Logger: NSObject {
 
   class Log: NSObject {
     @objc dynamic let subsystem: String
-    @objc dynamic let level: Int
+    @objc dynamic let level: Level
     @objc dynamic let message: String
     @objc dynamic let date: String
     let logString: String
 
-    init(subsystem: String, level: Int, message: String, date: String, logString: String) {
+    init(subsystem: String, level: Level, message: String, date: String, logString: String) {
       self.subsystem = subsystem
       self.level = level
       self.message = message
@@ -41,7 +42,7 @@ class Logger: NSObject {
     }
   }
 
-  @Atomic static var logs: [Logger.Log] = []
+  @objc dynamic static private(set) var logs: [Logger.Log] = []
 
   class Subsystem: RawRepresentable {
     let rawValue: String
@@ -81,6 +82,7 @@ class Logger: NSObject {
     }
   }
 
+  @objc
   enum Level: Int, Comparable, CustomStringConvertible, CaseIterable, InitializingFromKey {
 
     static var defaultValue = Level.debug
@@ -277,16 +279,11 @@ class Logger: NSObject {
 
     let date = Date()
     let string = formatMessage(message, level, subsystem, true, date)
-    let log = Log(subsystem: subsystem.rawValue, level: level.rawValue, message: message, date: dateFormatter.string(from: date), logString: string)
-    $logs.withLock() { logs in
-      if logs.isEmpty {
-        DispatchQueue.main.async {
-          Timer.scheduledTimer(withTimeInterval: 0.1, repeats: false) { timer in
-            AppDelegate.shared.logWindow.syncLogs()
-          }
-        }
-      }
-      logs.append(log)
+    let log = Log(subsystem: subsystem.rawValue, level: level, message: message, date: dateFormatter.string(from: date), logString: string)
+    willChangeValue(forKey: "logs")
+    logs.append(log)
+    DispatchQueue.main.async {
+      didChangeValue(forKey: "logs")
     }
 
     print(string, terminator: "")
