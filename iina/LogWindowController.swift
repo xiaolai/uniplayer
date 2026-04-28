@@ -9,6 +9,7 @@
 import Foundation
 
 extension NSToolbarItem.Identifier {
+  static let followButton = NSToolbarItem.Identifier("iina.logWindow.toolbar.followButton")
   static let logLevelButton = NSToolbarItem.Identifier("iina.logWindow.toolbar.logLevelButton")
   static let subsystemButton = NSToolbarItem.Identifier("iina.logWindow.toolbar.subsystemButton")
   static let saveButton = NSToolbarItem.Identifier("iina.logWindow.toolbar.saveButton")
@@ -24,14 +25,27 @@ final class LogCellView: NSTableCellView {
 
 class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate, NSSearchFieldDelegate {
   let tableView = NSTableView()
+  let scrollView = NSScrollView()
   let arrayController = NSArrayController()
 
   let logLevelMenu = NSMenu()
   let subsystemMenu = NSMenu()
+
+  var following: Bool = false {
+    didSet {
+      guard let button = toolbarItem(withID: .followButton) else { return }
+      let symbolName = following ? "arrow.up.left.circle.fill" : "arrow.up.left.circle"
+      button.image = .findSFSymbol([symbolName])
+    }
+  }
   var filteredLogLevel = Logger.Level.preferred
   var filteredSubsystems: [String] = []
   let searchField = NSSearchField()
   var filterString = ""
+
+  private var scrollEndObserver: NSObjectProtocol?
+  private var liveScrollObserver: NSObjectProtocol?
+  private var boundsChangeObserver: NSObjectProtocol?
 
   @objc dynamic var predicate = NSPredicate(value: true)
 
@@ -51,6 +65,8 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
     setupTableView()
     setupArrayController()
     setupToolbar()
+
+    arrayController.addObserver(self, forKeyPath: "arrangedObjects.@count", options: [.new, .prior], context: nil)
 
     tableView.userInterfaceLayoutDirection = .leftToRight
     tableView.sizeLastColumnToFit()
@@ -108,15 +124,16 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
     tableView.addTableColumn(messageColumn)
 
     // Scroll view wrapper (NSTableView must live inside one)
-    let scrollView = NSScrollView()
     scrollView.documentView = tableView
     scrollView.hasVerticalScroller = true
     scrollView.hasHorizontalScroller = false
     scrollView.autohidesScrollers = true
     scrollView.translatesAutoresizingMaskIntoConstraints = false
 
-
     contentView.addSubview(scrollView)
+
+    NotificationCenter.default.addObserver(self, selector: #selector(checkIfAtBottom),
+                                           name: NSScrollView.didLiveScrollNotification, object: scrollView)
 
     // Pin to all four edges of contentView
     NSLayoutConstraint.activate([
@@ -152,15 +169,17 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
   // MARK: - NSToolbarDelegate
 
   func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-    return [.logLevelButton, .subsystemButton, .saveButton, .searchField]
+    return [.followButton, .logLevelButton, .subsystemButton, .saveButton, .searchField]
   }
 
   func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-    return [.logLevelButton, .subsystemButton, .saveButton, .searchField]
+    return [.followButton, .logLevelButton, .subsystemButton, .saveButton, .searchField]
   }
 
   func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier itemIdentifier: NSToolbarItem.Identifier, willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
     switch itemIdentifier {
+    case .followButton:
+      return makeFollowButton()
     case .logLevelButton:
       return makeLogLevelButton()
     case .subsystemButton:
@@ -179,6 +198,16 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
   }
 
   // MARK: - Item Factory
+
+  private func makeFollowButton() -> NSToolbarItem {
+    let item = NSToolbarItem(itemIdentifier: .followButton)
+    item.label = "Follow"
+    item.paletteLabel = "Follow latest logs"
+    item.toolTip = "Follow latest logs"
+    item.image = .findSFSymbol(["arrow.up.left.circle"])
+    item.action = #selector(followAction)
+    return item
+  }
 
   private func updateLogLevelButtonImage(toolBarItem: NSToolbarItem? = nil) {
     let item = toolBarItem ?? toolbarItem(withID: .logLevelButton)
@@ -276,6 +305,49 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
       subtitleString += filteredLogLevel.description
       window.subtitle = subtitleString
     }
+  }
+
+
+  private func scrollToBottom() {
+    /// macOS couldn't calculate the frame size correctly when the row height is variable and
+    /// is not rendered. After the first scroll, all rows should be rendered, which makes the
+    /// second frame size correct. Scroll the second time to correctly scroll to the last row.
+    tableView.scroll(NSPoint(x: 0, y: tableView.frame.size.height))
+    tableView.scroll(NSPoint(x: 0, y: tableView.frame.size.height))
+  }
+
+  @objc
+  private func checkIfAtBottom() {
+    let visibleRect = tableView.visibleRect
+    let totalHeight = tableView.bounds.height
+
+    guard totalHeight > visibleRect.height else {
+      following = true
+      return
+    }
+
+    let tolerance: CGFloat = 2.0
+    following = visibleRect.maxY >= totalHeight - tolerance
+  }
+
+  override func observeValue(
+      forKeyPath keyPath: String?,
+      of object: Any?,
+      change: [NSKeyValueChangeKey: Any]?,
+      context: UnsafeMutableRawPointer?
+  ) {
+    guard keyPath == "arrangedObjects.@count" else { return }
+
+    if change?[.notificationIsPriorKey] as? Bool == true {
+      checkIfAtBottom()
+    } else if following {
+      scrollToBottom()
+    }
+  }
+
+  @objc func followAction(_ sender: NSToolbarItem) {
+    following = true
+    scrollToBottom()
   }
 
   @objc func logLevelChanged(_ sender: NSMenuItem) {
