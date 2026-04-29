@@ -35,4 +35,4 @@
 
 "$Logging" = "Logging";
 "$MPVSettings" = "mpv Settings";
-"$OpenLogWindow" = "Open Log Window";
+"$OpenLogWindow" = "Open the log viewer";

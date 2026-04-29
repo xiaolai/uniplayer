@@ -42,8 +42,6 @@ class Logger: NSObject {
     }
   }
 
-  @objc dynamic static private(set) var logs: [Logger.Log] = []
-
   class Subsystem: RawRepresentable {
     let rawValue: String
     let image: NSImage?
@@ -280,13 +278,7 @@ class Logger: NSObject {
     let date = Date()
     let string = formatMessage(message, level, subsystem, true, date)
     let log = Log(subsystem: subsystem.rawValue, level: level, message: message, date: dateFormatter.string(from: date), logString: string)
-    willChangeValue(forKey: "logs")
-    logs.append(log)
-    DispatchQueue.main.async {
-      if AppDelegate.shared.logWindow.window?.isVisible ?? false {
-        didChangeValue(forKey: "logs")
-      }
-    }
+    AppDelegate.shared.logWindow.append(log)
 
     print(string, terminator: "")
 

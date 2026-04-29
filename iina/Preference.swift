@@ -1525,7 +1525,7 @@ struct Preference {
     }
   }
 
-  private static let subsystem = Logger.makeSubsystem("settings", ["pencil.and.list.clipboard"])
+  private static let subsystem = Logger.makeSubsystem("settings", ["gearshape"])
 
   /// Log a message using the `settings` logger subsystem.
   ///

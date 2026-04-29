@@ -41,7 +41,13 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
   private var rowHeightCache: [Int: CGFloat] = [:]
   private var cachedColumnWidth: CGFloat = 0
   private let scrollView = NSScrollView()
+
+  @Atomic private var buffer: [Logger.Log] = []
   private let arrayController = NSArrayController()
+  private var isWindowVisible: Bool {
+    window?.occlusionState.contains(.visible) ?? false
+  }
+  private var flushTimer: Timer? = nil
 
   private let logLevelMenu = NSMenu()
   private let subsystemMenu = NSMenu()
@@ -71,12 +77,12 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
       if let window {
         var subtitleString = ""
         if filteredSubsystems.isEmpty {
-          subtitleString = "All subsystems"
+          subtitleString = NSLocalizedString("logwindow.all_subsystems", comment: "All subsystems")
         } else {
           subtitleString = String(describing: filteredSubsystems)
         }
         subtitleString += " - "
-        subtitleString += filteredLogLevel.description
+        subtitleString += String(describing: filteredLogLevel)
         window.subtitle = subtitleString
       }
     }
@@ -91,26 +97,31 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
         backing: .buffered,
         defer: false
     )
-    window.title = "Log Viewer"
+    window.minSize = NSMakeSize(800, 500)
+    window.title = NSLocalizedString("logwindow.title", comment: "Log Viewer")
     self.init(window: window)
     self.windowFrameAutosaveName = "LogWindow"
   }
 
   override func showWindow(_ sender: Any?) {
+    guard let window else { return }
     if !hasSetup {
       setupTableView()
 
-      arrayController.bind(.contentArray, to: Logger.self, withKeyPath: "logs", options: nil)
+      arrayController.selectsInsertedObjects = false
+      arrayController.avoidsEmptySelection = false
       arrayController.bind(.filterPredicate, to: self, withKeyPath: "predicate", options: nil)
-      arrayController.addObserver(self, forKeyPath: "arrangedObjects.@count", options: [.new, .prior], context: nil)
       tableView.bind(.content, to: arrayController, withKeyPath: "arrangedObjects", options: nil)
       tableView.bind(.selectionIndexes, to: arrayController, withKeyPath: "selectionIndexes", options: nil)
+
+      NotificationCenter.default.addObserver(self, selector: #selector(occlusionChanged(_:)),
+                                             name: NSWindow.didChangeOcclusionStateNotification, object: window)
 
       let toolbar = NSToolbar(identifier: "iina.logWindow.toolbar")
       toolbar.delegate = self
       toolbar.autosavesConfiguration = true
       toolbar.displayMode = .iconOnly
-      window?.toolbar = toolbar
+      window.toolbar = toolbar
 
       logLevelMenu.addItem(withTitle: "Dummy", action: nil, keyEquivalent: "")
       subsystemMenu.addItem(withTitle: "Dummy", action: nil, keyEquivalent: "")
@@ -144,23 +155,26 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
     tableView.columnAutoresizingStyle = .lastColumnOnlyAutoresizingStyle
 
     let tableViewMenu = NSMenu()
-    tableViewMenu.addItem(withTitle: "Copy", action: #selector(menuCopy), keyEquivalent: "")
+    tableViewMenu.addItem(withTitle: NSLocalizedString("logwindow.copy", comment: "Copy"), action: #selector(menuCopy), keyEquivalent: "")
     tableView.menu = tableViewMenu
 
-    func makeColumn(name: String, width: CGFloat? = nil, noTitle: Bool = false) -> NSTableColumn {
-      let column = NSTableColumn(identifier: .init(name.lowercased()))
-      column.title = noTitle ? "" : name
-      if let width {
-        column.minWidth = width
-        column.maxWidth = width
+    func makeColumn(key: String, minWidth: CGFloat? = nil, maxWidth: CGFloat? = nil, noTitle: Bool = false) -> NSTableColumn {
+      let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier(key))
+      column.title = noTitle ? "" : NSLocalizedString("logwindow." + key, comment: key)
+      if let minWidth {
+        column.minWidth = minWidth
+        column.maxWidth = minWidth
+      }
+      if let maxWidth {
+        column.maxWidth = maxWidth
       }
       return column
     }
 
-    tableView.addTableColumn(makeColumn(name: "Level", width: 10, noTitle: true))
-    tableView.addTableColumn(makeColumn(name: "Time", width: 90))
-    tableView.addTableColumn(makeColumn(name: "Subsystem", width: 150))
-    tableView.addTableColumn(makeColumn(name: "Message"))
+    tableView.addTableColumn(makeColumn(key: "level", minWidth: 10, noTitle: true))
+    tableView.addTableColumn(makeColumn(key: "time", minWidth: 90))
+    tableView.addTableColumn(makeColumn(key: "subsystem", minWidth: 100, maxWidth: 200))
+    tableView.addTableColumn(makeColumn(key: "message"))
 
     scrollView.documentView = tableView
     scrollView.hasVerticalScroller = true
@@ -212,9 +226,9 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
 
   private func makeFollowButton() -> NSToolbarItem {
     let item = NSToolbarItem(itemIdentifier: .followButton)
-    item.label = "Follow"
-    item.paletteLabel = "Follow latest logs"
-    item.toolTip = "Follow latest logs"
+    item.label = NSLocalizedString("logwindow.now", comment: "Now")
+    item.paletteLabel = NSLocalizedString("logwindow.now", comment: "Now")
+    item.toolTip = NSLocalizedString("logwindow.now.desc", comment: "Follow latest logs")
     item.image = .findSFSymbol(["arrow.up.left.circle"])
     item.action = #selector(followAction)
     return item
@@ -222,11 +236,11 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
 
   private func makeLogLevelButton() -> NSMenuToolbarItem {
     let item = NSMenuToolbarItem(itemIdentifier: .logLevelButton)
-    item.label = "Log Level"
-    item.paletteLabel = "Log Level"
-    item.toolTip = "Log Level"
+    item.label = NSLocalizedString("logwindow.log_level", comment: "Log level")
+    item.paletteLabel = NSLocalizedString("logwindow.log_level", comment: "Log level")
+    item.toolTip = NSLocalizedString("logwindow.log_level", comment: "Log level")
     item.showsIndicator = true
-    item.title = "Log Level"
+    item.title = NSLocalizedString("logwindow.log_level", comment: "Log level")
     item.menu = logLevelMenu
     updateLogLevelButtonImage(toolBarItem: item)
     return item
@@ -234,40 +248,41 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
 
   private func makeSubsystemButton() -> NSMenuToolbarItem {
     let item = NSMenuToolbarItem(itemIdentifier: .subsystemButton)
-    item.label = "Subsystem"
-    item.paletteLabel = "Subsystem"
-    item.toolTip = "Subsystem"
+    item.label = NSLocalizedString("logwindow.subsystem", comment: "Subsystem")
+    item.paletteLabel = NSLocalizedString("logwindow.subsystem", comment: "Subsystem")
+    item.toolTip = NSLocalizedString("logwindow.subsystem", comment: "Subsystem")
     item.image = NSImage(systemSymbolName: "square.stack.3d.up", accessibilityDescription: "Subsystem")!
     item.showsIndicator = true
-    item.title = "Subsystem"
+    item.title = NSLocalizedString("logwindow.subsystem", comment: "Subsystem")
     item.menu = subsystemMenu
     return item
   }
 
   private func makeSaveButton() -> NSToolbarItem {
     let item = NSMenuToolbarItem(itemIdentifier: .saveButton)
-    item.label = "Save"
-    item.paletteLabel = "Save"
-    item.toolTip = "Save"
+    item.label = NSLocalizedString("logwindow.save", comment: "Save")
+    item.paletteLabel = NSLocalizedString("logwindow.save", comment: "Save")
+    item.toolTip = NSLocalizedString("logwindow.save", comment: "Save")
     item.image = NSImage(systemSymbolName: "square.and.arrow.down", accessibilityDescription: "Save")!
     item.action = #selector(save)
     item.menu = NSMenu()
-    item.menu.addItem(withTitle: "Save filtered logs…", action: #selector(save), keyEquivalent: "")
+    item.menu.addItem(withTitle: NSLocalizedString("logwindow.save_filtered", comment: "Save filtered logs"), action: #selector(save), keyEquivalent: "")
     return item
   }
 
   private func makeSearchField() -> NSSearchToolbarItem {
     let item = NSSearchToolbarItem(itemIdentifier: .searchField)
-    item.label = "Filter"
-    item.paletteLabel = "Filter"
-    item.toolTip = "Filter"
-    searchField.placeholderString = "Filter"
+    item.label = NSLocalizedString("logwindow.filter", comment: "Filter")
+    item.paletteLabel = NSLocalizedString("logwindow.filter", comment: "Filter")
+    item.toolTip = NSLocalizedString("logwindow.filter", comment: "Filter")
+    searchField.placeholderString = NSLocalizedString("logwindow.filter", comment: "Filter")
     searchField.delegate = self
     item.searchField = searchField
     return item
   }
 
   // MARK: - NSMenuDelegate
+
   func menuNeedsUpdate(_ menu: NSMenu) {
     Logger.$subsystems.withLock() { subsystems in
       for (index, subsystem) in subsystems.enumerated() {
@@ -279,6 +294,21 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
       }
     }
   }
+
+  // MARK: - Menu actions
+
+  @IBAction func copy(_ sender: Any) {
+    menuCopy()
+  }
+
+  @objc private func menuCopy() {
+    let string = (arrayController.selectedObjects as! [Logger.Log]).map { $0.logString }.joined()
+    let pasteboard = NSPasteboard.general
+    pasteboard.clearContents()
+    pasteboard.setString(string, forType: .string)
+  }
+
+  // MARK: - UI & Log synchronization
 
   private func updatePredicate() {
     var predicates: [NSPredicate] = []
@@ -303,9 +333,9 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
   }
 
   private func scrollToBottom() {
-    /// macOS couldn't calculate the frame size correctly when the row height is variable and
-    /// is not rendered. After the first scroll, all rows should be rendered, which makes the
-    /// second frame size correct. Scroll the second time to correctly scroll to the last row.
+    // macOS couldn't calculate the frame size correctly when the row height is variable and
+    // is not rendered. After the first scroll, all rows should be rendered, which makes the
+    // second frame size correct. Scroll the second time to correctly scroll to the last row.
     tableView.scroll(NSPoint(x: 0, y: tableView.frame.size.height))
     tableView.scroll(NSPoint(x: 0, y: tableView.frame.size.height))
   }
@@ -350,19 +380,11 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
     Utility.quickSavePanel(title: "Log", filename: filename, sheetWindow: window) { url in
       let content: Any? = saveAll ? self.arrayController.content : self.arrayController.arrangedObjects
       let logs = (content as! [Logger.Log]).map { $0.logString }.joined()
-      try? logs.write(to: url, atomically: true, encoding: .utf8)
-    }
-  }
-
-  override func observeValue(forKeyPath keyPath: String?, of object: Any?,
-                             change: [NSKeyValueChangeKey: Any]?,
-                             context: UnsafeMutableRawPointer?) {
-    guard keyPath == "arrangedObjects.@count" else { return }
-
-    if change?[.notificationIsPriorKey] as? Bool == true {
-      checkIfAtBottom()
-    } else if following {
-      scrollToBottom()
+      do {
+        try logs.write(to: url, atomically: true, encoding: .utf8)
+      } catch let error {
+        Utility.showAlert("error_saving_file", arguments: [error.localizedDescription])
+      }
     }
   }
 
@@ -371,17 +393,47 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
     updatePredicate()
   }
 
-  // MARK: - Menu actions
-
-  @IBAction func copy(_ sender: Any) {
-    menuCopy()
+  func append(_ log: Logger.Log) {
+    $buffer.withLock {
+      $0.append(log)
+    }
+    if isWindowVisible {
+       DispatchQueue.main.async { [weak self] in
+         self?.scheduleFlush()
+       }
+     }
   }
 
-  @objc private func menuCopy() {
-    let string = (arrayController.selectedObjects as! [Logger.Log]).map { $0.logString }.joined()
-    let pasteboard = NSPasteboard.general
-    pasteboard.clearContents()
-    pasteboard.setString(string, forType: .string)
+  private func scheduleFlush() {
+    guard flushTimer == nil else { return }
+    flushTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: false) { [weak self] _ in
+      self?.flushTimer = nil
+      self?.flushBuffer()
+    }
+  }
+
+  private func flushBuffer() {
+    let toFlush: [Logger.Log] = $buffer.withLock {
+      let copy = $0
+      $0.removeAll(keepingCapacity: true)
+      return copy
+    }
+
+    if !toFlush.isEmpty {
+      checkIfAtBottom()
+      arrayController.add(contentsOf: toFlush)
+      if following {
+        scrollToBottom()
+      }
+    }
+  }
+
+  @objc private func occlusionChanged(_ note: Notification) {
+    if isWindowVisible {
+      flushBuffer()
+    } else {
+      flushTimer = nil
+    }
   }
 }
 
