@@ -283,7 +283,9 @@ class Logger: NSObject {
     willChangeValue(forKey: "logs")
     logs.append(log)
     DispatchQueue.main.async {
-      didChangeValue(forKey: "logs")
+      if AppDelegate.shared.logWindow.window?.isVisible ?? false {
+        didChangeValue(forKey: "logs")
+      }
     }
 
     print(string, terminator: "")

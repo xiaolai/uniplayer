@@ -27,21 +27,14 @@ fileprivate func indicatorIcon(withColor color: NSColor) -> NSImage {
 
 // Used to measure the row height of the multi-line text label
 fileprivate let sizingTextField: NSTextField = {
-    let tf = NSTextField(labelWithString: "")
-    tf.maximumNumberOfLines = 0
-    tf.lineBreakMode = .byWordWrapping
-    tf.cell?.wraps = true
-    tf.cell?.isScrollable = false
-    tf.font = logFont
-    return tf
+  let tf = NSTextField(labelWithString: "")
+  tf.maximumNumberOfLines = 0
+  tf.lineBreakMode = .byWordWrapping
+  tf.cell?.wraps = true
+  tf.cell?.isScrollable = false
+  tf.font = logFont
+  return tf
 }()
-
-final class LogCellView: NSTableCellView {
-  override func viewWillDraw() {
-    super.viewWillDraw()
-    textField?.font = logFont
-  }
-}
 
 class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate, NSSearchFieldDelegate {
   private let tableView = NSTableView()
@@ -181,7 +174,7 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
     NotificationCenter.default.addObserver(self, selector: #selector(columnDidResize),
                                            name: NSTableView.columnDidResizeNotification, object: tableView)
 
-    scrollView.padding(.all(0))
+    scrollView.padding(.all)
   }
 
   // MARK: - NSToolbarDelegate
@@ -384,8 +377,7 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
     menuCopy()
   }
 
-  @objc private func menuCopy()
-  {
+  @objc private func menuCopy() {
     let string = (arrayController.selectedObjects as! [Logger.Log]).map { $0.logString }.joined()
     let pasteboard = NSPasteboard.general
     pasteboard.clearContents()
@@ -426,7 +418,7 @@ extension LogWindowController: NSTableViewDelegate {
   }
 
   private func makeCell(identifier: NSUserInterfaceItemIdentifier, columnID: String) -> NSTableCellView {
-    let cell = LogCellView()
+    let cell = NSTableCellView()
     cell.identifier = identifier
 
     if columnID == "level" {
@@ -440,6 +432,7 @@ extension LogWindowController: NSTableViewDelegate {
       imageView.center(x: true)
     } else {
       let textField = NSTextField(labelWithString: "")
+      textField.font = logFont
       textField.translatesAutoresizingMaskIntoConstraints = false
 
       if columnID == "message" {
