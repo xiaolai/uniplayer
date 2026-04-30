@@ -74,17 +74,16 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
 
   @objc private dynamic var predicate = NSPredicate(value: false) {
     didSet {
-      if let window {
-        var subtitleString = ""
-        if filteredSubsystems.isEmpty {
-          subtitleString = NSLocalizedString("logwindow.all_subsystems", comment: "All subsystems")
-        } else {
-          subtitleString = String(describing: filteredSubsystems)
-        }
-        subtitleString += " - "
-        subtitleString += String(describing: filteredLogLevel)
-        window.subtitle = subtitleString
+      guard let window else { return }
+      var subtitleString = ""
+      if filteredSubsystems.isEmpty {
+        subtitleString = NSLocalizedString("logwindow.all_subsystems", comment: "All subsystems")
+      } else {
+        subtitleString = String(describing: filteredSubsystems)
       }
+      subtitleString += " - "
+      subtitleString += String(describing: filteredLogLevel)
+      window.subtitle = subtitleString
     }
   }
 
@@ -125,6 +124,9 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
 
       logLevelMenu.addItem(withTitle: "Dummy", action: nil, keyEquivalent: "")
       subsystemMenu.addItem(withTitle: "Dummy", action: nil, keyEquivalent: "")
+      subsystemMenu.addItem(withTitle: NSLocalizedString("logwindow.clear_subsystem_selections", comment: "Clear Selections"),
+                            action: #selector(clearSubsystemFilter(_:)), keyEquivalent: "")
+      subsystemMenu.addItem(.separator())
 
       for level in Logger.Level.allCases {
         let item = NSMenuItem(title: level.description, action: #selector(logLevelChanged), keyEquivalent: "")
@@ -290,7 +292,8 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
         subsystem.added = true
         let item = NSMenuItem.init(title: subsystem.rawValue, action: #selector(subsystemChanged), keyEquivalent: "")
         item.image = subsystem.image
-        menu.insertItem(item, at: index + 1)
+        // 3 = dummy + clear selection item + separator
+        menu.insertItem(item, at: index + 3)
       }
     }
   }
@@ -306,6 +309,31 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
     let pasteboard = NSPasteboard.general
     pasteboard.clearContents()
     pasteboard.setString(string, forType: .string)
+  }
+
+  @objc private func clearSubsystemFilter(_ sender: NSMenuItem) {
+    filteredSubsystems = []
+    if #available(macOS 14.0, *) {
+      subsystemMenu.selectedItems = []
+    } else {
+      subsystemMenu.items.forEach { $0.state = .off }
+    }
+  }
+
+  @objc private func subsystemChanged(_ sender: NSMenuItem) {
+    if filteredSubsystems.contains(sender.title) {
+      sender.state = .off
+      filteredSubsystems.remove(sender.title)
+    } else {
+      sender.state = .on
+      filteredSubsystems.insert(sender.title)
+    }
+  }
+
+  @objc private func logLevelChanged(_ sender: NSMenuItem) {
+    guard let newLevel = Logger.Level(rawValue: sender.tag) else { return }
+    filteredLogLevel = newLevel
+    updateLogLevelButtonImage()
   }
 
   // MARK: - UI & Log synchronization
@@ -358,22 +386,6 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
     scrollToBottom()
   }
 
-  @objc private func logLevelChanged(_ sender: NSMenuItem) {
-    guard let newLevel = Logger.Level(rawValue: sender.tag) else { return }
-    filteredLogLevel = newLevel
-    updateLogLevelButtonImage()
-  }
-
-  @objc private func subsystemChanged(_ sender: NSMenuItem) {
-    if filteredSubsystems.contains(sender.title) {
-      sender.state = .off
-      filteredSubsystems.remove(sender.title)
-    } else {
-      sender.state = .on
-      filteredSubsystems.insert(sender.title)
-    }
-  }
-
   @objc private func save(_ sender: Any) {
     let saveAll = sender is NSToolbarItem
     let filename = saveAll ? "iina.log" : (window?.subtitle ?? "filtered") + " iina.log"
@@ -383,7 +395,7 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
       do {
         try logs.write(to: url, atomically: true, encoding: .utf8)
       } catch let error {
-        Utility.showAlert("error_saving_file", arguments: [error.localizedDescription])
+        Utility.showAlert("error_saving_file", arguments: [NSLocalizedString("logwindow.logs", comment: "logs"), error.localizedDescription])
       }
     }
   }

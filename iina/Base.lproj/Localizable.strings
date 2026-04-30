@@ -487,3 +487,6 @@
 "logwindow.save" = "Save";
 "logwindow.save_filtered" = "Save filtered logs…";
 "logwindow.filter" = "Filter";
+"logwindow.clear_subsystem_selections" = "Clear Selections";
+"logwindow.copy" = "Copy";
+"logwindow.logs" = "logs";
