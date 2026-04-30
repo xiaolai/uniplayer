@@ -66,8 +66,8 @@ class SettingsPageUtilities: SettingsPage {
       }
     }
   }
-  
-  private func actionButton(action: Selector, symbolName: [String] = []) -> NSButton {
+
+  func actionButton(action: Selector, symbolName: [String] = []) -> NSButton {
     return NSButton(title: "", image: .findSFSymbol(symbolName + ["arrow.right"])!, target: self, action: action)
   }
   
