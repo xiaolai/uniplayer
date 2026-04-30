@@ -111,6 +111,7 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
 
       arrayController.selectsInsertedObjects = false
       arrayController.avoidsEmptySelection = false
+      arrayController.clearsFilterPredicateOnInsertion = false
       arrayController.bind(.filterPredicate, to: self, withKeyPath: "predicate", options: nil)
       tableView.bind(.content, to: arrayController, withKeyPath: "arrangedObjects", options: nil)
       tableView.bind(.selectionIndexes, to: arrayController, withKeyPath: "selectionIndexes", options: nil)
