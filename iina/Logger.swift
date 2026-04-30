@@ -278,7 +278,9 @@ class Logger: NSObject {
     let date = Date()
     let string = formatMessage(message, level, subsystem, true, date)
     let log = Log(subsystem: subsystem.rawValue, level: level, message: message, date: dateFormatter.string(from: date), logString: string)
-    AppDelegate.shared.logWindow.append(log)
+    Task { @MainActor in
+      AppDelegate.shared.logWindow.append(log)
+    }
 
     print(string, terminator: "")
 

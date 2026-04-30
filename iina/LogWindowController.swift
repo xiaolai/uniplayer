@@ -84,6 +84,8 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
       subtitleString += " - "
       subtitleString += String(describing: filteredLogLevel)
       window.subtitle = subtitleString
+
+      rowHeightCache.removeAll(keepingCapacity: true)
     }
   }
 
@@ -410,10 +412,8 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
       $0.append(log)
     }
     if isWindowVisible {
-       DispatchQueue.main.async { [weak self] in
-         self?.scheduleFlush()
-       }
-     }
+      scheduleFlush()
+    }
   }
 
   private func scheduleFlush() {
