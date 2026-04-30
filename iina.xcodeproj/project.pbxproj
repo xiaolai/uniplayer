@@ -155,7 +155,7 @@
 		49542978216C34950058F680 /* SafariExtensionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49542977216C34950058F680 /* SafariExtensionHandler.swift */; };
 		49542980216C34950058F680 /* open-in-iina.js in Resources */ = {isa = PBXBuildFile; fileRef = 4954297F216C34950058F680 /* open-in-iina.js */; };
 		49542982216C34950058F680 /* ToolbarItemIcon.pdf in Resources */ = {isa = PBXBuildFile; fileRef = 49542981216C34950058F680 /* ToolbarItemIcon.pdf */; };
-		49542986216C34950058F680 /* OpenInIINA.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 49542973216C34950058F680 /* OpenInIINA.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		49542986216C34950058F680 /* OpenInIINA.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 49542973216C34950058F680 /* OpenInIINA.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		496B19921E2968530035AF10 /* PIP.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 496B19911E2968530035AF10 /* PIP.framework */; };
 		51096C0B2CD88BEC00702C31 /* MPVOptionDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51096C0A2CD88BEC00702C31 /* MPVOptionDefaults.swift */; };
 		5111B18B2C8BCEAC00DEC0AC /* TouchBarSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5111B18A2C8BCEAC00DEC0AC /* TouchBarSettings.swift */; };
@@ -465,15 +465,15 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		4954298A216C34960058F680 /* Embed App Extensions */ = {
+		4954298A216C34960058F680 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				49542986216C34950058F680 /* OpenInIINA.appex in Embed App Extensions */,
+				49542986216C34950058F680 /* OpenInIINA.appex in Embed Foundation Extensions */,
 			);
-			name = "Embed App Extensions";
+			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		8461BA631E423423008BB852 /* Copy Executables */ = {
@@ -2937,7 +2937,7 @@
 				84E745DA1DFDE9C600588DED /* Copy Configs */,
 				8461BA631E423423008BB852 /* Copy Executables */,
 				E3E720A12CD7073D003470BF /* Copy Default Plugins */,
-				4954298A216C34960058F680 /* Embed App Extensions */,
+				4954298A216C34960058F680 /* Embed Foundation Extensions */,
 				51728768291B6F30009E6EC1 /* Write Info.h */,
 			);
 			buildRules = (
@@ -3003,8 +3003,9 @@
 		84EB1ECE1D2F51D3004FA5A1 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				BuildIndependentTargetsInParallel = YES;
 				LastSwiftUpdateCheck = 1430;
-				LastUpgradeCheck = 0930;
+				LastUpgradeCheck = 2650;
 				ORGANIZATIONNAME = lhc;
 				TargetAttributes = {
 					49542972216C34950058F680 = {
@@ -3167,6 +3168,7 @@
 			files = (
 			);
 			inputFileListPaths = (
+				"$(SRCROOT)/iina/write_info_plist_header.sh",
 			);
 			inputPaths = (
 				"$(CONFIGURATION_BUILD_DIR)/$(EXECUTABLE_FOLDER_PATH)/$(EXECUTABLE_NAME)",
@@ -4817,6 +4819,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 4964988E2919E47900CD61A5 /* OpenInIINA.xcconfig */;
 			buildSettings = {
+				DEAD_CODE_STRIPPING = YES;
 			};
 			name = Debug;
 		};
@@ -4824,6 +4827,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 4964988E2919E47900CD61A5 /* OpenInIINA.xcconfig */;
 			buildSettings = {
+				DEAD_CODE_STRIPPING = YES;
 			};
 			name = Release;
 		};
@@ -4831,7 +4835,11 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 51537C7229FA26DD00F9A472 /* Nightly.xcconfig */;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				DEAD_CODE_STRIPPING = YES;
 				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 			};
 			name = Nightly;
 		};
@@ -4839,6 +4847,8 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 496498882919E47900CD61A5 /* iina.xcconfig */;
 			buildSettings = {
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = "GL_SILENCE_DEPRECATION=1";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.video";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2017-2026\nCollider LI, et al.\nReleased under GPLv3.";
@@ -4856,6 +4866,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 4964988B2919E47900CD61A5 /* iina-cli.xcconfig */;
 			buildSettings = {
+				DEAD_CODE_STRIPPING = YES;
 			};
 			name = Nightly;
 		};
@@ -4863,6 +4874,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 4964988E2919E47900CD61A5 /* OpenInIINA.xcconfig */;
 			buildSettings = {
+				DEAD_CODE_STRIPPING = YES;
 			};
 			name = Nightly;
 		};
@@ -4870,7 +4882,11 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 51A0F0F629FA2C8E000130CF /* Beta.xcconfig */;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				DEAD_CODE_STRIPPING = YES;
 				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 			};
 			name = Beta;
 		};
@@ -4878,6 +4894,8 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 496498882919E47900CD61A5 /* iina.xcconfig */;
 			buildSettings = {
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = "GL_SILENCE_DEPRECATION=1";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.video";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2017-2026\nCollider LI, et al.\nReleased under GPLv3.";
@@ -4895,6 +4913,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 4964988B2919E47900CD61A5 /* iina-cli.xcconfig */;
 			buildSettings = {
+				DEAD_CODE_STRIPPING = YES;
 			};
 			name = Beta;
 		};
@@ -4902,6 +4921,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 4964988E2919E47900CD61A5 /* OpenInIINA.xcconfig */;
 			buildSettings = {
+				DEAD_CODE_STRIPPING = YES;
 			};
 			name = Beta;
 		};
@@ -4909,7 +4929,11 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 4964988C2919E47900CD61A5 /* Debug.xcconfig */;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				DEAD_CODE_STRIPPING = YES;
 				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 			};
 			name = Debug;
 		};
@@ -4917,7 +4941,11 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 4964988D2919E47900CD61A5 /* Release.xcconfig */;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				DEAD_CODE_STRIPPING = YES;
 				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 			};
 			name = Release;
 		};
@@ -4925,6 +4953,8 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 496498882919E47900CD61A5 /* iina.xcconfig */;
 			buildSettings = {
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"GL_SILENCE_DEPRECATION=1",
 					"$(inherited)",
@@ -4945,6 +4975,8 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 496498882919E47900CD61A5 /* iina.xcconfig */;
 			buildSettings = {
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_PREPROCESSOR_DEFINITIONS = "GL_SILENCE_DEPRECATION=1";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.video";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2017-2026\nCollider LI, et al.\nReleased under GPLv3.";
@@ -4993,6 +5025,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -5010,7 +5043,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -5057,6 +5090,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -5068,7 +5102,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -5114,6 +5148,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -5125,7 +5160,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -5171,6 +5206,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -5182,7 +5218,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.15;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -5197,6 +5233,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 4964988B2919E47900CD61A5 /* iina-cli.xcconfig */;
 			buildSettings = {
+				DEAD_CODE_STRIPPING = YES;
 			};
 			name = Debug;
 		};
@@ -5204,6 +5241,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 4964988B2919E47900CD61A5 /* iina-cli.xcconfig */;
 			buildSettings = {
+				DEAD_CODE_STRIPPING = YES;
 			};
 			name = Release;
 		};
