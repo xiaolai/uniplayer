@@ -1,5 +1,6 @@
 extension SettingsLocalization.Key {
   static let text_Install = SettingsLocalization.Key("$Install")
+  static let text_Installed = SettingsLocalization.Key("$Installed")
   static let text_Author = SettingsLocalization.Key("$Author")
   static let text_Email = SettingsLocalization.Key("$Email")
   static let text_Help = SettingsLocalization.Key("$Help")
@@ -19,4 +20,10 @@ extension SettingsLocalization.Key {
   static let text_Uninstall = SettingsLocalization.Key("$Uninstall")
   static let text_InstallANewPluginFrom = SettingsLocalization.Key("$InstallANewPluginFrom")
   static let text_About = SettingsLocalization.Key("$About")
+  static let text_InstallOnline = SettingsLocalization.Key("$InstallOnline")
+  static let text_InputGithubURL = SettingsLocalization.Key("$InputGithubURL")
+  static let text_OrSelectFrom = SettingsLocalization.Key("$OrSelectFrom")
+  static let text_OfficialPlugins = SettingsLocalization.Key("$OfficialPlugins")
+  static let text_CommunityPlugins = SettingsLocalization.Key("$CommunityPlugins")
+  static let text_NoSelection = SettingsLocalization.Key("$NoSelection")
 }

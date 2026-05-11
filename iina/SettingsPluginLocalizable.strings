@@ -1,5 +1,6 @@
 /* key="3xh-dU-HuR" */
 "$Install" = "Install";
+"$Installed" = "Installed";
 /* key="Dkk-JQ-qHA" */
 "$Author" = "Author";
 /* key="EHl-kr-ZZf" */
@@ -16,8 +17,6 @@
 "$InstalledPlugins" = "Installed plugins:";
 /* key="drh-6w-3z1" */
 "$ShowInFinder" = "Show in Finder";
-/* key="enP-C1-4vu" */
-"$InstallFromGitHub" = "Install from GitHub…";
 /* key="fnl-uA-X7r" */
 "$YouCanInstallANew" = "You can install a new plugin from GitHub or a local .iinaplgz package. Plugins installed from GitHub can be updated automatically.";
 /* key="ixN-OS-w87" */
@@ -40,6 +39,13 @@
 "$Uninstall" = "Uninstall";
 /* key="zvu-Up-fQJ" */
 "$InstallANewPluginFrom" = "Install a new plugin from GitHub";
+
+"$InstallOnline" = "Install Online";
+"$InputGithubURL" = "Input Github URL";
+"$OrSelectFrom" = "Or select from available plugins:";
+"$OfficialPlugins" = "Official Plugins";
+"$CommunityPlugins" = "Community Plugins";
+"$NoSelection" = "No Selection";
 
 "$OK" = "OK";
 "$About" = "About";
