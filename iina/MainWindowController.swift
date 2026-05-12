@@ -609,7 +609,7 @@ class MainWindowController: PlayerWindowController {
     thumbnailPeekView.isHidden = true
 
     // other initialization
-    titleBarBottomBorder.fillColor = NSColor(named: .titleBarBorder)!
+    titleBarBottomBorder.fillColor = NSColor.titleBarBorder
     cachedScreenCount = NSScreen.screens.count
     [titleBarView, osdVisualEffectView, controlBarBottom, controlBarFloating, sideBarView, osdVisualEffectView, pipOverlayView].forEach {
       $0?.state = .active
