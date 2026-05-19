@@ -1,6 +1,7 @@
 /* key="3xh-dU-HuR" */
 "$Install" = "Install";
 "$Installed" = "Installed";
+"$Installing" = "Installing";
 /* key="Dkk-JQ-qHA" */
 "$Author" = "Author";
 /* key="EHl-kr-ZZf" */
@@ -32,7 +33,7 @@
 /* key="r3r-Qh-rC9" */
 "$Source" = "Source";
 /* key="sdU-FG-dTO" */
-"$InstallPackage" = "Install Package…";
+"$InstallLocalPackage" = "Install Local Package…";
 /* key="tfn-0I-n6p" */
 "$Plugins" = "Plugins";
 /* key="ue8-hU-kLm" */
@@ -40,13 +41,13 @@
 /* key="zvu-Up-fQJ" */
 "$InstallANewPluginFrom" = "Install a new plugin from GitHub";
 
-"$InstallOnline" = "Install Online";
-"$InputGithubURL" = "Input Github URL";
+"$GetPlugins" = "Get Plugins…";
+"$InputGithubURL" = "Input a Github URL:";
 "$OrSelectFrom" = "Or select from available plugins:";
 "$OfficialPlugins" = "Official Plugins";
 "$CommunityPlugins" = "Community Plugins";
 "$NoSelection" = "No Selection";
+"$ThisPluginIsNot" = "This plugin is not hosted on GitHub. Please go to the website to download.";
 
-"$OK" = "OK";
 "$About" = "About";
 "$Settings" = "Settings";

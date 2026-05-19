@@ -70,10 +70,10 @@ fileprivate class PluginInstallView: SettingsAccessory.Base {
     self.page = page
     super.init(l10n: l10n)
 
-    let githubBtn = ui.button(.text_InstallOnline)
+    let githubBtn = ui.button(.text_GetPlugins)
     githubBtn.target = self
     githubBtn.action = #selector(installPluginFromGitHub)
-    let localBtn = ui.button(.text_InstallPackage)
+    let localBtn = ui.button(.text_InstallLocalPackage)
     localBtn.target = self
     localBtn.action = #selector(installPluginFromLocalPackage)
 
@@ -83,6 +83,7 @@ fileprivate class PluginInstallView: SettingsAccessory.Base {
 
     let stackView = ui.vStack(installLabel, btnStackView)
     stackView.alignment = .leading
+    stackView.spacing = 12
 
     view.addSubview(stackView)
     stackView.padding(.all(12))
@@ -100,8 +101,9 @@ fileprivate class PluginInstallView: SettingsAccessory.Base {
 
   @IBAction func installPluginFromGitHub(_ sender: Any) {
     let panel = PluginStorePanel(l10n: l10n)
-    view.window!.beginSheet(panel) {_ in
-      return
+    panel.contentMaxSize = NSSize(width: 800, height: 600)
+    view.window!.beginSheet(panel) { _ in
+      self.page.listView.reload()
     }
   }
 }
@@ -233,6 +235,10 @@ fileprivate class PluginListView: SettingsAccessory.Base {
 
     view.addSubview(tableView)
     tableView.padding(.all(0))
+  }
+
+  func reload() {
+    tableView.reloadData()
   }
 
   func checkForAllPluginUpdates() {
@@ -527,7 +533,8 @@ fileprivate class PluginDetailsWindow: NSWindow {
     self.plugin = plugin
     let style: NSWindow.StyleMask = [.titled, .resizable, .fullSizeContentView]
 
-    self.okButton = NSButton(title: l10n.localized(.text_OK), target: nil, action: nil)
+    self.okButton = NSButton(title: NSLocalizedString("general.done", comment: "Done"),
+                             target: nil, action: nil)
     okButton.translatesAutoresizingMaskIntoConstraints = false
 
     self.loadingIndicator = NSProgressIndicator()

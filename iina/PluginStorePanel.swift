@@ -9,8 +9,42 @@
 import SwiftUI
 import Combine
 
+
+fileprivate let defaultPlugins = [
+  [
+    "name": "Online Media",
+    "url": "https://github.com/iina/plugin-online-media",
+    "id": "io.iina.ytdl",
+    "desc": "Official plugin for playing online media via yt-dlp / youtube-dl. The built-in youtube-dl support will be disabled when this plugin is enabled."
+  ],
+  [
+    "name": "Userscript",
+    "url": "https://github.com/iina/plugin-userscript",
+    "id": "io.iina.user-script",
+    "desc": "User Scripts for IINA"
+  ],
+  [
+    "name": "Online Subtitles",
+    "url": "https://github.com/iina/plugin-opensub",
+    "id": "io.iina.opensub",
+    "desc": "Official OpenSubtitles plugin for IINA"
+  ],
+]
+
+
+/// Trigger the refresh of the plugin list.
+fileprivate class RefreshIndicator: ObservableObject {
+  @Published private(set) var refreshCount = 0
+
+  func refresh() {
+    refreshCount += 1
+  }
+}
+
+
 class PluginStorePanel: NSWindow {
   let l10n: SettingsLocalization.Context
+  lazy var pluginManager = PluginManager(window: self)
 
   init(l10n: SettingsLocalization.Context) {
     self.l10n = l10n
@@ -21,9 +55,13 @@ class PluginStorePanel: NSWindow {
 
     self.contentView = NSView()
 
-    let hostingView = NSHostingView(rootView: PluginStoreView(l10n: l10n))
+    let indicator = RefreshIndicator()
+    let pluginStoreView = PluginStoreView(l10n: l10n, panel: self)
+      .environmentObject(indicator)
+    let hostingView = NSHostingView(rootView: pluginStoreView)
     hostingView.translatesAutoresizingMaskIntoConstraints = false
-    let closeBtn = NSButton(title: "Done", target: self, action: #selector(cancelOperation))
+    let closeBtn = NSButton(title: NSLocalizedString("general.done", comment: "Done"),
+                            target: self, action: #selector(cancelOperation))
     closeBtn.translatesAutoresizingMaskIntoConstraints = false
 
     contentView?.addSubview(hostingView)
@@ -36,19 +74,32 @@ class PluginStorePanel: NSWindow {
   override func cancelOperation(_ sender: Any?) {
     sheetParent?.endSheet(self, returnCode: .OK)
   }
-}
 
-fileprivate let defaultPlugins = [
-  ["name": "Online Media", "url": "iina/plugin-online-media", "id": "io.iina.ytdl", "desc": "Official plugin for playing online media via yt-dlp / youtube-dl. The built-in youtube-dl support will be disabled when this plugin is enabled."],
-  ["name": "Userscript", "url": "iina/plugin-userscript", "id": "io.iina.user-script", "desc": "User Scripts for IINA"],
-  ["name": "Online Subtitles", "url": "iina/plugin-opensub", "id": "io.iina.opensub", "desc": "Official OpenSubtitles plugin for IINA"],
-]
+  func install(_ string: String) async {
+    let urlString = if string.starts(with: "https://") {
+      string
+    } else if Regex.githubRepo.matches(string) {
+      "https://github.com/\(string)"
+    } else {
+      ""
+    }
+    await pluginManager.install(gitHubString: urlString)
+  }
+}
 
 struct Plugin: Identifiable, Hashable, Decodable {
   let name: String
   let url: URL
   let id: String
   let desc: String
+
+  var installed: Bool {
+    JavascriptPlugin.plugins.contains(where: { $0.identifier == self.id })
+  }
+
+  var icon: String {
+    installed ? "checkmark.circle.fill" : "square.and.arrow.down"
+  }
 
   init(_ plugin: Dictionary<String, String>) {
     name = plugin["name"]!
@@ -60,20 +111,16 @@ struct Plugin: Identifiable, Hashable, Decodable {
 
 let officialPlugins = defaultPlugins.map { Plugin($0) }
 
-fileprivate func installed(_ plugin: Plugin) -> Bool {
-  JavascriptPlugin.plugins.contains(where: { $0.identifier == plugin.id })
-}
-
-fileprivate func icon(_ installed: Bool) -> String {
-  installed ? "checkmark.circle.fill" : "square.and.arrow.down"
-}
-
 struct PluginStoreView: View {
   let l10n: SettingsLocalization.Context
+  let panel: PluginStorePanel
+
+  @EnvironmentObject private var indicator: RefreshIndicator
 
   @State private var inputURL: String = ""
   @State private var selection: Plugin? = nil
   @State private var listDownloaded = false
+  @State private var isInstalling: Bool = false
 
   @State private var communityPluginList: [Plugin] = []
   @State private var errorMessage: String? = nil
@@ -82,8 +129,18 @@ struct PluginStoreView: View {
     !(Regex.githubRepo.matches(inputURL) || Regex.githubURL.matches(inputURL))
   }
 
-  init(l10n: SettingsLocalization.Context) {
-    self.l10n = l10n
+  private func installFromURL(_ string: String) {
+    isInstalling = true
+    Task { @MainActor in
+      let prevCount = JavascriptPlugin.plugins.count
+      await panel.install(inputURL)
+      isInstalling = false
+      if JavascriptPlugin.plugins.count > prevCount {
+        // dismiss the sheet after installing from URL
+        // otherwise there's no indicator of a successful install
+        panel.cancelOperation(nil)
+      }
+    }
   }
 
   var body: some View {
@@ -93,18 +150,22 @@ struct PluginStoreView: View {
         TextField("owner/repo", text: $inputURL)
           .textFieldStyle(.roundedBorder)
           .onSubmit {
-            // Mirror button action on return key
-            print("Install from URL: \(inputURL)")
+            installFromURL(inputURL)
           }
-        Button(l10n.localized(.text_Install)) {
-          // TODO: Handle install from inputURL
-          // For now, just print for debugging
-          print("Install from URL: \(inputURL)")
-        }
+        Button(action: { installFromURL(inputURL) }) {
+          HStack {
+            if isInstalling {
+              ProgressView().controlSize(.small).padding(.trailing, 4)
+            }
+            Text(l10n.localized(isInstalling ? .text_Installing : .text_Install))
+          }
+        }.disabled(isInstalling)
         .buttonStyle(.borderedProminent)
         .controlSize(.regular)
         .disabled(inputURLInvalid)
-      }.padding(.bottom)
+      }
+
+      Divider().padding(.top, 8).padding(.bottom, 8)
 
       Text(l10n.localized(.text_OrSelectFrom))
 
@@ -112,27 +173,33 @@ struct PluginStoreView: View {
         Section(l10n.localized(.text_OfficialPlugins)) {
           ForEach(officialPlugins, id: \.self) { plugin in
             HStack {
-              Image(systemName: icon(installed(plugin)))
+              Image(systemName: plugin.icon)
               Text(plugin.name)
-            }.padding(.vertical, 4)
+            }
           }
         }
 
         Section(l10n.localized(.text_CommunityPlugins)) {
-          if errorMessage != nil {
-            Text("Error: \(String(describing: errorMessage))")
+          if let errorMessage {
+            Text("Error: \(errorMessage)")
+              .lineLimit(5)
+              .foregroundStyle(.secondary)
+              .multilineTextAlignment(.leading)
           } else if listDownloaded {
             ForEach(communityPluginList, id: \.self) { plugin in
               HStack {
-                Image(systemName: icon(installed(plugin)))
+                Image(systemName: plugin.icon)
                 Text(plugin.name)
               }
-            }.padding(.vertical, 4)
+            }
           } else {
             ProgressView("Loading…")
           }
         }
-      }.listStyle(.sidebar).padding(.leading, -12)
+      }
+      .id(indicator.refreshCount)
+      .listStyle(.sidebar)
+      .padding(.leading, -12)
 
       HStack(spacing: 4) {
         VStack(alignment: .leading) {
@@ -144,7 +211,7 @@ struct PluginStoreView: View {
         }.frame(width: 240)
         GroupBox {
           ScrollView {
-            PluginDetailView(l10n: l10n, plugin: selection)
+            PluginDetailView(l10n: l10n, plugin: selection, panel: panel)
               .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
               .padding(8)
           }
@@ -171,6 +238,10 @@ struct PluginStoreView: View {
 struct PluginDetailView: View {
   let l10n: SettingsLocalization.Context
   let plugin: Plugin?
+  let panel: PluginStorePanel
+
+  @EnvironmentObject private var indicator: RefreshIndicator
+  @State var isInstalling: Bool = false
 
   var body: some View {
     if let plugin {
@@ -181,20 +252,43 @@ struct PluginDetailView: View {
           .padding(.bottom, 6)
         Text(plugin.desc).foregroundStyle(.secondary)
           .padding(.bottom, 4)
-        Link(destination: plugin.url) {
-          Text(plugin.url.absoluteString)
-            .font(.system(size: 11))
-            .multilineTextAlignment(.leading)
-        }
-        Button(l10n.localized(installed(plugin) ? .text_Installed : .text_Install),
-               systemImage: icon(installed(plugin))) {
-
-        }.buttonStyle(.borderedProminent)
-          .disabled(installed(plugin))
-          .padding(.vertical, 8)
         if let owner, let repo {
-          Divider().padding(.vertical, 8)
+          Link(destination: plugin.url) {
+            Text(plugin.url.absoluteString)
+              .font(.system(size: 11))
+              .multilineTextAlignment(.leading)
+          }
+          Button(action: {
+            isInstalling = true
+            Task { @MainActor in
+              await panel.install(plugin.url.absoluteString)
+              isInstalling = false
+              indicator.refresh()
+            }
+          }) {
+            HStack {
+              if isInstalling {
+                ProgressView().controlSize(.small).padding(.trailing, 4)
+              } else {
+                Image(systemName: plugin.icon).padding(.trailing, 4)
+              }
+              Text(l10n.localized(plugin.installed ? .text_Installed :
+                                    isInstalling ? .text_Installing : .text_Install))
+            }
+          }.buttonStyle(.borderedProminent)
+            .disabled(plugin.installed || isInstalling)
+            .padding(.vertical, 8)
+          Divider().padding(.top, 8).padding(.bottom, 12)
           RepoDetailView(owner: owner, repo: repo)
+        } else {
+          Text(l10n.localized(.text_ThisPluginIsNot))
+            .font(.system(size: 11))
+            .padding(.top, 8)
+          Link(destination: plugin.url) {
+            Text(plugin.url.absoluteString)
+              .font(.system(size: 11))
+              .multilineTextAlignment(.leading)
+          }
         }
       }
     } else {
@@ -204,6 +298,9 @@ struct PluginDetailView: View {
   }
 
   private func ownerAndRepo(from url: URL) -> (String?, String?) {
+    guard Regex.githubURL.matches(url.absoluteString) else {
+      return (nil, nil)
+    }
     var elements = url.absoluteString.split(separator: "/")
     guard let repo = elements.popLast(), let owner = elements.last else {
       return (nil, nil)
@@ -326,25 +423,27 @@ struct RepoDetailView: View {
   var body: some View {
     Group {
       if isLoading {
-        ProgressView("Loading...")
-      } else if let error = errorMessage {
+        ZStack {
+          ProgressView("Loading…")
+        }
+      } else if let errorMessage {
         if #available(macOS 14.0, *) {
           ContentUnavailableView("Failed to load",
                                  systemImage: "exclamationmark.triangle",
-                                 description: Text(error))
+                                 description: Text(errorMessage))
         } else {
           VStack(spacing: 6) {
             Image(systemName: "exclamationmark.triangle")
               .font(.title2)
             Text("Failed to load").bold()
-            Text(error)
+            Text(errorMessage)
               .font(.caption)
               .foregroundColor(.secondary)
               .multilineTextAlignment(.center)
           }
         }
-      } else if let repo = repoData {
-        repoContent(repo)
+      } else if let repoData {
+        repoContent(repoData)
       } else {
         Text("No data")
       }
@@ -364,14 +463,15 @@ struct RepoDetailView: View {
         } placeholder: {
           Color.gray.opacity(0.2)
         }
-        .frame(width: 48, height: 48)
+        .frame(width: 36, height: 36)
         .clipShape(RoundedRectangle(cornerRadius: 6))
 
         VStack(alignment: .leading) {
-          Text(repo.fullName)
+          Text(repo.name)
             .font(.headline)
-          Link("View on GitHub", destination: repo.htmlUrl)
+          Text(repo.owner.login)
             .font(.system(size: 11))
+            .foregroundStyle(.secondary)
         }
       }
 

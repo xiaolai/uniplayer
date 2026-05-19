@@ -13,6 +13,7 @@
 "general.logout" = "Logout";
 "general.ok" = "OK";
 "general.cancel" = "Cancel";
+"general.done" = "Done";
 "general.username" = "Username";
 "general.password" = "Password";
 "general.na" = "N/A";
