@@ -98,13 +98,13 @@ IINA uses mpv for media playback. To build IINA, you can either fetch copies of 
 	port contents mpv | grep '\.dylib$' | xargs other/change_lib_dependencies.rb /opt/local
 	```
 
-5. Link the *yt-dlp* dependency to deps/executable 
- 
+5. Link the *yt-dlp* dependency to deps/executable
+
    ```console
    mkdir -p deps/executable
    ln -s $(which yt-dlp) deps/executable/youtube-dl
    ```
-   
+
 6. Open `iina.xcodeproj` in the [latest public version of Xcode](https://apps.apple.com/app/xcode/id497799835). *IINA may not build if you use any other version.*
 
 7. Remove all references to `.dylib` files from the Frameworks group in the sidebar and add all the `.dylib` files in `deps/lib` to that group by clicking  "Add Files to iina..." in the context menu.
@@ -156,7 +156,3 @@ IINA is always looking for contributions, whether it's through bug reports, code
 > 💡 **Want to build your own plugin?**
 >
 > Explore the existing plugins listed here to learn how they work. If you create a new plugin or improve an existing one, feel free to contribute back by adding it to this list via a pull request.
-
-> 🚀 **Interested in creating an IINA plugin?**
->
-> Start by exploring the existing plugins here to understand patterns and best practices. Once you’ve built your own plugin, please contribute back by adding it to this README so others can discover and use it.

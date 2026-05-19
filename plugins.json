@@ -54,6 +54,12 @@
     "id": "io.iina.jump-to-frame"
   },
   {
+    "name": "Hold to Speed",
+    "url": "https://github.com/Tommy12356F/iina-hold-to-speed",
+    "desc": "Hold Space to play at 2× speed, just like YouTube.",
+    "id": "com.vedant.hold-to-speed"
+  },
+  {
     "name": "ListenBrainz Scrobbler",
     "url": "https://git.notfire.cc/notfire/iina-listenbrainz",
     "desc": "Scrobble your music to ListenBrainz.",
