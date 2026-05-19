@@ -71,7 +71,7 @@
         <window title="Window" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" restorable="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" frameAutosaveName="" animationBehavior="default" tabbingMode="disallowed" id="F0z-JX-Cv5" customClass="MainWindow" customModule="IINA" customModuleProvider="target">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES" fullSizeContentView="YES"/>
             <rect key="contentRect" x="196" y="240" width="640" height="400"/>
-            <rect key="screenRect" x="0.0" y="0.0" width="3008" height="1662"/>
+            <rect key="screenRect" x="0.0" y="0.0" width="2560" height="1410"/>
             <view key="contentView" id="se5-gp-TjO" customClass="MainWindowContentView" customModule="IINA" customModuleProvider="target">
                 <rect key="frame" x="0.0" y="0.0" width="640" height="400"/>
                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -632,8 +632,8 @@
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <subviews>
                 <button hidden="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Ztc-Kn-fxI">
-                    <rect key="frame" x="6" y="1" width="18" height="18"/>
-                    <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="ontop_off" imagePosition="only" alignment="center" alternateImage="ontop" refusesFirstResponder="YES" state="on" inset="2" id="jAf-Be-kY3">
+                    <rect key="frame" x="6" y="-3" width="18" height="26"/>
+                    <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="pin" catalog="system" imagePosition="only" alignment="center" alternateImage="pin.fill" refusesFirstResponder="YES" state="on" inset="2" id="jAf-Be-kY3">
                         <behavior key="behavior" pushIn="YES" changeContents="YES" lightByContents="YES"/>
                         <font key="font" metaFont="system"/>
                     </buttonCell>
@@ -679,9 +679,9 @@
     <resources>
         <image name="battery" width="57" height="30"/>
         <image name="mute" width="16" height="14"/>
-        <image name="ontop" width="16" height="14"/>
-        <image name="ontop_off" width="16" height="14"/>
         <image name="pause" width="24" height="24"/>
+        <image name="pin" catalog="system" width="16" height="17"/>
+        <image name="pin.fill" catalog="system" width="16" height="17"/>
         <image name="play" width="24" height="24"/>
         <image name="playing-in-pip" width="87" height="68"/>
         <image name="speed" width="24" height="24"/>
