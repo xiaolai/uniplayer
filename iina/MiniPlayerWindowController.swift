@@ -296,7 +296,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   }
 
   func videoSizeForDisplayInMusicMode() -> (Int, Int) {
-    guard player.currentMediaIsAudio == .isAudio else {
+    guard player.info.isAudio == .isAudio else {
       return player.videoSizeForDisplay
     }
     let albumArtTrack = player.info.videoTracks.first(where: { $0.isAlbumart })
@@ -314,7 +314,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     guard loaded else { return }
     let albumArtTrack = player.info.videoTracks.first(where: { $0.isAlbumart })
     let hasSubtitles = (player.info.isSubVisible && player.info.sid != 0) || (player.info.isSecondSubVisible && player.info.secondSid != 0)
-    defaultAlbumArt.isHidden = player.currentMediaIsAudio != .isAudio || albumArtTrack != nil || hasSubtitles
+    defaultAlbumArt.isHidden = player.info.isAudio != .isAudio || albumArtTrack != nil || hasSubtitles
   }
 
   func setToInitialWindowSize(display: Bool = true, animate: Bool = true) {

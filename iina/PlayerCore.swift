@@ -2008,7 +2008,6 @@ class PlayerCore: NSObject {
     MemoryUsage.shared.logUsage("after file started")
     info.justStartedFile = true
     info.disableOSDForFileLoading = true
-    currentMediaIsAudio = .unknown
 
     info.currentURL = path.contains("://") ?
       URL(string: path.addingPercentEncoding(withAllowedCharacters: .urlAllowed) ?? path) :
@@ -2440,8 +2439,7 @@ class PlayerCore: NSObject {
     log("Track list changed")
     getTrackInfo()
     getSelectedTracks()
-    let audioStatus = checkCurrentMediaIsAudio()
-    currentMediaIsAudio = audioStatus
+    let audioStatus = info.isAudio
 
     // if need to switch to music mode
     if Preference.bool(for: .autoSwitchToMusicMode) {
@@ -3113,25 +3111,6 @@ class PlayerCore: NSObject {
       }
     }
     self.info.setCachedMetadata(path, result)
-  }
-
-  enum CurrentMediaIsAudioStatus {
-    case unknown
-    case isAudio
-    case notAudio
-  }
-
-  var currentMediaIsAudio = CurrentMediaIsAudioStatus.unknown
-
-  func checkCurrentMediaIsAudio() -> CurrentMediaIsAudioStatus {
-    switch info.isAudio {
-    case .unknown:
-      return .unknown
-    case .isAudio:
-      return .isAudio
-    case .notAudio:
-      return .notAudio
-    }
   }
 }
 
