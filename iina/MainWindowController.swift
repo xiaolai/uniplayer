@@ -39,7 +39,6 @@ fileprivate let OSDAnimationDuration = 0.5
 fileprivate let SideBarAnimationDuration = 0.2
 fileprivate let CropAnimationDuration = 0.2
 
-
 fileprivate extension NSStackView.VisibilityPriority {
   static let detachEarly = NSStackView.VisibilityPriority(rawValue: 850)
   static let detachEarlier = NSStackView.VisibilityPriority(rawValue: 800)
@@ -631,7 +630,7 @@ class MainWindowController: PlayerWindowController {
     rightArrowLabel.isHidden = true
     bottomView.isHidden = true
     pipOverlayView.isHidden = true
-    
+
     if player.disableUI { hideUI() }
 
     // add user default observers

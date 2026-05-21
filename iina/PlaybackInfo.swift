@@ -125,8 +125,8 @@ class PlaybackInfo {
     if noVideoTrack && noAudioTrack {
       return .unknown
     }
-    let allVideoTracksAreAlbumCover = !videoTracks.contains { !$0.isAlbumart }
-    return (noVideoTrack || allVideoTracksAreAlbumCover) ? .isAudio : .notAudio
+    let hasRealVideoTrack = videoTracks.contains { !$0.isAlbumart }
+    return (noVideoTrack || !hasRealVideoTrack) ? .isAudio : .notAudio
   }
 
   var justStartedFile: Bool = false
