@@ -601,10 +601,19 @@ class MenuController: NSObject, NSMenuDelegate {
 
   func updatePluginMenu() {
     let isDisplayingPluginsPanel = PlayerCore.active.mainWindow.sideBarStatus == .plugins
-    let managePluginsItem = NSMenuItem(title: Constants.String.managePlugins, action: #selector(AppDelegate.showPluginPreferences(_:)), keyEquivalent: "")
-    let showPanelItem = NSMenuItem(title: isDisplayingPluginsPanel ? Constants.String.hidePluginsPanel : Constants.String.showPluginsPanel, action: #selector(MainMenuActionHandler.showPluginsPanel(_:)), keyEquivalent: "")
+    let managePluginsItem = NSMenuItem(
+      title: Constants.String.managePlugins,
+      action: #selector(AppDelegate.showPluginPreferences(_:)),
+      keyEquivalent: "")
+    let showPanelItem = NSMenuItem(
+      title: isDisplayingPluginsPanel ? Constants.String.hidePluginsPanel : Constants.String.showPluginsPanel,
+      action: #selector(MainMenuActionHandler.showPluginsPanel(_:)),
+      keyEquivalent: "")
     let developerTool = NSMenuItem()
-    let reloadPluginsItem = NSMenuItem(title: NSLocalizedString("menu.conflicting_shortcuts", comment: "Conflicting key shortcuts…"), action: nil, keyEquivalent: "")
+    let reloadPluginsItem = NSMenuItem(
+      title: NSLocalizedString("menu.reload_plugins", comment: "Reload All Plugins"),
+      action: #selector(AppDelegate.reloadAllPlugins(_:)),
+      keyEquivalent: "")
 
     if #available (macOS 26, *) {
       managePluginsItem.image = .findSFSymbol(["gear"])
