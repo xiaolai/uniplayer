@@ -356,7 +356,8 @@ class MainWindowController: PlayerWindowController {
     .useLegacyFullScreen,
     .displayTimeAndBatteryInFullScreen,
     .controlBarToolbarButtons,
-    .alwaysShowOnTopIcon
+    .alwaysShowOnTopIcon,
+    .unlockWindowAspectRatio,
   ]
 
   override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey: Any]?, context: UnsafeMutableRawPointer?) {
@@ -410,6 +411,8 @@ class MainWindowController: PlayerWindowController {
       }
     case PK.alwaysShowOnTopIcon.rawValue:
       updateOnTopIcon()
+    case PK.unlockWindowAspectRatio.rawValue:
+      handleVideoSizeChange()
     default:
       return
     }
@@ -1233,7 +1236,7 @@ class MainWindowController: PlayerWindowController {
         // changed
         let offset = recognizer.magnification - lastMagnification + 1.0;
         let newWidth = window.frame.width * offset
-        let newHeight = newWidth / window.aspectRatio.aspect
+        let newHeight = newWidth / currentAspectRatio.aspect
 
         //Check against max & min threshold
         if newHeight < screenFrame.height && newHeight > minSize.height && newWidth > minSize.width {
@@ -1739,7 +1742,7 @@ class MainWindowController: PlayerWindowController {
     }
     // then animate to the original frame
     window.setFrame(framePriorToBeingInFullscreen, display: true, animate: useAnimation)
-    window.aspectRatio = aspectRatio
+    setAspectRatio(aspectRatio)
     // call delegate
     windowDidExitFullScreen(Notification(name: .iinaLegacyFullScreen))
   }
@@ -1801,7 +1804,7 @@ class MainWindowController: PlayerWindowController {
   func windowWillResize(_ sender: NSWindow, to frameSize: NSSize) -> NSSize {
     guard let window = window else { return frameSize }
     if frameSize.height <= minSize.height || frameSize.width <= minSize.width {
-      return window.aspectRatio.grow(toSize: minSize)
+      return currentAspectRatio.grow(toSize: minSize)
     }
     return frameSize
   }
@@ -1813,6 +1816,10 @@ class MainWindowController: PlayerWindowController {
       forceDraw("window resized during animated enter or exit full screen")
     } else if !videoView.videoLayer.inLiveResize {
       forceDraw("window resized")
+    }
+
+    if Preference.bool(for: .unlockWindowAspectRatio) && videoView.isIdle {
+      forceDraw("window resized with aspect ratio unlocked and paused")
     }
 
     // interactive mode
@@ -2596,6 +2603,21 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - UI: Window size / aspect
 
+  private var currentAspectRatio: NSSize {
+    guard let window else { return .zero }
+    return Preference.bool(for: .unlockWindowAspectRatio) ? window.frame.size : window.aspectRatio
+  }
+
+  private func setAspectRatio(_ aspectRatio: NSSize) {
+    guard let window else { return }
+    if Preference.bool(for: .unlockWindowAspectRatio) {
+      window.aspectRatio = .zero
+      window.resizeIncrements = .init(width: 1, height: 1)
+    } else {
+      window.aspectRatio = aspectRatio
+    }
+  }
+
   /** Calculate the window frame from a parsed struct of mpv's `geometry` option. */
   func windowFrameFromGeometry(newSize: NSSize? = nil, screen: NSScreen? = nil) -> NSRect? {
     guard let geometry = cachedGeometry ?? player.getGeometry(),
@@ -2713,7 +2735,7 @@ class MainWindowController: PlayerWindowController {
 
     // set aspect ratio
     let originalVideoSize = NSSize(width: width, height: height)
-    window.aspectRatio = originalVideoSize
+    setAspectRatio(originalVideoSize)
     pip.aspectRatio = originalVideoSize
 
     var rect: NSRect
