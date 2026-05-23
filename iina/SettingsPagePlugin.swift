@@ -100,10 +100,19 @@ fileprivate class PluginInstallView: SettingsAccessory.Base {
   }
 
   @IBAction func installPluginFromGitHub(_ sender: Any) {
-    let panel = PluginStorePanel(l10n: l10n)
-    panel.contentMaxSize = NSSize(width: 800, height: 600)
-    view.window!.beginSheet(panel) { _ in
-      self.page.listView.reload()
+    if #available(macOS 12.0, *) {
+      let panel = PluginStorePanel(l10n: l10n)
+      panel.contentMaxSize = NSSize(width: 800, height: 600)
+      view.window!.beginSheet(panel) { _ in
+        self.page.listView.reload()
+      }
+    } else {
+      Utility.quickPromptPanel("install_plugin_macos_11", sheetWindow: view.window!) { url in
+        if url.isEmpty { return }
+        Task { @MainActor in
+          await self.pluginManager.install(gitHubString: url)
+        }
+      }
     }
   }
 }
