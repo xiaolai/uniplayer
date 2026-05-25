@@ -261,7 +261,7 @@ fileprivate class AudioOutputDeviceView: SettingsContainer {
     audioDevicePopUp.action = #selector(audioDeviceAction)
 
     view.addSubview(audioDevicePopUp)
-    audioDevicePopUp.padding(.top(-4), .bottom(8), .leading(SettingsSubList.indent), .trailing(8))
+    audioDevicePopUp.padding(.top(topConstraintOffset), .bottom(8), .leading(SettingsSubList.indent), .trailing(8))
 
     return view
   }

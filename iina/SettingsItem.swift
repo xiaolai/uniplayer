@@ -542,8 +542,12 @@ struct SettingsItem {
     override func getValueViews() -> [NSView] {
       popupButton = NSPopUpButton()
       popupButton.translatesAutoresizingMaskIntoConstraints = false
-      popupButton.bezelStyle = .flexiblePush
+      if #available(macOS 12, *) {
+        popupButton.bezelStyle = .flexiblePush
+      }
       if #available(macOS 26, *) {
+        popupButton.showsBorderOnlyWhileMouseInside = false
+      } else if #unavailable(macOS 12) {
         popupButton.showsBorderOnlyWhileMouseInside = false
       } else {
         popupButton.showsBorderOnlyWhileMouseInside = true
@@ -717,8 +721,12 @@ struct SettingsItem {
       nsSwitch.target = self
       popupButton = NSPopUpButton()
       popupButton.translatesAutoresizingMaskIntoConstraints = false
-      popupButton.bezelStyle = .flexiblePush
+      if #available(macOS 12, *) {
+        popupButton.bezelStyle = .flexiblePush
+      }
       if #available(macOS 26, *) {
+        popupButton.showsBorderOnlyWhileMouseInside = false
+      } else if #unavailable(macOS 12) {
         popupButton.showsBorderOnlyWhileMouseInside = false
       } else {
         popupButton.showsBorderOnlyWhileMouseInside = true
@@ -1136,9 +1144,7 @@ class SettingsAccessory {
       stackView.orientation = .vertical
       stackView.spacing = 4
       stackView.setHuggingPriority(.defaultLow, for: .horizontal)
-      // not sure from which version, need further tests
-      let topConstraint: CGFloat = if #available(macOS 26, *) { -4 } else { 0 }
-      stackView.padding(.top(topConstraint), .bottom(0), .horizontal)
+      stackView.padding(.top(topConstraintOffset), .bottom(0), .horizontal)
     }
 
     @MainActor required init?(coder: NSCoder) {
@@ -1327,7 +1333,7 @@ class SettingsAccessory {
       stackView.addArrangedSubview(audioLangTokenField)
       view.addSubview(stackView)
 
-      stackView.padding(.top(-4), .leading(SettingsSubList.indent), .trailing(8), .bottom(8))
+      stackView.padding(.top(topConstraintOffset), .leading(SettingsSubList.indent), .trailing(8), .bottom(8))
     }
 
     @MainActor required init?(coder: NSCoder) {

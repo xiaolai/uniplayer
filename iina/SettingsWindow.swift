@@ -726,6 +726,9 @@ extension SettingsWindow: NSTableViewDataSource, NSTableViewDelegate {
     let imageView = NSImageView(image: pages[row].image)
     imageView.translatesAutoresizingMaskIntoConstraints = false
     imageView.size(width: 24, height: 24)
+    if #unavailable(macOS 14) {
+      imageView.imageScaling = .scaleProportionallyUpOrDown
+    }
     if #available(macOS 26, *) {
       imageView.contentTintColor = .textColor
     } else {

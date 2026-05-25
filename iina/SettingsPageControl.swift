@@ -16,7 +16,7 @@ class SettingsPageControl: SettingsPage {
   }
 
   override var image: NSImage {
-    return makeSymbol("computermouse", fallbackImage: "pref_network")
+    return makeSymbol("computermouse", fallbackImage: "pref_control")
   }
 
   override var localizationTable: String {
