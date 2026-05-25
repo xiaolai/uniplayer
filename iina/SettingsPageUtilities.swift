@@ -13,7 +13,7 @@ class SettingsPageUtilities: SettingsPage {
   override var identifier: String {
     "utilities"
   }
-  
+
   override var title: String {
     return NSLocalizedString("preference.utilities", comment: "Utilities")
   }
@@ -194,10 +194,10 @@ fileprivate class SetAsDefaultSheetWindow: NSWindow {
     contentView?.addSubview(cancelButton)
 
     stackView.padding(.leading(24), .trailing(24), .top(24))
-      .spacing(to: okButton, .bottom(16))
-    cancelButton.center(with: okButton, y: true)
+      .spacing(.bottom(16), to: okButton)
+    cancelButton.center(.y, with: okButton)
     okButton.padding(.bottom(24), .trailing(24))
-      .spacing(to: cancelButton, .leading(8))
+      .spacing(.leading(8), to: cancelButton)
   }
 
   @objc func okBtnAction(_ sender: Any) {
