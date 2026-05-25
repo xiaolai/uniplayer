@@ -71,7 +71,7 @@
         <window title="Window" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" restorable="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" frameAutosaveName="" animationBehavior="default" tabbingMode="disallowed" id="F0z-JX-Cv5" customClass="MainWindow" customModule="IINA" customModuleProvider="target">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES" fullSizeContentView="YES"/>
             <rect key="contentRect" x="196" y="240" width="640" height="400"/>
-            <rect key="screenRect" x="0.0" y="0.0" width="2560" height="1410"/>
+            <rect key="screenRect" x="0.0" y="0.0" width="1710" height="1073"/>
             <view key="contentView" id="se5-gp-TjO" customClass="MainWindowContentView" customModule="IINA" customModuleProvider="target">
                 <rect key="frame" x="0.0" y="0.0" width="640" height="400"/>
                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -655,7 +655,7 @@
             <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
             <point key="canvasLocation" x="375" y="504"/>
         </customView>
-        <visualEffectView blendingMode="withinWindow" material="appearanceBased" state="followsWindowActiveState" translatesAutoresizingMaskIntoConstraints="NO" id="S36-44-g7Z">
+        <visualEffectView blendingMode="withinWindow" material="toolTip" state="followsWindowActiveState" translatesAutoresizingMaskIntoConstraints="NO" id="S36-44-g7Z">
             <rect key="frame" x="0.0" y="0.0" width="128" height="20"/>
             <subviews>
                 <textField focusRingType="none" horizontalHuggingPriority="251" verticalHuggingPriority="750" alphaValue="0.5" allowsCharacterPickerTouchBarItem="YES" translatesAutoresizingMaskIntoConstraints="NO" id="qOq-6a-7j7">
@@ -680,8 +680,8 @@
         <image name="battery" width="57" height="30"/>
         <image name="mute" width="16" height="14"/>
         <image name="pause" width="24" height="24"/>
-        <image name="pin" catalog="system" width="16" height="17"/>
-        <image name="pin.fill" catalog="system" width="16" height="17"/>
+        <image name="pin" catalog="system" width="15" height="17"/>
+        <image name="pin.fill" catalog="system" width="15" height="17"/>
         <image name="play" width="24" height="24"/>
         <image name="playing-in-pip" width="87" height="68"/>
         <image name="speed" width="24" height="24"/>
