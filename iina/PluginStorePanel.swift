@@ -112,6 +112,8 @@ struct Plugin: Identifiable, Hashable, Decodable {
 
 let officialPlugins = defaultPlugins.map { Plugin($0) }
 
+
+@available(macOS 12.0, *)
 struct PluginStoreView: View {
   let l10n: SettingsLocalization.Context
   let panel: PluginStorePanel
@@ -236,6 +238,7 @@ struct PluginStoreView: View {
 }
 
 
+@available(macOS 12.0, *)
 struct PluginDetailView: View {
   let l10n: SettingsLocalization.Context
   let plugin: Plugin?
@@ -411,6 +414,8 @@ class GitHubService {
   }
 }
 
+
+@available(macOS 12.0, *)
 struct RepoDetailView: View {
   let owner: String
   let repo: String
