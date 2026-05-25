@@ -1803,6 +1803,10 @@ class MainWindowController: PlayerWindowController {
 
   func windowWillResize(_ sender: NSWindow, to frameSize: NSSize) -> NSSize {
     guard let window = window else { return frameSize }
+    // disable resizing in interactive mode, little benefit but complicates the layout logic
+    if isInInteractiveMode {
+      return window.frame.size
+    }
     if frameSize.height <= minSize.height || frameSize.width <= minSize.width {
       return currentAspectRatio.grow(toSize: minSize)
     }
@@ -1820,11 +1824,6 @@ class MainWindowController: PlayerWindowController {
 
     if Preference.bool(for: .unlockWindowAspectRatio) && videoView.isIdle {
       forceDraw("window resized with aspect ratio unlocked and paused")
-    }
-
-    // interactive mode
-    if isInInteractiveMode {
-      cropSettingsView?.cropBoxView.resized()
     }
 
     // update control bar position
@@ -2485,10 +2484,6 @@ class MainWindowController: PlayerWindowController {
 
     self.cropSettingsView = controlView
 
-    let currentAspectRatio = window.frame.height / window.frame.width
-    aspectRatioConstraintForInteractiveMode = videoView.heightAnchor.constraint(equalTo: videoView.widthAnchor, multiplier: currentAspectRatio)
-    aspectRatioConstraintForInteractiveMode!.isActive = true
-
     // show crop settings view
     NSAnimationContext.runAnimationGroup({ (context) in
       context.duration = AccessibilityPreferences.adjustedDuration(CropAnimationDuration)
@@ -2504,6 +2499,7 @@ class MainWindowController: PlayerWindowController {
       self.videoView.layer?.shadowRadius = 3
       self.cropSettingsView?.cropBoxView.resized()
       self.cropSettingsView?.cropBoxView.isHidden = false
+      self.forceDraw("interactive cropping")
     }
   }
 
@@ -2828,16 +2824,18 @@ class MainWindowController: PlayerWindowController {
 
     shouldApplyInitialWindowSize = false
 
-    if fsState.isFullscreen {
+    let rectBefore = rect
+    rect = rect.constrain(in: screenRect)
+    if rectBefore != rect {
+      log("Constrained window frame to be in screen: \(rect)")
+    }
+
+    if Preference.bool(for: .unlockWindowAspectRatio) {
+      // do nothing when window aspect ratio is unlocked
+    } else if fsState.isFullscreen {
       log("In full screen mode, setting prior window frame")
       fsState.priorWindowedFrame = rect
     } else {
-      let rectBefore = rect
-      rect = rect.constrain(in: screenRect)
-      if rectBefore != rect {
-        log("Constrained window frame to be in screen: \(rect)")
-      }
-
       log("Setting window frame to: \(rect)")
       if player.disableWindowAnimation || Preference.bool(for: .disableAnimations) || !window.isVisible {
         window.setFrame(rect, display: true, animate: false)
