@@ -627,7 +627,8 @@ struct SettingsItem {
   class Switch: General {
     var nsSwitch: NSSwitch!
     private var customBinding = false
-    private var customBindingBlock: ((NSSwitch) -> Void)?
+    private var customBindingBlock: ((Switch) -> Void)?
+    var stateChangeCallback: ((Switch) -> Void)?
 
     override func getValueViews() -> [NSView] {
       nsSwitch = NSSwitch()
@@ -642,7 +643,7 @@ struct SettingsItem {
       return self
     }
 
-    func bindToCustom(block: @escaping (NSSwitch) -> Void) -> Self {
+    func bindToCustom(block: @escaping (Switch) -> Void) -> Self {
       self.customBinding = true
       self.customBindingBlock = block
       return self
@@ -657,21 +658,33 @@ struct SettingsItem {
       if let key = key {
         nsSwitch.bind(.value, to: UserDefaults.standard, withKeyPath: key.rawValue)
       } else if customBinding, let customBindingBlock = customBindingBlock {
-        customBindingBlock(nsSwitch)
+        customBindingBlock(self)
       }
       DispatchQueue.main.async {
-        self.switchChanged(self.nsSwitch)
+        self.switchChanged(nil)
       }
     }
 
-    @objc func switchChanged(_ sender: NSSwitch) {
+    /// Update the swich state programatically.
+    func setIsOn(_ isOn: Bool) {
+      nsSwitch.state = isOn ? .on : .off
+      switchChanged(nil)
+    }
+
+    @objc func switchChanged(_ sender: NSSwitch?) {
       guard let detailView = renderedDetailView else { return }
 
-      let enabled = sender.state == .on
+      let enabled = nsSwitch.state == .on
       if !isExpandableAndClickable {
         toggleExpandable(enabled)
       }
       setSubControls(detailView, enabled: enabled)
+
+      if sender != nil {
+        // Only call the callback when the user manually clicked the switch.
+        // Otherwise, we assume it's already handled programatically.
+        stateChangeCallback?(self)
+      }
     }
 
     private func setSubControls(_ view: NSView, enabled: Bool) {

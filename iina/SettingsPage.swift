@@ -128,6 +128,8 @@ class SettingsPage {
     content()
   }()
 
+  func pageLoaded() {}
+
   final func getView() -> NSView {
     let view = makeContentView()
 
