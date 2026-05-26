@@ -538,6 +538,7 @@ struct SettingsItem {
     private var customBinding = false
     private var customBindingBlock: ((NSPopUpButton) -> Void)?
     private var tagForDisabled: Int?
+    private var availableTags: Set<Int>? = nil
 
     override func getValueViews() -> [NSView] {
       popupButton = NSPopUpButton()
@@ -565,6 +566,11 @@ struct SettingsItem {
         let title = l10n.localized(.init("\(l10nKey).items.\(tag)"))
         context.add(itemID, title)
       }
+    }
+
+    func availableTags(_ tags: Set<Int>) -> Self {
+      self.availableTags = tags
+      return self
     }
 
     func bindTo<T>(_ key: Preference.Key, ofType t: T.Type) -> Self
@@ -596,6 +602,7 @@ struct SettingsItem {
     override func initBinding() {
       guard let l10nKey = key?.rawValue ?? labelLocalizationKey?.rawValue else { return }
       for (tag, _) in valueTypes {
+        guard availableTags?.contains(tag) != false else { continue }
         let title = l10n.localized(.init("\(l10nKey).items.\(tag)"))
         popupButton.addItem(withTitle: title)
         popupButton.lastItem?.tag = tag
@@ -1330,6 +1337,7 @@ class SettingsAccessory {
 
       stackView.translatesAutoresizingMaskIntoConstraints = false
       stackView.orientation = .vertical
+      stackView.alignment = .leading
       stackView.addArrangedSubview(audioLangTokenField)
       view.addSubview(stackView)
 
