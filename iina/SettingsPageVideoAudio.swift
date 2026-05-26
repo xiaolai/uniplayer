@@ -121,7 +121,7 @@ class SettingsPageVideoAudio: SettingsPage {
 
       SettingsList {
         SettingsItem.General(title: .gaplessAudioLabel)
-          .image(name: "cpu")
+          .image(name: "custom.waveform.2.arrow.trianglehead.2.clockwise.rotate.90")
           .withHelpLink(AppData.gaplessAudioHelpLink)
           .withDetailView(
             SettingsAccessory.Selection()
