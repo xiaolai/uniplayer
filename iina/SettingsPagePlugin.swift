@@ -711,6 +711,16 @@ fileprivate class PluginDetailsWindow: NSWindow {
         subProviders.map { $0["name"] ?? "?" }.joined(separator: "<br>")
       )
     }
+
+    let permissions = plugin.localizedPermissions(newLine: "<br>")
+    body += entry(
+      "Permissions",
+      permissions.isEmpty ? NSLocalizedString("quicksetting.item_none", comment: "") :
+        permissions.map {
+          "<div class='perm \($0.isDangerous ? "dangerous" : "")'><b>\($0.name)</b><br>\($0.desc)</div>"
+        }.joined()
+  )
+
     webView.loadHTMLString(generateHTML(body: body), baseURL: nil)
   }
 
@@ -944,6 +954,21 @@ small, .small {
   margin-top: 2px;
 }
 
+.perm {
+  font-size: 11px;
+  padding: 8px;
+  margin: 8px 0;
+  color: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.perm.dangerous {
+  border: 1px solid rgba(200, 0, 0, 0.5);
+  background: rgba(200, 0, 0, 0.1);
+}
+
 @media (prefers-color-scheme: dark) {
   body {
     color-scheme: dark;
@@ -952,6 +977,10 @@ small, .small {
 
   .secondary {
     color: rgba(255, 255, 255, .5);
+  }
+
+  .perm {
+    color: rgba(255, 255, 255, 0.8);
   }
 }
 
