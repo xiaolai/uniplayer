@@ -16,7 +16,7 @@ class SettingsPageControl: SettingsPage {
   }
 
   override var image: NSImage {
-    return makeSymbol("computermouse", fallbackImage: "pref_network")
+    return makeSymbol("computermouse", fallbackImage: "pref_control")
   }
 
   override var localizationTable: String {
@@ -42,6 +42,7 @@ class SettingsPageControl: SettingsPage {
           .image(name: "rectangle.fill")
         SettingsItem.PopupButton()
           .bindTo(.forceTouchAction, ofType: Preference.MouseClickAction.self)
+          .availableTags([0, 1, 2, 3])
       }
     }
   }
@@ -51,11 +52,14 @@ class SettingsPageControl: SettingsPage {
       SettingsList(title: .text_Mouse) {
         SettingsItem.PopupButton()
           .bindTo(.singleClickAction, ofType: Preference.MouseClickAction.self)
+          .availableTags([0, 2, 3])
           .image(name: ["pointer.arrow.click", "cursorarrow.click"])
         SettingsItem.PopupButton()
           .bindTo(.doubleClickAction, ofType: Preference.MouseClickAction.self)
+          .availableTags([0, 1, 2, 4, 5, 6])
         SettingsItem.PopupButton()
           .bindTo(.rightClickAction, ofType: Preference.MouseClickAction.self)
+          .availableTags([0, 2, 3, 4, 5, 6])
         SettingsItem.PopupButton()
           .bindTo(.middleClickAction, ofType: Preference.MouseClickAction.self)
         SettingsItem.Switch()

@@ -7,11 +7,13 @@
 //
 
 class SettingsPageUI: SettingsPage {
-  private lazy var windowInitialSizeView: WindowInitialSizeView = WindowInitialSizeView(l10n: localizationContext)
-  private lazy var windowInitialPositionView: WindowInitialPositionView = WindowInitialPositionView(l10n: localizationContext)
+  private lazy var windowInitialSizeView: WindowInitialSizeView = WindowInitialSizeView(l10n: localizationContext, geometryBindings: geometryBindings)
+  private lazy var windowInitialPositionView: WindowInitialPositionView = WindowInitialPositionView(l10n: localizationContext, geometryBindings: geometryBindings)
   private lazy var resizeWindowView: ResizeWindowView = ResizeWindowView(l10n: localizationContext)
   private lazy var oscLayoutView: OSCLayoutView = OSCLayoutView(l10n: localizationContext)
   private lazy var oscToolbarView: OSCToolbarView = OSCToolbarView(l10n: localizationContext)
+
+  private lazy var geometryBindings = GeometryBindings()
 
   override var identifier: String {
     "ui"
@@ -27,6 +29,10 @@ class SettingsPageUI: SettingsPage {
 
   override var localizationTable: String {
     "SettingsUILocalizable"
+  }
+
+  override func pageLoaded() {
+    geometryBindings.updateControls()
   }
 
   override func content() -> [SettingsSection] {
@@ -57,10 +63,16 @@ class SettingsPageUI: SettingsPage {
         SettingsItem.Switch(title: .text_InitialWindowSize)
           .image(name: "custom.arrow.up.left.and.down.right.and.arrow.up.right.and.down.left.rectangle")
           .withExpandingDetailView(windowInitialSizeView)
+          .bindToCustom {
+            self.geometryBindings.initControl(\.windowSizeSwitch, $0)
+          }
           .bindExpandableView()
         SettingsItem.Switch(title: .text_InitialWindowPosition)
           .image(name: "arrow.up.and.down.and.arrow.left.and.right")
           .withExpandingDetailView(windowInitialPositionView)
+          .bindToCustom {
+            self.geometryBindings.initControl(\.windowPosSwitch, $0)
+          }
           .bindExpandableView()
       }
 
@@ -119,8 +131,10 @@ class SettingsPageUI: SettingsPage {
         SettingsItem.Switch()
           .image(name: "slider.horizontal.below.square.and.square.filled")
           .bindTo(.showRemainingTime)
-        SettingsItem.Switch()
-          .bindTo(.scaleRemainingTime)
+          .withDetailView {
+            SettingsItem.Switch()
+              .bindTo(.scaleRemainingTime)
+          }
         SettingsItem.Switch()
           .image(name: "custom.computermouse.slash")
           .bindTo(.disablePlaySliderScrolling)
@@ -177,11 +191,11 @@ class SettingsPageUI: SettingsPage {
               .trailingLabel(.text_MB)
             SettingsItem.Switch()
               .bindTo(.enableThumbnailForRemoteFiles)
+            SettingsItem.Input()
+              .bindTo(.thumbnailWidth)
+              .trailingLabel(.text_pt)
+              .hasDescription()
           }
-        SettingsItem.Input()
-          .bindTo(.thumbnailWidth)
-          .trailingLabel(.text_pt)
-          .hasDescription()
       }
     }
   }
@@ -222,6 +236,118 @@ class SettingsPageUI: SettingsPage {
 }
 
 
+fileprivate let SizeWidthTag = 0
+fileprivate let SizeHeightTag = 1
+fileprivate let UnitPointTag = 0
+fileprivate let UnitPercentTag = 1
+fileprivate let SideLeftTag = 0
+fileprivate let SideRightTag = 1
+fileprivate let SideTopTag = 0
+fileprivate let SideBottomTag = 1
+
+
+fileprivate class GeometryBindings: NSObject {
+  let key = Preference.Key.initialWindowSizePosition.rawValue
+
+  var windowSizeSwitch: SettingsItem.Switch!
+  var windowSizeSide: NSPopUpButton!
+  var windowSizeValue: NSTextField!
+  var windowSizeUnit: NSPopUpButton!
+
+  var windowPosSwitch: SettingsItem.Switch!
+  var windowPosXAnchor: NSPopUpButton!
+  var windowPosXOffset: NSTextField!
+  var windowPosXUnit: NSPopUpButton!
+  var windowPosYAnchor: NSPopUpButton!
+  var windowPosYOffset: NSTextField!
+  var windowPosYUnit: NSPopUpButton!
+
+  override init() {
+    super.init()
+    UserDefaults.standard.addObserver(self, forKeyPath: key, options: [.new, .old], context: nil)
+  }
+
+  deinit {
+    UserDefaults.standard.removeObserver(self, forKeyPath: key)
+  }
+
+  func initControl<T>(_ keyPath: ReferenceWritableKeyPath<GeometryBindings, T?>, _ value: T) {
+    self[keyPath: keyPath] = value
+    if let value = value as? SettingsItem.Switch {
+      value.stateChangeCallback = { [weak self] _ in
+        self?.updateGeometry(value)
+      }
+    } else if let value = value as? NSControl {
+      value.target = self
+      value.action = #selector(updateGeometry(_:))
+    }
+  }
+
+  @objc func updateGeometry(_ sender: AnyObject) {
+    var geometry = ""
+    if windowSizeSwitch.nsSwitch.state == .on {
+      geometry += windowSizeSide.selectedTag() == SizeWidthTag ? "" : "x"
+      geometry += windowSizeValue.stringValue
+      geometry += windowSizeUnit.selectedTag() == UnitPointTag ? "" : "%"
+    }
+    if windowPosSwitch.nsSwitch.state == .on {
+      geometry += windowPosXAnchor.selectedTag() == SideLeftTag ? "+" : "-"
+      geometry += windowPosXOffset.stringValue
+      geometry += windowPosXUnit.selectedTag() == UnitPointTag ? "" : "%"
+      geometry += windowPosYAnchor.selectedTag() == SideBottomTag ? "+" : "-"
+      geometry += windowPosYOffset.stringValue
+      geometry += windowPosYUnit.selectedTag() == UnitPointTag ? "" : "%"
+    }
+    Preference.set(geometry, for: .initialWindowSizePosition)
+  }
+
+  func updateControls() {
+    let geometryString = Preference.string(for: .initialWindowSizePosition) ?? ""
+    if let geometry = GeometryDef.parse(geometryString) {
+      // size
+      if let h = geometry.h {
+        windowSizeSwitch.setIsOn(true)
+        windowSizeSide.selectItem(withTag: SizeHeightTag)
+        let isPercent = h.hasSuffix("%")
+        windowSizeUnit.selectItem(withTag: isPercent ? UnitPercentTag : UnitPointTag)
+        windowSizeValue.stringValue = isPercent ? String(h.dropLast()) : h
+      } else if let w = geometry.w {
+        windowSizeSwitch.setIsOn(true)
+        windowSizeSide.selectItem(withTag: SizeWidthTag)
+        let isPercent = w.hasSuffix("%")
+        windowSizeUnit.selectItem(withTag: isPercent ? UnitPercentTag : UnitPointTag)
+        windowSizeValue.stringValue = isPercent ? String(w.dropLast()) : w
+      } else {
+        windowSizeSwitch.setIsOn(false)
+      }
+      // position
+      if let x = geometry.x, let xSign = geometry.xSign, let y = geometry.y, let ySign = geometry.ySign {
+        windowPosSwitch.setIsOn(true)
+        let xIsPercent = x.hasSuffix("%")
+        windowPosXAnchor.selectItem(withTag: xSign == "+" ? SideLeftTag : SideRightTag)
+        windowPosXOffset.stringValue = xIsPercent ? String(x.dropLast()) : x
+        windowPosXUnit.selectItem(withTag: xIsPercent ? UnitPercentTag : UnitPointTag)
+        let yIsPercent = y.hasSuffix("%")
+        windowPosYAnchor.selectItem(withTag: ySign == "+" ? SideBottomTag : SideTopTag)
+        windowPosYOffset.stringValue = yIsPercent ? String(y.dropLast()) : y
+        windowPosYUnit.selectItem(withTag: yIsPercent ? UnitPercentTag : UnitPointTag)
+      } else {
+        windowPosSwitch.setIsOn(false)
+      }
+    } else {
+      windowSizeSwitch.setIsOn(false)
+      windowPosSwitch.setIsOn(false)
+    }
+  }
+
+  override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+    guard !(change?[NSKeyValueChangeKey.oldKey] is NSNull) else { return }
+
+    updateControls()
+  }
+}
+
+
 fileprivate class WindowInitialSizeView: WithSettingsLocalizationContext, SettingsContainer {
   lazy var itemID = SettingsContainerUUID.next()
   var l10n: SettingsLocalization.Context!
@@ -239,7 +365,7 @@ fileprivate class WindowInitialSizeView: WithSettingsLocalizationContext, Settin
 
   lazy var textField: NSTextField = ui.textInput(value: "1280", width: 64)
 
-  init(l10n: SettingsLocalization.Context) {
+  init(l10n: SettingsLocalization.Context, geometryBindings: GeometryBindings) {
     self.l10n = l10n
     self.container = NSView()
     self.view = NSStackView()
@@ -250,6 +376,10 @@ fileprivate class WindowInitialSizeView: WithSettingsLocalizationContext, Settin
     view.addArrangedSubview(popupButtonDim)
     view.addArrangedSubview(textField)
     view.addArrangedSubview(popupButtonUnit)
+
+    geometryBindings.initControl(\.windowSizeSide, popupButtonDim)
+    geometryBindings.initControl(\.windowSizeValue, textField)
+    geometryBindings.initControl(\.windowSizeUnit, popupButtonUnit)
 
     container.addSubview(view)
     view.padding(.bottom(8), .top(0), .leading(SettingsSubList.indent), .trailing(0))
@@ -269,7 +399,7 @@ fileprivate class WindowInitialPositionView: WithSettingsLocalizationContext, Se
   lazy var ui: SettingsUIHelper = SettingsUIHelper(l10n)
 
   lazy var popupButtonXPos: NSPopUpButton = ui.popupButton([
-    (.text_left, 0), (.text_right, 1)
+    (.text_top, 0), (.text_bottom, 1)
   ])
 
   lazy var popupButtonYPos: NSPopUpButton = ui.popupButton([
@@ -288,7 +418,7 @@ fileprivate class WindowInitialPositionView: WithSettingsLocalizationContext, Se
 
   lazy var textFieldY: NSTextField = ui.textInput(value: "20", width: 64)
 
-  init(l10n: SettingsLocalization.Context) {
+  init(l10n: SettingsLocalization.Context, geometryBindings: GeometryBindings) {
     self.l10n = l10n
     self.container = NSView()
     self.view = NSStackView()
@@ -311,6 +441,13 @@ fileprivate class WindowInitialPositionView: WithSettingsLocalizationContext, Se
 
     container.addSubview(view)
     view.padding(.bottom(8), .top(0), .leading(SettingsSubList.indent), .trailing(0))
+
+    geometryBindings.initControl(\.windowPosXAnchor, popupButtonXPos)
+    geometryBindings.initControl(\.windowPosXUnit, popupButtonXUnit)
+    geometryBindings.initControl(\.windowPosXOffset, textFieldX)
+    geometryBindings.initControl(\.windowPosYAnchor, popupButtonYPos)
+    geometryBindings.initControl(\.windowPosYUnit, popupButtonYUnit)
+    geometryBindings.initControl(\.windowPosYOffset, textFieldY)
   }
 
   func makeView(context: SettingsLocalization.Context) -> NSView {

@@ -42,6 +42,7 @@ fileprivate class RefreshIndicator: ObservableObject {
 }
 
 
+@available(macOS 12.0, *)
 class PluginStorePanel: NSWindow {
   let l10n: SettingsLocalization.Context
   lazy var pluginManager = PluginManager(window: self)
@@ -111,6 +112,8 @@ struct Plugin: Identifiable, Hashable, Decodable {
 
 let officialPlugins = defaultPlugins.map { Plugin($0) }
 
+
+@available(macOS 12.0, *)
 struct PluginStoreView: View {
   let l10n: SettingsLocalization.Context
   let panel: PluginStorePanel
@@ -183,7 +186,7 @@ struct PluginStoreView: View {
           if let errorMessage {
             Text("Error: \(errorMessage)")
               .lineLimit(5)
-              .foregroundStyle(.secondary)
+              .foregroundColor(.secondary)
               .multilineTextAlignment(.leading)
           } else if listDownloaded {
             ForEach(communityPluginList, id: \.self) { plugin in
@@ -235,6 +238,7 @@ struct PluginStoreView: View {
 }
 
 
+@available(macOS 12.0, *)
 struct PluginDetailView: View {
   let l10n: SettingsLocalization.Context
   let plugin: Plugin?
@@ -250,7 +254,7 @@ struct PluginDetailView: View {
         Text(plugin.name).font(.system(size: 14)).bold()
         Text(plugin.id).font(.system(size: 11).monospaced())
           .padding(.bottom, 6)
-        Text(plugin.desc).foregroundStyle(.secondary)
+        Text(plugin.desc).foregroundColor(.secondary)
           .padding(.bottom, 4)
         if let owner, let repo {
           Link(destination: plugin.url) {
@@ -293,7 +297,7 @@ struct PluginDetailView: View {
       }
     } else {
       Text(l10n.localized(.text_NoSelection))
-        .bold().foregroundStyle(.secondary)
+        .bold().foregroundColor(.secondary)
     }
   }
 
@@ -410,6 +414,8 @@ class GitHubService {
   }
 }
 
+
+@available(macOS 12.0, *)
 struct RepoDetailView: View {
   let owner: String
   let repo: String
@@ -471,7 +477,7 @@ struct RepoDetailView: View {
             .font(.headline)
           Text(repo.owner.login)
             .font(.system(size: 11))
-            .foregroundStyle(.secondary)
+            .foregroundColor(.secondary)
         }
       }
 

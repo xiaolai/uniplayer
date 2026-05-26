@@ -285,8 +285,9 @@ fileprivate class SubtitlesFontView: SettingsAccessory.Base {
     fontButton.translatesAutoresizingMaskIntoConstraints = false
     fontButton.target = self
     fontButton.action = #selector(chooseSubFontAction)
-    let widthConstraint = fontButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 160)
-    widthConstraint.priority = .defaultHigh
+    fontButton.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+    let widthConstraint = fontButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 120)
+    widthConstraint.priority = .defaultLow
     widthConstraint.isActive = true
     fontButton.bind(.title, to: UserDefaults.standard, withKeyPath: Preference.Key.subTextFont.rawValue)
     fontButton.size(height: 25)

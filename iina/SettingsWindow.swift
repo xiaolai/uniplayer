@@ -38,6 +38,7 @@ class SettingsWindow: NSWindow {
   private let highlightView: HighlightView
 
   var pages: [SettingsPage]
+  private var cachedPageViews: [String: NSView] = [:]
 
   private var sectionNames: [String] = []
   private var sectionNameStackView: NSStackView?
@@ -166,7 +167,10 @@ class SettingsWindow: NSWindow {
 
   func loadPage(at index: Int) {
     guard let page = pages[at: index] else { return }
-    let content = page.getView()
+    if cachedPageViews[page.identifier] == nil {
+      cachedPageViews[page.identifier] = page.getView()
+    }
+    let content = cachedPageViews[page.identifier]!
     content.autoresizingMask = [.width, .height]
     contentScrollView.documentView = content
     content.padding(.horizontal, from: contentScrollView.contentView)
@@ -184,6 +188,7 @@ class SettingsWindow: NSWindow {
 
     DispatchQueue.main.async {
       self.updateSectionIndicator()
+      page.pageLoaded()
     }
   }
 
@@ -721,6 +726,9 @@ extension SettingsWindow: NSTableViewDataSource, NSTableViewDelegate {
     let imageView = NSImageView(image: pages[row].image)
     imageView.translatesAutoresizingMaskIntoConstraints = false
     imageView.size(width: 24, height: 24)
+    if #unavailable(macOS 14) {
+      imageView.imageScaling = .scaleProportionallyUpOrDown
+    }
     if #available(macOS 26, *) {
       imageView.contentTintColor = .textColor
     } else {

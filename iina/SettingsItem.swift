@@ -538,12 +538,17 @@ struct SettingsItem {
     private var customBinding = false
     private var customBindingBlock: ((NSPopUpButton) -> Void)?
     private var tagForDisabled: Int?
+    private var availableTags: Set<Int>? = nil
 
     override func getValueViews() -> [NSView] {
       popupButton = NSPopUpButton()
       popupButton.translatesAutoresizingMaskIntoConstraints = false
-      popupButton.bezelStyle = .flexiblePush
+      if #available(macOS 12, *) {
+        popupButton.bezelStyle = .flexiblePush
+      }
       if #available(macOS 26, *) {
+        popupButton.showsBorderOnlyWhileMouseInside = false
+      } else if #unavailable(macOS 12) {
         popupButton.showsBorderOnlyWhileMouseInside = false
       } else {
         popupButton.showsBorderOnlyWhileMouseInside = true
@@ -561,6 +566,11 @@ struct SettingsItem {
         let title = l10n.localized(.init("\(l10nKey).items.\(tag)"))
         context.add(itemID, title)
       }
+    }
+
+    func availableTags(_ tags: Set<Int>) -> Self {
+      self.availableTags = tags
+      return self
     }
 
     func bindTo<T>(_ key: Preference.Key, ofType t: T.Type) -> Self
@@ -592,6 +602,7 @@ struct SettingsItem {
     override func initBinding() {
       guard let l10nKey = key?.rawValue ?? labelLocalizationKey?.rawValue else { return }
       for (tag, _) in valueTypes {
+        guard availableTags?.contains(tag) != false else { continue }
         let title = l10n.localized(.init("\(l10nKey).items.\(tag)"))
         popupButton.addItem(withTitle: title)
         popupButton.lastItem?.tag = tag
@@ -627,7 +638,8 @@ struct SettingsItem {
   class Switch: General {
     var nsSwitch: NSSwitch!
     private var customBinding = false
-    private var customBindingBlock: ((NSSwitch) -> Void)?
+    private var customBindingBlock: ((Switch) -> Void)?
+    var stateChangeCallback: ((Switch) -> Void)?
 
     override func getValueViews() -> [NSView] {
       nsSwitch = NSSwitch()
@@ -642,7 +654,7 @@ struct SettingsItem {
       return self
     }
 
-    func bindToCustom(block: @escaping (NSSwitch) -> Void) -> Self {
+    func bindToCustom(block: @escaping (Switch) -> Void) -> Self {
       self.customBinding = true
       self.customBindingBlock = block
       return self
@@ -657,21 +669,33 @@ struct SettingsItem {
       if let key = key {
         nsSwitch.bind(.value, to: UserDefaults.standard, withKeyPath: key.rawValue)
       } else if customBinding, let customBindingBlock = customBindingBlock {
-        customBindingBlock(nsSwitch)
+        customBindingBlock(self)
       }
       DispatchQueue.main.async {
-        self.switchChanged(self.nsSwitch)
+        self.switchChanged(nil)
       }
     }
 
-    @objc func switchChanged(_ sender: NSSwitch) {
+    /// Update the switch state programmatically.
+    func setIsOn(_ isOn: Bool) {
+      nsSwitch.state = isOn ? .on : .off
+      switchChanged(nil)
+    }
+
+    @objc func switchChanged(_ sender: NSSwitch?) {
       guard let detailView = renderedDetailView else { return }
 
-      let enabled = sender.state == .on
+      let enabled = nsSwitch.state == .on
       if !isExpandableAndClickable {
         toggleExpandable(enabled)
       }
       setSubControls(detailView, enabled: enabled)
+
+      if sender != nil {
+        // Only call the callback when the user manually clicked the switch.
+        // Otherwise, we assume it's already handled programmatically.
+        stateChangeCallback?(self)
+      }
     }
 
     private func setSubControls(_ view: NSView, enabled: Bool) {
@@ -704,8 +728,12 @@ struct SettingsItem {
       nsSwitch.target = self
       popupButton = NSPopUpButton()
       popupButton.translatesAutoresizingMaskIntoConstraints = false
-      popupButton.bezelStyle = .flexiblePush
+      if #available(macOS 12, *) {
+        popupButton.bezelStyle = .flexiblePush
+      }
       if #available(macOS 26, *) {
+        popupButton.showsBorderOnlyWhileMouseInside = false
+      } else if #unavailable(macOS 12) {
         popupButton.showsBorderOnlyWhileMouseInside = false
       } else {
         popupButton.showsBorderOnlyWhileMouseInside = true
@@ -1123,9 +1151,7 @@ class SettingsAccessory {
       stackView.orientation = .vertical
       stackView.spacing = 4
       stackView.setHuggingPriority(.defaultLow, for: .horizontal)
-      // not sure from which version, need further tests
-      let topConstraint: CGFloat = if #available(macOS 26, *) { -4 } else { 0 }
-      stackView.padding(.top(topConstraint), .bottom(0), .horizontal)
+      stackView.padding(.top(topConstraintOffset), .bottom(0), .horizontal)
     }
 
     @MainActor required init?(coder: NSCoder) {
@@ -1311,10 +1337,11 @@ class SettingsAccessory {
 
       stackView.translatesAutoresizingMaskIntoConstraints = false
       stackView.orientation = .vertical
+      stackView.alignment = .leading
       stackView.addArrangedSubview(audioLangTokenField)
       view.addSubview(stackView)
 
-      stackView.padding(.top(-4), .leading(SettingsSubList.indent), .trailing(8), .bottom(8))
+      stackView.padding(.top(topConstraintOffset), .leading(SettingsSubList.indent), .trailing(8), .bottom(8))
     }
 
     @MainActor required init?(coder: NSCoder) {
