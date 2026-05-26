@@ -44,7 +44,7 @@ class SettingsWindow: NSWindow {
   private var sectionNameStackView: NSStackView?
   private var sectionIndicatorTopConstraint: NSLayoutConstraint?
 
-  private var prevPageIndex: Int?
+  private var currentPageIndex: Int?
 
   private let searchBox: NSSearchField
   private lazy var completionPopover: NSPopover = createSearchPopover()
@@ -261,8 +261,8 @@ class SettingsWindow: NSWindow {
           let view = contentView?.allSubviews.first(where: { $0.tag == pendingHighlightItem.id })
     else { return }
 
-    if let prevPageIndex, let parentId = pendingHighlightItem.parentId,
-       let parent = pages[prevPageIndex].builtSections
+    if let currentPageIndex, let parentId = pendingHighlightItem.parentId,
+       let parent = pages[currentPageIndex].builtSections
          .compactMap ({ $0.find(where: { $0.itemID == parentId }) as? SettingsItem.General }).first,
        !parent.isExpanded {
       parent.toggleExpandable(true, animated: false)
@@ -765,20 +765,21 @@ extension SettingsWindow: NSTableViewDataSource, NSTableViewDelegate {
   }
 
   func tableView(_ tableView: NSTableView, shouldSelectRow row: Int) -> Bool {
-    return row != tableView.selectedRow + 1
+    guard let currentPageIndex else { return false }
+    return row != currentPageIndex + 1
   }
 
   func tableViewSelectionDidChange(_ notification: Notification) {
     let tableView = notification.object as! NSTableView
 
-    if let prevRow = prevPageIndex {
+    if let prevRow = currentPageIndex {
       loadPage(at: tableView.selectedRow > prevRow ? tableView.selectedRow - 1 : tableView.selectedRow)
       let options: NSTableView.AnimationOptions = Preference.bool(for: PK.disableAnimations) ?
         [] : [.effectFade, .slideDown]
       tableView.removeRows(at: IndexSet(integer: prevRow + 1), withAnimation: options)
       tableView.insertRows(at: IndexSet(integer: tableView.selectedRow + 1), withAnimation: options)
     }
-    prevPageIndex = tableView.selectedRow
+    currentPageIndex = tableView.selectedRow
   }
 }
 
