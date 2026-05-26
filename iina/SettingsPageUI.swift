@@ -131,8 +131,10 @@ class SettingsPageUI: SettingsPage {
         SettingsItem.Switch()
           .image(name: "slider.horizontal.below.square.and.square.filled")
           .bindTo(.showRemainingTime)
-        SettingsItem.Switch()
-          .bindTo(.scaleRemainingTime)
+          .withDetailView {
+            SettingsItem.Switch()
+              .bindTo(.scaleRemainingTime)
+          }
         SettingsItem.Switch()
           .image(name: "custom.computermouse.slash")
           .bindTo(.disablePlaySliderScrolling)
@@ -189,11 +191,11 @@ class SettingsPageUI: SettingsPage {
               .trailingLabel(.text_MB)
             SettingsItem.Switch()
               .bindTo(.enableThumbnailForRemoteFiles)
+            SettingsItem.Input()
+              .bindTo(.thumbnailWidth)
+              .trailingLabel(.text_pt)
+              .hasDescription()
           }
-        SettingsItem.Input()
-          .bindTo(.thumbnailWidth)
-          .trailingLabel(.text_pt)
-          .hasDescription()
       }
     }
   }

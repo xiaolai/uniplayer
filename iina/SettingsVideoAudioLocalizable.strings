@@ -69,9 +69,9 @@
 /* key="m5P-5f-5uo" */
 "$Video" = "Video";
 /* key="nwg-2K-G2G" */
-"$HardwareDecoder" = "Hardware decoder";
+"hardwareDecoder.label" = "Hardware decoder";
 /* key="sLR-vV-xn2" */
-"$PreferredAudioDevice" = "Preferred audio device";
+"preferredAudioDevice.label" = "Preferred audio device";
 /* key="sV5-dL-MUt" */
 "$Audio" = "Audio";
 /* key="up6-6A-4sn" */
@@ -122,3 +122,13 @@
 "hardwareDecoder.items.1.desc" = "Enable hardware decoding. However, most of the video filters won’t work properly.";
 /* key="hwdec.auto-copy" */
 "hardwareDecoder.items.2.desc" = "Enable hardware decoding. It will consume double the memory but work with video filters.";
+
+"gaplessAudio.label" = "Gapless audio";
+"gaplessAudio.desc" = "Gapless audio";
+"gaplessAudio.items.0" = "Disabled";
+"gaplessAudio.items.1" = "Weak";
+"gaplessAudio.items.2" = "Strong";
+"gaplessAudio.items.0.desc" = "Playback of consecutive audio files may result in silence or disruption at the point of file change.";
+"gaplessAudio.items.1.desc" = "If the audio format the decoder output changes, the audio device is closed and reopened, disrupting gapless playback.";
+"gaplessAudio.items.2.desc" = "The audio device is opened using parameters chosen for the first file played and is then kept open for gapless playback. Following files may be resampled.";
+

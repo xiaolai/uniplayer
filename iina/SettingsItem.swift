@@ -669,7 +669,7 @@ struct SettingsItem {
       }
     }
 
-    /// Update the swich state programatically.
+    /// Update the switch state programmatically.
     func setIsOn(_ isOn: Bool) {
       nsSwitch.state = isOn ? .on : .off
       switchChanged(nil)
@@ -686,7 +686,7 @@ struct SettingsItem {
 
       if sender != nil {
         // Only call the callback when the user manually clicked the switch.
-        // Otherwise, we assume it's already handled programatically.
+        // Otherwise, we assume it's already handled programmatically.
         stateChangeCallback?(self)
       }
     }

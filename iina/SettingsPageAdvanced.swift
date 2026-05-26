@@ -28,6 +28,8 @@ class SettingsPageAdvanced: SettingsPage {
   private lazy var openLogFolderBtn: NSButton = {
     let btn = NSButton(title: localizationContext.localized(.text_OpenLogDirectory), target: nil, action: nil)
     btn.translatesAutoresizingMaskIntoConstraints = false
+    btn.target = self
+    btn.action = #selector(openLogFolder)
     return btn
   }()
 
@@ -90,6 +92,10 @@ class SettingsPageAdvanced: SettingsPage {
           .view(mpvOptionsEditor.view)
       }
     }
+  }
+
+  @objc private func openLogFolder() {
+    NSWorkspace.shared.open(Logger.logDirectory)
   }
 }
 

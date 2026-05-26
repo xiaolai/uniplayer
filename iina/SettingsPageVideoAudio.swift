@@ -42,7 +42,7 @@ class SettingsPageVideoAudio: SettingsPage {
           .image(name: "number")
           .bindTo(.videoThreads)
           .hasDescription()
-        SettingsItem.General(title: .text_HardwareDecoder)
+        SettingsItem.General(title: .hardwareDecoderLabel)
           .image(name: "cpu")
           .withDetailView(
             SettingsAccessory.Selection()
@@ -65,6 +65,9 @@ class SettingsPageVideoAudio: SettingsPage {
           .image(name: ["sun.lefthalf.filled", "sun.max"])
           .bindTo(.enableHdrSupport)
           .hasDescription()
+      }
+
+      SettingsList {
         SettingsItem.Switch()
           .image(name: "chart.xyaxis.line")
           .bindTo(.enableToneMapping)
@@ -117,7 +120,17 @@ class SettingsPageVideoAudio: SettingsPage {
       }
 
       SettingsList {
-        SettingsItem.General(title: .text_PreferredAudioDevice)
+        SettingsItem.General(title: .gaplessAudioLabel)
+          .image(name: "cpu")
+          .withHelpLink(AppData.gaplessAudioHelpLink)
+          .withDetailView(
+            SettingsAccessory.Selection()
+              .bindTo(.gaplessAudio, ofType: Preference.GaplessAudioOption.self)
+          )
+      }
+
+      SettingsList {
+        SettingsItem.General(title: .preferredAudioDeviceLabel)
           .image(name: "hifispeaker.and.homepod")
           .withDetailView(audioOutputDeviceView)
         SettingsItem.General(title: .text_SPDIFOutput)
