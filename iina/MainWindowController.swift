@@ -61,9 +61,6 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - Constants
 
-  /** Minimum window size. */
-  let minSize = NSMakeSize(285, 120)
-
   /** For Force Touch. */
   let minimumPressDuration: TimeInterval = 0.5
 
@@ -554,7 +551,7 @@ class MainWindowController: PlayerWindowController {
     updateOnTopIcon()
 
     // size
-    window.minSize = minSize
+    window.minSize = AppData.mainWindowMinSize
     if let wf = windowFrameFromGeometry() {
       window.setFrame(wf, display: false)
     }
@@ -1239,7 +1236,7 @@ class MainWindowController: PlayerWindowController {
         let newHeight = newWidth / currentAspectRatio.aspect
 
         //Check against max & min threshold
-        if newHeight < screenFrame.height && newHeight > minSize.height && newWidth > minSize.width {
+        if newHeight < screenFrame.height && newHeight > AppData.mainWindowMinSize.height && newWidth > AppData.mainWindowMinSize.width {
           let newSize = NSSize(width: newWidth, height: newHeight);
           window.setFrame(frameWhenStartedPinching.centeredResize(to: newSize), display: true)
         }
@@ -1808,7 +1805,7 @@ class MainWindowController: PlayerWindowController {
       return window.frame.size
     }
     if frameSize.height <= minSize.height || frameSize.width <= minSize.width {
-      return currentAspectRatio.grow(toSize: minSize)
+      return currentAspectRatio.grow(toSize: AppData.mainWindowMinSize)
     }
     return frameSize
   }
@@ -2635,7 +2632,7 @@ class MainWindowController: PlayerWindowController {
       } else {
         w = CGFloat(Int(strw)!)
       }
-      w = max(minSize.width, w)
+      w = max(AppData.mainWindowMinSize.width, w)
       winFrame.size.width = w
       winFrame.size.height = w / winAspect
       widthOrHeightIsSet = true
@@ -2646,7 +2643,7 @@ class MainWindowController: PlayerWindowController {
       } else {
         h = CGFloat(Int(strh)!)
       }
-      h = max(minSize.height, h)
+      h = max(AppData.mainWindowMinSize.height, h)
       winFrame.size.height = h
       winFrame.size.width = h * winAspect
       widthOrHeightIsSet = true
@@ -2794,7 +2791,7 @@ class MainWindowController: PlayerWindowController {
       videoSize = videoSize.satisfyMaxSizeWithSameAspectRatio(screenSize)
       // guard min size
       // must be slightly larger than the min size, or it will crash when the min size is auto saved as window frame size.
-      videoSize = videoSize.satisfyMinSizeWithSameAspectRatio(minSize)
+      videoSize = videoSize.satisfyMinSizeWithSameAspectRatio(AppData.mainWindowMinSize)
       if shouldApplyInitialWindowSize {
         // check if have geometry set (initial window position/size)
         if let wfg = windowFrameFromGeometry(newSize: videoSize, screen: screen) {
@@ -2815,11 +2812,9 @@ class MainWindowController: PlayerWindowController {
       rect = originalVideoSize.centeredRect(in: screenRect)
       log("Centered original sized window in screen: \(rect)")
     } else {
-      // user is navigating in playlist. remain same window width.
-      let newHeight = frame.width / CGFloat(width) * CGFloat(height)
-      let newSize = NSSize(width: frame.width, height: newHeight).satisfyMinSizeWithSameAspectRatio(minSize)
-      rect = frame.centeredResize(to: newSize)
-      log("Adjusted height of window preserving width: \(rect)")
+      // user is navigating in playlist. remain same window area.
+      rect = frame.areaPreservingResized(newWidth: CGFloat(width), height: CGFloat(height))
+      log("Adjusted height of window preserving area: \(rect)")
     }
 
     shouldApplyInitialWindowSize = false
@@ -2889,7 +2884,7 @@ class MainWindowController: PlayerWindowController {
       newFrame = window.frame.centeredResize(to: window.frame.size.shrink(toSize: screenFrame.size)).constrain(in: screenFrame)
     } else {
       // otherwise, resize the window normally
-      newFrame = window.frame.centeredResize(to: finalSize.satisfyMinSizeWithSameAspectRatio(minSize)).constrain(in: screenFrame)
+      newFrame = window.frame.centeredResize(to: finalSize.satisfyMinSizeWithSameAspectRatio(AppData.mainWindowMinSize)).constrain(in: screenFrame)
     }
     window.setFrame(newFrame, display: true, animate: true)
     MemoryUsage.shared.logUsage("after window scale changed (\(newFrame.width)x\(newFrame.height))")
