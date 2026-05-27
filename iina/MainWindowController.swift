@@ -519,7 +519,7 @@ class MainWindowController: PlayerWindowController {
     pip.delegate = self
     return pip
   }()
-  
+
   var pip: PIPViewController {
     _pip
   }
@@ -844,7 +844,7 @@ class MainWindowController: PlayerWindowController {
       oscFloatingTopView.addView(fragVolumeView, in: .leading)
       oscFloatingTopView.addView(fragToolbarView, in: .trailing)
       oscFloatingTopView.addView(fragControlView, in: .center)
-      
+
       // Setting the visibility priority to detach only will cause freeze when resizing the window
       // (and triggering the detach) in macOS 11.
       if !isMacOS11 {
@@ -920,7 +920,7 @@ class MainWindowController: PlayerWindowController {
         return
       }
     }
-    
+
     super.keyDown(with: event)
   }
 
@@ -1233,7 +1233,7 @@ class MainWindowController: PlayerWindowController {
         // changed
         let offset = recognizer.magnification - lastMagnification + 1.0;
         let newWidth = window.frame.width * offset
-        let newHeight = newWidth / currentAspectRatio.aspect
+        let newHeight = newWidth / frameWhenStartedPinching.size.aspect
 
         //Check against max & min threshold
         if newHeight < screenFrame.height && newHeight > AppData.mainWindowMinSize.height && newWidth > AppData.mainWindowMinSize.width {
@@ -1336,7 +1336,7 @@ class MainWindowController: PlayerWindowController {
     cv.trackingAreas.forEach(cv.removeTrackingArea)
     playSlider.trackingAreas.forEach(playSlider.removeTrackingArea)
     UserDefaults.standard.set(NSStringFromRect(window!.frame), forKey: "MainWindowLastPosition")
-    
+
     player.events.emit(.windowWillClose)
   }
 
@@ -1466,7 +1466,7 @@ class MainWindowController: PlayerWindowController {
     if pipStatus == .inPIP {
       exitPIP()
     }
-    
+
     updateAdditionalInfo()
     player.events.emit(.windowFullscreenChanged, data: true)
     NotificationCenter.default.post(name: .iinaFullscreenChanged, object: nil, userInfo: ["enable": true])
@@ -1739,7 +1739,7 @@ class MainWindowController: PlayerWindowController {
     }
     // then animate to the original frame
     window.setFrame(framePriorToBeingInFullscreen, display: true, animate: useAnimation)
-    setAspectRatio(aspectRatio)
+    setWindowAspectRatio(aspectRatio)
     // call delegate
     windowDidExitFullScreen(Notification(name: .iinaLegacyFullScreen))
   }
@@ -1804,15 +1804,15 @@ class MainWindowController: PlayerWindowController {
     if isInInteractiveMode {
       return window.frame.size
     }
-    if frameSize.height <= minSize.height || frameSize.width <= minSize.width {
-      return currentAspectRatio.grow(toSize: AppData.mainWindowMinSize)
+    if frameSize.height <= AppData.mainWindowMinSize.height || frameSize.width <= AppData.mainWindowMinSize.width {
+      return currentWindowAspectRatio.grow(toSize: AppData.mainWindowMinSize)
     }
     return frameSize
   }
 
   func windowDidResize(_ notification: Notification) {
     guard let window = window else { return }
-    
+
     if case .animating(_, _, _) = fsState {
       forceDraw("window resized during animated enter or exit full screen")
     } else if !videoView.videoLayer.inLiveResize {
@@ -1861,13 +1861,13 @@ class MainWindowController: PlayerWindowController {
       controlBarFloating.xConstraint.constant = xPos
       controlBarFloating.yConstraint.constant = yPos
     }
-    
+
     // Detach the views in oscFloatingTopView manually on macOS 11 only; as it will cause freeze
     if isMacOS11 && oscPosition == .floating {
       guard let maxWidth = [fragVolumeView, fragToolbarView].compactMap({ $0?.frame.width }).max() else {
         return
       }
-      
+
       // window - 10 - controlBarFloating
       // controlBarFloating - 12 - oscFloatingTopView
       let margin: CGFloat = (10 + 12) * 2
@@ -1875,7 +1875,7 @@ class MainWindowController: PlayerWindowController {
                     - fragControlView.frame.width
                     - maxWidth*2
                     - margin) < 0
-      
+
       let views = oscFloatingTopView.views
       if hide {
         if views.contains(fragVolumeView)
@@ -1914,7 +1914,7 @@ class MainWindowController: PlayerWindowController {
       videoView.videoLayer.contentsScale = window!.backingScaleFactor
     }
   }
-  
+
   override func windowDidChangeScreen(_ notification: Notification) {
     super.windowDidChangeScreen(notification)
 
@@ -2127,7 +2127,7 @@ class MainWindowController: PlayerWindowController {
 
   private func setOSDViews(fromMessage message: OSDMessage) {
     osdLastMessage = message
-    
+
     let (osdString, osdType) = message.message()
     osdLabel.stringValue = osdString
 
@@ -2596,12 +2596,12 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - UI: Window size / aspect
 
-  private var currentAspectRatio: NSSize {
+  private var currentWindowAspectRatio: NSSize {
     guard let window else { return .zero }
     return Preference.bool(for: .unlockWindowAspectRatio) ? window.frame.size : window.aspectRatio
   }
 
-  private func setAspectRatio(_ aspectRatio: NSSize) {
+  private func setWindowAspectRatio(_ aspectRatio: NSSize) {
     guard let window else { return }
     if Preference.bool(for: .unlockWindowAspectRatio) {
       window.aspectRatio = .zero
@@ -2611,7 +2611,7 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  /** Calculate the window frame from a parsed struct of mpv's `geometry` option. */
+  /// Calculate the window frame from a parsed struct of mpv's `geometry` option.
   func windowFrameFromGeometry(newSize: NSSize? = nil, screen: NSScreen? = nil) -> NSRect? {
     guard let geometry = cachedGeometry ?? player.getGeometry(),
       let screenFrame = (screen ?? window?.screen)?.visibleFrame else { return nil }
@@ -2728,7 +2728,7 @@ class MainWindowController: PlayerWindowController {
 
     // set aspect ratio
     let originalVideoSize = NSSize(width: width, height: height)
-    setAspectRatio(originalVideoSize)
+    setWindowAspectRatio(originalVideoSize)
     pip.aspectRatio = originalVideoSize
 
     var rect: NSRect
@@ -2825,8 +2825,9 @@ class MainWindowController: PlayerWindowController {
       log("Constrained window frame to be in screen: \(rect)")
     }
 
-    if Preference.bool(for: .unlockWindowAspectRatio) {
+    if Preference.bool(for: .unlockWindowAspectRatio) && !player.info.justOpenedFile {
       // do nothing when window aspect ratio is unlocked
+      // however, if this is the first time opening the window, still apply the sizing logic
     } else if fsState.isFullscreen {
       log("In full screen mode, setting prior window frame")
       fsState.priorWindowedFrame = rect
