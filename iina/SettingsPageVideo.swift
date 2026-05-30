@@ -18,7 +18,7 @@ class SettingsPageVideo: SettingsPage {
   }
 
   override var image: NSImage {
-    return makeSymbol("photo.tv", fallbackImage: "pref_av")
+    return .sf("photo.tv", withConfiguration: symbolConfiguration)!
   }
 
   override var localizationTable: String {
