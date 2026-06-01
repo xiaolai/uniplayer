@@ -30,6 +30,7 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
   private let scrollView = NSScrollView()
 
   @Atomic private var buffer: [Logger.Log] = []
+  @objc private dynamic var logs: [Logger.Log] = []
   private let arrayController = NSArrayController()
   private var isWindowVisible: Bool {
     window?.occlusionState.contains(.visible) ?? false
@@ -98,6 +99,7 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
       arrayController.selectsInsertedObjects = false
       arrayController.avoidsEmptySelection = false
       arrayController.clearsFilterPredicateOnInsertion = false
+      arrayController.bind(.contentArray, to: self, withKeyPath: "logs", options: nil)
       arrayController.bind(.filterPredicate, to: self, withKeyPath: "predicate", options: nil)
       tableView.bind(.content, to: arrayController, withKeyPath: "arrangedObjects", options: nil)
       tableView.bind(.selectionIndexes, to: arrayController, withKeyPath: "selectionIndexes", options: nil)
@@ -425,7 +427,7 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
 
     if !toFlush.isEmpty {
       checkIfAtBottom()
-      arrayController.add(contentsOf: toFlush)
+      logs.append(contentsOf: toFlush)
       if following {
         scrollToBottom()
       }
