@@ -291,6 +291,23 @@ class PlayerCore: NSObject {
     abLoopA != 0 && abLoopB != 0 && mpv.getString(MPVOption.PlaybackControl.abLoopCount) != "0"
   }
 
+  /// Whether to only use the URL's filename when calculating the mpv
+  /// [Watch Later](https://mpv.io/manual/stable/#watch-later) MD5 sum.
+  ///
+  /// This supports the mpv
+  /// [ignore-path-in-watch-later-config](https://mpv.io/manual/stable/#options-ignore-path-in-watch-later-config)
+  /// option. As this option is only used by advanced users there is intentionally no support in IINA's UI for this option. This is also an
+  /// option that you would set and not change as changing it means existing watch later files will no longer be found. For this reason
+  /// IINA does not support dynamic changes to this option. The value of this option is obtained and cached. Setting this option
+  /// requires IINA to be restarted.
+  lazy var ignorePathInWatchLaterConfig: Bool = {
+    let ignorePath = mpv.getFlag(MPVOption.WatchLater.ignorePathInWatchLaterConfig)
+    if ignorePath {
+      log("Will use filename instead of path when calculating watch later MD5 sum")
+    }
+    return ignorePath
+  }()
+
   /// Whether to auto load files when opening the URL given in `pendingUrl`.
   private var pendingAutoLoad = false
 
@@ -502,6 +519,7 @@ class PlayerCore: NSObject {
   private func openMainWindow(path: String, url: URL, isNetwork: Bool) {
     log("Opening \(path) in main window")
     info.currentURL = url
+    info.mpvMd5 = Utility.mpvWatchLaterMd5(url, ignorePathInWatchLaterConfig)
     info.isNetworkResource = isNetwork
     info.audioTracks = []
     info.chapters = []
@@ -2012,6 +2030,9 @@ class PlayerCore: NSObject {
     info.currentURL = path.contains("://") ?
       URL(string: path.addingPercentEncoding(withAllowedCharacters: .urlAllowed) ?? path) :
       URL(fileURLWithPath: path)
+    if let url = info.currentURL {
+      info.mpvMd5 = Utility.mpvWatchLaterMd5(url, ignorePathInWatchLaterConfig)
+    }
     info.isNetworkResource = !info.currentURL!.isFileURL
 
     // set "date last opened" attribute
@@ -2150,7 +2171,8 @@ class PlayerCore: NSObject {
     if let url = info.currentURL {
       let duration = info.videoDuration ?? .zero
       let mediaTitle = mpv.getString(MPVProperty.mediaTitle)
-      HistoryController.shared.add(url, duration: duration.second, title: mediaTitle)
+      HistoryController.shared.add(url, duration: duration.second, title: mediaTitle,
+                                   ignorePathInWatchLaterConfig)
       if Preference.bool(for: .recordRecentFiles) && Preference.bool(for: .trackAllFilesInRecentOpenMenu) {
         AppDelegate.shared.noteNewRecentDocumentURL(url)
       }
@@ -3092,7 +3114,11 @@ class PlayerCore: NSObject {
    */
   func refreshCachedVideoInfo(forVideoPath path: String) {
     guard let dict = FFmpegController.probeVideoInfo(forFile: path) else { return }
-    let progress = Utility.playbackProgressFromWatchLater(path.md5)
+    let progress: VideoTime? = {
+      guard let url = URL(string: path) else { return nil }
+      let mpvMd5 = Utility.mpvWatchLaterMd5(url, ignorePathInWatchLaterConfig)
+      return Utility.playbackProgressFromWatchLater(mpvMd5)
+    }()
     self.info.setCachedVideoDurationAndProgress(path, (
       duration: dict["@iina_duration"] as? Double,
       progress: progress?.second
