@@ -673,9 +673,9 @@ extension NSImage {
   /// Try to find a SF Symbol. This function will iterate through the provided list of SF Symbol name list to and return the
   /// first available SF Symbol at runtime.
   ///
-  /// Use this function only for stock SF Symbol. If a symbol is customized and imported from SF Symbol.app, it is available for all
-  /// systems, so we should use `NSImage(named:)`or the auto generated names by Xcode directly. Preferably, we use stock SF Symbols;
-  /// the next tier is customized and imported SF Symbols; we only use a foreign symbol if that is absolutely necessary.
+  /// Use this function only for stock SF Symbols and imported/customized symbols. If none of the names are found in the
+  /// system symbol catalog, the list of strings will be used to search the bundled symbols. Preferably, use stock SF
+  /// Symbols; the next tier is customized and imported SF Symbols; use a non-SF symbol only if absolutely necessary.
   ///
   /// - Parameters:
   ///   - names: A list name of the SF Symbol. The name requires higher SF Symbol version must be at front, with fallback SF Symbol
@@ -687,6 +687,11 @@ extension NSImage {
         if let configuration, let configured = symbol.withSymbolConfiguration(configuration) {
           return configured
         }
+        return symbol
+      }
+    }
+    for name in names {
+      if let symbol = NSImage(named: name) {
         return symbol
       }
     }
