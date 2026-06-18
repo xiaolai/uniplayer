@@ -240,7 +240,14 @@ class QuickSettingViewController: NSViewController, SidebarViewController {
       let viewItem = NSTabViewItem(viewController: createViewController(view!))
       tabViewController.addTabViewItem(viewItem)
     }
-    tabViewController.selectedTabViewItemIndex = TabViewType.video.buttonTag
+
+    // handle pending switch tab request
+    if pendingSwitchRequest != nil {
+      switchToTab(pendingSwitchRequest!)
+      pendingSwitchRequest = nil
+    } else {
+      tabViewController.selectedTabViewItemIndex = TabViewType.video.buttonTag
+    }
   }
 
   @objc func dismissSidebar(_ sender: AnyObject) {
