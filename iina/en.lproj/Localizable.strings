@@ -431,6 +431,10 @@
 "osc_toolbar.screenshot" = "Take a screenshot";
 "osc_toolbar.plugins" = "Show plugins panel";
 
+"osc_pos.floating" = "Floating";
+"osc_pos.top" = "Top";
+"osc_pos.bottom" = "Bottom";
+
 "mini_player.album_art" = "Toggle album art";
 "mini_player.loop" = "Repeat";
 "mini_player.shuffle" = "Shuffle";
@@ -503,3 +507,40 @@
 "logwindow.clear_subsystem_selections" = "Clear Selections";
 "logwindow.copy" = "Copy";
 "logwindow.logs" = "logs";
+
+// Sidebar
+
+"sidebar.aspect_ratio" = "Aspect Ratio";
+"sidebar.crop" = "Crop";
+"sidebar.rotation" = "Rotation";
+"sidebar.speed" = "Speed";
+
+"sidebar.brightness" = "Brightness";
+"sidebar.contrast" = "Contrast";
+"sidebar.saturation" = "Saturation";
+"sidebar.gamma" = "Gamma";
+"sidebar.hue" = "Hue";
+
+"sidebar.load_external_audio" = "Load External Audio Track…";
+"sidebar.delay" = "Delay";
+
+"sidebar.eq" = "Equalizer";
+"sidebar.save_eq" = "Save the current EQ as a preset…";
+"sidebar.rename_eq" = "Rename the current EQ preset…";
+"sidebar.remove_eq" = "Remove the current EQ preset";
+"sidebar.manual_eq" = "Manual";
+
+"sidebar.primary" = "Primary";
+"sidebar.secondary" = "Secondary";
+"sidebar.external_subtitles" = "External Subtitles";
+"sidebar.load_subtitle" = "Load Subtitle…";
+"sidebar.search_online" = "Search Online…";
+"sidebar.position" = "Position";
+"sidebar.scale" = "Scale";
+"sidebar.font" = "Font";
+"sidebar.color" = "Color";
+"sidebar.text" = "Text";
+"sidebar.border" = "Border";
+"sidebar.background" = "Background";
+"sidebar.sub_settings_not_available" = "Some settings are not available for this subtitle type.";
+"sidebar.sub_style_warning" = "Subtitle style options may break ASS rendering, and some of them will be disabled depending on subtitle type.";

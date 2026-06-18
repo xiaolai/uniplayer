@@ -134,6 +134,8 @@ class PlayerCore: NSObject {
 
   // MARK: - Fields
 
+  private var observers: [NSObjectProtocol] = []
+
   lazy var subsystem = Logger.makeSubsystem("player\(label!)", ["play.circle"])
 
   func log(_ message: @autoclosure () -> String, level: Logger.Level = .debug) {
@@ -244,7 +246,7 @@ class PlayerCore: NSObject {
   var useExactSeekForCurrentFile: Bool = true
 
   var isPlaylistVisible: Bool {
-    isInMiniPlayer ? miniPlayer.isPlaylistVisible : mainWindow.sideBarStatus == .playlist
+    isInMiniPlayer ? miniPlayer.isPlaylistVisible : mainWindow.sidebars.isShowing(.playlist)
   }
 
   /// The A loop point established by the [mpv](https://mpv.io/manual/stable/) A-B loop command.
@@ -334,6 +336,17 @@ class PlayerCore: NSObject {
     TouchBarSettings.shared.addObserver(self, forKey: .PresentationModePerApp)
   }
 
+  func observe(_ name: Notification.Name, block: @escaping (Notification) -> Void) {
+    observers.append(NotificationCenter.default.addObserver(
+      forName: name, object: self, queue: .main, using: block))
+  }
+
+  deinit {
+    observers.forEach {
+      NotificationCenter.default.removeObserver($0)
+    }
+  }
+
   // MARK: - Plugins
 
   static func reloadPluginForAll(_ plugin: JavascriptPlugin, forced: Bool = false) {
@@ -372,7 +385,7 @@ class PlayerCore: NSObject {
     }
 
     plugins = JavascriptPlugin.plugins.compactMap { pluginMap[$0.identifier] }
-    mainWindow.pluginView.updatePluginTabs()
+    mainWindow.sidebars.pluginView.updatePluginTabs()
   }
 
   // MARK: - Control
@@ -774,18 +787,18 @@ class PlayerCore: NSObject {
 
     miniPlayer.updateTitle()
     refreshSyncUITimer()
-    let playlistView = mainWindow.playlistView.view
+    let playlistView = mainWindow.sidebars.playlistView.view
     let videoView = mainWindow.videoView
     // reset down shift for playlistView
-    mainWindow.playlistView.downShift = 0
+    mainWindow.sidebars.playlistView.downShift = 0
     // hide sidebar
-    if mainWindow.sideBarStatus != .hidden {
-      mainWindow.hideSideBar(animate: false)
+    if mainWindow.sidebars.isAnyVisible {
+      mainWindow.sidebars.hideAllSideBars(animate: false)
     }
 
     // move playlist view
     playlistView.removeFromSuperview()
-    mainWindow.playlistView.useCompactTabHeight = true
+    mainWindow.sidebars.playlistView.useCompactTabHeight = true
     miniPlayer.playlistWrapperView.addSubview(playlistView)
     Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": playlistView])
     // move video view
@@ -849,19 +862,13 @@ class PlayerCore: NSObject {
       Logger.log("Changed overrideAutoSwitchToMusicMode to \(overrideAutoSwitchToMusicMode)",
                  level: .verbose, subsystem: subsystem)
     }
-    mainWindow.playlistView.view.removeFromSuperview()
-    mainWindow.playlistView.useCompactTabHeight = false
+    mainWindow.sidebars.playlistView.view.removeFromSuperview()
+    mainWindow.sidebars.playlistView.useCompactTabHeight = false
     // add back video view
     let mainWindowContentView = mainWindow.window!.contentView
     miniPlayer.videoViewAspectConstraint?.isActive = false
     miniPlayer.videoViewAspectConstraint = nil
-    mainWindow.videoView.removeFromSuperview()
-    mainWindowContentView?.addSubview(mainWindow.videoView, positioned: .below, relativeTo: nil)
-    ([.top, .bottom, .left, .right] as [NSLayoutConstraint.Attribute]).forEach { attr in
-      mainWindow.videoViewConstraints[attr] = NSLayoutConstraint(item: mainWindow.videoView, attribute: attr, relatedBy: .equal,
-                                                                 toItem: mainWindowContentView, attribute: attr, multiplier: 1, constant: 0)
-      mainWindow.videoViewConstraints[attr]!.isActive = true
-    }
+    mainWindow.addVideoViewToWindow()
 
     // hide mini player
     miniPlayer.window?.orderOut(nil)
@@ -1460,7 +1467,6 @@ class PlayerCore: NSObject {
         setTrack(currentSub.id, forType: .sub)
       }
     }
-    mainWindow?.quickSettingView.reload()
   }
 
   func setAudioDelay(_ delay: Double) {
@@ -2311,11 +2317,6 @@ class PlayerCore: NSObject {
     postNotification(.iinaMediaTitleChanged)
   }
 
-  func needReloadQuickSettingsView() {
-    guard info.state.active else { return }
-    mainWindow.quickSettingView.reload()
-  }
-
   func ontopChanged() {
     guard mainWindow.loaded, info.state.active else { return }
     let ontop = mpv.getFlag(MPVOption.Window.ontop)
@@ -2378,12 +2379,12 @@ class PlayerCore: NSObject {
 
   func secondarySubDelayChanged(_ delay: Double) {
     sendOSD(.secondSubDelay(delay))
-    needReloadQuickSettingsView()
+    postNotification(.iinaSubDelayChanged)
   }
 
   func secondarySubPosChanged(_ position: Double) {
     sendOSD(.secondSubPos(position))
-    needReloadQuickSettingsView()
+    postNotification(.iinaSubPositionChanged)
   }
 
   func secondarySidChanged() {
@@ -2400,7 +2401,7 @@ class PlayerCore: NSObject {
     guard info.isSecondSubVisible != visible else { return }
     info.isSecondSubVisible = visible
     sendOSD(visible ? .secondSubVisible : .secondSubHidden)
-    postNotification(.iinaSecondSubVisibilityChanged)
+    postNotification(.iinaSubVisibilityChanged)
     if isInMiniPlayer {
       miniPlayer.refreshArtworkVisibility()
     }
@@ -2421,7 +2422,7 @@ class PlayerCore: NSObject {
     let displayValue = scale >= 1 ? scale : -1 / scale
     let truncated = round(displayValue * 100) / 100
     sendOSD(.subScale(truncated))
-    needReloadQuickSettingsView()
+    postNotification(.iinaSubScaleChanged)
   }
 
   func speedChanged(_ speed: Double) {
@@ -2429,19 +2430,19 @@ class PlayerCore: NSObject {
     info.playSpeed = speed
     sendOSD(.speed(speed))
     mainWindow.updateSpeedLabel(speed: speed)
-    needReloadQuickSettingsView()
+    postNotification(.iinaSpeedChanged)
     NowPlayingInfoManager.shared.updateInfo()
   }
 
   func subDelayChanged(_ delay: Double) {
     info.subDelay = delay
     sendOSD(.subDelay(delay))
-    needReloadQuickSettingsView()
+    postNotification(.iinaSubDelayChanged)
   }
 
   func subPosChanged(_ position: Double) {
     sendOSD(.subPos(position))
-    needReloadQuickSettingsView()
+    postNotification(.iinaSubPositionChanged)
   }
 
   func subVisibilityChanged(_ visible: Bool) {
@@ -2765,10 +2766,10 @@ class PlayerCore: NSObject {
       DispatchQueue.main.async { [self] in
         currentController.updatePlayTime(withDuration: isNetworkStream, andProgressBar: true)
         if !self.isInMiniPlayer && mainWindow.fsState.isFullscreen && mainWindow.displayTimeAndBatteryInFullScreen && !mainWindow.additionalInfoView.isHidden {
-          self.mainWindow.updateAdditionalInfo()
+          self.mainWindow.additionalInfoView.update()
         }
         if isNetworkStream {
-          self.mainWindow.updateNetworkState()
+          self.mainWindow.bufferIndicatorView.updateNetworkState()
         }
       }
 
@@ -2786,22 +2787,22 @@ class PlayerCore: NSObject {
     case .chapterList:
       DispatchQueue.main.async {
         // this should avoid sending reload when table view is not ready
-        if self.isInMiniPlayer ? self.miniPlayer.isPlaylistVisible : self.mainWindow.sideBarStatus == .playlist {
+        if self.isInMiniPlayer ? self.miniPlayer.isPlaylistVisible : self.mainWindow.sidebars.isShowing(.playlist) {
           self.log("Syncing UI: chapterList")
-          self.mainWindow.playlistView.chapterTableView.reloadData()
+          self.mainWindow.sidebars.playlistView.chapterTableView.reloadData()
         }
       }
 
     case .playlist:
       DispatchQueue.main.async {
         if self.isPlaylistVisible {
-          self.mainWindow.playlistView.playlistTableView.reloadData()
+          self.mainWindow.sidebars.playlistView.playlistTableView.reloadData()
         }
       }
 
     case .loop:
       DispatchQueue.main.async {
-        self.mainWindow.playlistView.updateLoopBtnStatus()
+        self.mainWindow.sidebars.playlistView.updateLoopBtnStatus()
       }
     }
   }
