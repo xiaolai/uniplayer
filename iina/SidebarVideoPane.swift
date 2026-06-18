@@ -264,6 +264,7 @@ fileprivate class RotationView: NSView {
       trackingMode: .selectOne,
       target: self, action: #selector(rotationAction)
     )
+    segmentControl.translatesAutoresizingMaskIntoConstraints = false
     segmentControl.selectedSegment = 0
     for i in 0..<segmentControl.segmentCount {
       segmentControl.setTag(i, forSegment: i)
