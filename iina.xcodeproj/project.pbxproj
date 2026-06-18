@@ -232,7 +232,6 @@
 		845ABEAC1D4D19C000BFB15B /* MPVTrack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 845ABEAB1D4D19C000BFB15B /* MPVTrack.swift */; };
 		845AC09C1E1AE6C10080B614 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 845AC09E1E1AE6C10080B614 /* Localizable.strings */; };
 		845E70B2210CB59D00D06C42 /* ScrollingTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 845E70B1210CB59D00D06C42 /* ScrollingTextField.swift */; };
-		845FB0C71D39462E00C011E0 /* ControlBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 845FB0C61D39462E00C011E0 /* ControlBarView.swift */; };
 		8460FBA91D6497490081841B /* PlaylistViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8460FBA71D6497490081841B /* PlaylistViewController.swift */; };
 		846121BD1F35FCA500ABB39C /* DraggingDetect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 846121BC1F35FCA500ABB39C /* DraggingDetect.swift */; };
 		8461BA681E4237C7008BB852 /* youtube-dl in Copy Executables */ = {isa = PBXBuildFile; fileRef = 8461BA671E4237C2008BB852 /* youtube-dl */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
@@ -1428,7 +1427,6 @@
 		845AC09F1E1AE6CB0080B614 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
 		845E2F491E76CFC2002C6588 /* libz.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libz.tbd; path = usr/lib/libz.tbd; sourceTree = SDKROOT; };
 		845E70B1210CB59D00D06C42 /* ScrollingTextField.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ScrollingTextField.swift; sourceTree = "<group>"; };
-		845FB0C61D39462E00C011E0 /* ControlBarView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ControlBarView.swift; sourceTree = "<group>"; };
 		8460FBA71D6497490081841B /* PlaylistViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PlaylistViewController.swift; sourceTree = "<group>"; };
 		846121BC1F35FCA500ABB39C /* DraggingDetect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DraggingDetect.swift; sourceTree = "<group>"; };
 		8461BA671E4237C2008BB852 /* youtube-dl */ = {isa = PBXFileReference; lastKnownFileType = text; name = "youtube-dl"; path = "deps/executable/youtube-dl"; sourceTree = SOURCE_ROOT; };
@@ -2873,7 +2871,6 @@
 				E31E63002FDB96E9005527B2 /* FadeableViewController.swift */,
 				E31E62FE2FD90284005527B2 /* OSCFloatingView.swift */,
 				E31E62FC2FD8F4C5005527B2 /* OSCBottomView.swift */,
-				845FB0C61D39462E00C011E0 /* ControlBarView.swift */,
 				E3D94E7D2FCDE42C00B08618 /* Titlebar.swift */,
 				3415BC892FC82FD5003B3FBD /* TimePreviewView.swift */,
 				E3A239AB2FC70EC200CE6ACC /* AdditionalInfoView.swift */,
@@ -3481,7 +3478,6 @@
 				E3530700214908DD008FE492 /* JavascriptAPIHttp.swift in Sources */,
 				84FBF23E1EF06A90003EA491 /* ThumbnailCache.swift in Sources */,
 				51DE55C92A6646710050AD06 /* Sysctl.swift in Sources */,
-				845FB0C71D39462E00C011E0 /* ControlBarView.swift in Sources */,
 				E3513AFB20F120F600F8C347 /* PreferenceViewController.swift in Sources */,
 				51AC1CAB2A9FBF3700DF7079 /* OpenSubClient.swift in Sources */,
 				E38BD4AF20054BD9007635FC /* MainWindow.swift in Sources */,

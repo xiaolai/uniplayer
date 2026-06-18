@@ -247,7 +247,8 @@ fileprivate let SideBottomTag = 1
 
 
 fileprivate class GeometryBindings: NSObject {
-  let key = Preference.Key.initialWindowSizePosition.rawValue
+  private let key = Preference.Key.initialWindowSizePosition
+  private let prefObserver = Preference.Observer()
 
   var windowSizeSwitch: SettingsItem.Switch!
   var windowSizeSide: NSPopUpButton!
@@ -264,11 +265,9 @@ fileprivate class GeometryBindings: NSObject {
 
   override init() {
     super.init()
-    UserDefaults.standard.addObserver(self, forKeyPath: key, options: [.new, .old], context: nil)
-  }
-
-  deinit {
-    UserDefaults.standard.removeObserver(self, forKeyPath: key)
+    prefObserver.add(key) { [unowned self] _ in
+      updateControls()
+    }
   }
 
   func initControl<T>(_ keyPath: ReferenceWritableKeyPath<GeometryBindings, T?>, _ value: T) {
@@ -338,12 +337,6 @@ fileprivate class GeometryBindings: NSObject {
       windowSizeSwitch.setIsOn(false)
       windowPosSwitch.setIsOn(false)
     }
-  }
-
-  override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
-    guard !(change?[NSKeyValueChangeKey.oldKey] is NSNull) else { return }
-
-    updateControls()
   }
 }
 
