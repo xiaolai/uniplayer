@@ -24,7 +24,7 @@ class PlaylistViewController: SidebarViewController {
     .sidebarPlaylistDisplayAtLeading
   }
 
-  override func allTabs() -> [SidebarViewController.TabType] {
+  override var allTabs: [SidebarViewController.TabType] {
     [.playlist, .chapters]
   }
   override var defaultTab: SidebarViewController.TabType {

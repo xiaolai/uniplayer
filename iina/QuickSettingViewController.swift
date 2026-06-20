@@ -27,7 +27,7 @@ class QuickSettingViewController: SidebarViewController {
     .sidebarSettingsDisplayAtLeading
   }
   
-  override func allTabs() -> [TabType] {
+  override var allTabs: [TabType] {
     [.layout, .video, .audio, .sub]
   }
   override var defaultTab: TabType { .video }

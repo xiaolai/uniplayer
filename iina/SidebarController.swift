@@ -446,11 +446,12 @@ class SidebarController: NSObject {
       switch sidebar {
       case .settings: quickSettingView
       case .playlist: playlistView
+      case .plugins: pluginView
       default: fatalError("sidebar must be settings, playlist or plugin")
       }
     } else {
       if let tab {
-        [quickSettingView, playlistView].first { $0.findTab(named: tab) != nil }!
+        [quickSettingView, playlistView, pluginView].first { $0.findTab(named: tab) != nil }!
       } else {
         fatalError("sidebar or tab is required")
       }

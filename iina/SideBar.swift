@@ -6,7 +6,6 @@
 //  Copyright © 2026 lhc. All rights reserved.
 //
 
-/// Sidebar container
 class SideBarContainer: TranslucentView {
   weak var mainWindow: MainWindowController!
   private let prefObserver = Preference.Observer()
@@ -60,8 +59,8 @@ class SidebarViewController: NSViewController {
   var sidebarType: SidebarController.ViewType { fatalError() }
   var leadingPrefKey: Preference.Key { fatalError() }
   var defaultTab: TabType { fatalError() }
-  lazy var allTabs_: [TabType] = allTabs()
-  func allTabs() -> [TabType] { fatalError() }
+  var allTabs: [TabType] { fatalError() }
+  var useTabView: Bool { true }
 
   var tabButtons: [NSButton] = []
   var tabPanes: [NSView] = []
@@ -112,46 +111,20 @@ class SidebarViewController: NSViewController {
     tabButtonsHeightConstraint = tabButtonsStackView.heightAnchor.constraint(equalToConstant: 64)
     tabButtonsHeightConstraint.isActive = true
 
-    self.tabViewController = SidebarTabViewController()
-    view.addSubview(tabViewController.view)
+    if useTabView {
+      self.tabViewController = SidebarTabViewController()
+      view.addSubview(tabViewController.view)
 
-    tabViewController.view.padding(.bottom, .horizontal)
-      .spacing(.top(1), to: tabButtonsStackView)
+      tabViewController.view.padding(.bottom, .horizontal)
+        .spacing(.top(1), to: tabButtonsStackView)
 
-    tabViewController.tabView.padding(.all)
-    tabViewController.tabView.wantsLayer = true
+      tabViewController.tabView.padding(.all)
+      tabViewController.tabView.wantsLayer = true
+    }
 
     self.tabButtonsSegmentControl = NSSegmentedControl()
-
     tabButtonsSegmentControl.target = self
-    tabButtonsSegmentControl.action = #selector(tabBtnSegmentControlAction(_:))
-    tabButtonsSegmentControl.segmentCount = allTabs_.count
-
-    func makeTabButton(_ title: String, image: NSImage?, tag: Int) -> NSButton {
-      let item = TabButton(title: title,
-                           target: self, action: #selector(tabBtnAction))
-      item.bezelStyle = .smallSquare
-      item.isBordered = false
-      if let image {
-        image.size = .init(width: 26, height: 18)
-        item.image = image
-        item.imageScaling = .scaleProportionallyUpOrDown
-        item.imagePosition = .imageAbove
-      }
-      item.font = .systemFont(ofSize: 11, weight: .regular)
-      item.tag = tag
-      return item
-    }
-
-    for tab in allTabs_ {
-      tabButtonsSegmentControl.setImage(tab.image, forSegment: tab.tag)
-      tabButtonsSegmentControl.setTag(tab.tag, forSegment: tab.tag)
-      tabButtons.append(makeTabButton(
-        NSLocalizedString("sidebar.\(tab.name)", comment: tab.name),
-        image: tab.image,
-        tag: tab.tag,
-      ))
-    }
+    tabButtonsSegmentControl.action = #selector(tabBtnSegmentControlAction_(_:))
 
     // close button
     self.closeSidebarBtn = NSButton(
@@ -172,15 +145,7 @@ class SidebarViewController: NSViewController {
       closeSidebarBtn.bezelStyle = .circular
     }
 
-    // panes
-    for tab in allTabs_ {
-      let view = getTabView(for: tab)
-      view.horizontalScroll = self.switchTabByScroll(_:)
-      let vc = NSViewController()
-      vc.view = view
-      let viewItem = NSTabViewItem(viewController: vc)
-      tabViewController.addTabViewItem(viewItem)
-    }
+    setupTabs()
 
     // observer
     prefObserver.addAll(.compactUI, leadingPrefKey, runNow: true) {
@@ -200,12 +165,12 @@ class SidebarViewController: NSViewController {
       closeSidebarBtnSizeConstraint.constant =  compactUI ? 28 : 36
 
       if key == leadingPrefKey {
-        updateTabButtons()
+        updateTabButtonLayout()
         updateTabActiveStatus()
       }
     }
 
-    if defaultTab.tag == 0 {
+    if useTabView && defaultTab.tag == 0 {
       // if the default tab is 0, it is already loaded and transition() was not called initially.
       // set previousIndex manually, so animation will be triggered on next tab switch.
       tabViewController.previousIndex = 0
@@ -215,7 +180,50 @@ class SidebarViewController: NSViewController {
       switchToTab(pendingSwitchRequest!)
       pendingSwitchRequest = nil
     } else {
-      tabViewController.selectedTabViewItemIndex = defaultTab.tag
+      // tabViewController can be nil
+      tabViewController?.selectedTabViewItemIndex = defaultTab.tag
+    }
+  }
+
+  func setupTabs() {
+    guard useTabView else {
+      fatalError("must override setupTabs if useTabView is false")
+    }
+
+    func makeTabButton(_ title: String, image: NSImage?, tag: Int) -> NSButton {
+      let item = TabButton(title: title,
+                           target: self, action: #selector(tabBtnAction))
+      item.bezelStyle = .smallSquare
+      item.isBordered = false
+      if let image {
+        image.size = .init(width: 26, height: 18)
+        item.image = image
+        item.imageScaling = .scaleProportionallyUpOrDown
+        item.imagePosition = .imageAbove
+      }
+      item.font = .systemFont(ofSize: 11, weight: .regular)
+      item.tag = tag
+      return item
+    }
+
+    tabButtonsSegmentControl.segmentCount = allTabs.count
+
+    for tab in allTabs {
+      // segment control
+      tabButtonsSegmentControl.setImage(tab.image, forSegment: tab.tag)
+      tabButtonsSegmentControl.setTag(tab.tag, forSegment: tab.tag)
+      tabButtons.append(makeTabButton(
+        NSLocalizedString("sidebar.\(tab.name)", comment: tab.name),
+        image: tab.image,
+        tag: tab.tag,
+      ))
+      // tab view
+      let view = getTabView(for: tab)
+      view.horizontalScroll = self.switchTabByScrolling(_:)
+      let vc = NSViewController()
+      vc.view = view
+      let viewItem = NSTabViewItem(viewController: vc)
+      tabViewController.addTabViewItem(viewItem)
     }
   }
 
@@ -226,18 +234,21 @@ class SidebarViewController: NSViewController {
   // MARK: - Tab switching
 
   func findTab(named name: String) -> TabType? {
-    allTabs_.first { $0.name == name }
+    allTabs.first { $0.name == name }
   }
 
-  private func switchToTab(_ tab: TabType) {
+  func switchToTab(_ tab: TabType) {
+    guard useTabView else {
+      fatalError("must override switchToTab if useTabView is false")
+    }
     guard isViewLoaded else { return }
     currentTab = tab
     tabViewController.selectedTabViewItemIndex = tab.tag
     updateTabActiveStatus()
   }
 
-  private func switchToTab(tag: Int) {
-    switchToTab(allTabs_.first { $0.tag == tag }!)
+  private func switchToTab(withTag: Int) {
+    switchToTab(allTabs.first { $0.tag == withTag }!)
   }
 
   /** Switch tab (call from other objects) */
@@ -250,21 +261,21 @@ class SidebarViewController: NSViewController {
     }
   }
 
-  func switchTabByScroll(_ isForward: Bool) {
-    let tags = allTabs_.map(\.tag)
+  private func switchTabByScrolling(_ isForward: Bool) {
+    let tags = allTabs.map(\.tag)
     guard let max = tags.max(), let min = tags.min() else { return }
     if isForward {
       if currentTab.tag < max {
-        switchToTab(tag: currentTab.tag + 1)
+        switchToTab(withTag: currentTab.tag + 1)
       }
     } else {
       if currentTab.tag > min {
-        switchToTab(tag: currentTab.tag - 1)
+        switchToTab(withTag: currentTab.tag - 1)
       }
     }
   }
 
-  private func updateTabActiveStatus() {
+  func updateTabActiveStatus() {
     let currentTag = currentTab.tag
     tabButtons.forEach { btn in
       let isActive = currentTag == btn.tag
@@ -272,7 +283,7 @@ class SidebarViewController: NSViewController {
     }
 
     let isLeading = Preference.bool(for: leadingPrefKey)
-    for tab in allTabs_ {
+    for tab in allTabs {
       // don't show label if isLeading
       let isSelected = tab.tag == currentTag && !isLeading
       let label = NSLocalizedString("sidebar.\(tab.name)", comment: tab.name)
@@ -281,7 +292,7 @@ class SidebarViewController: NSViewController {
     tabButtonsSegmentControl.selectedSegment = currentTag
   }
 
-  private func updateTabButtons() {
+  private func updateTabButtonLayout() {
     tabButtonsStackView.arrangedSubviews.forEach {
       tabButtonsStackView.removeArrangedSubview($0)
       $0.removeFromSuperview()
@@ -310,11 +321,15 @@ class SidebarViewController: NSViewController {
   }
 
   @objc private func tabBtnAction(_ sender: NSButton) {
-    switchToTab(tag: sender.tag)
+    switchToTab(withTag: sender.tag)
   }
 
-  @objc private func tabBtnSegmentControlAction(_ sender: NSSegmentedControl) {
-    switchToTab(tag: sender.selectedTag())
+  func tabBtnSegmentControlAction(_ sender: NSSegmentedControl) {
+    switchToTab(withTag: sender.selectedTag())
+  }
+
+  @objc private func tabBtnSegmentControlAction_(_ sender: NSSegmentedControl) {
+    tabBtnSegmentControlAction(sender)
   }
 }
 
