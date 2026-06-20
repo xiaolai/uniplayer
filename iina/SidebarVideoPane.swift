@@ -119,121 +119,132 @@ class SidebarVideoPane: SidebarScrollView {
   }
 }
 
-
-fileprivate class FadingHorizontalScrollView: NSScrollView {
-  private let fadeWidth: CGFloat = 30
-  private let maskLayer = CAGradientLayer()
+fileprivate class HorizontalScrollViewWithIndicator: NSView {
+  let scrollView = ScrollView()
+  private var indicator: NSButton!
 
   override init(frame frameRect: NSRect) {
     super.init(frame: frameRect)
-    wantsLayer = true
 
-    maskLayer.startPoint = CGPoint(x: 0, y: 0.5)
-    maskLayer.endPoint   = CGPoint(x: 1, y: 0.5)
-    layer?.mask = maskLayer
+    translatesAutoresizingMaskIntoConstraints = false
 
-    contentView.postsBoundsChangedNotifications = true
-    NotificationCenter.default.addObserver(
-      self,
-      selector: #selector(contentDidScroll),
-      name: NSView.boundsDidChangeNotification,
-      object: contentView
+    scrollView.parent = self
+    addSubview(scrollView)
+
+    self.indicator = NSButton(
+      image: .sf("chevron.forward")!,
+      target: self,
+      action: #selector(indicatorAction)
     )
+    indicator.translatesAutoresizingMaskIntoConstraints = false
+    indicator.bezelStyle = .smallSquare
+    indicator.isBordered = false
+    addSubview(indicator)
+    indicator.size(width: 8).padding(.trailing).center(.y)
+    scrollView.padding(.vertical, .leading).spacing(.trailing(4), to: indicator)
   }
-
+  
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
 
-  deinit {
-    NotificationCenter.default.removeObserver(self)
+  @objc private func indicatorAction(_ sender: NSButton) {
+    guard let width = scrollView.documentView?.frame.width else { return }
+
+    let point = NSPoint(x: width - scrollView.contentSize.width, y: 0)
+    NSAnimationContext.runAnimationGroup({ context in
+      context.duration = 0.3
+      scrollView.contentView.animator().setBoundsOrigin(point)
+    })
   }
 
-  override func layout() {
-    super.layout()
-    CATransaction.begin()
-    CATransaction.setDisableActions(true)
-    maskLayer.frame = bounds
-    updateMask()
-    CATransaction.commit()
-  }
+  class ScrollView: NSScrollView {
+    var parent: HorizontalScrollViewWithIndicator!
 
-  @objc private func contentDidScroll(_ note: Notification) {
-    CATransaction.begin()
-    CATransaction.setDisableActions(true)
-    updateMask()
-    CATransaction.commit()
-  }
+    override init(frame frameRect: NSRect) {
+      super.init(frame: frameRect)
 
-  private func updateMask() {
-    guard let documentView else { return }
+      translatesAutoresizingMaskIntoConstraints = false
+      drawsBackground = false
+      hasVerticalScroller = false
+      hasHorizontalScroller = false
+      verticalScrollElasticity = .none
 
-    let visibleWidth = contentView.bounds.width
-    let contentWidth = documentView.frame.width
-    let originX      = contentView.bounds.origin.x
-
-    guard contentWidth > visibleWidth else {
-      // content fits, no fading needed
-      maskLayer.colors    = [NSColor.black.cgColor]
-      maskLayer.locations = nil
-      return
+      contentView.postsBoundsChangedNotifications = true
+      NotificationCenter.default.addObserver(
+        self,
+        selector: #selector(contentDidScroll),
+        name: NSView.boundsDidChangeNotification,
+        object: contentView
+      )
     }
 
-    let eps: CGFloat = 1
-    let atLeading  = originX <= eps
-    let atTrailing = originX + visibleWidth >= contentWidth - eps
-
-    let r = fadeWidth / visibleWidth
-    let fadeStop    = NSNumber(value: r)
-    let fadeStopInv = NSNumber(value: 1.0 - r)
-
-    let opaque      = NSColor.black.cgColor
-    let transparent = NSColor.clear.cgColor
-
-    maskLayer.locations = [0, fadeStop, fadeStopInv, 1]
-    maskLayer.colors = [
-      atLeading  ? opaque : transparent,  // outer leading edge
-      opaque,                             // inner leading edge
-      opaque,                             // inner trailing edge
-      atTrailing ? opaque : transparent,  // outer trailing edge
-    ]
-  }
-
-  /// Translate vertical scrolling events to horizontal for mouse control
-  override func scrollWheel(with event: NSEvent) {
-    if event.scrollingDeltaX != 0 {
-      super.scrollWheel(with: event)
-      return
+    required init?(coder: NSCoder) {
+      fatalError("init(coder:) has not been implemented")
     }
 
-    guard let cg = event.cgEvent?.copy() else {
-      super.scrollWheel(with: event)
-      return
+    deinit {
+      NotificationCenter.default.removeObserver(self)
     }
 
-    let lineV = cg.getDoubleValueField(.scrollWheelEventDeltaAxis1)
-    cg.setDoubleValueField(.scrollWheelEventDeltaAxis1, value: 0)
-    cg.setDoubleValueField(.scrollWheelEventDeltaAxis2, value: lineV)
-
-    let pxV = cg.getDoubleValueField(.scrollWheelEventPointDeltaAxis1)
-    cg.setDoubleValueField(.scrollWheelEventPointDeltaAxis1, value: 0)
-    cg.setDoubleValueField(.scrollWheelEventPointDeltaAxis2, value: pxV)
-
-    let fpV = cg.getDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1)
-    cg.setDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1, value: 0)
-    cg.setDoubleValueField(.scrollWheelEventFixedPtDeltaAxis2, value: fpV)
-
-    guard let swapped = NSEvent(cgEvent: cg) else {
-      super.scrollWheel(with: event)
-      return
+    @objc private func contentDidScroll(_ note: Notification) {
+      updateMask()
     }
 
-    super.scrollWheel(with: swapped)
+    private func updateMask() {
+      guard let documentView else { return }
+
+      let visibleWidth = contentView.bounds.width
+      let contentWidth = documentView.frame.width
+      let originX      = contentView.bounds.origin.x
+
+      guard contentWidth > visibleWidth else {
+        parent.indicator.isHidden = true
+        return
+      }
+
+      let eps: CGFloat = 1
+//      let atLeading  = originX <= eps
+      let atTrailing = originX + visibleWidth >= contentWidth - eps
+
+      parent.indicator.isHidden = atTrailing
+    }
+
+    /// Translate vertical scrolling events to horizontal for mouse control
+    override func scrollWheel(with event: NSEvent) {
+      if event.scrollingDeltaX != 0 {
+        super.scrollWheel(with: event)
+        return
+      }
+
+      guard let cg = event.cgEvent?.copy() else {
+        super.scrollWheel(with: event)
+        return
+      }
+
+      let lineV = cg.getDoubleValueField(.scrollWheelEventDeltaAxis1)
+      cg.setDoubleValueField(.scrollWheelEventDeltaAxis1, value: 0)
+      cg.setDoubleValueField(.scrollWheelEventDeltaAxis2, value: lineV)
+
+      let pxV = cg.getDoubleValueField(.scrollWheelEventPointDeltaAxis1)
+      cg.setDoubleValueField(.scrollWheelEventPointDeltaAxis1, value: 0)
+      cg.setDoubleValueField(.scrollWheelEventPointDeltaAxis2, value: pxV)
+
+      let fpV = cg.getDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1)
+      cg.setDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1, value: 0)
+      cg.setDoubleValueField(.scrollWheelEventFixedPtDeltaAxis2, value: fpV)
+
+      guard let swapped = NSEvent(cgEvent: cg) else {
+        super.scrollWheel(with: event)
+        return
+      }
+
+      super.scrollWheel(with: swapped)
+    }
   }
 }
 
-
-fileprivate class AspectRatioView: FadingHorizontalScrollView {
+fileprivate class AspectRatioView: HorizontalScrollViewWithIndicator {
   private unowned let player: PlayerCore
   private var segmentControl: NSSegmentedControl!
   private var input: NSTextField!
@@ -241,12 +252,6 @@ fileprivate class AspectRatioView: FadingHorizontalScrollView {
   init(player: PlayerCore) {
     self.player = player
     super.init(frame: .zero)
-
-    translatesAutoresizingMaskIntoConstraints = false
-    drawsBackground = false
-    hasVerticalScroller = false
-    hasHorizontalScroller = false
-    verticalScrollElasticity = .none
 
     self.segmentControl = NSSegmentedControl(
       labels: AppData.aspectsInPanel,
@@ -261,7 +266,7 @@ fileprivate class AspectRatioView: FadingHorizontalScrollView {
     input.target = self
     input.action = #selector(aspectRatioAction)
 
-    documentView = ui.hStack(
+    scrollView.documentView = ui.hStack(
       spacing: 8, segmentControl, input
     )
     size(height: 24)
@@ -302,19 +307,13 @@ fileprivate class AspectRatioView: FadingHorizontalScrollView {
 }
 
 
-fileprivate class CropView: FadingHorizontalScrollView {
+fileprivate class CropView: HorizontalScrollViewWithIndicator {
   private unowned let player: PlayerCore
   private var segmentControl: NSSegmentedControl!
 
   init(player: PlayerCore) {
     self.player = player
     super.init(frame: .zero)
-
-    translatesAutoresizingMaskIntoConstraints = false
-    drawsBackground = false
-    hasVerticalScroller = false
-    hasHorizontalScroller = false
-    verticalScrollElasticity = .none
 
     self.segmentControl = NSSegmentedControl(
       labels: AppData.cropsInPanel + [NSLocalizedString("menu.crop_custom", comment: "")],
@@ -323,7 +322,7 @@ fileprivate class CropView: FadingHorizontalScrollView {
     )
     segmentControl.selectedSegment = 0
 
-    documentView = segmentControl
+    scrollView.documentView = segmentControl
     size(height: 24)
 
     player.observe(.iinaVideoParamsChanged) { [unowned self] _ in
