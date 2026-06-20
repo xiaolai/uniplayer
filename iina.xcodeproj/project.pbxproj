@@ -2390,7 +2390,6 @@
 				E38BD4AE20054BD9007635FC /* MainWindow.swift */,
 				D1B4E24D2A3AFC9100E36F1D /* MiniPlayerWindow.swift */,
 				84CFC92523F8DDE000381E5B /* PlayerWindowController.swift */,
-				84A0BA9C1D2FAD4000BC8DA1 /* MainWindowController.swift */,
 				51CACB9429D500290034CEE5 /* VideoPIPViewController.swift */,
 				84D123B31ECAA405004E0D53 /* TouchBarSupport.swift */,
 				8400D5C81E1AB2F1006785F5 /* MainWindowController.xib */,
@@ -2832,6 +2831,7 @@
 		E3A239A62FC6D3F000CE6ACC /* MainWindow */ = {
 			isa = PBXGroup;
 			children = (
+				84A0BA9C1D2FAD4000BC8DA1 /* MainWindowController.swift */,
 				E31E63002FDB96E9005527B2 /* FadeableViewController.swift */,
 				E31E62FE2FD90284005527B2 /* OSCFloatingView.swift */,
 				E31E62FC2FD8F4C5005527B2 /* OSCBottomView.swift */,

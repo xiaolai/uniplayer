@@ -60,10 +60,14 @@ class SidebarController: NSObject {
     let view: SideBarContainer
     var widthConstraint: NSLayoutConstraint!
     var edgeConstraint: NSLayoutConstraint!
-    var status: ViewType = .hidden {
-      didSet { NotificationCenter.default.post(name: .iinaSidebarStatusChanged, object: nil) }
+    var status: ViewType = .hidden
+    var animationState: MainWindowController.UIAnimationState = .hidden {
+      didSet {
+        if animationState == .hidden || animationState == .shown {
+          NotificationCenter.default.post(name: .iinaSidebarStatusChanged, object: nil)
+        }
+      }
     }
-    var animationState: MainWindowController.UIAnimationState = .hidden
 
     init(side: Side, view: SideBarContainer) {
       self.side = side
