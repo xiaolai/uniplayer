@@ -160,9 +160,6 @@ class SidebarController: NSObject {
 
   // MARK: - Queries
 
-  private func sidebarPosChanged(_ key: Preference.Key) {
-  }
-
   func sideBar(for side: Side) -> Panel {
     side == .leading ? leadingSidebar : trailingSidebar
   }
@@ -439,7 +436,7 @@ class SidebarController: NSObject {
       showSideBar(viewController: viewController, type: type)
     } else {
       // Target side currently shows a different type — replace it.
-      hideSideBar(side: targetSide) {
+      hideSideBar(side: targetSide, animate: false) {
         self.showSideBar(viewController: viewController, type: type)
       }
     }
@@ -467,5 +464,4 @@ class SidebarController: NSObject {
     toggleSideBar(type: sidebar, viewController: view, tab: tabType,
                   force: force, hideIfAlreadyShown: hideIfAlreadyShown)
   }
-
 }

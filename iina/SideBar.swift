@@ -36,6 +36,13 @@ class SideBarContainer: TranslucentView {
       container.addSubview(leadingBorder)
       leadingBorder.padding(.vertical, .leading).size(width: 1)
       leadingBorder.isHidden = !Preference.isDocked
+
+      let shadow = NSShadow()
+      shadow.shadowColor = NSColor.black.withAlphaComponent(0.3)
+      shadow.shadowBlurRadius = 6
+      self.shadow = shadow
+    } else {
+      self.shadow = nil
     }
   }
 
