@@ -299,14 +299,14 @@ class SidebarViewController: NSViewController {
       $0.removeFromSuperview()
     }
     if isLeading {
-      closeSidebarBtn.image = .sf("sidebar.squares.leading")
+      closeSidebarBtn.image = .sf("chevron.backward")
       tabButtonsLeadingConstraint.constant = 96
       tabButtonsTrailingConstraint.constant = 10
       tabButtonsStackView.distribution = .equalSpacing
       tabButtonsStackView.addArrangedSubview(tabButtonsSegmentControl)
       tabButtonsStackView.addArrangedSubview(closeSidebarBtn)
     } else {
-      closeSidebarBtn.image = .sf("sidebar.squares.trailing")
+      closeSidebarBtn.image = .sf("chevron.forward")
       tabButtonsLeadingConstraint.constant = 10
       tabButtonsTrailingConstraint.constant = 10
       tabButtonsStackView.distribution = .equalSpacing
