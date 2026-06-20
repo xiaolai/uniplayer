@@ -120,7 +120,120 @@ class SidebarVideoPane: SidebarScrollView {
 }
 
 
-fileprivate class AspectRatioView: NSScrollView {
+fileprivate class FadingHorizontalScrollView: NSScrollView {
+  private let fadeWidth: CGFloat = 30
+  private let maskLayer = CAGradientLayer()
+
+  override init(frame frameRect: NSRect) {
+    super.init(frame: frameRect)
+    wantsLayer = true
+
+    maskLayer.startPoint = CGPoint(x: 0, y: 0.5)
+    maskLayer.endPoint   = CGPoint(x: 1, y: 0.5)
+    layer?.mask = maskLayer
+
+    contentView.postsBoundsChangedNotifications = true
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(contentDidScroll),
+      name: NSView.boundsDidChangeNotification,
+      object: contentView
+    )
+  }
+
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+
+  deinit {
+    NotificationCenter.default.removeObserver(self)
+  }
+
+  override func layout() {
+    super.layout()
+    CATransaction.begin()
+    CATransaction.setDisableActions(true)
+    maskLayer.frame = bounds
+    updateMask()
+    CATransaction.commit()
+  }
+
+  @objc private func contentDidScroll(_ note: Notification) {
+    CATransaction.begin()
+    CATransaction.setDisableActions(true)
+    updateMask()
+    CATransaction.commit()
+  }
+
+  private func updateMask() {
+    guard let documentView else { return }
+
+    let visibleWidth = contentView.bounds.width
+    let contentWidth = documentView.frame.width
+    let originX      = contentView.bounds.origin.x
+
+    guard contentWidth > visibleWidth else {
+      // content fits, no fading needed
+      maskLayer.colors    = [NSColor.black.cgColor]
+      maskLayer.locations = nil
+      return
+    }
+
+    let eps: CGFloat = 1
+    let atLeading  = originX <= eps
+    let atTrailing = originX + visibleWidth >= contentWidth - eps
+
+    let r = fadeWidth / visibleWidth
+    let fadeStop    = NSNumber(value: r)
+    let fadeStopInv = NSNumber(value: 1.0 - r)
+
+    let opaque      = NSColor.black.cgColor
+    let transparent = NSColor.clear.cgColor
+
+    maskLayer.locations = [0, fadeStop, fadeStopInv, 1]
+    maskLayer.colors = [
+      atLeading  ? opaque : transparent,  // outer leading edge
+      opaque,                             // inner leading edge
+      opaque,                             // inner trailing edge
+      atTrailing ? opaque : transparent,  // outer trailing edge
+    ]
+  }
+
+  /// Translate vertical scrolling events to horizontal for mouse control
+  override func scrollWheel(with event: NSEvent) {
+    if event.scrollingDeltaX != 0 {
+      super.scrollWheel(with: event)
+      return
+    }
+
+    guard let cg = event.cgEvent?.copy() else {
+      super.scrollWheel(with: event)
+      return
+    }
+
+    let lineV = cg.getDoubleValueField(.scrollWheelEventDeltaAxis1)
+    cg.setDoubleValueField(.scrollWheelEventDeltaAxis1, value: 0)
+    cg.setDoubleValueField(.scrollWheelEventDeltaAxis2, value: lineV)
+
+    let pxV = cg.getDoubleValueField(.scrollWheelEventPointDeltaAxis1)
+    cg.setDoubleValueField(.scrollWheelEventPointDeltaAxis1, value: 0)
+    cg.setDoubleValueField(.scrollWheelEventPointDeltaAxis2, value: pxV)
+
+    let fpV = cg.getDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1)
+    cg.setDoubleValueField(.scrollWheelEventFixedPtDeltaAxis1, value: 0)
+    cg.setDoubleValueField(.scrollWheelEventFixedPtDeltaAxis2, value: fpV)
+
+    guard let swapped = NSEvent(cgEvent: cg) else {
+      super.scrollWheel(with: event)
+      return
+    }
+
+    super.scrollWheel(with: swapped)
+  }
+}
+
+
+fileprivate class AspectRatioView: FadingHorizontalScrollView {
   private unowned let player: PlayerCore
   private var segmentControl: NSSegmentedControl!
   private var input: NSTextField!
@@ -132,8 +245,8 @@ fileprivate class AspectRatioView: NSScrollView {
     translatesAutoresizingMaskIntoConstraints = false
     drawsBackground = false
     hasVerticalScroller = false
-    hasHorizontalScroller = true
-    autohidesScrollers = true
+    hasHorizontalScroller = false
+    verticalScrollElasticity = .none
 
     self.segmentControl = NSSegmentedControl(
       labels: AppData.aspectsInPanel,
@@ -189,7 +302,7 @@ fileprivate class AspectRatioView: NSScrollView {
 }
 
 
-fileprivate class CropView: NSScrollView {
+fileprivate class CropView: FadingHorizontalScrollView {
   private unowned let player: PlayerCore
   private var segmentControl: NSSegmentedControl!
 
@@ -200,8 +313,8 @@ fileprivate class CropView: NSScrollView {
     translatesAutoresizingMaskIntoConstraints = false
     drawsBackground = false
     hasVerticalScroller = false
-    hasHorizontalScroller = true
-    autohidesScrollers = true
+    hasHorizontalScroller = false
+    verticalScrollElasticity = .none
 
     self.segmentControl = NSSegmentedControl(
       labels: AppData.cropsInPanel + [NSLocalizedString("menu.crop_custom", comment: "")],
