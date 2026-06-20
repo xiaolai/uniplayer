@@ -89,10 +89,12 @@ class PluginViewController: SidebarViewController {
 
     pluginMenu.removeAllItems()
     allTabs_.forEach { tab in
-      let menuItem = NSMenuItem(title: tab.name, action: #selector(menuItemAction), keyEquivalent: "")
-      menuItem.target = self
-      menuItem.representedObject = tab.id
-      pluginMenu.addItem(menuItem)
+      pluginMenu.addItem(
+        withTitle: tab.name,
+        action: #selector(menuItemAction),
+        target: self,
+        obj: tab.id
+      )
     }
   }
 

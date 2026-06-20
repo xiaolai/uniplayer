@@ -52,9 +52,9 @@ class SidebarPlaylistPane: NSView, SidebarPane {
 
     self.addFileMenu = NSMenu()
     addFileMenu.addItem(
-      withTitle: NSLocalizedString("sidebar.add_file", comment: ""), action: #selector(addFileAction), keyEquivalent: "")
+      withTitle: NSLocalizedString("sidebar.add_file", comment: ""), action: #selector(addFileAction), target: self)
     addFileMenu.addItem(
-      withTitle: NSLocalizedString("sidebar.add_url", comment: ""), action: #selector(addURLAction), keyEquivalent: "")
+      withTitle: NSLocalizedString("sidebar.add_url", comment: ""), action: #selector(addURLAction), target: self)
 
     func makeButton(_ title: String, _ image: NSImage, _ action: Selector) -> NSButton {
       let btn = NSButton(image: image, target: self, action: action)

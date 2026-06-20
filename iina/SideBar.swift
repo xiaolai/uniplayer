@@ -61,6 +61,8 @@ class SidebarViewController: NSViewController {
   var defaultTab: TabType { fatalError() }
   var allTabs: [TabType] { fatalError() }
   var useTabView: Bool { true }
+  var isLeading: Bool { Preference.bool(for: leadingPrefKey) }
+  var isCompact: Bool { Preference.bool(for: .compactUI) }
 
   var tabButtons: [NSButton] = []
   var tabPanes: [NSView] = []
@@ -150,20 +152,7 @@ class SidebarViewController: NSViewController {
     // observer
     prefObserver.addAll(.compactUI, leadingPrefKey, runNow: true) {
       [unowned self] key in
-      let compactUI = Preference.bool(for: .compactUI)
-      let isLeading = Preference.bool(for: leadingPrefKey)
-
-      let height: CGFloat = (compactUI && !isLeading) ? 48 : 52
-      tabButtonsHeightConstraint.constant = height
-
-      if #available(macOS 26.0, *), !compactUI {
-        tabButtonsSegmentControl.controlSize = .extraLarge
-      } else {
-        tabButtonsSegmentControl.controlSize = .large
-      }
-
-      closeSidebarBtnSizeConstraint.constant =  compactUI ? 28 : 36
-
+      updateTabButtonSize()
       if key == leadingPrefKey {
         updateTabButtonLayout()
         updateTabActiveStatus()
@@ -282,7 +271,6 @@ class SidebarViewController: NSViewController {
       btn.state = isActive ? .on : .off
     }
 
-    let isLeading = Preference.bool(for: leadingPrefKey)
     for tab in allTabs {
       // don't show label if isLeading
       let isSelected = tab.tag == currentTag && !isLeading
@@ -292,12 +280,25 @@ class SidebarViewController: NSViewController {
     tabButtonsSegmentControl.selectedSegment = currentTag
   }
 
-  private func updateTabButtonLayout() {
+  func updateTabButtonSize() {
+    let height: CGFloat = (isCompact && !isLeading) ? 48 : 52
+    tabButtonsHeightConstraint.constant = height
+
+    if #available(macOS 26.0, *), !isCompact {
+      tabButtonsSegmentControl.controlSize = .extraLarge
+    } else {
+      tabButtonsSegmentControl.controlSize = .large
+    }
+
+    closeSidebarBtnSizeConstraint.constant =  isCompact ? 28 : 36
+  }
+
+  func updateTabButtonLayout() {
     tabButtonsStackView.arrangedSubviews.forEach {
       tabButtonsStackView.removeArrangedSubview($0)
       $0.removeFromSuperview()
     }
-    if Preference.bool(for: leadingPrefKey) {
+    if isLeading {
       closeSidebarBtn.image = .sf("sidebar.squares.leading")
       tabButtonsLeadingConstraint.constant = 96
       tabButtonsTrailingConstraint.constant = 10

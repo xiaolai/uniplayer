@@ -788,6 +788,8 @@ class PlayerCore: NSObject {
     miniPlayer.updateTitle()
     refreshSyncUITimer()
     let playlistView = mainWindow.sidebars.playlistView
+    // force initialize the view
+    let _ = playlistView.view
     let videoView = mainWindow.videoView
     // reset down shift for playlistView
     mainWindow.sidebars.playlistView.downShift = 0
@@ -839,6 +841,7 @@ class PlayerCore: NSObject {
       notifyWindowVideoSizeChanged()
     }
     mainWindow.forceDraw("entered music mode")
+    postNotification(.iinaMusicModeChanged)
     events.emit(.musicModeChanged, data: true)
   }
 
@@ -865,7 +868,6 @@ class PlayerCore: NSObject {
     mainWindow.sidebars.playlistView.view.removeFromSuperview()
     mainWindow.sidebars.playlistView.isInMiniPlayer = false
     // add back video view
-    let mainWindowContentView = mainWindow.window!.contentView
     miniPlayer.videoViewAspectConstraint?.isActive = false
     miniPlayer.videoViewAspectConstraint = nil
     mainWindow.addVideoViewToWindow()
@@ -882,6 +884,7 @@ class PlayerCore: NSObject {
     }
 
     mainWindow.forceDraw("exited music mode")
+    postNotification(.iinaMusicModeChanged)
     events.emit(.musicModeChanged, data: false)
   }
 

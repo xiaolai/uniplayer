@@ -31,11 +31,38 @@ class PlaylistViewController: SidebarViewController {
     .playlist
   }
 
+  override var isLeading: Bool {
+    Preference.bool(for: leadingPrefKey) && !player.isInMiniPlayer
+  }
+
+  override var isCompact: Bool {
+    Preference.bool(for: .compactUI) || player.isInMiniPlayer
+  }
+
   override func getTabView(for tab: SidebarViewController.TabType) -> SidebarPane {
     return switch tab {
     case .playlist: SidebarPlaylistPane(player: player)
     case .chapters: SidebarChaptersPane(player: player)
     default: fatalError()
+    }
+  }
+
+  override func viewDidLoad() {
+    super.viewDidLoad()
+
+    player.observe(.iinaMusicModeChanged) { [unowned self] _ in
+      updateTabActiveStatus()
+      updateTabButtonSize()
+      updateTabButtonLayout()
+    }
+  }
+
+  override func updateTabButtonLayout() {
+    super.updateTabButtonLayout()
+    if player.isInMiniPlayer {
+      tabButtonsStackView.setVisibilityPriority(.notVisible, for: closeSidebarBtn)
+    } else {
+      tabButtonsStackView.setVisibilityPriority(.mustHold, for: closeSidebarBtn)
     }
   }
 
