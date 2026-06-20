@@ -261,7 +261,7 @@ fileprivate class SideBarButton: NSView {
     translatesAutoresizingMaskIntoConstraints = false
     wantsLayer = true
     let background = CAGradientLayer()
-    background.borderColor = NSColor.separatorColor.cgColor
+    background.borderColor = NSColor.sidebarContainerBorder.cgColor
     background.borderWidth = 1
     background.cornerRadius = 8
     background.colors = [
@@ -324,7 +324,7 @@ fileprivate class OSCLayoutSelector: NSBox {
     
     var isActive: Bool = false {
       didSet {
-        animator().borderColor = isActive ? .controlAccentColor : .separatorColor
+        animator().borderColor = isActive ? .controlAccentColor : .sidebarContainerBorder
         animator().borderWidth = isActive ? 2 : 1
         animator().fillColor = isActive ? .controlAccentColor.withAlphaComponent(0.1) :
           .gray.withAlphaComponent(0.1)

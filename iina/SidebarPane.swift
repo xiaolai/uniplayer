@@ -78,7 +78,7 @@ class SidebarScrollView: NSScrollView, SidebarPane {
       translatesAutoresizingMaskIntoConstraints = false
       clipsToBounds = true
       boxType = .custom
-      borderColor = .separatorColor
+      borderColor = .sidebarContainerBorder
       cornerRadius = 8
       fillColor = .gray.withAlphaComponent(0.1)
       block(view)
