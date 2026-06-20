@@ -8,7 +8,7 @@
 
 import Cocoa
 
-class PluginViewController: NSViewController, SidebarViewController {
+class PluginViewController: NSViewController {
 
   var downShift: CGFloat = 0 {
     didSet {

@@ -787,7 +787,7 @@ class PlayerCore: NSObject {
 
     miniPlayer.updateTitle()
     refreshSyncUITimer()
-    let playlistView = mainWindow.sidebars.playlistView.view
+    let playlistView = mainWindow.sidebars.playlistView
     let videoView = mainWindow.videoView
     // reset down shift for playlistView
     mainWindow.sidebars.playlistView.downShift = 0
@@ -797,10 +797,10 @@ class PlayerCore: NSObject {
     }
 
     // move playlist view
-    playlistView.removeFromSuperview()
-    mainWindow.sidebars.playlistView.useCompactTabHeight = true
-    miniPlayer.playlistWrapperView.addSubview(playlistView)
-    Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": playlistView])
+    playlistView.view.removeFromSuperview()
+//    playlistView.isInMiniPlayer = true
+    miniPlayer.playlistWrapperView.addSubview(playlistView.view)
+    playlistView.view.padding(.all)
     // move video view
     videoView.removeFromSuperview()
     miniPlayer.videoWrapperView.addSubview(videoView, positioned: .below, relativeTo: nil)
@@ -863,7 +863,7 @@ class PlayerCore: NSObject {
                  level: .verbose, subsystem: subsystem)
     }
     mainWindow.sidebars.playlistView.view.removeFromSuperview()
-    mainWindow.sidebars.playlistView.useCompactTabHeight = false
+    mainWindow.sidebars.playlistView.isInMiniPlayer = false
     // add back video view
     let mainWindowContentView = mainWindow.window!.contentView
     miniPlayer.videoViewAspectConstraint?.isActive = false
@@ -2192,7 +2192,6 @@ class PlayerCore: NSObject {
     }
     postNotification(.iinaFileLoaded)
     events.emit(.fileLoaded, data: info.currentURL?.absoluteString ?? "")
-    syncUI(.playlist)
   }
 
   func fileEnded(_ dueToStopCommand: Bool) {
@@ -2246,7 +2245,7 @@ class PlayerCore: NSObject {
     guard info.state.active else { return }
     info.chapter = Int(mpv.getInt(MPVProperty.chapter))
     syncUI(.time)
-    syncUI(.chapterList)
+    postNotification(.iinaChapterListChanged)
     postNotification(.iinaMediaTitleChanged)
   }
 
@@ -2732,9 +2731,6 @@ class PlayerCore: NSObject {
     case time
     case playButton
     case volume
-    case chapterList
-    case playlist
-    case loop
   }
 
   @objc func syncUITime() {
@@ -2759,8 +2755,8 @@ class PlayerCore: NSObject {
       let isNetworkStream = info.isNetworkResource
       syncPosition()
       info.videoRemaining?.second = Preference.bool(for: .scaleRemainingTime) ?
-        mpv.getDouble(MPVProperty.playtimeRemainingFull) :
-        mpv.getDouble(MPVProperty.timeRemainingFull)
+      mpv.getDouble(MPVProperty.playtimeRemainingFull) :
+      mpv.getDouble(MPVProperty.timeRemainingFull)
       if isNetworkStream {
         // Update cache info
         info.pausedForCache = mpv.getFlag(MPVProperty.pausedForCache)
@@ -2789,27 +2785,6 @@ class PlayerCore: NSObject {
     case .volume:
       DispatchQueue.main.async {
         self.currentController.updateVolume()
-      }
-
-    case .chapterList:
-      DispatchQueue.main.async {
-        // this should avoid sending reload when table view is not ready
-        if self.isInMiniPlayer ? self.miniPlayer.isPlaylistVisible : self.mainWindow.sidebars.isShowing(.playlist) {
-          self.log("Syncing UI: chapterList")
-          self.mainWindow.sidebars.playlistView.chapterTableView.reloadData()
-        }
-      }
-
-    case .playlist:
-      DispatchQueue.main.async {
-        if self.isPlaylistVisible {
-          self.mainWindow.sidebars.playlistView.playlistTableView.reloadData()
-        }
-      }
-
-    case .loop:
-      DispatchQueue.main.async {
-        self.mainWindow.sidebars.playlistView.updateLoopBtnStatus()
       }
     }
   }
@@ -2968,7 +2943,7 @@ class PlayerCore: NSObject {
     // This will avoid concurrent modification crashes
     info.chapters = chapters
 
-    syncUI(.chapterList)
+    postNotification(.iinaChapterListChanged)
   }
 
   // MARK: - Notifications

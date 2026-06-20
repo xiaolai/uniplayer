@@ -1,0 +1,374 @@
+//
+//  Sidebar.swift
+//  iina
+//
+//  Created by Hechen Li on 2026-05-27.
+//  Copyright © 2026 lhc. All rights reserved.
+//
+
+/// Sidebar container
+class SideBarContainer: TranslucentView {
+  weak var mainWindow: MainWindowController!
+  private let prefObserver = Preference.Observer()
+  var leadingBorder: NSBox!
+
+  init(mainWindow: MainWindowController) {
+    self.mainWindow = mainWindow
+
+    super.init(liquidGlassCornerRadius: 12, vevCornerRadius: 0, padding: (0, 0))
+
+    LayoutValue.panelCornerRadius.use { [weak self] value in
+      self?.setCornerRadius(liquidGlass: value, vev: 0)
+    }
+
+    // only draw leading border when docked
+    prefObserver.addAll(.dockedControlBarAndTitlebar, .edgeToEdgeVideo) { [unowned self] _ in
+      leadingBorder?.isHidden = !Preference.isDocked
+    }
+  }
+
+  override func setStyle(_ newStyle: TranslucentView.Style, force: Bool = false) {
+    super.setStyle(newStyle, force: force)
+
+    if let container = container as? NSVisualEffectView {
+      leadingBorder = NSBox()
+      leadingBorder.translatesAutoresizingMaskIntoConstraints = false
+      leadingBorder.boxType = .separator
+      container.addSubview(leadingBorder)
+      leadingBorder.padding(.vertical, .leading).size(width: 1)
+      leadingBorder.isHidden = !Preference.isDocked
+    }
+  }
+
+  @MainActor required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+}
+
+
+class SidebarViewController: NSViewController {
+  unowned let player: PlayerCore
+  unowned let mainWindow: MainWindowController
+  let prefObserver = Preference.Observer()
+
+  var downShift: CGFloat = 0 {
+    didSet {
+      topConstraint.constant = downShift
+    }
+  }
+
+  var sidebarType: SidebarController.ViewType { fatalError() }
+  var leadingPrefKey: Preference.Key { fatalError() }
+  var defaultTab: TabType { fatalError() }
+  lazy var allTabs_: [TabType] = allTabs()
+  func allTabs() -> [TabType] { fatalError() }
+
+  var tabButtons: [NSButton] = []
+  var tabPanes: [NSView] = []
+
+  var pendingSwitchRequest: TabType?
+  lazy var currentTab: TabType = defaultTab
+
+  var tabButtonsStackView: NSStackView!
+  var tabButtonsSegmentControl: NSSegmentedControl!
+  var tabButtonsLeadingConstraint: NSLayoutConstraint!
+  var tabButtonsTrailingConstraint: NSLayoutConstraint!
+  var tabButtonsHeightConstraint: NSLayoutConstraint!
+  var topConstraint: NSLayoutConstraint!
+
+  var tabViewController: SidebarTabViewController!
+  var closeSidebarBtn: NSButton!
+  var closeSidebarBtnSizeConstraint: NSLayoutConstraint!
+
+  init(mainWindow: MainWindowController) {
+    self.mainWindow = mainWindow
+    self.player = mainWindow.player
+
+    super.init(nibName: nil, bundle: nil)
+  }
+
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+
+  override func loadView() {
+    self.view = NSView()
+    view.translatesAutoresizingMaskIntoConstraints = false
+  }
+
+  override func viewDidLoad() {
+    super.viewDidLoad()
+
+    self.tabButtonsStackView = NSStackView()
+    tabButtonsStackView.translatesAutoresizingMaskIntoConstraints = false
+    tabButtonsStackView.orientation = .horizontal
+    view.addSubview(tabButtonsStackView)
+    topConstraint = tabButtonsStackView.topAnchor.constraint(equalTo: view.topAnchor)
+    topConstraint.isActive = true
+    tabButtonsLeadingConstraint = tabButtonsStackView.leadingAnchor.constraint(equalTo: view.leadingAnchor)
+    tabButtonsLeadingConstraint.isActive = true
+    tabButtonsTrailingConstraint = view.trailingAnchor.constraint(equalTo: tabButtonsStackView.trailingAnchor)
+    tabButtonsTrailingConstraint.isActive = true
+    tabButtonsHeightConstraint = tabButtonsStackView.heightAnchor.constraint(equalToConstant: 64)
+    tabButtonsHeightConstraint.isActive = true
+
+    self.tabViewController = SidebarTabViewController()
+    view.addSubview(tabViewController.view)
+
+    tabViewController.view.padding(.bottom, .horizontal)
+      .spacing(.top(1), to: tabButtonsStackView)
+
+    tabViewController.tabView.padding(.all)
+    tabViewController.tabView.wantsLayer = true
+
+    self.tabButtonsSegmentControl = NSSegmentedControl()
+
+    tabButtonsSegmentControl.target = self
+    tabButtonsSegmentControl.action = #selector(tabBtnSegmentControlAction(_:))
+    tabButtonsSegmentControl.segmentCount = allTabs_.count
+
+    func makeTabButton(_ title: String, image: NSImage?, tag: Int) -> NSButton {
+      let item = TabButton(title: title,
+                           target: self, action: #selector(tabBtnAction))
+      item.bezelStyle = .smallSquare
+      item.isBordered = false
+      if let image {
+        image.size = .init(width: 26, height: 18)
+        item.image = image
+        item.imageScaling = .scaleProportionallyUpOrDown
+        item.imagePosition = .imageAbove
+      }
+      item.font = .systemFont(ofSize: 11, weight: .regular)
+      item.tag = tag
+      return item
+    }
+
+    for tab in allTabs_ {
+      tabButtonsSegmentControl.setImage(tab.image, forSegment: tab.tag)
+      tabButtonsSegmentControl.setTag(tab.tag, forSegment: tab.tag)
+      tabButtons.append(makeTabButton(
+        NSLocalizedString("sidebar.\(tab.name)", comment: tab.name),
+        image: tab.image,
+        tag: tab.tag,
+      ))
+    }
+
+    // close button
+    self.closeSidebarBtn = NSButton(
+      image: .sf("sidebar.squares.leading")!,
+      target: self, action: #selector(dismissSidebar)
+    )
+    closeSidebarBtn.widthAnchor.constraint(equalTo: closeSidebarBtn.heightAnchor).isActive = true
+    closeSidebarBtnSizeConstraint = closeSidebarBtn.widthAnchor.constraint(equalToConstant: 28)
+    closeSidebarBtnSizeConstraint.isActive = true
+    if #available(macOS 26.0, *) {
+      if #available(macOS 27.0, *) {
+        closeSidebarBtn.bezelStyle = .glass
+        closeSidebarBtn.borderShape = .circle
+      } else {
+        closeSidebarBtn.bezelStyle = .circular
+      }
+    } else {
+      closeSidebarBtn.bezelStyle = .circular
+    }
+
+    // panes
+    for tab in allTabs_ {
+      let view = getTabView(for: tab)
+      view.horizontalScroll = self.switchTabByScroll(_:)
+      let vc = NSViewController()
+      vc.view = view
+      let viewItem = NSTabViewItem(viewController: vc)
+      tabViewController.addTabViewItem(viewItem)
+    }
+
+    // observer
+    prefObserver.addAll(.compactUI, leadingPrefKey, runNow: true) {
+      [unowned self] key in
+      let compactUI = Preference.bool(for: .compactUI)
+      let isLeading = Preference.bool(for: leadingPrefKey)
+
+      let height: CGFloat = (compactUI && !isLeading) ? 48 : 52
+      tabButtonsHeightConstraint.constant = height
+
+      if #available(macOS 26.0, *), !compactUI {
+        tabButtonsSegmentControl.controlSize = .extraLarge
+      } else {
+        tabButtonsSegmentControl.controlSize = .large
+      }
+
+      closeSidebarBtnSizeConstraint.constant =  compactUI ? 28 : 36
+
+      if key == leadingPrefKey {
+        updateTabButtons()
+        updateTabActiveStatus()
+      }
+    }
+
+    if defaultTab.tag == 0 {
+      // if the default tab is 0, it is already loaded and transition() was not called initially.
+      // set previousIndex manually, so animation will be triggered on next tab switch.
+      tabViewController.previousIndex = 0
+    }
+    // handle pending switch tab request
+    if pendingSwitchRequest != nil {
+      switchToTab(pendingSwitchRequest!)
+      pendingSwitchRequest = nil
+    } else {
+      tabViewController.selectedTabViewItemIndex = defaultTab.tag
+    }
+  }
+
+  func getTabView(for tab: TabType) -> SidebarPane {
+    fatalError()
+  }
+
+  // MARK: - Tab switching
+
+  func findTab(named name: String) -> TabType? {
+    allTabs_.first { $0.name == name }
+  }
+
+  private func switchToTab(_ tab: TabType) {
+    guard isViewLoaded else { return }
+    currentTab = tab
+    tabViewController.selectedTabViewItemIndex = tab.tag
+    updateTabActiveStatus()
+  }
+
+  private func switchToTab(tag: Int) {
+    switchToTab(allTabs_.first { $0.tag == tag }!)
+  }
+
+  /** Switch tab (call from other objects) */
+  func pleaseSwitchToTab(_ tab: TabType) {
+    if isViewLoaded {
+      switchToTab(tab)
+    } else {
+      // cache the request
+      pendingSwitchRequest = tab
+    }
+  }
+
+  func switchTabByScroll(_ isForward: Bool) {
+    let tags = allTabs_.map(\.tag)
+    guard let max = tags.max(), let min = tags.min() else { return }
+    if isForward {
+      if currentTab.tag < max {
+        switchToTab(tag: currentTab.tag + 1)
+      }
+    } else {
+      if currentTab.tag > min {
+        switchToTab(tag: currentTab.tag - 1)
+      }
+    }
+  }
+
+  private func updateTabActiveStatus() {
+    let currentTag = currentTab.tag
+    tabButtons.forEach { btn in
+      let isActive = currentTag == btn.tag
+      btn.state = isActive ? .on : .off
+    }
+
+    let isLeading = Preference.bool(for: leadingPrefKey)
+    for tab in allTabs_ {
+      // don't show label if isLeading
+      let isSelected = tab.tag == currentTag && !isLeading
+      let label = NSLocalizedString("sidebar.\(tab.name)", comment: tab.name)
+      tabButtonsSegmentControl.setLabel(isSelected ? label : "", forSegment: tab.tag)
+    }
+    tabButtonsSegmentControl.selectedSegment = currentTag
+  }
+
+  private func updateTabButtons() {
+    tabButtonsStackView.arrangedSubviews.forEach {
+      tabButtonsStackView.removeArrangedSubview($0)
+      $0.removeFromSuperview()
+    }
+    if Preference.bool(for: leadingPrefKey) {
+      closeSidebarBtn.image = .sf("sidebar.squares.leading")
+      tabButtonsLeadingConstraint.constant = 96
+      tabButtonsTrailingConstraint.constant = 10
+      tabButtonsStackView.distribution = .equalSpacing
+      tabButtonsStackView.addArrangedSubview(tabButtonsSegmentControl)
+      tabButtonsStackView.addArrangedSubview(closeSidebarBtn)
+    } else {
+      closeSidebarBtn.image = .sf("sidebar.squares.trailing")
+      tabButtonsLeadingConstraint.constant = 10
+      tabButtonsTrailingConstraint.constant = 10
+      tabButtonsStackView.distribution = .equalSpacing
+      tabButtonsStackView.addArrangedSubview(closeSidebarBtn)
+      tabButtonsStackView.addArrangedSubview(tabButtonsSegmentControl)
+    }
+  }
+
+  // MARK: - Actions
+
+  @objc func dismissSidebar(_ sender: AnyObject) {
+    mainWindow.sidebars.hide(sidebarType)
+  }
+
+  @objc private func tabBtnAction(_ sender: NSButton) {
+    switchToTab(tag: sender.tag)
+  }
+
+  @objc private func tabBtnSegmentControlAction(_ sender: NSSegmentedControl) {
+    switchToTab(tag: sender.selectedTag())
+  }
+}
+
+
+extension SidebarViewController {
+  struct TabType: Equatable {
+    var tag: Int
+    var name: String
+    var image: NSImage
+
+    init(_ value: Int, _ name: String, _ image: NSImage) {
+      self.tag = value
+      self.name = name
+      self.image = image
+    }
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+      lhs.tag == rhs.tag
+    }
+  }
+
+  class TabButton: NSButton {
+    class Cell: NSButtonCell {
+      override func draw(withFrame cellFrame: NSRect, in controlView: NSView) {
+        if state == .on {
+          let frame = NSInsetRect(cellFrame, 0, -4)
+          let rect = NSBezierPath(roundedRect: frame, xRadius: 16, yRadius: 16)
+
+          if let gradient = NSGradient(starting: .gray.withAlphaComponent(0.1), ending: .gray.withAlphaComponent(0.2)) {
+            gradient.draw(in: rect, angle: 90)
+          }
+
+          NSColor.sidebarTabBtnBorder.setStroke()
+          rect.lineWidth = 1
+          rect.stroke()
+        }
+
+        super.draw(withFrame: cellFrame, in: controlView)
+      }
+
+      override func drawInterior(withFrame cellFrame: NSRect, in controlView: NSView) {
+        (controlView as? NSButton)?.contentTintColor = state == .on ?
+          .sidebarTabTintActive : .sidebarTabTint
+        super.drawInterior(withFrame: cellFrame, in: controlView)
+      }
+    }
+
+    override init(frame frameRect: NSRect) {
+      super.init(frame: frameRect)
+      self.cell = Cell()
+    }
+
+    required init?(coder: NSCoder) {
+      fatalError("init(coder:) has not been implemented")
+    }
+  }
+}

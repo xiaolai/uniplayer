@@ -2972,15 +2972,15 @@ class MainWindowController: PlayerWindowController {
         enterPIP()
       }
     case .playlist:
-      sidebars.showPlaylist()
+      sidebars.show(sidebar: .playlist)
     case .settings:
-      sidebars.showSettings()
+      sidebars.show(sidebar: .settings)
     case .subTrack:
       showSubChooseMenu(forView: sender, showLoadedSubs: true)
     case .screenshot:
       player.screenshot()
     case .plugins:
-      sidebars.showPlugin(tab: nil)
+      sidebars.show(sidebar: .plugins)
     }
   }
 
