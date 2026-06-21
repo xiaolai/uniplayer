@@ -77,6 +77,7 @@ class SidebarPlaylistPane: NSView, SidebarPane {
     totalLengthLabel = NSTextField(labelWithString: "")
     totalLengthLabel.textColor = .secondaryLabelColor
     totalLengthLabel.font = .controlContentFont(ofSize: 11)
+    totalLengthLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
     hideTotalLength()
 
@@ -786,6 +787,7 @@ class PlaylistTrackCellView: NSTableCellView {
       infoLabel,
       durationLabel,
     )
+    stackView.setCustomSpacing(0, after: prefixBtn)
 
     addSubview(stackView)
     stackView.padding(.horizontal(2), .vertical)
@@ -905,6 +907,17 @@ class PlaylistTrackCellView: NSTableCellView {
 
 
 class PlaylistPrefixButton: NSButton {
+  override init(frame frameRect: NSRect) {
+    super.init(frame: frameRect)
+
+    bezelStyle = .smallSquare
+    isBordered = false
+  }
+  
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+  
   var text = "" {
     didSet {
       refresh()
@@ -915,6 +928,11 @@ class PlaylistPrefixButton: NSButton {
     didSet {
       refresh()
     }
+  }
+
+  override func sendAction(_ action: Selector?, to target: Any?) -> Bool {
+    isFolded = !isFolded
+    return true
   }
 
   private func refresh() {

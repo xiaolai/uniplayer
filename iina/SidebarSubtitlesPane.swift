@@ -495,7 +495,7 @@ fileprivate class SubStyleView: NSView {
     if #available(macOS 13.0, *) {
       colorWell.colorWellStyle = .expanded
     } else {
-      colorWell.size(width: 30)
+      colorWell.size(width: 24)
     }
     colorWell.size(height: 24)
     colorWell.target = self

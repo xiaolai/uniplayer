@@ -9,10 +9,12 @@
 class SideBarContainer: TranslucentView {
   weak var mainWindow: MainWindowController!
   private let prefObserver = Preference.Observer()
+  private let isLeading: Bool
   var leadingBorder: NSBox!
 
-  init(mainWindow: MainWindowController) {
+  init(mainWindow: MainWindowController, isLeading: Bool) {
     self.mainWindow = mainWindow
+    self.isLeading = isLeading
 
     super.init(liquidGlassCornerRadius: 12, vevCornerRadius: 0, padding: (0, 0))
 
@@ -23,6 +25,7 @@ class SideBarContainer: TranslucentView {
     // only draw leading border when docked
     prefObserver.addAll(.dockedControlBarAndTitlebar, .edgeToEdgeVideo) { [unowned self] _ in
       leadingBorder?.isHidden = !Preference.isDocked
+      setShadow()
     }
   }
 
@@ -34,9 +37,15 @@ class SideBarContainer: TranslucentView {
       leadingBorder.translatesAutoresizingMaskIntoConstraints = false
       leadingBorder.boxType = .separator
       container.addSubview(leadingBorder)
-      leadingBorder.padding(.vertical, .leading).size(width: 1)
+      leadingBorder.padding(.vertical, isLeading ? .trailing : .leading).size(width: 1)
       leadingBorder.isHidden = !Preference.isDocked
+    }
+    setShadow()
+  }
 
+  func setShadow() {
+    let showShadow = style == .visualEffect && !Preference.isDocked
+    if showShadow {
       let shadow = NSShadow()
       shadow.shadowColor = NSColor.black.withAlphaComponent(0.3)
       shadow.shadowBlurRadius = 6
@@ -151,7 +160,8 @@ class SidebarViewController: NSViewController {
         closeSidebarBtn.bezelStyle = .circular
       }
     } else {
-      closeSidebarBtn.bezelStyle = .circular
+      closeSidebarBtn.bezelStyle = .accessoryBar
+      closeSidebarBtn.controlSize = .large
     }
 
     setupTabs()
@@ -288,7 +298,10 @@ class SidebarViewController: NSViewController {
   }
 
   func updateTabButtonSize() {
-    let height: CGFloat = (isCompact && !isLeading) ? 48 : 52
+    // on macOS 26, window corner radius will be larger with a regular toolbar.
+    // should use the normal (non-compact) height if the sidebar is on the leading side.
+    let largeLeadingHeight = if #available(macOS 26.0, *) { isLeading } else { false }
+    let height: CGFloat = (isCompact && !largeLeadingHeight) ? 48 : 52
     tabButtonsHeightConstraint.constant = height
 
     if #available(macOS 26.0, *), !isCompact {

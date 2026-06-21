@@ -103,8 +103,14 @@ class SidebarController: NSObject {
     }
   }
 
-  lazy var leadingSidebar: Panel = Panel(side: .leading, view: SideBarContainer(mainWindow: mainWindow))
-  lazy var trailingSidebar: Panel = Panel(side: .trailing, view: SideBarContainer(mainWindow: mainWindow))
+  lazy var leadingSidebar: Panel = Panel(
+    side: .leading,
+    view: SideBarContainer(mainWindow: mainWindow, isLeading: true)
+  )
+  lazy var trailingSidebar: Panel = Panel(
+    side: .trailing,
+    view: SideBarContainer(mainWindow: mainWindow, isLeading: false)
+  )
   var sideBars: [Panel] { [leadingSidebar, trailingSidebar] }
 
   /// Set while the user is dragging the playlist resize handle. Drives cursor change.

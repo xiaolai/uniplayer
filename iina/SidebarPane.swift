@@ -101,6 +101,8 @@ class SidebarScrollView: NSScrollView, SidebarPane {
     super.init(frame: frameRect)
 
     drawsBackground = false
+    hasVerticalScroller = true
+    autohidesScrollers = true
 
     documentView = FlippedView()
     documentView!.translatesAutoresizingMaskIntoConstraints = false

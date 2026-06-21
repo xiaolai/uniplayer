@@ -141,6 +141,7 @@ class Titlebar: NSView {
       self.titlebarContainer = NSView()
       titlebarContainer.translatesAutoresizingMaskIntoConstraints = false
       container.addArrangedSubview(titlebarContainer)
+      titlebarContainer.padding(.horizontal)
       titleHeightConstraint = titlebarContainer.heightAnchor.constraint(equalToConstant: 0)
       LayoutValue.titlebarHeight.use { [weak self] value in
         self?.titleHeightConstraint.constant = value
@@ -153,18 +154,28 @@ class Titlebar: NSView {
       docIcon.padding(.leading(greaterThan: Titlebar.docIconLeadingPadding))
         .center(.y).size(width: 16, height: 16)
 
-      self.titleLeadingConstraint = docIcon.leadingAnchor
-        .constraint(equalTo: titlebarContainer.leadingAnchor, constant: Titlebar.docIconLeadingPadding)
-      titleLeadingConstraint.priority = .defaultHigh
-      titleLeadingConstraint.isActive = true
-
       self.titleTextField = NSTextField(labelWithString: window.title)
       titleTextField.translatesAutoresizingMaskIntoConstraints = false
       titleTextField.font = .titleBarFont(ofSize: 13)
       titleTextField.lineBreakMode = .byTruncatingMiddle
       titleTextField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+      titleTextField.setContentHuggingPriority(.defaultHigh, for: .horizontal)
       titlebarContainer.addSubview(titleTextField)
       titleTextField.spacing(.leading(2), to: docIcon).center(.y)
+
+      if #available(macOS 26.0, *) {
+        self.titleLeadingConstraint = docIcon.leadingAnchor
+          .constraint(equalTo: titlebarContainer.leadingAnchor, constant: Titlebar.docIconLeadingPadding)
+      } else {
+        // on macOS 15 or below, titlebar is centered
+        self.titleLeadingConstraint = docIcon.leadingAnchor
+          .constraint(greaterThanOrEqualTo: titlebarContainer.leadingAnchor, constant: Titlebar.docIconLeadingPadding)
+        let centerConstraint = titleTextField.centerXAnchor.constraint(equalTo: titlebarContainer.centerXAnchor)
+        centerConstraint.priority = .defaultLow
+        centerConstraint.isActive = true
+      }
+      titleLeadingConstraint.priority = .defaultHigh
+      titleLeadingConstraint.isActive = true
 
       let accessoryView = NSStackView(views: [removeBlackBarButton, onTopButton])
       accessoryView.translatesAutoresizingMaskIntoConstraints = false
