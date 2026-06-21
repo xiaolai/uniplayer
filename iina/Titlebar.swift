@@ -23,6 +23,8 @@ class Titlebar: NSView {
   /// Default inset for the title container from the leading edge — clears the traffic lights.
   static let docIconLeadingPadding: CGFloat = 86
 
+  private let accessoryIconConfig = NSImage.SymbolConfiguration(pointSize: 11, weight: .regular)
+
   let useSystemTitle = false
 
   var isTransparent = false {
@@ -67,18 +69,16 @@ class Titlebar: NSView {
     titleBarBottomBorder.translatesAutoresizingMaskIntoConstraints = false
 
     self.onTopButton = NSButton(
-      image: .sf("pin")!,
+      image: .sf("pin", withConfiguration: accessoryIconConfig)!,
       target: mainWindow,
       action: #selector(MainWindowController.ontopButtonAction)
     )
-    onTopButton.translatesAutoresizingMaskIntoConstraints = false
 
     self.removeBlackBarButton = NSButton(
       image: .removeBlackbars,
       target: mainWindow,
       action: #selector(MainWindowController.removeVideoViewBlackBars)
     )
-    removeBlackBarButton.translatesAutoresizingMaskIntoConstraints = false
 
     super.init(frame: .zero)
 
@@ -101,11 +101,17 @@ class Titlebar: NSView {
     titleBarBottomBorder.fillColor = .titleBarBorder
     titleBarBottomBorder.padding(.horizontal, .bottom).size(height: 1)
 
-    onTopButton.frame.size.width = 30
+    onTopButton.size(height: 16)
+    onTopButton.imageScaling = .scaleProportionallyDown
+    onTopButton.translatesAutoresizingMaskIntoConstraints = false
+    onTopButton.bezelStyle = .smallSquare
     onTopButton.isBordered = false
     updateOnTopIcon()
 
-    removeBlackBarButton.frame.size.width = 30
+    removeBlackBarButton.size(height: 16)
+    removeBlackBarButton.imageScaling = .scaleProportionallyDown
+    removeBlackBarButton.translatesAutoresizingMaskIntoConstraints = false
+    removeBlackBarButton.bezelStyle = .smallSquare
     removeBlackBarButton.isBordered = false
     updateRemoveBlackBarButton()
 
@@ -245,7 +251,9 @@ class Titlebar: NSView {
   func updateOnTopIcon() {
     let isOntop = mainWindow.isOntop
     onTopButton.isHidden = Preference.bool(for: .alwaysShowOnTopIcon) ? false : !isOntop
-    onTopButton.image = isOntop ? .sf("pin.fill") : .sf("pin")
+    onTopButton.image = isOntop ?
+      .sf("pin.fill", withConfiguration: accessoryIconConfig) :
+      .sf("pin", withConfiguration: accessoryIconConfig)
   }
 
   func updateRemoveBlackBarButton() {

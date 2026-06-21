@@ -66,6 +66,9 @@ class SidebarViewController: NSViewController {
   unowned let mainWindow: MainWindowController
   let prefObserver = Preference.Observer()
 
+  let iconConfig = NSImage.SymbolConfiguration(pointSize: 14, weight: .bold)
+  let smallIconConfig = NSImage.SymbolConfiguration(pointSize: 13, weight: .bold)
+
   var downShift: CGFloat = 0 {
     didSet {
       topConstraint.constant = downShift
@@ -80,7 +83,6 @@ class SidebarViewController: NSViewController {
   var isLeading: Bool { Preference.bool(for: leadingPrefKey) }
   var isCompact: Bool { Preference.bool(for: .compactUI) }
 
-  var tabButtons: [NSButton] = []
   var tabPanes: [NSView] = []
 
   var pendingSwitchRequest: TabType?
@@ -216,13 +218,7 @@ class SidebarViewController: NSViewController {
 
     for tab in allTabs {
       // segment control
-      tabButtonsSegmentControl.setImage(tab.image, forSegment: tab.tag)
       tabButtonsSegmentControl.setTag(tab.tag, forSegment: tab.tag)
-      tabButtons.append(makeTabButton(
-        NSLocalizedString("sidebar.\(tab.name)", comment: tab.name),
-        image: tab.image,
-        tag: tab.tag,
-      ))
       // tab view
       let view = getTabView(for: tab)
       view.horizontalScroll = self.switchTabByScrolling(_:)
@@ -283,11 +279,6 @@ class SidebarViewController: NSViewController {
 
   func updateTabActiveStatus() {
     let currentTag = currentTab.tag
-    tabButtons.forEach { btn in
-      let isActive = currentTag == btn.tag
-      btn.state = isActive ? .on : .off
-    }
-
     for tab in allTabs {
       // don't show label if isLeading
       let isSelected = tab.tag == currentTag && !isLeading
@@ -308,6 +299,12 @@ class SidebarViewController: NSViewController {
       tabButtonsSegmentControl.controlSize = .extraLarge
     } else {
       tabButtonsSegmentControl.controlSize = .large
+    }
+
+    let config = isCompact ? smallIconConfig : iconConfig
+    for tab in allTabs {
+      let image = tab.image.withSymbolConfiguration(config) ?? tab.image
+      tabButtonsSegmentControl.setImage(image, forSegment: tab.tag)
     }
 
     closeSidebarBtnSizeConstraint.constant =  isCompact ? 28 : 36

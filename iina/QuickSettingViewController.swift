@@ -13,9 +13,9 @@ fileprivate let ui = UIHelper.shared
 
 extension SidebarViewController.TabType {
   static let layout = SidebarViewController.TabType(0, "layout", .sf("paintbrush.fill")!)
-  static let video = SidebarViewController.TabType(1, "video", .tabVideo)
-  static let audio = SidebarViewController.TabType(2, "audio", .tabAudio)
-  static let sub = SidebarViewController.TabType(3, "sub", .tabSub)
+  static let video = SidebarViewController.TabType(1, "video", .sf("photo")!)
+  static let audio = SidebarViewController.TabType(2, "audio", .sf("waveform")!)
+  static let sub = SidebarViewController.TabType(3, "sub", .sf("captions.bubble.fill")!)
 }
 
 

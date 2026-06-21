@@ -120,8 +120,26 @@ class SidebarVideoPane: SidebarScrollView {
 }
 
 fileprivate class HorizontalScrollViewWithIndicator: NSView {
+  enum IndicatorDirection {
+    case leading, trailing, hidden
+  }
+
   let scrollView = ScrollView()
   private var indicator: NSButton!
+  private var indicatorDirection: IndicatorDirection = .hidden {
+    didSet {
+      switch indicatorDirection {
+      case .hidden:
+        indicator.isHidden = true
+      case .leading:
+        indicator.isHidden = false
+        indicator.image = .sf("chevron.forward")
+      case .trailing:
+        indicator.isHidden = false
+        indicator.image = .sf("chevron.backward")
+      }
+    }
+  }
 
   override init(frame frameRect: NSRect) {
     super.init(frame: frameRect)
@@ -151,7 +169,11 @@ fileprivate class HorizontalScrollViewWithIndicator: NSView {
   @objc private func indicatorAction(_ sender: NSButton) {
     guard let width = scrollView.documentView?.frame.width else { return }
 
-    let point = NSPoint(x: width - scrollView.contentSize.width, y: 0)
+    let point = if indicatorDirection == .leading {
+      NSPoint(x: width - scrollView.contentSize.width, y: 0)
+    } else {
+      NSPoint(x: 0, y: 0)
+    }
     NSAnimationContext.runAnimationGroup({ context in
       context.duration = 0.3
       scrollView.contentView.animator().setBoundsOrigin(point)
@@ -204,10 +226,10 @@ fileprivate class HorizontalScrollViewWithIndicator: NSView {
       }
 
       let eps: CGFloat = 1
-//      let atLeading  = originX <= eps
+      let atLeading  = originX <= eps
       let atTrailing = originX + visibleWidth >= contentWidth - eps
 
-      parent.indicator.isHidden = atTrailing
+      parent.indicatorDirection = atLeading ? .leading : atTrailing ? .trailing : .hidden
     }
 
     /// Translate vertical scrolling events to horizontal for mouse control
