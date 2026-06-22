@@ -45,8 +45,6 @@ class MainWindowController: PlayerWindowController {
     return NSFont.monospacedDigitSystemFont(ofSize: fontSize, weight: .regular)
   }()
 
-  // MARK: - Constants
-
   /** For Force Touch. */
   let minimumPressDuration: TimeInterval = 0.5
 
@@ -541,8 +539,15 @@ class MainWindowController: PlayerWindowController {
 
     titleBarView.padding(.horizontal)
 
+    // video view
+
+    addVideoViewToWindow()
+    player.initVideo()
+    videoView.postsFrameChangedNotifications = true
+
     // osc views
 
+    oscFloatingView.setupConstraints()
     fragControlView.addView(fragControlViewLeftView, in: .center)
     fragControlView.addView(fragControlViewMiddleView, in: .center)
     fragControlView.addView(fragControlViewRightView, in: .center)
@@ -550,14 +555,8 @@ class MainWindowController: PlayerWindowController {
     fragControlView.userInterfaceLayoutDirection = .leftToRight
     setupOnScreenController(withPosition: oscPosition)
     let buttons = (Preference.array(for: .controlBarToolbarButtons) as? [Int] ?? []).compactMap(Preference.ToolBarButton.init(rawValue:))
-    setupOSCToolbarButtons(buttons)
-
     updateArrowButtons()
-
-    // video view
-    addVideoViewToWindow()
-    player.initVideo()
-    videoView.postsFrameChangedNotifications = true
+    setupOSCToolbarButtons(buttons)
 
     // fade-able views
 
@@ -666,7 +665,10 @@ class MainWindowController: PlayerWindowController {
     // Observers for toolbar buttons
     let notifications: [Notification.Name] = [.iinaPIPStatusChanged, .iinaFullscreenChanged, .iinaSidebarStatusChanged]
     notifications.forEach {
-      NotificationCenter.default.addObserver(self, selector: #selector(updateOSCToolbarButtons(_:)), name: $0, object: nil)
+      NotificationCenter.default
+        .addObserver(forName: $0, object: nil, queue: .main) { [weak self] n in
+          self?.updateOSCToolbarButtons(n)
+        }
     }
 
     player.events.emit(.windowLoaded)
@@ -818,7 +820,6 @@ class MainWindowController: PlayerWindowController {
   }
 
   private func setupOnScreenController(withPosition newPosition: Preference.OSCPosition) {
-
     guard !oscIsInitialized || oscPosition != newPosition else { return }
     oscIsInitialized = true
 
@@ -872,11 +873,7 @@ class MainWindowController: PlayerWindowController {
       oscFloatingView.oscBottomView.addSubview(fragSliderView)
       Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": fragSliderView])
       Utility.quickConstraints(["H:|-(>=0)-[v]-(>=0)-|"], ["v": fragControlView])
-      // center control bar
-      let cph = Preference.float(for: .controlBarPositionHorizontal)
-      let cpv = Preference.float(for: .controlBarPositionVertical)
-      oscFloatingView.xConstraint.constant = window!.frame.width * CGFloat(cph)
-      oscFloatingView.yConstraint.constant = window!.frame.height * CGFloat(cpv)
+      oscFloatingView.initPosition()
     case .top:
       let oscTopMainView = titleBarView.oscView!
       currentControlBar = nil
@@ -1762,41 +1759,7 @@ class MainWindowController: PlayerWindowController {
 
     // update control bar position
     if oscPosition == .floating {
-      let cph = Preference.float(for: .controlBarPositionHorizontal)
-      let cpv = Preference.float(for: .controlBarPositionVertical)
-
-      let windowWidth = window.frame.width
-      let margin: CGFloat = 10
-      let minWindowWidth: CGFloat = 480 // 460 + 20 margin
-      var xPos: CGFloat
-
-      if windowWidth < minWindowWidth {
-        // osc is compressed
-        xPos = windowWidth / 2
-      } else {
-        // osc has full width
-        let oscHalfWidth: CGFloat = 230
-        xPos = windowWidth * CGFloat(cph)
-        if xPos - oscHalfWidth < margin {
-          xPos = oscHalfWidth + margin
-        } else if xPos + oscHalfWidth + margin > windowWidth {
-          xPos = windowWidth - oscHalfWidth - margin
-        }
-      }
-
-      let windowHeight = window.frame.height
-      var yPos = windowHeight * CGFloat(cpv)
-      let oscHeight: CGFloat = 67
-      let yMargin: CGFloat = 25
-
-      if yPos < 0 {
-        yPos = 0
-      } else if yPos + oscHeight + yMargin > windowHeight {
-        yPos = windowHeight - oscHeight - yMargin
-      }
-
-      oscFloatingView.xConstraint.constant = xPos
-      oscFloatingView.yConstraint.constant = yPos
+      oscFloatingView.updatePosition()
     }
 
     // Detach the views in oscFloatingTopView manually on macOS 11 only; as it will cause freeze
@@ -1937,6 +1900,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   private func hideUI(force: Bool = false) {
+    return
     // Don't hide UI when in PIP
     guard pipStatus == .notInPIP || animationState == .hidden else {
       return
@@ -2972,15 +2936,15 @@ class MainWindowController: PlayerWindowController {
         enterPIP()
       }
     case .playlist:
-      sidebars.showPlaylist()
+      sidebars.show(sidebar: .playlist)
     case .settings:
-      sidebars.showSettings()
+      sidebars.show(sidebar: .settings)
     case .subTrack:
       showSubChooseMenu(forView: sender, showLoadedSubs: true)
     case .screenshot:
       player.screenshot()
     case .plugins:
-      sidebars.showPlugin(tab: nil)
+      sidebars.show(sidebar: .plugins)
     }
   }
 
@@ -3109,6 +3073,9 @@ extension MainWindowController: PIPViewControllerDelegate {
       }
     }
 
+    oscFloatingView.setupConstraints()
+    oscFloatingView.updatePosition()
+
     player.events.emit(.pipChanged, data: true)
     NotificationCenter.default.post(name: .iinaPIPStatusChanged, object: self, userInfo: ["enable": true])
   }
@@ -3121,6 +3088,9 @@ extension MainWindowController: PIPViewControllerDelegate {
     // unwrapped optionals are handled in Swift means that the wrong method
     // is chosen in this case. See https://bugs.swift.org/browse/SR-8956.
     pip.dismiss(pipVideo!)
+
+    oscFloatingView.setupConstraints()
+    oscFloatingView.updatePosition()
   }
 
   func doneExitingPIP() {

@@ -1307,7 +1307,7 @@ class MPVController: NSObject {
         default:
           player.sendOSD(.noLoop)
         }
-        player.syncUI(.loop)
+        player.postNotification(.iinaLoopStatusChanged)
       }
 
     case MPVOption.Video.deinterlace:

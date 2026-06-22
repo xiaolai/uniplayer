@@ -538,6 +538,14 @@
 
 // Sidebar
 
+"sidebar.layout" = "Layout";
+"sidebar.video" = "Video";
+"sidebar.audio" = "Audio";
+"sidebar.sub" = "Subtitles";
+"sidebar.plugins" = "Plugins";
+"sidebar.playlist" = "Playlist";
+"sidebar.chapters" = "Chapters";
+
 "sidebar.aspect_ratio" = "Aspect Ratio";
 "sidebar.crop" = "Crop";
 "sidebar.rotation" = "Rotation";
@@ -572,3 +580,8 @@
 "sidebar.background" = "Background";
 "sidebar.sub_settings_not_available" = "Some settings are not available for this subtitle type.";
 "sidebar.sub_style_warning" = "Setting style options for ASS subtitles may break rendering.";
+
+"sidebar.add_file" = "Add File…";
+"sidebar.add_url" = "Add URL…";
+
+"sidebar.plugins_placeholder" = "Plugins can display custom sidebar contents. Select a plugin to view its sidebar or install a new plugin in Settings.";
