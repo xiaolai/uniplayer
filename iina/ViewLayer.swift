@@ -127,7 +127,7 @@ class ViewLayer: CAOpenGLLayer {
     isAsynchronous = false
     // when resized but mpv hasn't rendered a new frame,
     // the old content's aspect ratio should be preserved.
-    contentsGravity = .resizeAspect
+    contentsGravity = .resizeAspectFill
   }
 
   /// Returns an initialized shadow copy of the given layer with custom instance variables copied from `layer`.
