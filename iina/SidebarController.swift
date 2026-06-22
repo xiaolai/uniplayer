@@ -308,7 +308,7 @@ class SidebarController: NSObject {
   /// `Disable animations` setting then the duration of the animation will be set to zero making the
   /// sidebar appear instantly.
   private func showSideBar(viewController: SidebarViewController, type: ViewType) {
-    guard !mainWindow.isInInteractiveMode else { return }
+    guard !mainWindow.interactiveMode.isActive else { return }
     let panel = sideBar(for: side(for: type))
     let width = type.width.clamped(to: 0...sidebarMaxWidth)
     let margin = panel.visibleEdgeMargin

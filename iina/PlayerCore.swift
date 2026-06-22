@@ -1593,6 +1593,8 @@ class PlayerCore: NSObject {
   ///     resumes playback.
   /// - Parameter nextMedia: When `true` play the next entry in the playlist; otherwise play the previous entry.
   func navigateInPlaylist(nextMedia: Bool) {
+    guard !mainWindow.interactiveMode.isActive else { return }
+
     if nextMedia == false && (info.playlist.first?.isPlaying) ?? false {
       seek(absoluteSecond: 0)
     } else {
@@ -1643,6 +1645,14 @@ class PlayerCore: NSObject {
     filter.label = Constants.FilterName.crop
     if addVideoFilter(filter) {
       info.cropFilter = filter
+    }
+  }
+
+  /// Remove the crop filter managed by IINA.
+  func removeCropFilter() {
+    if let vf = info.cropFilter {
+      let _ = removeVideoFilter(vf)
+      info.unsureCrop = "None"
     }
   }
 

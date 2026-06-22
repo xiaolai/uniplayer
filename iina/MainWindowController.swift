@@ -59,9 +59,6 @@ class MainWindowController: PlayerWindowController {
   /// Owns the sidebar panels, view controllers, and show/hide/resize logic.
   lazy var sidebars = SidebarController(mainWindow: self)
 
-  /** The control view for interactive mode. */
-  var cropSettingsView: CropBoxViewController?
-
   private lazy var magnificationGestureRecognizer: NSMagnificationGestureRecognizer = {
     return NSMagnificationGestureRecognizer(target: self, action: #selector(MainWindowController.handleMagnifyGesture(recognizer:)))
   }()
@@ -109,8 +106,8 @@ class MainWindowController: PlayerWindowController {
   var isDragging: Bool = false
 
   lazy var liveText = LiveTextController(mainWindow: self)
+  lazy var interactiveMode = InteractiveModeController(mainWindow: self)
   var pipStatus = PIPStatus.notInPIP
-  var isInInteractiveMode: Bool = false
   var isVideoLoaded: Bool = false
 
   var shouldApplyInitialWindowSize = true
@@ -254,22 +251,6 @@ class MainWindowController: PlayerWindowController {
     case intermediate
   }
 
-  enum InteractiveMode {
-    case crop
-    case freeSelecting
-
-    func viewController() -> CropBoxViewController {
-      var vc: CropBoxViewController
-      switch self {
-      case .crop:
-        vc = CropSettingsViewController()
-      case .freeSelecting:
-        vc = FreeSelectingViewController()
-      }
-      return vc
-    }
-  }
-
   // MARK: - Observed user defaults
 
   // Cached user default values
@@ -352,10 +333,10 @@ class MainWindowController: PlayerWindowController {
     case PK.alwaysShowOnTopIcon.rawValue:
       titleBarView.updateOnTopIcon()
     case PK.dockedControlBarAndTitlebar.rawValue:
-      setupVideoViewConstraints()
+      setupVideoContainerConstraints()
       fadeableViews.update()
     case PK.edgeToEdgeVideo.rawValue:
-      setupVideoViewConstraints()
+      setupVideoContainerConstraints()
       fallthrough
     case PK.unlockWindowAspectRatio.rawValue:
       fadeableViews.update()
@@ -434,7 +415,8 @@ class MainWindowController: PlayerWindowController {
     return view
   }()
 
-  var videoViewConstraints: [NSLayoutConstraint.Attribute: NSLayoutConstraint] = [:]
+  private var videoViewConstraints: [NSLayoutConstraint.Attribute: NSLayoutConstraint] = [:]
+  private var videoContainerConstraints: [NSLayoutConstraint.Attribute: NSLayoutConstraint] = [:]
 
   override var mouseActionDisabledViews: [NSView?] {
     sidebars.mouseActionDisabledViews + [currentControlBar, titleBarView]
@@ -559,9 +541,10 @@ class MainWindowController: PlayerWindowController {
     // video view
 
     cv.addSubview(videoViewContainer, positioned: .below, relativeTo: nil)
-    setupVideoViewConstraints()
+    setupVideoContainerConstraints()
 
     addVideoViewToWindow()
+    setupVideoViewConstraints()
     player.initVideo()
     videoView.postsFrameChangedNotifications = true
 
@@ -764,30 +747,51 @@ class MainWindowController: PlayerWindowController {
     }
     videoViewContainer.addSubview(videoView)
     videoView.translatesAutoresizingMaskIntoConstraints = false
-    videoView.padding(.all)
   }
 
   private func setupVideoViewConstraints() {
+    videoViewConstraints = [
+      .leading: videoView.leadingAnchor.constraint(equalTo: videoViewContainer.leadingAnchor),
+      .trailing: videoViewContainer.trailingAnchor.constraint(equalTo: videoView.trailingAnchor),
+      .top: videoView.topAnchor.constraint(equalTo: videoViewContainer.topAnchor),
+      .bottom: videoViewContainer.bottomAnchor.constraint(equalTo: videoView.bottomAnchor)
+    ]
+    layoutSides.forEach { videoViewConstraints[$0]?.isActive = true }
+  }
+
+  func updateVideoViewConstraints(_ constraints: [NSLayoutConstraint.Attribute: CGFloat]) {
+    for (attr, value) in constraints {
+      videoViewConstraints[attr]?.constant = value
+    }
+  }
+
+  private func setupVideoContainerConstraints() {
     guard let cv = window?.contentView else { return }
 
-    layoutSides.forEach { videoViewConstraints[$0].flatMap(cv.removeConstraint) }
+    layoutSides.forEach { videoContainerConstraints[$0].flatMap(cv.removeConstraint) }
     if Preference.bool(for: .edgeToEdgeVideo) {
       layoutSides.forEach { attr in
-        videoViewConstraints[attr] = NSLayoutConstraint(item: videoViewContainer!, attribute: attr, relatedBy: .equal,
+        videoContainerConstraints[attr] = NSLayoutConstraint(item: videoViewContainer!, attribute: attr, relatedBy: .equal,
                                                         toItem: cv, attribute: attr, multiplier: 1, constant: 0)
       }
     } else {
       let docked = Preference.bool(for: .dockedControlBarAndTitlebar)
-      videoViewConstraints[.top] = videoViewContainer.topAnchor
+      videoContainerConstraints[.top] = videoViewContainer.topAnchor
         .constraint(equalTo: docked ? titleBarView.bottomAnchor : cv.topAnchor)
-      videoViewConstraints[.bottom] = videoViewContainer.bottomAnchor
+      videoContainerConstraints[.bottom] = videoViewContainer.bottomAnchor
         .constraint(equalTo: docked ? oscBottomView.topAnchor : cv.bottomAnchor)
-      videoViewConstraints[.leading] = videoViewContainer.leadingAnchor
+      videoContainerConstraints[.leading] = videoViewContainer.leadingAnchor
         .constraint(equalTo: sidebars.leadingSidebar.view.trailingAnchor)
-      videoViewConstraints[.trailing] = videoViewContainer.trailingAnchor
+      videoContainerConstraints[.trailing] = videoViewContainer.trailingAnchor
         .constraint(equalTo: sidebars.trailingSidebar.view.leadingAnchor)
     }
-    layoutSides.forEach { videoViewConstraints[$0]?.isActive = true }
+    layoutSides.forEach { videoContainerConstraints[$0]?.isActive = true }
+  }
+
+  private func updateVideoContainerConstraints(_ constraints: [NSLayoutConstraint.Attribute: CGFloat]) {
+    for (attr, value) in constraints {
+      videoContainerConstraints[attr]?.constant = value
+    }
   }
 
   @objc func removeVideoViewBlackBars() {
@@ -1100,7 +1104,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   override func scrollWheel(with event: NSEvent) {
-    guard !isInInteractiveMode else { return }
+    guard !interactiveMode.isActive else { return }
     if !isMomentumScrollingAllowed && !event.momentumPhase.isEmpty {
       // ignore delta caused by abrupt momentum phases
       return
@@ -1138,7 +1142,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   override func mouseEntered(with event: NSEvent) {
-    guard !isInInteractiveMode else { return }
+    guard !interactiveMode.isActive else { return }
     guard let obj = event.trackingArea?.userInfo?["obj"] as? Int else {
       log("No data for tracking area", level: .warning)
       return
@@ -1162,7 +1166,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   override func mouseExited(with event: NSEvent) {
-    guard !isInInteractiveMode else { return }
+    guard !interactiveMode.isActive else { return }
     guard let obj = event.trackingArea?.userInfo?["obj"] as? Int else {
       log("No data for tracking area", level: .warning)
       return
@@ -1186,7 +1190,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   override func mouseMoved(with event: NSEvent) {
-    guard !isInInteractiveMode else { return }
+    guard !interactiveMode.isActive else { return }
 
     refreshSeekTimeAndThumbnail(from: event)
     if isMouseInWindow {
@@ -1202,7 +1206,7 @@ class MainWindowController: PlayerWindowController {
 
   @objc func handleMagnifyGesture(recognizer: NSMagnificationGestureRecognizer) {
     guard pinchAction != .none else { return }
-    guard !isInInteractiveMode, let window = window, let screenFrame = NSScreen.main?.visibleFrame else { return }
+    guard !interactiveMode.isActive, let window = window, let screenFrame = NSScreen.main?.visibleFrame else { return }
 
     switch pinchAction {
     case .none:
@@ -1384,9 +1388,7 @@ class MainWindowController: PlayerWindowController {
     // When playback is paused the display link is stopped in order to avoid wasting energy on
     // needless processing. It must be running while transitioning to full screen mode.
     videoView.displayActive()
-    if isInInteractiveMode {
-      exitInteractiveMode(immediately: true)
-    }
+    interactiveMode.exit()
 
     liveText.clearAnalysis()
 
@@ -1518,9 +1520,7 @@ class MainWindowController: PlayerWindowController {
     // When playback is paused the display link is stopped in order to avoid wasting energy on
     // needless processing. It must be running while transitioning from full screen mode.
     videoView.displayActive()
-    if isInInteractiveMode {
-      exitInteractiveMode(immediately: true)
-    }
+    interactiveMode.exit()
 
     liveText.clearAnalysis()
 
@@ -1781,7 +1781,7 @@ class MainWindowController: PlayerWindowController {
   func windowWillResize(_ sender: NSWindow, to frameSize: NSSize) -> NSSize {
     guard let window = window else { return frameSize }
     // disable resizing in interactive mode, little benefit but complicates the layout logic
-    if isInInteractiveMode {
+    if interactiveMode.isActive {
       return window.frame.size
     }
     if !window.inLiveResize {
@@ -1981,7 +1981,7 @@ class MainWindowController: PlayerWindowController {
 
   func showUI() {
     if player.disableUI { return }
-    guard !liveText.isActive else { return }
+    guard !liveText.isActive, !interactiveMode.isActive else { return }
     animationState = .willShow
     fadeableViews.forEach { (v) in
       v.isHidden = false
@@ -2160,150 +2160,8 @@ class MainWindowController: PlayerWindowController {
     player.refreshSyncUITimer()
   }
 
-  private func setConstraintsForVideoView(_ constraints: [NSLayoutConstraint.Attribute: CGFloat]) {
-    for (attr, value) in constraints {
-      videoViewConstraints[attr]?.constant = value
-    }
-  }
-
   // MARK: - UI: Interactive mode
 
-  func enterInteractiveMode(_ mode: InteractiveMode, selectWholeVideoByDefault: Bool = false) {
-    // prerequisites
-    guard !isInInteractiveMode, let window = window else { return }
-
-    let (ow, oh) = player.originalVideoSize
-    guard ow != 0 && oh != 0 else {
-      Utility.showAlert("no_video_track")
-      return
-    }
-
-    window.backgroundColor = .windowBackgroundColor
-    standardWindowButtons.forEach { $0.isEnabled = false }
-
-    isPausedPriorToInteractiveMode = player.info.state == .paused
-    player.pause()
-    isInInteractiveMode = true
-    hideUI(force: true)
-
-    if fsState.isFullscreen {
-      let aspect: NSSize
-      if window.aspectRatio == .zero {
-        let dsize = player.videoSizeForDisplay
-        aspect = NSSize(width: dsize.0, height: dsize.1)
-      } else {
-        aspect = window.aspectRatio
-      }
-      let frame = aspect.shrink(toSize: window.frame.size).centeredRect(in: window.frame)
-      setConstraintsForVideoView([
-        .left: frame.minX,
-        .right: window.frame.width - frame.maxX,  // `frame.x` should also work
-        .bottom: -frame.minY,
-        .top: window.frame.height - frame.maxY  // `frame.y` should also work
-      ])
-      videoView.needsLayout = true
-      videoView.layoutSubtreeIfNeeded()
-      // force rerender a frame
-      forceDraw("interactive cropping")
-    }
-
-    let controlView = mode.viewController()
-    controlView.mainWindow = self
-    bottomView.isHidden = false
-    bottomView.addSubview(controlView.view)
-    Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": controlView.view])
-
-    let origVideoSize = NSSize(width: ow, height: oh)
-    // the max region that the video view can occupy
-    let newVideoViewBounds = NSRect(x: 20, y: 20 + 60, width: window.frame.width - 40, height: window.frame.height - 104)
-    let newVideoViewSize = origVideoSize.shrink(toSize: newVideoViewBounds.size)
-    let newVideoViewFrame = newVideoViewBounds.centeredResize(to: newVideoViewSize)
-
-    let newConstants: [NSLayoutConstraint.Attribute: CGFloat] = [
-      .left: newVideoViewFrame.minX,
-      .right: newVideoViewFrame.maxX - window.frame.width,
-      .bottom: -newVideoViewFrame.minY,
-      .top: window.frame.height - newVideoViewFrame.maxY
-    ]
-
-    let selectedRect: NSRect = selectWholeVideoByDefault ? NSRect(origin: .zero, size: origVideoSize) : .zero
-
-    // add crop setting view
-    videoViewContainer.addSubview(controlView.cropBoxView)
-    controlView.cropBoxView.isHidden = true
-    Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": controlView.cropBoxView])
-    controlView.cropBoxView.selectedRect = selectedRect
-    controlView.cropBoxView.actualSize = origVideoSize
-    controlView.cropBoxView.updateCursorRects()
-
-    self.cropSettingsView = controlView
-
-    // show crop settings view
-    NSAnimationContext.runAnimationGroup({ (context) in
-      context.duration = AccessibilityPreferences.adjustedDuration(CropAnimationDuration)
-      context.timingFunction = CAMediaTimingFunction(name: .easeIn)
-      bottomBarBottomConstraint.animator().constant = 0
-      layoutSides.forEach { attr in
-        videoViewConstraints[attr]!.animator().constant = newConstants[attr]!
-      }
-    }) {
-      self.videoViewContainer.layer?.shadowColor = .black
-      self.videoViewContainer.layer?.shadowOpacity = 1
-      self.videoViewContainer.layer?.shadowOffset = .zero
-      self.videoViewContainer.layer?.shadowRadius = 3
-      self.cropSettingsView?.cropBoxView.resized()
-      self.cropSettingsView?.cropBoxView.isHidden = false
-      self.forceDraw("interactive cropping")
-    }
-  }
-
-  func exitInteractiveMode(immediately: Bool = false, then: @escaping () -> Void = {}) {
-    window?.backgroundColor = .black
-    standardWindowButtons.forEach { $0.isEnabled = true }
-
-    if let constraint = aspectRatioConstraintForInteractiveMode {
-      constraint.isActive = false
-      aspectRatioConstraintForInteractiveMode = nil
-    }
-
-    if !isPausedPriorToInteractiveMode {
-      player.resume()
-    }
-    isInInteractiveMode = false
-    cropSettingsView?.cropBoxView.isHidden = true
-
-    // if exit without animation
-    if immediately {
-      bottomBarBottomConstraint.constant = -InteractiveModeBottomViewHeight
-      layoutSides.forEach { attr in
-        videoViewConstraints[attr]!.constant = 0
-      }
-      self.cropSettingsView?.cropBoxView.removeFromSuperview()
-      self.sidebars.leadingSidebar.status = .hidden
-      self.sidebars.trailingSidebar.status = .hidden
-      self.bottomView.subviews.removeAll()
-      self.bottomView.isHidden = true
-      return
-    }
-
-    // if with animation
-    NSAnimationContext.runAnimationGroup({ (context) in
-      context.duration = AccessibilityPreferences.adjustedDuration(CropAnimationDuration)
-      context.timingFunction = CAMediaTimingFunction(name: .easeIn)
-      bottomBarBottomConstraint.animator().constant = -InteractiveModeBottomViewHeight
-      layoutSides.forEach { attr in
-        videoViewConstraints[attr]!.animator().constant = 0
-      }
-    }) {
-      self.cropSettingsView?.cropBoxView.removeFromSuperview()
-      self.sidebars.leadingSidebar.status = .hidden
-      self.sidebars.trailingSidebar.status = .hidden
-      self.bottomView.subviews.removeAll()
-      self.bottomView.isHidden = true
-      self.showUI()
-      then()
-    }
-  }
 
   private func refreshSeekTimeAndThumbnail(from event: NSEvent) {
     let isCoveredByOSD = !osdView.isHidden && event.inAnyOf([osdView])

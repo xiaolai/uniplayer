@@ -42,7 +42,8 @@ class LiveTextController {
   }
 
   func requestAnalysis() {
-    guard #available(macOS 13.0, *), Preference.isLiveTextEnabled else { return }
+    guard #available(macOS 13.0, *), Preference.isLiveTextEnabled,
+          !mainWindow.interactiveMode.isActive else { return }
     requestAnalysisImpl()
   }
 
