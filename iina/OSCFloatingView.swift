@@ -67,9 +67,24 @@ class OSCFloatingView: TranslucentView {
     }
   }
 
+  private var constraintParent: NSView?
+  private var constraintsAll: [NSLayoutConstraint] = []
+
   func setupConstraints() {
-    let videoView = mainWindow.videoView
-    padding(.horizontal(greaterThan: 1), from: videoView)
+    if let constraintParent {
+      removeConstraint(xConstraint)
+      constraintParent.removeConstraints(constraintsAll)
+      constraintsAll.removeAll()
+    }
+
+    let videoView = if mainWindow.pipStatus == .inPIP || mainWindow.player.isInMiniPlayer {
+      mainWindow.window!.contentView!
+    } else {
+      mainWindow.videoView
+    }
+    constraintParent = videoView
+    constraintsAll.append(videoView.leadingAnchor.constraint(lessThanOrEqualTo: leadingAnchor))
+    constraintsAll.append(videoView.trailingAnchor.constraint(greaterThanOrEqualTo: trailingAnchor))
 
     xConstraint = centerXAnchor.constraint(equalTo: videoView.leadingAnchor)
     xConstraint.priority = .defaultLow
@@ -77,7 +92,9 @@ class OSCFloatingView: TranslucentView {
 
     yConstraint = videoView.bottomAnchor.constraint(equalTo: bottomAnchor)
     yConstraint.priority = .defaultHigh
-    yConstraint.isActive = true
+    constraintsAll.append(yConstraint)
+
+    constraintsAll.forEach { $0.isActive = true }
   }
 
   func initPosition() {
@@ -157,9 +174,9 @@ class OSCFloatingView: TranslucentView {
       }
     }
     // bound to window frame
-    let xMax = windowFrame.width - frame.width - 10
+    let xMax = windowFrame.width - frame.width
     let yMax = windowFrame.height - frame.height - 25
-    newOrigin = newOrigin.constrained(to: NSRect(x: 10, y: 0, width: xMax, height: yMax))
+    newOrigin = newOrigin.constrained(to: NSRect(x: 0, y: 0, width: xMax, height: yMax))
     // apply position
     let newConstraint = newOrigin.x + frame.width / 2
     xConstraint.constant = userInterfaceLayoutDirection == .rightToLeft ?
