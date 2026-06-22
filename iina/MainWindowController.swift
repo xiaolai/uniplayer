@@ -80,6 +80,7 @@ class MainWindowController: PlayerWindowController {
   }()
 
 
+  var videoViewContainer: NSView!
   var titleBarView: Titlebar!
   var titleBarHeightConstraint: NSLayoutConstraint!
   var oscBottomView: OSCBottomView!
@@ -270,8 +271,6 @@ class MainWindowController: PlayerWindowController {
   }
 
   // MARK: - Observed user defaults
-
-  private var oscIsInitialized = false
 
   // Cached user default values
   private lazy var oscPosition: Preference.OSCPosition = Preference.enum(for: .oscPosition)
@@ -497,6 +496,9 @@ class MainWindowController: PlayerWindowController {
       cv.addSubview(view)
     }
 
+    videoViewContainer = NSView()
+    videoViewContainer.translatesAutoresizingMaskIntoConstraints = false
+
     // init quick setting view now
     let _ = sidebars.quickSettingView
 
@@ -556,6 +558,9 @@ class MainWindowController: PlayerWindowController {
 
     // video view
 
+    cv.addSubview(videoViewContainer, positioned: .below, relativeTo: nil)
+    setupVideoViewConstraints()
+
     addVideoViewToWindow()
     player.initVideo()
     videoView.postsFrameChangedNotifications = true
@@ -568,7 +573,7 @@ class MainWindowController: PlayerWindowController {
     fragControlView.addView(fragControlViewRightView, in: .center)
     // Video controllers and timeline indicators should not flip in a right-to-left language.
     fragControlView.userInterfaceLayoutDirection = .leftToRight
-    setupOnScreenController(withPosition: oscPosition)
+    setupOnScreenController(withPosition: oscPosition, forced: true)
     let buttons = (Preference.array(for: .controlBarToolbarButtons) as? [Int] ?? []).compactMap(Preference.ToolBarButton.init(rawValue:))
     updateArrowButtons()
     setupOSCToolbarButtons(buttons)
@@ -754,13 +759,12 @@ class MainWindowController: PlayerWindowController {
   }
 
   func addVideoViewToWindow() {
-    guard let cv = window?.contentView else { return }
     if videoView.superview != nil {
       videoView.removeFromSuperview()
     }
-    cv.addSubview(videoView, positioned: .below, relativeTo: nil)
+    videoViewContainer.addSubview(videoView)
     videoView.translatesAutoresizingMaskIntoConstraints = false
-    setupVideoViewConstraints()
+    videoView.padding(.all)
   }
 
   private func setupVideoViewConstraints() {
@@ -769,17 +773,19 @@ class MainWindowController: PlayerWindowController {
     layoutSides.forEach { videoViewConstraints[$0].flatMap(cv.removeConstraint) }
     if Preference.bool(for: .edgeToEdgeVideo) {
       layoutSides.forEach { attr in
-        videoViewConstraints[attr] = NSLayoutConstraint(item: videoView, attribute: attr, relatedBy: .equal,
+        videoViewConstraints[attr] = NSLayoutConstraint(item: videoViewContainer!, attribute: attr, relatedBy: .equal,
                                                         toItem: cv, attribute: attr, multiplier: 1, constant: 0)
       }
     } else {
       let docked = Preference.bool(for: .dockedControlBarAndTitlebar)
-      videoViewConstraints[.top] = videoView.topAnchor
+      videoViewConstraints[.top] = videoViewContainer.topAnchor
         .constraint(equalTo: docked ? titleBarView.bottomAnchor : cv.topAnchor)
-      videoViewConstraints[.bottom] = videoView.bottomAnchor
+      videoViewConstraints[.bottom] = videoViewContainer.bottomAnchor
         .constraint(equalTo: docked ? oscBottomView.topAnchor : cv.bottomAnchor)
-      videoViewConstraints[.leading] = videoView.leadingAnchor.constraint(equalTo: sidebars.leadingSidebar.view.trailingAnchor)
-      videoViewConstraints[.trailing] = videoView.trailingAnchor.constraint(equalTo: sidebars.trailingSidebar.view.leadingAnchor)
+      videoViewConstraints[.leading] = videoViewContainer.leadingAnchor
+        .constraint(equalTo: sidebars.leadingSidebar.view.trailingAnchor)
+      videoViewConstraints[.trailing] = videoViewContainer.trailingAnchor
+        .constraint(equalTo: sidebars.trailingSidebar.view.leadingAnchor)
     }
     layoutSides.forEach { videoViewConstraints[$0]?.isActive = true }
   }
@@ -787,7 +793,7 @@ class MainWindowController: PlayerWindowController {
   @objc func removeVideoViewBlackBars() {
     guard let window, Preference.unlockWindowAspectRatio else { return }
 
-    let currentSize = videoView.frame.size
+    let currentSize = videoViewContainer.frame.size
     let videoSize = player.videoSizeForDisplay
     let newSize = currentSize.crop(withAspect: CGFloat(videoSize.0) / CGFloat(videoSize.1))
     let dw = newSize.width - currentSize.width
@@ -838,9 +844,8 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  private func setupOnScreenController(withPosition newPosition: Preference.OSCPosition) {
-    guard !oscIsInitialized || oscPosition != newPosition else { return }
-    oscIsInitialized = true
+  private func setupOnScreenController(withPosition newPosition: Preference.OSCPosition, forced: Bool = false) {
+    guard forced || oscPosition != newPosition else { return }
 
     let isSwitchingToTop = newPosition == .top
     let isSwitchingFromTop = oscPosition == .top
@@ -2224,7 +2229,7 @@ class MainWindowController: PlayerWindowController {
     let selectedRect: NSRect = selectWholeVideoByDefault ? NSRect(origin: .zero, size: origVideoSize) : .zero
 
     // add crop setting view
-    videoView.addSubview(controlView.cropBoxView)
+    videoViewContainer.addSubview(controlView.cropBoxView)
     controlView.cropBoxView.isHidden = true
     Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": controlView.cropBoxView])
     controlView.cropBoxView.selectedRect = selectedRect
@@ -2242,10 +2247,10 @@ class MainWindowController: PlayerWindowController {
         videoViewConstraints[attr]!.animator().constant = newConstants[attr]!
       }
     }) {
-      self.videoView.layer?.shadowColor = .black
-      self.videoView.layer?.shadowOpacity = 1
-      self.videoView.layer?.shadowOffset = .zero
-      self.videoView.layer?.shadowRadius = 3
+      self.videoViewContainer.layer?.shadowColor = .black
+      self.videoViewContainer.layer?.shadowOpacity = 1
+      self.videoViewContainer.layer?.shadowOffset = .zero
+      self.videoViewContainer.layer?.shadowRadius = 3
       self.cropSettingsView?.cropBoxView.resized()
       self.cropSettingsView?.cropBoxView.isHidden = false
       self.forceDraw("interactive cropping")

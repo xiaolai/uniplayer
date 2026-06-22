@@ -68,7 +68,7 @@ class OSCFloatingView: TranslucentView {
   }
 
   func setupConstraints() {
-    let videoView = mainWindow.videoView
+    let videoView = mainWindow.videoViewContainer!
     padding(.horizontal(greaterThan: 1), from: videoView)
 
     xConstraint = centerXAnchor.constraint(equalTo: videoView.leadingAnchor)
@@ -81,7 +81,7 @@ class OSCFloatingView: TranslucentView {
   }
 
   func initPosition() {
-    let videoView = mainWindow.videoView
+    let videoView = mainWindow.videoViewContainer!
     let cph = Preference.float(for: .controlBarPositionHorizontal)
     let cpv = Preference.float(for: .controlBarPositionVertical)
     xConstraint.constant = videoView.frame.width * CGFloat(cph)
@@ -89,7 +89,7 @@ class OSCFloatingView: TranslucentView {
   }
 
   func updatePosition() {
-    let videoView = mainWindow.videoView
+    let videoView = mainWindow.videoViewContainer!
     let windowWidth = videoView.frame.width
     let windowHeight = videoView.frame.height
     let cph = Preference.float(for: .controlBarPositionHorizontal)
@@ -137,7 +137,7 @@ class OSCFloatingView: TranslucentView {
 
   override func mouseDragged(with event: NSEvent) {
     guard let mousePos = mousePosRelatedToView else { return }
-    let windowFrame = mainWindow.videoView.frame
+    let windowFrame = mainWindow.videoViewContainer.frame
     let currentLocation = NSEvent.mouseLocation
     var newOrigin = CGPoint(
       x: currentLocation.x - mousePos.x,
@@ -169,7 +169,7 @@ class OSCFloatingView: TranslucentView {
 
   override func mouseUp(with event: NSEvent) {
     isDragging = false
-    let windowFrame = mainWindow.videoView.frame
+    let windowFrame = mainWindow.videoViewContainer.frame
     // save final position
     Preference.set(xConstraint.constant / windowFrame.width, for: .controlBarPositionHorizontal)
     Preference.set(yConstraint.constant / windowFrame.height, for: .controlBarPositionVertical)

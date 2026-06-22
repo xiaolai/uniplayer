@@ -800,7 +800,6 @@ class PlayerCore: NSObject {
 
     // move playlist view
     playlistView.view.removeFromSuperview()
-//    playlistView.isInMiniPlayer = true
     miniPlayer.playlistWrapperView.addSubview(playlistView.view)
     playlistView.view.padding(.all)
     // move video view

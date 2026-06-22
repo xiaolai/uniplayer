@@ -80,6 +80,7 @@ extension LiveTextController: ImageAnalysisOverlayViewDelegate {
     analysisTask?.cancel()
 
     let videoView = mainWindow.videoView
+    let videoViewContainer = mainWindow.videoViewContainer!
     analysisTask = Task { [weak self] in
       guard let self else { return }
       do {
@@ -93,8 +94,8 @@ extension LiveTextController: ImageAnalysisOverlayViewDelegate {
         await MainActor.run {
           let overlay = self.setupLiveTextOverlay()
           overlay.analysis = analysis
-          overlay.frame = videoView.bounds
-          videoView.addSubview(overlay)
+          overlay.frame = videoViewContainer.bounds
+          videoViewContainer.addSubview(overlay)
           overlay.padding(.all(0))
           liveTextLog("Image analysis overlay view inserted to video view")
           self.refreshUI()
