@@ -3119,9 +3119,6 @@ extension MainWindowController: PIPViewControllerDelegate {
       }
     }
 
-    oscFloatingView.setupConstraints()
-    oscFloatingView.updatePosition()
-
     player.events.emit(.pipChanged, data: true)
     NotificationCenter.default.post(name: .iinaPIPStatusChanged, object: self, userInfo: ["enable": true])
   }
@@ -3134,9 +3131,6 @@ extension MainWindowController: PIPViewControllerDelegate {
     // unwrapped optionals are handled in Swift means that the wrong method
     // is chosen in this case. See https://bugs.swift.org/browse/SR-8956.
     pip.dismiss(pipVideo!)
-
-    oscFloatingView.setupConstraints()
-    oscFloatingView.updatePosition()
   }
 
   func doneExitingPIP() {

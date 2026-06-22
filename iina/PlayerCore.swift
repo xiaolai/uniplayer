@@ -835,8 +835,6 @@ class PlayerCore: NSObject {
     }
 
     currentController.setupUI()
-    mainWindow.oscFloatingView.setupConstraints()
-    mainWindow.oscFloatingView.updatePosition()
 
     miniPlayer.pendingShow = true
     if showMiniPlayer {
@@ -884,9 +882,6 @@ class PlayerCore: NSObject {
       mainWindow.updateTitle()
       notifyWindowVideoSizeChanged()
     }
-
-    mainWindow.oscFloatingView.setupConstraints()
-    mainWindow.oscFloatingView.updatePosition()
 
     mainWindow.forceDraw("exited music mode")
     postNotification(.iinaMusicModeChanged)
