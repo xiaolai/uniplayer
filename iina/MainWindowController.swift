@@ -2740,6 +2740,7 @@ class MainWindowController: PlayerWindowController {
 
   override func updatePlayTime(withDuration duration: Bool, andProgressBar: Bool) {
     super.updatePlayTime(withDuration: duration, andProgressBar: andProgressBar)
+    syncPIPPlaybackState()
 
     if osdAnimationState == .shown, let osdLastMessage = self.osdLastMessage {
       let message: OSDMessage
@@ -2765,6 +2766,7 @@ class MainWindowController: PlayerWindowController {
     if paused {
       speedValueIndex = AppData.availableSpeedValues.count / 2
     }
+    syncPIPPlaybackState()
   }
 
   /// Configure the OSC arrow buttons based on IINA's `Use left/right button for` setting.
@@ -3085,6 +3087,7 @@ extension MainWindowController: PIPViewControllerDelegate {
 
     pip.presentAsPicture(inPicture: pipVideo)
     pipOverlayView.isHidden = false
+    syncPIPPlaybackState()
 
     if let window = self.window {
       let windowShouldDoNothing = window.styleMask.contains(.fullScreen) || window.isMiniaturized
@@ -3112,13 +3115,12 @@ extension MainWindowController: PIPViewControllerDelegate {
 
   func exitPIP() {
     guard pipStatus == .inPIP else { return }
-    if pipShouldClose(pip) {
-      // Prod Swift to pick the dismiss(_ viewController: NSViewController)
-      // overload over dismiss(_ sender: Any?). A change in the way implicitly
-      // unwrapped optionals are handled in Swift means that the wrong method
-      // is chosen in this case. See https://bugs.swift.org/browse/SR-8956.
-      pip.dismiss(pipVideo!)
-    }
+    prepareForPIPClosure(pip)
+    // Prod Swift to pick the dismiss(_ viewController: NSViewController)
+    // overload over dismiss(_ sender: Any?). A change in the way implicitly
+    // unwrapped optionals are handled in Swift means that the wrong method
+    // is chosen in this case. See https://bugs.swift.org/browse/SR-8956.
+    pip.dismiss(pipVideo!)
   }
 
   func doneExitingPIP() {
@@ -3156,12 +3158,8 @@ extension MainWindowController: PIPViewControllerDelegate {
     pipOverlayView.isHidden = true
 
     // Set frame to animate back to
-    if fsState.isFullscreen {
-      let newVideoSize = videoView.frame.size.shrink(toSize: window.frame.size)
-      pip.replacementRect = newVideoSize.centeredRect(in: .init(origin: .zero, size: window.frame.size))
-    } else {
-      pip.replacementRect = window.contentView?.frame ?? .zero
-    }
+    let newVideoSize = videoView.frame.size.shrink(toSize: window.frame.size)
+    pip.replacementRect = newVideoSize.centeredRect(in: .init(origin: .zero, size: window.frame.size))
     pip.replacementWindow = window
 
     // Bring the window to the front and deminiaturize it
@@ -3171,11 +3169,6 @@ extension MainWindowController: PIPViewControllerDelegate {
 
   func pipWillClose(_ pip: PIPViewController) {
     prepareForPIPClosure(pip)
-  }
-
-  func pipShouldClose(_ pip: PIPViewController) -> Bool {
-    prepareForPIPClosure(pip)
-    return true
   }
 
   func pipDidClose(_ pip: PIPViewController) {
@@ -3193,5 +3186,22 @@ extension MainWindowController: PIPViewControllerDelegate {
   func pipActionStop(_ pip: PIPViewController) {
     // Stopping PIP pauses playback
     player.pause()
+  }
+
+  func pipAction(_ pip: PIPViewController, skipInterval interval: TimeInterval) {
+    player.seek(relativeSecond: interval, option: .relative)
+  }
+
+  func syncPIPPlaybackState() {
+    guard pipStatus == .inPIP,
+          pip.responds(to: NSSelectorFromString("updatePlaybackStateUsingBlock:")) else { return }
+    let playing = player.info.state == .playing
+    let elapsed = player.info.videoPosition?.second ?? 0
+    let duration = player.info.videoDuration?.second ?? 0
+    pip.updatePlaybackState { state in
+      state.contentType = 1
+      state.contentDuration = duration
+      state.setPlaybackRate(playing ? player.info.playSpeed : 0, elapsedTime: elapsed, timeControlStatus: playing ? 2 : 0)
+    }
   }
 }
