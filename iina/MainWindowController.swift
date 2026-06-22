@@ -1900,7 +1900,6 @@ class MainWindowController: PlayerWindowController {
   }
 
   private func hideUI(force: Bool = false) {
-    return
     // Don't hide UI when in PIP
     guard pipStatus == .notInPIP || animationState == .hidden else {
       return
