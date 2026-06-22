@@ -37,6 +37,11 @@ class PluginViewController: SidebarViewController {
 
   private var pluginMenu = NSMenu()
 
+  private func getPluginIcon(isSmall: Bool) -> NSImage {
+    let config = isSmall ? smallIconConfig : iconConfig
+    return NSImage.sf("puzzlepiece.extension.fill", withConfiguration: config) ?? .plugin
+  }
+
   override func setupTabs() {
     pluginMenu.minimumWidth = 200
     pluginMenu.delegate = self
@@ -65,8 +70,6 @@ class PluginViewController: SidebarViewController {
 
     tabButtonsSegmentControl.segmentCount = 2
     tabButtonsSegmentControl.trackingMode = .momentary
-    tabButtonsSegmentControl.setImage(.plugin, forSegment: 0)
-    tabButtonsSegmentControl.setImage(.triangleDown, forSegment: 1)
 
     updatePluginTabs()
     updateTabActiveStatus()
@@ -105,6 +108,24 @@ class PluginViewController: SidebarViewController {
       allTabs_[currentTab.tag - 1].name
     }
     tabButtonsSegmentControl.setLabel(name, forSegment: 0)
+  }
+
+  override func updateTabButtonSize() {
+    // on macOS 26, window corner radius will be larger with a regular toolbar.
+    // should use the normal (non-compact) height if the sidebar is on the leading side.
+    let largeLeadingHeight = if #available(macOS 26.0, *) { isLeading } else { false }
+    let height: CGFloat = (isCompact && !largeLeadingHeight) ? 48 : 52
+    tabButtonsHeightConstraint.constant = height
+
+    if #available(macOS 26.0, *), !isCompact {
+      tabButtonsSegmentControl.controlSize = .extraLarge
+    } else {
+      tabButtonsSegmentControl.controlSize = .large
+    }
+    tabButtonsSegmentControl.setImage(getPluginIcon(isSmall: isCompact), forSegment: 0)
+    tabButtonsSegmentControl.setImage(.triangleDown, forSegment: 1)
+
+    closeSidebarBtnSizeConstraint.constant =  isCompact ? 28 : 36
   }
 
   override func switchToTab(_ tab: SidebarViewController.TabType) {

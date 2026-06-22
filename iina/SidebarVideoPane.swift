@@ -126,17 +126,17 @@ fileprivate class HorizontalScrollViewWithIndicator: NSView {
 
   let scrollView = ScrollView()
   private var indicator: NSButton!
-  private var indicatorDirection: IndicatorDirection = .hidden {
+  private var indicatorDirection: IndicatorDirection = .trailing {
     didSet {
       switch indicatorDirection {
       case .hidden:
         indicator.isHidden = true
       case .leading:
         indicator.isHidden = false
-        indicator.image = .sf("chevron.forward")
+        indicator.image = .sf("chevron.backward")
       case .trailing:
         indicator.isHidden = false
-        indicator.image = .sf("chevron.backward")
+        indicator.image = .sf("chevron.forward")
       }
     }
   }
@@ -169,7 +169,7 @@ fileprivate class HorizontalScrollViewWithIndicator: NSView {
   @objc private func indicatorAction(_ sender: NSButton) {
     guard let width = scrollView.documentView?.frame.width else { return }
 
-    let point = if indicatorDirection == .leading {
+    let point = if indicatorDirection == .trailing {
       NSPoint(x: width - scrollView.contentSize.width, y: 0)
     } else {
       NSPoint(x: 0, y: 0)
@@ -221,15 +221,15 @@ fileprivate class HorizontalScrollViewWithIndicator: NSView {
       let originX      = contentView.bounds.origin.x
 
       guard contentWidth > visibleWidth else {
-        parent.indicator.isHidden = true
+        parent.indicatorDirection = .hidden
         return
       }
 
       let eps: CGFloat = 1
-      let atLeading  = originX <= eps
-      let atTrailing = originX + visibleWidth >= contentWidth - eps
+      let hasTrailing  = originX <= eps
+      let hasLeading = originX + visibleWidth >= contentWidth - eps
 
-      parent.indicatorDirection = atLeading ? .leading : atTrailing ? .trailing : .hidden
+      parent.indicatorDirection = hasLeading ? .leading : hasTrailing ? .trailing : .hidden
     }
 
     /// Translate vertical scrolling events to horizontal for mouse control
