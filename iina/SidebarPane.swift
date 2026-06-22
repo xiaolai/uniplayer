@@ -6,6 +6,16 @@
 //  Copyright © 2026 lhc. All rights reserved.
 //
 
+extension NSImage.SymbolConfiguration {
+  static let sidebarIconConfig = {
+    if #available(macOS 26.0, *) {
+      NSImage.SymbolConfiguration(pointSize: 12, weight: .bold)
+    } else {
+      NSImage.SymbolConfiguration(pointSize: 12, weight: .regular)
+    }
+  }()
+}
+
 
 class SidebarTabViewController: NSTabViewController {
   let transitionDuration: TimeInterval = 0.3

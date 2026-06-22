@@ -65,19 +65,19 @@ class SidebarVideoPane: SidebarScrollView {
       wantsToGrow: true,
       ui.hStack(
         align: .centerY,
-        ui.image("aspectratio", size: 16),
+        ui.image("aspectratio", size: 16, config: .sidebarIconConfig),
         ui.label("sidebar.aspect_ratio", font: .boldSystemFont(ofSize: 12))
       ),
       AspectRatioView(player: player),
       ui.hStack(
         align: .centerY,
-        ui.image("crop", size: 16),
+        ui.image("crop", size: 16, config: .sidebarIconConfig),
         ui.label("sidebar.crop", font: .boldSystemFont(ofSize: 12))
       ),
       CropView(player: player),
       ui.hStack(
         align: .centerY,
-        ui.image("rotate.left", size: 16),
+        ui.image("rotate.left", size: 16, config: .sidebarIconConfig),
         ui.label("sidebar.rotation", font: .boldSystemFont(ofSize: 12))
       ),
       RotationView(player: player),
@@ -99,14 +99,14 @@ class SidebarVideoPane: SidebarScrollView {
       wantsToGrow: true,
       ui.hStack(
         spacing: 8,
-        ui.image("cpu", size: 16),
+        ui.image("cpu", size: 16, config: .sidebarIconConfig),
         ui.label("quicksetting.hwdec"),
         ui.flexibleSpace(),
         HwdecSwitch(player: player),
       ),
       ui.hStack(
         spacing: 8,
-        ui.image("sun.max", size: 16),
+        ui.image("sun.max", size: 16, config: .sidebarIconConfig),
         ui.label("quicksetting.hdr"),
         ui.flexibleSpace(),
         HDRSwitch(player: player)
@@ -513,7 +513,8 @@ fileprivate let speedFormatter: NumberFormatter = {
 
 fileprivate class SpeedView: SidebarSliderView {
   override var titleImage: NSImage? {
-    .sf("chevron.forward.dotted.chevron.forward", "forward.fill")
+    .sf("chevron.forward.dotted.chevron.forward", "forward.fill",
+        withConfiguration: .sidebarIconConfig)
   }
   override var titleKey: String { "sidebar.speed" }
 

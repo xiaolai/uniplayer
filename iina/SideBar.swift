@@ -67,7 +67,7 @@ class SidebarViewController: NSViewController {
   let prefObserver = Preference.Observer()
 
   let iconConfig = NSImage.SymbolConfiguration(pointSize: 14, weight: .bold)
-  let smallIconConfig = NSImage.SymbolConfiguration(pointSize: 13, weight: .bold)
+  let compactIconConfig = NSImage.SymbolConfiguration(pointSize: 13, weight: .bold)
 
   var downShift: CGFloat = 0 {
     didSet {
@@ -301,7 +301,7 @@ class SidebarViewController: NSViewController {
       tabButtonsSegmentControl.controlSize = .large
     }
 
-    let config = isCompact ? smallIconConfig : iconConfig
+    let config = isCompact ? compactIconConfig : iconConfig
     for tab in allTabs {
       let image = tab.image.withSymbolConfiguration(config) ?? tab.image
       tabButtonsSegmentControl.setImage(image, forSegment: tab.tag)

@@ -38,7 +38,7 @@ class PluginViewController: SidebarViewController {
   private var pluginMenu = NSMenu()
 
   private func getPluginIcon(isSmall: Bool) -> NSImage {
-    let config = isSmall ? smallIconConfig : iconConfig
+    let config = isSmall ? compactIconConfig : iconConfig
     return NSImage.sf("puzzlepiece.extension.fill", withConfiguration: config) ?? .plugin
   }
 
