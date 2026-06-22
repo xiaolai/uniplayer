@@ -164,7 +164,7 @@ class Titlebar: NSView {
       titleTextField.translatesAutoresizingMaskIntoConstraints = false
       titleTextField.font = .titleBarFont(ofSize: 13)
       titleTextField.lineBreakMode = .byTruncatingMiddle
-      titleTextField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+      titleTextField.setContentCompressionResistancePriority(.init(200), for: .horizontal)
       titleTextField.setContentHuggingPriority(.defaultHigh, for: .horizontal)
       titlebarContainer.addSubview(titleTextField)
       titleTextField.spacing(.leading(2), to: docIcon).center(.y)
