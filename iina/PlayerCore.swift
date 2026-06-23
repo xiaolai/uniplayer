@@ -85,7 +85,7 @@ class PlayerCore: NSObject {
     let useNew = Preference.bool(for: .alwaysOpenInNewWindow) != isAlternative
     return useNew ? newPlayerCore : active
   }
-  
+
   /**
    Opens the URLs in the right window or windows, depending on user settings.
 
@@ -112,7 +112,7 @@ class PlayerCore: NSObject {
         if !Preference.bool(for: .allowDuplicatePlayers) {
           let activePlayerCores = playerCores.filter { $0.info.state != .idle }
           let relevantActivePlayerCore = activePlayerCores.first { $0.info.currentURL == url }
-          
+
           if let relevantActivePlayerCore {
             relevantActivePlayerCore.currentController.window?.makeKeyAndOrderFront(nil)
             return currentReturnValue
@@ -198,10 +198,10 @@ class PlayerCore: NSObject {
   private var backgroundTaskInUse = false
 
   var initialWindow: InitialWindowController!
-  
+
   var mainWindow: MainWindowController!
   var miniPlayer: MiniPlayerWindowController!
-  
+
   var currentController: PlayerWindowController {
     return isInMiniPlayer ? miniPlayer : mainWindow
   }
@@ -2037,6 +2037,11 @@ class PlayerCore: NSObject {
   func fileStarted(path: String) {
     guard info.state.active else { return }
     log("File started")
+
+    Task { @MainActor in
+      mainWindow.liveText.clearAnalysis()
+    }
+
     MemoryUsage.shared.logUsage("after file started")
     info.justStartedFile = true
     info.disableOSDForFileLoading = true
@@ -2200,6 +2205,10 @@ class PlayerCore: NSObject {
     }
     postNotification(.iinaFileLoaded)
     events.emit(.fileLoaded, data: info.currentURL?.absoluteString ?? "")
+
+    Task { @MainActor in
+      mainWindow.liveText.requestAnalysis()
+    }
   }
 
   func fileEnded(_ dueToStopCommand: Bool) {
@@ -2361,6 +2370,14 @@ class PlayerCore: NSObject {
       mainWindow.setWindowFloatingOnTop(!paused)
     }
     syncUI(.playButton)
+
+    Task { @MainActor in
+      if paused {
+        mainWindow.liveText.requestAnalysis()
+      } else {
+        mainWindow.liveText.clearAnalysis()
+      }
+    }
   }
 
   func playbackRestarted() {
@@ -2370,7 +2387,7 @@ class PlayerCore: NSObject {
     // restart even while paused. See issue #5337.
     syncUI(.time)
     reloadSavedIINAfilters()
-    
+
     // The new video's size is guaranteed to be available. Reset the flags used for window resizing.
     // We can't put this in MPV_EVENT_VIDEO_RECONFIG because it can be emitted with the old video's size
     // after switching to a new video.
@@ -2379,6 +2396,11 @@ class PlayerCore: NSObject {
     info.justStartedFile = false
 
     NowPlayingInfoManager.shared.updateInfo()
+
+    Task { @MainActor in
+      mainWindow.liveText.clearAnalysis()
+      mainWindow.liveText.requestAnalysis()
+    }
 
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { self.info.disableOSDForFileLoading = false }
   }
@@ -2428,6 +2450,10 @@ class PlayerCore: NSObject {
     sendOSD(.track(info.currentTrack(.sub) ?? .noneSubTrack))
     if isInMiniPlayer {
       miniPlayer.refreshArtworkVisibility()
+    }
+    Task { @MainActor in
+      mainWindow.liveText.clearAnalysis()
+      mainWindow.liveText.requestAnalysis()
     }
   }
 
@@ -2744,7 +2770,7 @@ class PlayerCore: NSObject {
   @objc func syncUITime() {
     syncUI(.time)
   }
-  
+
   func syncUI(_ options: [SyncUIOption]) {
     for option in options {
       syncUI(option)

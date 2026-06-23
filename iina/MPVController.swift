@@ -1211,7 +1211,7 @@ class MPVController: NSObject {
           DispatchQueue.main.async {
             Utility.showAlert("screenshot.error_taking")
           }
-          return
+          break
         }
         DispatchQueue.main.async { self.player.screenshotCallback() }
       }
