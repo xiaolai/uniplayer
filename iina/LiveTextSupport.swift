@@ -29,6 +29,9 @@ class LiveTextController {
   var isActive: Bool {
     isSelected || isMenuOpen || isHighlighted
   }
+  var isShown: Bool {
+    overlayView != nil
+  }
 
   init(mainWindow: MainWindowController) {
     self.mainWindow = mainWindow
@@ -48,7 +51,7 @@ class LiveTextController {
   }
 
   func clearAnalysis() {
-    guard #available(macOS 13.0, *), Preference.isLiveTextEnabled else { return }
+    guard #available(macOS 13.0, *), isShown else { return }
     clearAnalysisImpl()
   }
 
