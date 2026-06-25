@@ -29,6 +29,9 @@ class LiveTextController {
   var isActive: Bool {
     isSelected || isMenuOpen || isHighlighted
   }
+  var isShown: Bool {
+    overlayView != nil
+  }
 
   init(mainWindow: MainWindowController) {
     self.mainWindow = mainWindow
@@ -42,12 +45,13 @@ class LiveTextController {
   }
 
   func requestAnalysis() {
-    guard #available(macOS 13.0, *), Preference.isLiveTextEnabled else { return }
+    guard #available(macOS 13.0, *), Preference.isLiveTextEnabled,
+          !mainWindow.interactiveMode.isActive else { return }
     requestAnalysisImpl()
   }
 
   func clearAnalysis() {
-    guard #available(macOS 13.0, *), Preference.isLiveTextEnabled else { return }
+    guard #available(macOS 13.0, *), isShown else { return }
     clearAnalysisImpl()
   }
 
@@ -80,6 +84,7 @@ extension LiveTextController: ImageAnalysisOverlayViewDelegate {
     analysisTask?.cancel()
 
     let videoView = mainWindow.videoView
+    let videoViewContainer = mainWindow.videoViewContainer!
     analysisTask = Task { [weak self] in
       guard let self else { return }
       do {
@@ -93,8 +98,8 @@ extension LiveTextController: ImageAnalysisOverlayViewDelegate {
         await MainActor.run {
           let overlay = self.setupLiveTextOverlay()
           overlay.analysis = analysis
-          overlay.frame = videoView.bounds
-          videoView.addSubview(overlay)
+          overlay.frame = videoViewContainer.bounds
+          videoViewContainer.addSubview(overlay)
           overlay.padding(.all(0))
           liveTextLog("Image analysis overlay view inserted to video view")
           self.refreshUI()

@@ -800,7 +800,6 @@ class PlayerCore: NSObject {
 
     // move playlist view
     playlistView.view.removeFromSuperview()
-//    playlistView.isInMiniPlayer = true
     miniPlayer.playlistWrapperView.addSubview(playlistView.view)
     playlistView.view.padding(.all)
     // move video view
@@ -835,8 +834,6 @@ class PlayerCore: NSObject {
     }
 
     currentController.setupUI()
-    mainWindow.oscFloatingView.setupConstraints()
-    mainWindow.oscFloatingView.updatePosition()
 
     miniPlayer.pendingShow = true
     if showMiniPlayer {
@@ -884,9 +881,6 @@ class PlayerCore: NSObject {
       mainWindow.updateTitle()
       notifyWindowVideoSizeChanged()
     }
-
-    mainWindow.oscFloatingView.setupConstraints()
-    mainWindow.oscFloatingView.updatePosition()
 
     mainWindow.forceDraw("exited music mode")
     postNotification(.iinaMusicModeChanged)
@@ -1599,6 +1593,8 @@ class PlayerCore: NSObject {
   ///     resumes playback.
   /// - Parameter nextMedia: When `true` play the next entry in the playlist; otherwise play the previous entry.
   func navigateInPlaylist(nextMedia: Bool) {
+    guard !mainWindow.interactiveMode.isActive else { return }
+
     if nextMedia == false && (info.playlist.first?.isPlaying) ?? false {
       seek(absoluteSecond: 0)
     } else {
@@ -1649,6 +1645,14 @@ class PlayerCore: NSObject {
     filter.label = Constants.FilterName.crop
     if addVideoFilter(filter) {
       info.cropFilter = filter
+    }
+  }
+
+  /// Remove the crop filter managed by IINA.
+  func removeCropFilter() {
+    if let vf = info.cropFilter {
+      let _ = removeVideoFilter(vf)
+      info.unsureCrop = "None"
     }
   }
 

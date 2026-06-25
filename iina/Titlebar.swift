@@ -23,7 +23,7 @@ class Titlebar: NSView {
   /// Default inset for the title container from the leading edge — clears the traffic lights.
   static let docIconLeadingPadding: CGFloat = 86
 
-  private let accessoryIconConfig = NSImage.SymbolConfiguration(pointSize: 11, weight: .regular)
+  private let accessoryIconConfig = NSImage.SymbolConfiguration(pointSize: 12, weight: .regular)
 
   let useSystemTitle = false
 
@@ -75,7 +75,7 @@ class Titlebar: NSView {
     )
 
     self.removeBlackBarButton = NSButton(
-      image: .removeBlackbars,
+      image: .sf("remove.blackbars", withConfiguration: accessoryIconConfig)!,
       target: mainWindow,
       action: #selector(MainWindowController.removeVideoViewBlackBars)
     )
@@ -164,7 +164,7 @@ class Titlebar: NSView {
       titleTextField.translatesAutoresizingMaskIntoConstraints = false
       titleTextField.font = .titleBarFont(ofSize: 13)
       titleTextField.lineBreakMode = .byTruncatingMiddle
-      titleTextField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+      titleTextField.setContentCompressionResistancePriority(.init(200), for: .horizontal)
       titleTextField.setContentHuggingPriority(.defaultHigh, for: .horizontal)
       titlebarContainer.addSubview(titleTextField)
       titleTextField.spacing(.leading(2), to: docIcon).center(.y)

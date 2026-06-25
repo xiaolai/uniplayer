@@ -370,9 +370,14 @@ fileprivate class CropView: HorizontalScrollViewWithIndicator {
   @objc private func cropAction(_ sender: AnyObject) {
     if segmentControl.selectedSegment == segmentControl.segmentCount - 1 {
       guard let mainWindow = player.mainWindow else { return }
-      // User clicked on "Custom...": show custom crop UI
-      mainWindow.sidebars.hideAllSideBars {
-        mainWindow.enterInteractiveMode(.crop, selectWholeVideoByDefault: true)
+      // User clicked on "Custom...": show interactive mode
+      // run asynchronically to wait for potential videoview resize
+      Task { @MainActor in
+        mainWindow.player.removeCropFilter()
+        mainWindow.forceDraw("reset crop filter")
+        mainWindow.sidebars.hideAllSideBars {
+          mainWindow.interactiveMode.enter(mode: .crop, selectWholeVideoByDefault: true)
+        }
       }
     } else {
       let cropStr = AppData.cropsInPanel[segmentControl.selectedSegment]

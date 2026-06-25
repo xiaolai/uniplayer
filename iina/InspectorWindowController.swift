@@ -364,7 +364,7 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
     let strProperties: [(String?, NSTextField)] = [
       (track.srcId?.description, trackSourceIdField),
       (track.title, trackTitleField),
-      (track.lang, trackLangField),
+      (track.readableLanguage, trackLangField),
       (track.externalFilename, trackFilePathField),
       (track.codec, trackCodecField),
       (track.decoderDesc, trackDecoderField),

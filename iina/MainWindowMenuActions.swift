@@ -103,7 +103,7 @@ extension MainWindowController {
       }
     } else {
       self.sidebars.hideAllSideBars {
-        self.enterInteractiveMode(.freeSelecting)
+        self.interactiveMode.enter(mode: .delogo)
       }
     }
   }
