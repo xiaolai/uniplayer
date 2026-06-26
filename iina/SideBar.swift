@@ -145,6 +145,9 @@ class SidebarViewController: NSViewController {
     self.tabButtonsSegmentControl = NSSegmentedControl()
     tabButtonsSegmentControl.target = self
     tabButtonsSegmentControl.action = #selector(tabBtnSegmentControlAction_(_:))
+    if sidebarType != .plugins {
+      tabButtonsSegmentControl.segmentDistribution = .fillEqually
+    }
 
     // close button
     self.closeSidebarBtn = NSButton(
