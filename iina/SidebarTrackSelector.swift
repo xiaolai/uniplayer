@@ -102,19 +102,19 @@ class TrackSelector: NSScrollView, NSTableViewDelegate, NSTableViewDataSource {
   }
 
   private class CellView: NSTableCellView {
-    var selectedIndicator: NSView
+    var selectedIndicator: ColoredView
+    var languageTag: ColoredView
     var languageLabel: NSTextField
-    var languageTag: NSView
 
     override init(frame frameRect: NSRect) {
-      self.selectedIndicator = NSView()
+      self.selectedIndicator = ColoredView(color: .controlAccentColor, cornerRadius: 2)
       selectedIndicator.translatesAutoresizingMaskIntoConstraints = false
+
+      self.languageTag = ColoredView(color: .controlColor, cornerRadius: 3)
+      languageTag.translatesAutoresizingMaskIntoConstraints = false
 
       self.languageLabel = NSTextField(labelWithString: "")
       languageLabel.translatesAutoresizingMaskIntoConstraints = false
-
-      self.languageTag = NSView()
-      languageTag.translatesAutoresizingMaskIntoConstraints = false
 
       super.init(frame: frameRect)
 
@@ -127,21 +127,11 @@ class TrackSelector: NSScrollView, NSTableViewDelegate, NSTableViewDataSource {
       textField.padding(.leading(12)).center(.y)
       self.textField = textField
 
-      selectedIndicator.wantsLayer = true
-      if let layer = selectedIndicator.layer {
-        layer.backgroundColor = NSColor.controlAccentColor.cgColor
-        layer.cornerRadius = 2
-      }
       addSubview(selectedIndicator)
       selectedIndicator.padding(.leading, .vertical(5))
         .size(width: 4)
 
       languageLabel.font = .systemFont(ofSize: 11)
-      languageTag.wantsLayer = true
-      if let layer = languageTag.layer {
-        layer.backgroundColor = NSColor.controlColor.cgColor
-        layer.cornerRadius = 3
-      }
 
       languageTag.addSubview(languageLabel)
       languageLabel.padding(.vertical(1), .horizontal(2))
@@ -167,3 +157,22 @@ class TrackSelector: NSScrollView, NSTableViewDelegate, NSTableViewDataSource {
   }
 }
 
+class ColoredView: NSView {
+  let color: NSColor
+  let cornerRadius: CGFloat
+
+  init(color: NSColor, cornerRadius: CGFloat = 0) {
+    self.color = color
+    self.cornerRadius = cornerRadius
+    super.init(frame: .zero)
+  }
+
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+
+  override func draw(_ dirtyRect: NSRect) {
+    color.setFill()
+    NSBezierPath(roundedRect: bounds, xRadius: cornerRadius, yRadius: cornerRadius).fill()
+  }
+}
