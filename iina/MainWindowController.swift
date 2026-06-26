@@ -2433,6 +2433,10 @@ class MainWindowController: PlayerWindowController {
       log("Constrained window frame to be in screen: \(rect)")
     }
 
+    if player.info.justOpenedFile && !Preference.bool(for: .edgeToEdgeVideo) {
+      rect.size.height += titleBarView.frame.height
+    }
+
     if Preference.unlockWindowAspectRatio && !player.info.justOpenedFile {
       // do nothing when window aspect ratio is unlocked
       // however, if this is the first time opening the window, still apply the sizing logic
