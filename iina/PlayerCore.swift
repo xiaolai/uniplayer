@@ -2725,7 +2725,7 @@ class PlayerCore: NSObject {
         mainWindow.videoView.displayActive()
         mpv.setFlag(MPVOption.PlaybackControl.pause, false, level: .verbose)
       }
-      info.state = paused ? .paused : .playing
+      info.state = Preference.bool(for: .pauseWhenOpen) ? .paused : .playing
       syncUI(.playButton)
       if Preference.bool(for: .fullScreenWhenOpen) && !mainWindow.fsState.isFullscreen && !isInMiniPlayer {
         mainWindow.toggleWindowFullScreen()
