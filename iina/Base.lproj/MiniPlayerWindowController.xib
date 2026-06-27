@@ -202,7 +202,7 @@
                                     </button>
                                     <button translatesAutoresizingMaskIntoConstraints="NO" id="fUy-ap-8fj">
                                         <rect key="frame" x="44" y="15" width="22" height="15"/>
-                                        <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="volume.3.fill" catalog="system" imagePosition="only" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" id="9bz-eY-31X">
+                                        <buttonCell key="cell" type="square" bezelStyle="shadowlessSquare" image="speaker.wave.3.fill" catalog="system" imagePosition="only" alignment="center" refusesFirstResponder="YES" imageScaling="proportionallyUpOrDown" inset="2" id="9bz-eY-31X">
                                             <behavior key="behavior" pushIn="YES" lightByBackground="YES" lightByGray="YES"/>
                                             <font key="font" metaFont="system"/>
                                         </buttonCell>
@@ -464,6 +464,5 @@
         <image name="playlist" width="14" height="14"/>
         <image name="speaker.wave.3.fill" catalog="system" width="22" height="15"/>
         <image name="toggle-album-art" width="14" height="14"/>
-        <image name="volume.3.fill" catalog="system" width="22" height="15"/>
     </resources>
 </document>
