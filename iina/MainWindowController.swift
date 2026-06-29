@@ -565,7 +565,10 @@ class MainWindowController: PlayerWindowController {
 
     standardWindowButtons.forEach {
       fadeableViews.add($0) { [unowned self] in
-        fsState == .windowed && !Preference.isDocked ? .auto : .alwaysShown
+        if sidebars.leadingSidebar.status != .hidden {
+          return .alwaysShown
+        }
+        return fsState == .windowed && !Preference.isDocked ? .auto : .alwaysShown
       }
     }
 
@@ -843,6 +846,7 @@ class MainWindowController: PlayerWindowController {
       highlight(.settings, sidebars.isShowing(.settings))
       highlight(.plugins, sidebars.isShowing(.plugins))
       highlight(.playlist, sidebars.isShowing(.playlist))
+      fadeableViews.update()
     default:
       break
     }
