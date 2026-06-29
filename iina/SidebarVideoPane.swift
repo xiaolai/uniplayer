@@ -219,7 +219,7 @@ fileprivate class HorizontalScrollViewWithIndicator: NSView {
       contentView.postsBoundsChangedNotifications = true
       NotificationCenter.default.addObserver(
         self,
-        selector: #selector(contentDidScroll),
+        selector: #selector(updateMask),
         name: NSView.boundsDidChangeNotification,
         object: contentView
       )
@@ -233,11 +233,12 @@ fileprivate class HorizontalScrollViewWithIndicator: NSView {
       NotificationCenter.default.removeObserver(self)
     }
 
-    @objc private func contentDidScroll(_ note: Notification) {
+    override func layout() {
+      super.layout()
       updateMask()
     }
 
-    private func updateMask() {
+    @objc private func updateMask(_ notification: Notification? = nil) {
       guard let documentView else { return }
 
       let visibleWidth = contentView.bounds.width
@@ -642,7 +643,7 @@ fileprivate class EqualizerView: NSView {
     var firstLabel: NSTextField?
 
     for c in configs {
-      let label = ui.label("sidebar.\(c.labelKey)", isSmall: true)
+      let label = ui.label("sidebar.\(c.labelKey)", isSmall: true, canCompress: false)
 
       let slider = NSSlider()
       slider.tag = c.tag
