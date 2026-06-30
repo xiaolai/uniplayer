@@ -902,14 +902,14 @@
 "settings.$NotLoggedIn" = "ログインしていません";
 "settings.$OK" = "OK";
 "settings.$Offset" = "オフセット";
-"settings.$OnScreenController" = "オンスクリーン\nコントローラ（OSC）";
-"settings.$OnScreenDisplay" = "オンスクリーン\nディスプレイ（OSD）";
+"settings.$OnScreenController" = "オンスクリーンコントローラ（OSC）";
+"settings.$OnScreenDisplay" = "オンスクリーンディスプレイ（OSD）";
 "settings.$OnlineSubtitles" = "オンライン字幕";
 "settings.$OpenLinksOrCurrentWebpage" = "ワンクリックでリンク先や今開いているWebページをIINAで開くことができます。youtube-dlに対応したウェブサイトでのみ動作します。";
 "settings.$OpenLogDirectory" = "ログディレクトリーを開く";
 "settings.$OtherStyles" = "その他のスタイル";
 "settings.$OverrideLevel" = "無視の度合い";
-"settings.$PictureinnPicture" = "ピクチャイン\nピクチャ";
+"settings.$PictureinnPicture" = "ピクチャインピクチャ";
 "settings.$Playlist" = "プレイリスト";
 "settings.$PleaseSelectTheMediaTypes" = "IINAをデフォルトの再生アプリケーションに設定したいメディアの種類を選択してください。";
 "settings.$Position" = "配置";

@@ -710,12 +710,14 @@ extension SettingsWindow: NSTableViewDataSource, NSTableViewDelegate {
         let nameLabel = NSButton(title: name, target: self, action: #selector(jumpToSection))
         nameLabel.controlSize = .small
         nameLabel.isBordered = false
+        nameLabel.usesSingleLineMode = true
+        nameLabel.lineBreakMode = .byTruncatingTail
         sectionNameStackView.addArrangedSubview(nameLabel)
       }
       sectionStackView.addArrangedSubview(sectionNameStackView)
 
       cell.addSubview(sectionStackView)
-      sectionStackView.center(.y).padding(.leading(8), .trailing(4))
+      sectionStackView.center(.y).padding(.leading(4), .trailing(4))
 
       self.sectionNameStackView = sectionNameStackView
       return cell
