@@ -1,4 +1,5 @@
 files:
   - source: /iina/en.lproj/*.strings
+    ignore:
+      - /iina/en.lproj/Settings*.strings
     translation: /iina/%osx_code%/%original_file_name%
-    ignore: /iina/en.lproj/Settings*.strings
