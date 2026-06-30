@@ -632,3 +632,33 @@
 
 // Settings - Advanced
 "settings.enableLogging.label" = "Enable logging";
+
+// Settings - Inline labels
+"settings.$ASSSubtitles" = "ASS subtitles";
+"settings.$About" = "เกี่ยวกับเรา";
+"settings.$AlwaysWhenPlaying" = "Always";
+"settings.$AutoLoad" = "Auto load";
+"settings.$Cancel" = "ยกเลิก";
+"settings.$ClearPlaybackHistory" = "Clear Playback History…";
+"settings.$ClearSavedPlaybackProgress" = "Clear Saved Playback Progress…";
+"settings.$ClearThumbnailCache" = "Clear Thumbnail Cache…";
+"settings.$DeleteAllPlaybackHistories" = "The button below will delete all playback histories and entries in \"Open Recent\".";
+"settings.$DoNotResize" = "Disabled";
+"settings.$Height" = "สูง";
+"settings.$InstallLocalPackage" = "Install Package…";
+"settings.$MB" = "MB";
+"settings.$OK" = "ตกลง";
+"settings.$PictureinnPicture" = "Picture-in-\nPicture";
+"settings.$RestoreAllAlertsThat" = "The button below will restore all alerts that have been suppressed using the \"Do not show this message again\" checkbox.";
+"settings.$RestoreSuppressedAlerts" = "Restore Suppressed Alerts…";
+"settings.$SetIINAAsTheDefault" = "Set IINA as the Default Application…";
+"settings.$ShowInFinder" = "แสดงในตัวค้นหา";
+"settings.$ShowTheConfigFileIn" = "Show config file in Finder";
+"settings.$TextSubtitles" = "Text subtitles";
+"settings.$Website" = "เว็บไซต์";
+"settings.$Width" = "กว้าง";
+"settings.$X" = " X";
+"settings.$Y" = "Y";
+"settings.$dB" = "dB";
+"settings.$pt" = "pt";
+"settings.$s" = "s";

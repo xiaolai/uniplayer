@@ -632,3 +632,32 @@
 
 // Settings - Advanced
 "settings.enableLogging.label" = "Enable logging";
+
+// Settings - Inline labels
+"settings.$ASSSubtitles" = "ASS subtitles";
+"settings.$About" = "بىز ھەققىدە";
+"settings.$AlwaysWhenPlaying" = "Always";
+"settings.$AutoLoad" = "Auto load";
+"settings.$Cancel" = "بىكار قىلىش";
+"settings.$ClearPlaybackHistory" = "Clear Playback History…";
+"settings.$ClearSavedPlaybackProgress" = "Clear Saved Playback Progress…";
+"settings.$ClearThumbnailCache" = "Clear Thumbnail Cache…";
+"settings.$DeleteAllPlaybackHistories" = "The button below will delete all playback histories and entries in \"Open Recent\".";
+"settings.$DoNotResize" = "Disabled";
+"settings.$InstallLocalPackage" = "Install Package…";
+"settings.$MB" = "MB";
+"settings.$OK" = "ماقۇل";
+"settings.$PictureinnPicture" = "Picture-in-\nPicture";
+"settings.$RestoreAllAlertsThat" = "The button below will restore all alerts that have been suppressed using the \"Do not show this message again\" checkbox.";
+"settings.$RestoreSuppressedAlerts" = "Restore Suppressed Alerts…";
+"settings.$SetIINAAsTheDefault" = "Set IINA as the Default Application…";
+"settings.$ShowInFinder" = "Finder دا كۆرسىتىش";
+"settings.$ShowTheConfigFileIn" = "Show config file in Finder";
+"settings.$Size" = "رازمېرى";
+"settings.$TextSubtitles" = "Text subtitles";
+"settings.$Website" = "تور بېكەت";
+"settings.$X" = " X";
+"settings.$Y" = "Y";
+"settings.$dB" = "dB";
+"settings.$pt" = "pt";
+"settings.$s" = "s";

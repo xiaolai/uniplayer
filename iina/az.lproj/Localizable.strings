@@ -626,3 +626,29 @@
 // Settings - Advanced
 "settings.logLevel.items.0" = "Uzun";
 "settings.logLevel.items.1" = "Sazla";
+
+// Settings - Inline labels
+"settings.$About" = "Haqqında";
+"settings.$AlwaysWhenPlaying" = "Always";
+"settings.$Cancel" = "Ləğv et";
+"settings.$ClearPlaybackHistory" = "Clear Playback History…";
+"settings.$ClearSavedPlaybackProgress" = "Clear Saved Playback Progress…";
+"settings.$ClearThumbnailCache" = "Clear Thumbnail Cache…";
+"settings.$DeleteAllPlaybackHistories" = "The button below will delete all playback histories and entries in \"Open Recent\".";
+"settings.$DoNotResize" = "Disabled";
+"settings.$InstallLocalPackage" = "Install Package…";
+"settings.$Login" = "Daxil ol";
+"settings.$MB" = "MB";
+"settings.$OK" = "OK";
+"settings.$PictureinnPicture" = "Picture-in-\nPicture";
+"settings.$RestoreAllAlertsThat" = "The button below will restore all alerts that have been suppressed using the \"Do not show this message again\" checkbox.";
+"settings.$RestoreSuppressedAlerts" = "Restore Suppressed Alerts…";
+"settings.$SetIINAAsTheDefault" = "Set IINA as the Default Application…";
+"settings.$ShowInFinder" = "Finder'də göstər";
+"settings.$Size" = "Ölçü";
+"settings.$Website" = "Vebsayt";
+"settings.$X" = " X";
+"settings.$Y" = "Y";
+"settings.$dB" = "dB";
+"settings.$pt" = "pt";
+"settings.$s" = "s";

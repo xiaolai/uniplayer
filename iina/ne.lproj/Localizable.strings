@@ -622,3 +622,24 @@
 // Settings - Subtitles
 "settings.autoSearchOnlineSub.desc" = "If enabled, IINA will automatically search online subtitles only for videos without loaded subtitles and longer than 20 minutes.";
 "settings.subAlignX.label" = "Y";
+
+// Settings - Inline labels
+"settings.$About" = "जानकारी";
+"settings.$AlwaysWhenPlaying" = "Always";
+"settings.$ClearPlaybackHistory" = "Clear Playback History…";
+"settings.$ClearSavedPlaybackProgress" = "Clear Saved Playback Progress…";
+"settings.$ClearThumbnailCache" = "Clear Thumbnail Cache…";
+"settings.$DeleteAllPlaybackHistories" = "The button below will delete all playback histories and entries in \"Open Recent\".";
+"settings.$DoNotResize" = "Disabled";
+"settings.$InstallLocalPackage" = "Install Package…";
+"settings.$MB" = "MB";
+"settings.$OK" = "OK";
+"settings.$PictureinnPicture" = "Picture-in-\nPicture";
+"settings.$RestoreAllAlertsThat" = "The button below will restore all alerts that have been suppressed using the \"Do not show this message again\" checkbox.";
+"settings.$RestoreSuppressedAlerts" = "Restore Suppressed Alerts…";
+"settings.$SetIINAAsTheDefault" = "Set IINA as the Default Application…";
+"settings.$X" = " X";
+"settings.$Y" = "Y";
+"settings.$dB" = "dB";
+"settings.$pt" = "pt";
+"settings.$s" = "s";

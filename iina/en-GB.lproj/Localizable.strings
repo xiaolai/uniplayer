@@ -639,3 +639,32 @@
 
 // Settings - Advanced
 "settings.enableLogging.label" = "Enable logging";
+
+// Settings - Inline labels
+"settings.$ASSSubtitles" = "ASS subtitles";
+"settings.$AlwaysWhenPlaying" = "Always";
+"settings.$AutoLoad" = "Auto load";
+"settings.$Behavior" = "Behaviour";
+"settings.$ClearPlaybackHistory" = "Clear Playback History…";
+"settings.$ClearSavedPlaybackProgress" = "Clear Saved Playback Progress…";
+"settings.$ClearThumbnailCache" = "Clear Thumbnail Cache…";
+"settings.$Color" = "Colour";
+"settings.$Customize" = "Customise…";
+"settings.$DeleteAllPlaybackHistories" = "The button below will delete all playback histories and entries in “Open Recent”.";
+"settings.$DeleteAllWatchLater" = "The button below will delete all files in the “watch later” folder. These files contain all saved playback progress and settings applied during playback.";
+"settings.$DoNotResize" = "Disabled";
+"settings.$FailedToLoadThePage" = "Failed to load the page";
+"settings.$InstallLocalPackage" = "Install Package…";
+"settings.$MB" = "MB";
+"settings.$OK" = "OK";
+"settings.$PictureinnPicture" = "Picture-in-\nPicture";
+"settings.$RestoreAllAlertsThat" = "The button below will restore all alerts that have been suppressed using the \"Do not show this message again\" checkbox.";
+"settings.$RestoreSuppressedAlerts" = "Restore Suppressed Alerts…";
+"settings.$SetIINAAsTheDefault" = "Set IINA as the Default Application…";
+"settings.$TextSubtitles" = "Text subtitles";
+"settings.$X" = " X";
+"settings.$Y" = "Y";
+"settings.$YouCanInstallANew" = "You can install a new plugin from GitHub or a local.iinaplgz package. Plugins installed from GitHub can be updated automatically.";
+"settings.$dB" = "dB";
+"settings.$pt" = "pt";
+"settings.$s" = "s";
