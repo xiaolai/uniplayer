@@ -590,3 +590,112 @@
 "sidebar.add_url" = "Add URL…";
 
 "sidebar.plugins_placeholder" = "Plugins can display custom sidebar contents. Select a plugin to view its sidebar or install a new plugin in Settings.";
+
+// Settings
+
+// Settings - General
+"settings.alwaysOpenInNewWindow.label" = "Always open media in new window";
+"settings.autoRepeat.label" = "When a file is opened manually";
+"settings.pauseWhenOpen.label" = "Παύση";
+"settings.playlistAutoAdd.desc" = "Απαιτεί την επανεκκίνηση της IINA για να τεθεί σε ισχύ.";
+"settings.screenShotFormat.label" = "Μορφή αρχείου";
+
+// Settings - Video
+"settings.toneMappingAlgorithm.items.0" = "Auto";
+
+// Settings - Audio
+"settings.replayGain.items.0" = "Καμία προσαρμογή";
+"settings.replayGain.label" = "Ρύθμιση έντασης";
+
+// Settings - Control
+"settings.doubleClickAction.items.0" = "Κανένα";
+"settings.doubleClickAction.items.1" = "Toggle fullscreen";
+"settings.doubleClickAction.items.2" = "Pause / Resume";
+"settings.doubleClickAction.items.4" = "Εναλλαγή σε Εικόνα-σε-Εικόνα";
+"settings.doubleClickAction.items.5" = "Επανάληψη Α-Β";
+"settings.forceTouchAction.items.0" = "Κανένα";
+"settings.forceTouchAction.items.1" = "Toggle fullscreen";
+"settings.forceTouchAction.items.2" = "Pause / Resume";
+"settings.horizontalScrollAction.items.1" = "Αναζήτηση";
+"settings.horizontalScrollAction.items.2" = "Κανένα";
+"settings.middleClickAction.items.0" = "Κανένα";
+"settings.middleClickAction.items.1" = "Toggle fullscreen";
+"settings.middleClickAction.items.2" = "Pause / Resume";
+"settings.middleClickAction.items.4" = "Εναλλαγή σε Εικόνα-σε-Εικόνα";
+"settings.middleClickAction.items.5" = "Επανάληψη Α-Β";
+"settings.pinchAction.items.1" = "Πλήρης Οθόνη";
+"settings.pinchAction.items.2" = "Κανένα";
+"settings.rightClickAction.items.0" = "Κανένα";
+"settings.rightClickAction.items.2" = "Pause / Resume";
+"settings.rightClickAction.items.4" = "Εναλλαγή σε Εικόνα-σε-Εικόνα";
+"settings.rightClickAction.items.5" = "Επανάληψη Α-Β";
+"settings.singleClickAction.items.0" = "Κανένα";
+"settings.singleClickAction.items.2" = "Pause / Resume";
+"settings.verticalScrollAction.items.1" = "Αναζήτηση";
+"settings.verticalScrollAction.items.2" = "Κανένα";
+
+// Settings - Key Binding
+"settings.useMediaKeys.label" = "Χρήση κουμπιών ελέγχου συστήματος";
+
+// Settings - Network
+"settings.cacheBufferSize.desc" = "Default: 153600";
+"settings.httpProxy.desc" = "Απαιτεί την επανεκκίνηση της IINA για να τεθεί σε ισχύ.";
+"settings.secPrefech.desc" = "Default: 36000";
+"settings.ytdlEnabled.label" = "Enable youtube-dl";
+"settings.ytdlRawOptions.desc" = "Format: <key>=<value>[,<key>=<value>[,…]]";
+
+// Settings - Subtitles
+"settings.autoSearchOnlineSub.desc" = "If enabled, IINA will automatically search online subtitles only for videos without loaded subtitles and longer than 20 minutes.";
+"settings.subAlignX.label" = "Y";
+"settings.subAutoLoadIINA.label" = "Auto load";
+"settings.subBlur.label" = "Θόλωμα";
+
+// Settings - UI
+"settings.alwaysFloatOnTop.label" = "Πάντα αιώρηση στην κορυφή κατά την αναπαραγωγή";
+"settings.alwaysShowOnTopIcon.label" = "Πάντα εμφάνιση αιώρησης στην κορυφή της γραμμής τίτλου";
+"settings.arrowBtnAction.items.0" = "Ταχύτητα";
+"settings.arrowBtnAction.items.1" = "Προηγούμενο / Επόμενο Μέσο";
+"settings.arrowBtnAction.items.2" = "Γρήγορη Προώθηση / Επαναφορά";
+"settings.arrowBtnAction.label" = "Χρήση αριστερού/δεξιού κουμπιού για";
+"settings.controlBarStickToCenter.label" = "Προσαρμογή στο κέντρο όταν σύρετε";
+"settings.disableAnimations.desc" = "Όταν ενεργοποιηθεί η ρύθμιση προσβασιμότητας macOS Μειώστε την κίνηση η IINA θα μειώσει τις κινήσεις διεπαφών χρήστη που είναι γνωστό ότι προκαλούν προβλήματα σε εκείνους με αιθουσαίες διαταραχές. Εάν αυτό είναι ανεπαρκές, αυτή η ρύθμιση μπορεί να χρησιμοποιηθεί για να μειώσει περαιτέρω την κίνηση εξαλείφοντας τις κινήσεις διεπαφής χρήστη.";
+"settings.disableAnimations.label" = "Απενεργοποίηση εφέ";
+"settings.disableOSDFileStartMsg.label" = "Έναρξη αρχείου";
+"settings.disableOSDPauseResumeMsgs.label" = "Παύση / Συνέχιση";
+"settings.disableOSDSeekMsg.label" = "Αναζήτηση";
+"settings.disableOSDSpeedMsg.label" = "Ταχύτητα";
+"settings.displayTimeAndBatteryInFullScreen.label" = "Εμφάνιση χρόνου και πληροφοριών μπαταρίας όταν βρίσκεστε σε πλήρη οθόνη";
+"settings.enableOSD.label" = "Ενεργοποίηση OSD";
+"settings.enableThumbnailPreview.label" = "Ενεργοποίηση προεπισκόπησης μικρογραφιών";
+"settings.maxThumbnailPreviewCacheSize.label" = "Μέγιστο μέγεθος προσωρινής μνήμης";
+"settings.oscPosition.items.0" = "Αιωρούμενο";
+"settings.oscPosition.items.1" = "Κορυφή";
+"settings.oscPosition.items.2" = "Κάτω";
+"settings.oscPosition.label" = "Ενεργοποιητής Οθόνης";
+"settings.osdTextSize.label" = "Μέγεθος κειμένου";
+"settings.pauseWhenPip.label" = "Αυτόματη παύση αναπαραγωγής";
+"settings.resizeWindowOption.items.0" = "προσαρμογή στην οθόνη";
+"settings.resizeWindowOption.items.1" = "Μέγεθος βίντεο 0.5x";
+"settings.resizeWindowOption.items.2" = "Μέγεθος βίντεο 5x";
+"settings.resizeWindowOption.items.3" = "Μέγεθος βίντεο 1.5x";
+"settings.resizeWindowOption.items.4" = "Μέγεθος βίντεο 2x";
+"settings.resizeWindowOption.label" = "Αλλαγή μεγέθους παραθύρου σε";
+"settings.showChapterPos.label" = "Εμφάνιση θέσης κεφαλαίου στη γραμμή προόδου";
+"settings.showRemainingTime.label" = "Εμφάνιση χρόνου που απομένει αντί για συνολική διάρκεια";
+"settings.themeMaterial.desc" = "Θέμα";
+"settings.themeMaterial.items.0" = "Σκοτεινό";
+"settings.themeMaterial.items.2" = "Φωτεινό";
+"settings.themeMaterial.items.4" = "Αντιστοιχία Εμφάνισης Συστήματος";
+"settings.themeMaterial.label" = "Εμφάνιση";
+"settings.togglePipByMinimizingWindow.label" = "Εναλλαγή εικόνας-σε-εικόνα ελαχιστοποίηση/κατάργηση ελαχιστοποίησης του παραθύρου";
+"settings.usePhysicalResolution.label" = "Χρήση φυσικής ανάλυσης σε οθόνες Retina";
+"settings.windowBehaviorWhenPip.items.0" = "Καμιά ενέργεια";
+"settings.windowBehaviorWhenPip.items.1" = "Απόκρυψη";
+"settings.windowBehaviorWhenPip.items.2" = "Ελαχιστοποίηση";
+"settings.windowBehaviorWhenPip.label" = "Παράθυρο";
+
+// Settings - Advanced
+"settings.enableAdvancedSettings.label" = "Ενεργοποίηση Προηγμένων Ρυθμίσεων";
+"settings.enableLogging.label" = "Enable logging";
+"settings.logLevel.items.2" = "Προειδοποίηση";
+"settings.logLevel.items.3" = "Σφάλμα";

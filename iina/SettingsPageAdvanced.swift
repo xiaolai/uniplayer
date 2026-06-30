@@ -6,6 +6,9 @@
 //  Copyright © 2026 lhc. All rights reserved.
 //
 
+fileprivate let ui = SettingsUIHelper.sharedUI
+
+
 class SettingsPageAdvanced: SettingsPage {
   override var identifier: String {
     "advanced"
@@ -24,9 +27,9 @@ class SettingsPageAdvanced: SettingsPage {
   }
 
   private lazy var fileChooseView: SettingsAccessory.FileChooserView = .init(.userDefinedConfDir)
-  private lazy var mpvOptionsEditor: MPVOptionsEditor = .init(l10n: localizationContext)
+  private lazy var mpvOptionsEditor: MPVOptionsEditor = MPVOptionsEditor()
   private lazy var openLogFolderBtn: NSButton = {
-    let btn = NSButton(title: localizationContext.localized(.text_OpenLogDirectory), target: nil, action: nil)
+    let btn = NSButton(title: ui.localized(.text_OpenLogDirectory), target: nil, action: nil)
     btn.translatesAutoresizingMaskIntoConstraints = false
     btn.target = self
     btn.action = #selector(openLogFolder)
@@ -109,11 +112,11 @@ fileprivate class MPVOptionsEditor: SettingsAccessory.Base, NSTableViewDelegate,
 
   var options: [[String]] = []
 
-  override init(l10n: SettingsLocalization.Context) {
+  override init() {
     addBtn.bezelStyle = .push
     delBtn.bezelStyle = .push
 
-    super.init(l10n: l10n)
+    super.init()
 
     let monoFont = NSFont.monospacedSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
 

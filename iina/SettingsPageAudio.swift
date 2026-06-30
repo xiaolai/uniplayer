@@ -6,7 +6,8 @@
 //  Copyright © 2025 lhc. All rights reserved.
 //
 
-import Foundation
+fileprivate let ui = SettingsUIHelper.sharedUI
+
 
 class SettingsPageAudio: SettingsPage {
   private lazy var audioOutputDeviceView: AudioOutputDeviceView = AudioOutputDeviceView()
@@ -168,9 +169,7 @@ fileprivate class AudioOutputDeviceView: SettingsContainer {
     self.audioDevicePopUp = NSPopUpButton()
   }
 
-  func makeView(context: SettingsLocalization.Context) -> NSView {
-    let l10n = context
-    let ui = SettingsUIHelper(l10n)
+  func makeView() -> NSView {
     audioDevicePopUp.translatesAutoresizingMaskIntoConstraints = false
     audioDevicePopUp.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
     audioDevicePopUp.removeAllItems()

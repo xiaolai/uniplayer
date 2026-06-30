@@ -592,3 +592,186 @@
 "sidebar.add_url" = "افزودن URL…";
 
 "sidebar.plugins_placeholder" = "Plugins can display custom sidebar contents. Select a plugin to view its sidebar or install a new plugin in Settings.";
+
+// Settings
+
+// Settings - General
+"settings.actionAfterLaunch.items.0" = "نمايش پنجره خوش آمد";
+"settings.actionAfterLaunch.items.1" = "نمایش پنل انتخاب فایل";
+"settings.actionAfterLaunch.items.2" = "کاری نکن";
+"settings.actionAfterLaunch.label" = "When launched";
+"settings.alwaysOpenInNewWindow.label" = "همیشه مدیا را در پنجره جدید باز کن";
+"settings.autoRepeat.label" = "When a file is opened manually";
+"settings.autoSwitchToMusicMode.label" = "هنگام پخش فایل صوتی، به صورت اتوماتیک به حالت موسیقی سوییچ شود";
+"settings.fullScreenWhenOpen.label" = "ورود به حالت تمام صفحه";
+"settings.keepOpenOnFileEnd.label" = "پنجره را پس از اتمام پخش باز بگذار";
+"settings.pauseWhenInactive.label" = "Window became inactive/active";
+"settings.pauseWhenLeavingFullScreen.label" = "Pause when left full screen";
+"settings.pauseWhenMinimized.label" = "کمینه/برگرداندن کمینه";
+"settings.pauseWhenOpen.label" = "مکث";
+"settings.playWhenEnteringFullScreen.label" = "Play when entered full screen";
+"settings.playlistAutoAdd.desc" = "برای اعمال تغییرات باید IINA را بازاجرا کنید.";
+"settings.playlistAutoAdd.label" = "فایل ها را در همان فولدر اضافه کن";
+"settings.playlistAutoPlayNext.label" = "پخش آیتم بعدی به صورت خودکار";
+"settings.playlistShowMetadataInMusicMode.label" = "فقط در \"حالت موزیک\"";
+"settings.receiveBetaUpdate.label" = "دریافت بروزرسانی های بتا";
+"settings.recordRecentFiles.label" = "فعال کردن منوی \"فایلهای اخیر\"";
+"settings.screenShotFormat.label" = "فرمت";
+"settings.screenShotIncludeSubtitle.label" = "شامل زیرنویس ها";
+"settings.screenshotCopyToClipboard.desc" = "مقصد";
+"settings.screenshotCopyToClipboard.label" = "کپی در حافطه موقت";
+"settings.screenshotSaveToFile.label" = "ذخیره در";
+
+// Settings - Video
+"settings.forceDedicatedGPU.desc" = "همیشه از کارت گرافیکی اختصاصی برای رندر کردن استفاده کن (اگر موجود باشد). این گزینه می تواند کارایی را بالا ببرد ولی عمر باتری را کاهش دهد.";
+"settings.forceDedicatedGPU.label" = "اجباری کردن استفاده از کارت گرافیک اختصاصی";
+"settings.hardwareDecoder.items.0" = "غیر فعال شده";
+"settings.hardwareDecoder.items.1" = "خودکار";
+"settings.hardwareDecoder.items.2" = "خودکار (کپی)";
+"settings.hardwareDecoder.label" = "رمزگشایی سخت‌افزاری";
+"settings.toneMappingAlgorithm.items.0" = "خودکار";
+"settings.videoThreads.desc" = "پیشفرض: ۰ (خودکار)";
+"settings.videoThreads.label" = "تعداد پردازه ها";
+
+// Settings - Audio
+"settings.enableInitialVolume.label" = "مقدار اولیه";
+"settings.gaplessAudio.items.0" = "غیر فعال شده";
+"settings.gaplessAudio.items.1" = "ضعیف";
+"settings.gaplessAudio.items.2" = "قوی";
+"settings.maxVolume.desc" = "(۱۰۰ - ۱۰۰۰)";
+"settings.maxVolume.label" = "بیشترین مقدار";
+"settings.preferredAudioDevice.label" = "دستگاه صوتی ترجیحی";
+
+// Settings - Control
+"settings.doubleClickAction.items.0" = "هیچکدام";
+"settings.doubleClickAction.items.1" = "تغییر به تمام صفحه";
+"settings.doubleClickAction.items.2" = "مکث/ادامه";
+"settings.doubleClickAction.items.4" = "تغییر به تصویر در تصویر";
+"settings.doubleClickAction.items.5" = "حلقه A-B";
+"settings.forceTouchAction.items.0" = "هیچکدام";
+"settings.forceTouchAction.items.1" = "تغییر به تمام صفحه";
+"settings.forceTouchAction.items.2" = "مکث/ادامه";
+"settings.forceTouchAction.items.3" = "مخفی کردن OSC";
+"settings.horizontalScrollAction.items.1" = "جستجو";
+"settings.horizontalScrollAction.items.2" = "هیچکدام";
+"settings.middleClickAction.items.0" = "هیچکدام";
+"settings.middleClickAction.items.1" = "تغییر به تمام صفحه";
+"settings.middleClickAction.items.2" = "مکث/ادامه";
+"settings.middleClickAction.items.3" = "مخفی کردن OSC";
+"settings.middleClickAction.items.4" = "تغییر به تصویر در تصویر";
+"settings.middleClickAction.items.5" = "حلقه A-B";
+"settings.pinchAction.items.1" = "تمام صفحه";
+"settings.pinchAction.items.2" = "هیچکدام";
+"settings.rightClickAction.items.0" = "هیچکدام";
+"settings.rightClickAction.items.2" = "مکث/ادامه";
+"settings.rightClickAction.items.3" = "مخفی کردن OSC";
+"settings.rightClickAction.items.4" = "تغییر به تصویر در تصویر";
+"settings.rightClickAction.items.5" = "حلقه A-B";
+"settings.singleClickAction.items.0" = "هیچکدام";
+"settings.singleClickAction.items.2" = "مکث/ادامه";
+"settings.singleClickAction.items.3" = "مخفی کردن OSC";
+"settings.useExactSeek.items.2" = "خودکار";
+"settings.useExactSeek.label" = "نوع جستجو";
+"settings.verticalScrollAction.items.1" = "جستجو";
+"settings.verticalScrollAction.items.2" = "هیچکدام";
+
+// Settings - Key Binding
+"settings.displayKeyBindingRawValues.label" = "نمايش مقادير به صورت خام";
+"settings.useMediaKeys.label" = "از کنترل‌های چندرسانه‌ای سیستم استفاده شود";
+
+// Settings - Network
+"settings.cacheBufferSize.desc" = "پیش فرض: ۱۵۳۶۰۰";
+"settings.cacheBufferSize.label" = "حجم بافر(KB)";
+"settings.enableCache.label" = "فعال کردن حافظه نهان";
+"settings.httpProxy.desc" = "برای اعمال تنظیمات برنامه را بسته و باز کنید.";
+"settings.secPrefech.desc" = "پیش فرض: ۳۶۰۰۰";
+"settings.secPrefech.label" = "Seconds to prefech";
+"settings.transportRTSPThrough.items.0" = "خودکار";
+"settings.userAgent.label" = "نماینده کاربر";
+"settings.ytdlEnabled.label" = "فعال کردن YouTube-dl";
+"settings.ytdlRawOptions.desc" = "فرمت:<key>=<value>[,<key>=<value>[,…]]";
+"settings.ytdlRawOptions.label" = "تنظیمات خام";
+"settings.ytdlSearchPath.desc" = "IINA ٬ youtube-dl را در این پوشه جستجو خواهد کرد. نیازمند restart.";
+"settings.ytdlSearchPath.label" = "مسیر سفارشی YouTube-dl";
+
+// Settings - Subtitles
+"settings.autoSearchOnlineSub.desc" = "If enabled, IINA will automatically search online subtitles only for videos without loaded subtitles and longer than 20 minutes.";
+"settings.autoSearchOnlineSub.label" = "جستجوی خودکار آنلاین زیرنویس ها";
+"settings.displayInLetterBox.label" = "در حالت تمام صفحه زیرنویس‌ها را در جعبه نامه نمایش دهد";
+"settings.subAlignX.items.0" = "چپ";
+"settings.subAlignX.items.1" = "مرکز";
+"settings.subAlignX.items.2" = "راست";
+"settings.subAlignX.label" = "Y";
+"settings.subAlignY.items.0" = "بالا";
+"settings.subAlignY.items.1" = "مرکز";
+"settings.subAlignY.items.2" = "پایین";
+"settings.subAutoLoadIINA.items.0" = "غیر‌فعال";
+"settings.subAutoLoadIINA.items.1" = "زیرنویس های شامل اسم فایل مدیا";
+"settings.subAutoLoadIINA.items.2" = "انتخاب توسط هوش مصنوعی IINA";
+"settings.subAutoLoadIINA.label" = "Auto load";
+"settings.subAutoLoadPriorityString.desc" = "لطفا یک لیست جدا شده توسط دو نقطه را وارد کنید.";
+"settings.subAutoLoadPriorityString.label" = "زیرنویس ها اولویت دارند وقتی نام فایل شامل این بود";
+"settings.subAutoLoadSearchPath.desc" = "پوشه ها با دونقطه (:) جدا شده اند. مسیر های نسبی و وایلدکارد ها(*) در انتها مجاز هستند.";
+"settings.subAutoLoadSearchPath.label" = "دنبال زیرنویس ها در پوشه های زیر هم بگرد";
+"settings.subBlur.label" = "محو سازی";
+"settings.subBold.label" = "توپر";
+"settings.subItalic.label" = "مورب";
+"settings.subLang.desc" = "This option will be stored as ISO 639-2 language code and will works for both mpv and opensubtitles.";
+"settings.subPos.label" = "موقعیت عمودی";
+"settings.subScaleWithWindow.label" = "تغییر اندازه زیرنویس ها با تغییر اندازه پنجره";
+"settings.subSpacing.label" = "فاصله گذاری فونت";
+
+// Settings - UI
+"settings.alwaysFloatOnTop.label" = "هنگام پخش همیشه در بالای صفحه نمایان باشد";
+"settings.alwaysShowOnTopIcon.label" = "همیشه وضعیت شناوری در جلو را در نوار عنوان نشان بده";
+"settings.arrowBtnAction.items.0" = "سرعت";
+"settings.arrowBtnAction.items.1" = "مدیای قبلی / بعدی";
+"settings.arrowBtnAction.items.2" = "عقب/جلو کردن سریع";
+"settings.arrowBtnAction.label" = "استفاده از کلید راست/چپ برای";
+"settings.controlBarStickToCenter.label" = "ضربه به مرکز هنگام کشیدن";
+"settings.disableAnimations.desc" = "هنگامی که تنظیمات کاهش حرکات دسترسی پذیری مک او اس فعال شده است، IINA انیمیشن های رابط کاربری را که برای کاربران دارای اختلالات دهلیزی مشکل زا شناخته شده اند را کاهش خواهد داد. در صورتی که کافی نبود، این تنظیمات برای حذف کامل انیمیشن های رابط کاربری قابل استفاده خواهد بود.";
+"settings.disableAnimations.label" = "غیرفعالسازی انیمیشن ها";
+"settings.disableOSDFileStartMsg.label" = "شروع فایل";
+"settings.disableOSDPauseResumeMsgs.label" = "مکث/ادامه";
+"settings.disableOSDSeekMsg.label" = "جستجو";
+"settings.disableOSDSpeedMsg.label" = "سرعت";
+"settings.displayTimeAndBatteryInFullScreen.label" = "نمایش زمان و اطلاعات باتری در حالت تمام صفحه";
+"settings.enableOSD.label" = "فعال کردن نمایش روی صفحه";
+"settings.enableThumbnailPreview.label" = "فعال کردن پیش نمایش تصاویر مدیا";
+"settings.maxThumbnailPreviewCacheSize.label" = "حداکثر اندازه حافظه نهان";
+"settings.oscPosition.items.0" = "شتاور";
+"settings.oscPosition.items.1" = "بالا";
+"settings.oscPosition.items.2" = "پایین";
+"settings.oscPosition.label" = "نمایش کنترلر";
+"settings.osdTextSize.label" = "اندازه متن";
+"settings.pauseWhenPip.label" = "توقف خودکار پخش";
+"settings.resizeWindowOption.items.0" = "متناسب با صفحه نمایش";
+"settings.resizeWindowOption.items.1" = "اندازه ویدیو 0.5x";
+"settings.resizeWindowOption.items.2" = "اندازه ویدیو 1x";
+"settings.resizeWindowOption.items.3" = "اندازه ویدیو 1.5x";
+"settings.resizeWindowOption.items.4" = "اندازه ویدیو 2x";
+"settings.resizeWindowOption.label" = "تغییر اندازه پنجره";
+"settings.showChapterPos.label" = "نمایش موقعیت قسمت ها در نوار پیش‌روی";
+"settings.showRemainingTime.label" = "نمایش زمان باقی مانده به جای مدت زمان کل";
+"settings.themeMaterial.desc" = "پوسته";
+"settings.themeMaterial.items.0" = "تیره";
+"settings.themeMaterial.items.2" = "روشن";
+"settings.themeMaterial.items.4" = "استفاده از ظاهر سیستم";
+"settings.themeMaterial.label" = "ظاهر";
+"settings.togglePipByMinimizingWindow.label" = "تغییر تصویر در تصویر با کوچک کردن/بزرگ کردن صفحه";
+"settings.usePhysicalResolution.label" = "استفاده از وضوح طبیعی در نمایشگر های رتینا";
+"settings.windowBehaviorWhenPip.items.0" = "کاری نکن";
+"settings.windowBehaviorWhenPip.items.1" = "پنهان کردن";
+"settings.windowBehaviorWhenPip.items.2" = "کوچک کردن";
+"settings.windowBehaviorWhenPip.label" = "پنجره";
+
+// Settings - Advanced
+"settings.enableAdvancedSettings.desc" = "برای اعمال این تغییرات در IINA برنامه باید دوباره اجرا شود.";
+"settings.enableAdvancedSettings.label" = "فعال‌سازی تنظیمات پیشرفته";
+"settings.enableLogging.label" = "فعال کردن لاگ";
+"settings.logLevel.items.1" = "اشکال زدایی";
+"settings.logLevel.items.2" = "هشدار";
+"settings.logLevel.items.3" = "خطا";
+"settings.logLevel.label" = "سطح لاگ";
+"settings.useMpvOsd.label" = "استفاده از OSD پخش کننده mpv";
+"settings.useUserDefinedConfDir.label" = "آدرس فایل کانفیگ";

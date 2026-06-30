@@ -590,3 +590,203 @@
 "sidebar.add_url" = "यू आर एल जोड़िये…";
 
 "sidebar.plugins_placeholder" = "Plugins can display custom sidebar contents. Select a plugin to view its sidebar or install a new plugin in Settings.";
+
+// Settings
+
+// Settings - General
+"settings.actionAfterLaunch.items.0" = "स्वागत खिड़की दिखाओ";
+"settings.actionAfterLaunch.items.1" = "खुला फ़ाइल पैनल दिखाएं";
+"settings.actionAfterLaunch.items.2" = "कुछ मत करो";
+"settings.actionAfterLaunch.label" = "जब लॉन्च किया गया";
+"settings.alwaysOpenInNewWindow.label" = "हमेशा नई विंडो में मीडिया खोलें";
+"settings.autoRepeat.label" = "When a file is opened manually";
+"settings.autoSwitchToMusicMode.label" = "ऑडियो फ़ाइल चलाते समय स्वचालित रूप से \"संगीत मोड\" पर जाएं";
+"settings.blackOutMonitor.label" = "पूर्ण स्क्रीन में रहते हुए अन्य मॉनिटर को ब्लैक आउट करें";
+"settings.fullScreenWhenOpen.label" = "पूर्ण स्क्रीन दर्ज करें";
+"settings.keepOpenOnFileEnd.label" = "प्लेबैक खत्म होने के बाद विंडो को खुला रखें";
+"settings.pauseWhenGoesToSleep.label" = "मशीन के सोने पर रुकें";
+"settings.pauseWhenInactive.label" = "विंडो निष्क्रिय/सक्रिय हो गई";
+"settings.pauseWhenLeavingFullScreen.label" = "पूर्ण स्क्रीन छोड़ जाने पर रोकें";
+"settings.pauseWhenMinimized.label" = "कम से कम / बिना कम से कम";
+"settings.pauseWhenOpen.label" = "ठहरें";
+"settings.pauseresumeWhen" = "ठहरें / रिज्यूम कब";
+"settings.playWhenEnteringFullScreen.label" = "जब पूर्ण स्क्रीन में प्रवेश किया है तब खेलें";
+"settings.playlistAutoAdd.desc" = "प्रभावी होने के लिए IINA को पुनः आरंभ करने की आवश्यकता है।";
+"settings.playlistAutoAdd.label" = "स्वचालित रूप से एक ही फ़ोल्डर में फ़ाइलें जोड़ें";
+"settings.playlistAutoPlayNext.label" = "स्वचालित रूप से अगला आइटम चलाएं";
+"settings.quitWhenNoOpenedWindow.label" = "सभी विंडो बंद होने के बाद छोड़ें";
+"settings.receiveBetaUpdate.label" = "बीटा अपडेट प्राप्त करें";
+"settings.recordPlaybackHistory.label" = "प्लेबैक इतिहास सक्षम करें";
+"settings.recordRecentFiles.label" = "\"हाल ही में खुला\" मेनू सक्षम करें";
+"settings.resumeLastPosition.label" = "अंतिम प्लेबैक स्थिति फिर से शुरू करें";
+"settings.screenShotFormat.label" = "फार्मेट";
+"settings.screenShotIncludeSubtitle.label" = "उपशीर्षक शामिल करें";
+"settings.screenshotCopyToClipboard.desc" = "गंतव्य";
+"settings.screenshotCopyToClipboard.label" = "क्लिपबोर्ड पर कॉपी करें";
+"settings.screenshotSaveToFile.desc" = "/स्क्रीनशॉट/फोल्डर/का/पाथ";
+"settings.screenshotSaveToFile.label" = "पर सहेजें";
+"settings.trackAllFilesInRecentOpenMenu.desc" = "अन्यथा केवल फ़ाइलें जो मैन्युअल रूप से खोली गई हैं, इस मेनू में दिखाई देंगी।";
+"settings.trackAllFilesInRecentOpenMenu.label" = "सभी खेले गए फ़ाइलों को ट्रैक करें \"हाल ही में खुला\" मेनू";
+"settings.useLegacyFullScreen.label" = "विरासत पूर्ण स्क्रीन का उपयोग करें";
+
+// Settings - Video
+"settings.hardwareDecoder.items.0" = "कुंजी";
+"settings.hardwareDecoder.items.1" = "ऑटो";
+"settings.hardwareDecoder.items.2" = "ऑटो (कॉपी)";
+"settings.hardwareDecoder.label" = "हार्डवेयर डिकोडर";
+"settings.toneMappingAlgorithm.items.0" = "ऑटो";
+"settings.videoThreads.desc" = "डिफ़ॉल्ट: 0 (ऑटो)";
+"settings.videoThreads.label" = "धागों की संख्या";
+
+// Settings - Audio
+"settings.enableInitialVolume.label" = "प्रारंभिक ध्वनि";
+"settings.gaplessAudio.items.0" = "कुंजी";
+"settings.maxVolume.label" = "अधिकतम ध्वनि";
+"settings.preferredAudioDevice.label" = "पसंदीदा ऑडियो डिवाइस";
+
+// Settings - Control
+"settings.doubleClickAction.items.0" = "कोई नहीं";
+"settings.doubleClickAction.items.1" = "पूर्णस्क्रीन चालू करें";
+"settings.doubleClickAction.items.2" = "ठहरें / रिज्यूम";
+"settings.doubleClickAction.items.4" = "टॉगल पिक्चर-इन-पिक्चर";
+"settings.doubleClickAction.items.5" = "A-B लूप";
+"settings.doubleClickAction.label" = "डबल क्लिक से";
+"settings.forceTouchAction.items.0" = "कोई नहीं";
+"settings.forceTouchAction.items.1" = "पूर्णस्क्रीन चालू करें";
+"settings.forceTouchAction.items.2" = "ठहरें / रिज्यूम";
+"settings.forceTouchAction.items.3" = "OSC छिपाएँ";
+"settings.forceTouchAction.label" = "फोर्स टच से";
+"settings.horizontalScrollAction.items.0" = "ध्वनि समायोजित करें";
+"settings.horizontalScrollAction.items.1" = "खोजना";
+"settings.horizontalScrollAction.items.2" = "कोई नहीं";
+"settings.horizontalScrollAction.label" = "क्षैतिज स्क्रॉल से";
+"settings.middleClickAction.items.0" = "कोई नहीं";
+"settings.middleClickAction.items.1" = "पूर्णस्क्रीन चालू करें";
+"settings.middleClickAction.items.2" = "ठहरें / रिज्यूम";
+"settings.middleClickAction.items.3" = "OSC छिपाएँ";
+"settings.middleClickAction.items.4" = "टॉगल पिक्चर-इन-पिक्चर";
+"settings.middleClickAction.items.5" = "A-B लूप";
+"settings.middleClickAction.label" = "मध्य क्लिक  से";
+"settings.pinchAction.items.0" = "विंडो का आकार समायोजित करें";
+"settings.pinchAction.items.1" = "पूर्ण स्क्रीन";
+"settings.pinchAction.items.2" = "कोई नहीं";
+"settings.pinchAction.label" = "चुटकी से";
+"settings.relativeSeekAmount.label" = "सामान्य संवेदनशीलता खोजना";
+"settings.rightClickAction.desc" = "मध्य क्लिक  से";
+"settings.rightClickAction.items.0" = "कोई नहीं";
+"settings.rightClickAction.items.2" = "ठहरें / रिज्यूम";
+"settings.rightClickAction.items.3" = "OSC छिपाएँ";
+"settings.rightClickAction.items.4" = "टॉगल पिक्चर-इन-पिक्चर";
+"settings.rightClickAction.items.5" = "A-B लूप";
+"settings.rightClickAction.label" = "दाएँ क्लिक से";
+"settings.singleClickAction.items.0" = "कोई नहीं";
+"settings.singleClickAction.items.2" = "ठहरें / रिज्यूम";
+"settings.singleClickAction.items.3" = "OSC छिपाएँ";
+"settings.singleClickAction.label" = "सिंगल क्लिक से";
+"settings.useExactSeek.desc" = "सटीक खोजना अधिक सटीक है, लेकिन अंतराल और उच्च CPU उपयोग का कारण बन सकती है।";
+"settings.useExactSeek.items.0" = "कीफ्रेम खोजना";
+"settings.useExactSeek.items.1" = "सटीक खोजना";
+"settings.useExactSeek.items.2" = "ऑटो";
+"settings.useExactSeek.label" = "खोजना प्रकार";
+"settings.verticalScrollAction.items.0" = "ध्वनि समायोजित करें";
+"settings.verticalScrollAction.items.1" = "खोजना";
+"settings.verticalScrollAction.items.2" = "कोई नहीं";
+"settings.verticalScrollAction.label" = "खड़ी स्क्रॉल से";
+"settings.volumeScrollAmount.label" = "ध्वनि के लिए संवेदनशीलता";
+
+// Settings - Key Binding
+"settings.displayKeyBindingRawValues.label" = "कच्चे मूल्यों को प्रदर्शित करें";
+"settings.useMediaKeys.label" = "सिस्टम मीडिया नियंत्रण का उपयोग करें";
+
+// Settings - Network
+"settings.cacheBufferSize.desc" = "डिफ़ॉल्ट: 153600";
+"settings.cacheBufferSize.label" = "कैशे बफर आकार (KB)";
+"settings.enableCache.label" = "कैश सक्षम करें";
+"settings.httpProxy.desc" = "प्रभावी होने के लिए IINA को पुनः आरंभ करने की आवश्यकता है।";
+"settings.httpProxy.label" = "एचटीटीपी प्रॉक्सी";
+"settings.secPrefech.desc" = "डिफ़ॉल्ट: 36000";
+"settings.secPrefech.label" = "प्रीफ़ैच करने के लिए सेकंड";
+"settings.transportRTSPThrough.items.0" = "ऑटो";
+"settings.transportRTSPThrough.label" = "परिवहन RTSP स्ट्रीम के माध्यम से";
+"settings.userAgent.label" = "उपभोक्ता अभिकर्ता";
+"settings.ytdlEnabled.label" = "youtube-dl सक्षम करें";
+"settings.ytdlRawOptions.desc" = "फार्मेट: <key>=<value>[,<key>=<value>[,…]]";
+"settings.ytdlRawOptions.label" = "कच्चे विकल्प";
+"settings.ytdlSearchPath.desc" = "IINA इस फोल्डर में youtube-dl सर्च करेगा। पुनः आरंभ करने की आवश्यकता है।";
+"settings.ytdlSearchPath.label" = "कस्टम youtube-dl पाथ";
+
+// Settings - Subtitles
+"settings.autoSearchOnlineSub.desc" = "If enabled, IINA will automatically search online subtitles only for videos without loaded subtitles and longer than 20 minutes.";
+"settings.autoSearchOnlineSub.label" = "ऑनलाइन उपशीर्षक खोजें";
+"settings.displayInLetterBox.label" = "पूर्ण स्क्रीन में रहते हुए लेटरबॉक्स में उपशीर्षक प्रदर्शित करें";
+"settings.subAlignX.items.0" = "बाएं";
+"settings.subAlignX.items.1" = "केंद्र";
+"settings.subAlignX.items.2" = "सही";
+"settings.subAlignX.label" = "Y";
+"settings.subAlignY.items.0" = "टॉप";
+"settings.subAlignY.items.1" = "केंद्र";
+"settings.subAlignY.items.2" = "तल";
+"settings.subAutoLoadIINA.items.0" = "अक्षम";
+"settings.subAutoLoadIINA.items.1" = "मीडिया फ़ाइल नाम वाले उपशीर्षक";
+"settings.subAutoLoadIINA.items.2" = "IINA द्वारा समझदारी से पता लगाएं";
+"settings.subAutoLoadIINA.label" = "ऑटो लोड";
+"settings.subAutoLoadPriorityString.desc" = "कृपया तार के अल्पविराम से अलग की गई सूची दर्ज करें।";
+"settings.subAutoLoadPriorityString.label" = "फ़ाइल नाम युक्त होने पर उपशीर्षक में प्राथमिकता होती है";
+"settings.subAutoLoadSearchPath.desc" = "निर्देशिकाओं को कॉलन (:) द्वारा अलग किया जाता है। अंत में रिश्तेदार पथ और वाइल्डकार्ड (*) की अनुमति है।";
+"settings.subAutoLoadSearchPath.label" = "इसके अलावा निम्नलिखित निर्देशिकाओं में उपशीर्षक खोजें";
+"settings.subBlur.label" = "धब्बा";
+"settings.subBold.label" = "बोल्ड";
+"settings.subItalic.label" = "इटैलिक";
+"settings.subLang.desc" = "यह विकल्प ISO 639-2 भाषा कोड के रूप में संग्रहीत किया जाएगा और एमपीवी और ओपनबॉटस्क्रिप्ट दोनों के लिए काम करेगा।";
+"settings.subPos.label" = "ऊर्ध्वाधर स्थिति";
+"settings.subScaleWithWindow.label" = "खिड़की के आकार के साथ स्केल उपशीर्षक";
+"settings.subSpacing.label" = "फ़ॉन्ट रिक्ति";
+
+// Settings - UI
+"settings.alwaysFloatOnTop.label" = "खेलते समय हमेशा ऊपर की ओर तैरें";
+"settings.arrowBtnAction.items.0" = "गति";
+"settings.arrowBtnAction.items.1" = "पिछला / अगला मीडिया";
+"settings.arrowBtnAction.items.2" = "फास्ट फॉरवर्ड / रिवाइंड";
+"settings.arrowBtnAction.label" = "के लिए बाएँ/दाएँ बटन का उपयोग करें";
+"settings.controlBarStickToCenter.label" = "खींचते समय केंद्र पर स्नैप करें";
+"settings.disableOSDPauseResumeMsgs.label" = "ठहरें / रिज्यूम";
+"settings.disableOSDSeekMsg.label" = "खोजना";
+"settings.disableOSDSpeedMsg.label" = "गति";
+"settings.displayTimeAndBatteryInFullScreen.label" = "जब पूर्ण स्क्रीन में समय और बैटरी की जानकारी प्रदर्शित करें";
+"settings.enableOSD.label" = "OSD सक्षम करें";
+"settings.enableThumbnailPreview.label" = "थंबनेल पूर्वावलोकन सक्षम करें";
+"settings.maxThumbnailPreviewCacheSize.label" = "अधिकतम कैश आकार";
+"settings.oscPosition.items.0" = "तैरता";
+"settings.oscPosition.items.1" = "चोटी";
+"settings.oscPosition.items.2" = "तल";
+"settings.oscPosition.label" = "स्क्रीन नियंत्रक पर";
+"settings.osdTextSize.label" = "पाठ का आकार";
+"settings.pauseWhenPip.label" = "स्वचालित रूप से प्लेबैक रोकें";
+"settings.resizeWindowOption.items.0" = "स्क्रीन फिट";
+"settings.resizeWindowOption.items.1" = "0.5x वीडियो का आकार";
+"settings.resizeWindowOption.items.2" = "1x वीडियो का आकार";
+"settings.resizeWindowOption.items.3" = "1.5x वीडियो का आकार";
+"settings.resizeWindowOption.items.4" = "2x वीडियो का आकार";
+"settings.resizeWindowOption.label" = "विंडो का आकार बदलें";
+"settings.showChapterPos.label" = "प्रगति बार में अध्याय की स्थिति दिखाएं";
+"settings.showRemainingTime.label" = "कुल अवधि के बजाय शेष समय दिखाएं";
+"settings.themeMaterial.desc" = "थीम";
+"settings.themeMaterial.items.0" = "अंधेरा";
+"settings.themeMaterial.items.2" = "प्रकाश";
+"settings.themeMaterial.items.4" = "मैच प्रणाली उपस्थिति";
+"settings.themeMaterial.label" = "दिखावट";
+"settings.togglePipByMinimizingWindow.label" = "विंडो को छोटा / अन-मिनिमाइज़ करके पिक्चर-इन-पिक्चर को टॉगल करें";
+"settings.usePhysicalResolution.label" = "रेटिना डिस्प्ले पर भौतिक रिज़ॉल्यूशन का उपयोग करें";
+"settings.windowBehaviorWhenPip.items.0" = "कुछ मत करो";
+"settings.windowBehaviorWhenPip.items.1" = "छिपाना";
+"settings.windowBehaviorWhenPip.items.2" = "कम से कम";
+"settings.windowBehaviorWhenPip.label" = "खिड़की";
+
+// Settings - Advanced
+"settings.enableAdvancedSettings.desc" = "निम्नलिखित सेटिंग्स को प्रभावी होने के लिए IINA को पुनः आरंभ करने की आवश्यकता होगी।";
+"settings.enableAdvancedSettings.label" = "उन्नत सेटिंग्स सक्षम करें";
+"settings.enableLogging.label" = "लॉगिंग करने देना";
+"settings.logLevel.items.2" = "चेतावनी";
+"settings.logLevel.items.3" = "त्रुटि";
+"settings.useMpvOsd.label" = "mpv के OSD का उपयोग करें";
+"settings.useUserDefinedConfDir.label" = "विन्यास निर्देशिका का उपयोग करें";

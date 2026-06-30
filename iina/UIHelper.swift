@@ -10,6 +10,14 @@
 class UIHelper {
   static let shared = UIHelper()
 
+  var table: String?
+  var scope: String?
+
+  init(table: String? = nil, scope: String? = nil) {
+    self.table = table
+    self.scope = scope
+  }
+
   func button(_ key: String, target: NSObject? = nil, action: Selector? = nil) -> NSButton {
     let btn = NSButton(title: localized(key), target: nil, action: nil)
     btn.translatesAutoresizingMaskIntoConstraints = false
@@ -175,7 +183,8 @@ class UIHelper {
   }
 
   func localized(_ key: String) -> String {
-    NSLocalizedString(key, comment: key)
+    let key = if let scope { "\(scope).\(key)" } else { key }
+    return NSLocalizedString(key, tableName: table, comment: key)
   }
 
   class TextFieldWithFixedAlignmentRect: NSTextField {

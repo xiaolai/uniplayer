@@ -590,3 +590,44 @@
 "sidebar.add_url" = "Add URL…";
 
 "sidebar.plugins_placeholder" = "Plugins can display custom sidebar contents. Select a plugin to view its sidebar or install a new plugin in Settings.";
+
+// Settings
+
+// Settings - General
+"settings.alwaysOpenInNewWindow.label" = "Always open media in new window";
+"settings.autoRepeat.label" = "When a file is opened manually";
+"settings.screenShotFormat.label" = "ഫോർമാറ്റ്";
+
+// Settings - Video
+"settings.toneMappingAlgorithm.items.0" = "Auto";
+
+// Settings - Control
+"settings.doubleClickAction.items.1" = "Toggle fullscreen";
+"settings.doubleClickAction.items.2" = "Pause / Resume";
+"settings.doubleClickAction.items.4" = "Toggle Picture-in-Picture";
+"settings.forceTouchAction.items.1" = "Toggle fullscreen";
+"settings.forceTouchAction.items.2" = "Pause / Resume";
+"settings.middleClickAction.items.1" = "Toggle fullscreen";
+"settings.middleClickAction.items.2" = "Pause / Resume";
+"settings.middleClickAction.items.4" = "Toggle Picture-in-Picture";
+"settings.rightClickAction.items.2" = "Pause / Resume";
+"settings.rightClickAction.items.4" = "Toggle Picture-in-Picture";
+"settings.singleClickAction.items.2" = "Pause / Resume";
+
+// Settings - Network
+"settings.cacheBufferSize.desc" = "Default: 153600";
+"settings.secPrefech.desc" = "Default: 36000";
+"settings.ytdlEnabled.label" = "Enable youtube-dl";
+"settings.ytdlRawOptions.desc" = "Format: <key>=<value>[,<key>=<value>[,…]]";
+
+// Settings - Subtitles
+"settings.autoSearchOnlineSub.desc" = "If enabled, IINA will automatically search online subtitles only for videos without loaded subtitles and longer than 20 minutes.";
+"settings.subAlignX.label" = "Y";
+"settings.subAutoLoadIINA.label" = "Auto load";
+
+// Settings - UI
+"settings.arrowBtnAction.items.0" = "വേഗത";
+"settings.disableOSDSpeedMsg.label" = "വേഗത";
+
+// Settings - Advanced
+"settings.enableLogging.label" = "Enable logging";

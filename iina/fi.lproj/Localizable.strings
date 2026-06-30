@@ -590,3 +590,207 @@
 "sidebar.add_url" = "Lisää URL-osoite…";
 
 "sidebar.plugins_placeholder" = "Plugins can display custom sidebar contents. Select a plugin to view its sidebar or install a new plugin in Settings.";
+
+// Settings
+
+// Settings - General
+"settings.actionAfterLaunch.items.0" = "Näytä tervetuloikkuna";
+"settings.actionAfterLaunch.items.1" = "Näytä avoin tiedosto -paneeli";
+"settings.actionAfterLaunch.items.2" = "Älä tee mitään";
+"settings.actionAfterLaunch.label" = "Käynnistysvaiheessa";
+"settings.alwaysOpenInNewWindow.label" = "Avaa media aina uudessa ikkunassa";
+"settings.autoRepeat.label" = "When a file is opened manually";
+"settings.autoSwitchToMusicMode.label" = "Vaihda \"musiikkitilaan\" automaattisesti, kun toistetaan äänitiedostoa";
+"settings.blackOutMonitor.label" = "Mustaa muut näytöt koko näytön tilassa";
+"settings.fullScreenWhenOpen.label" = "Siirry koko näytön tilaan";
+"settings.keepOpenOnFileEnd.label" = "Pidä ikkuna auki toiston päätyttyä";
+"settings.pauseWhenGoesToSleep.label" = "Tauota kun kone menee nukkumaan";
+"settings.pauseWhenInactive.label" = "Ikkunasta tulee passiivinen/aktiivinen";
+"settings.pauseWhenLeavingFullScreen.label" = "Tauota koko näytön tilasta poistuttaessa";
+"settings.pauseWhenMinimized.label" = "Pienennetty/pienentämätön";
+"settings.pauseWhenOpen.label" = "Tauko";
+"settings.pauseresumeWhen" = "Tauota/jatka kun";
+"settings.playWhenEnteringFullScreen.label" = "Toista siirryttäessä koko näytön tilaan";
+"settings.playlistAutoAdd.desc" = "Edellyttää IINA:n uudelleenkäynnistämistä voimaantullakseen.";
+"settings.playlistAutoAdd.label" = "Lisää tiedostot samaan kansioon automaattisesti";
+"settings.playlistAutoPlayNext.label" = "Toista seuraava kohde automaattisesti";
+"settings.playlistShowMetadata.label" = "Näytä esittäjän ja kappaleen nimi äänitiedostoille, kun niitä on saatavilla";
+"settings.playlistShowMetadataInMusicMode.label" = "Vain \"musiikkitilassa\"";
+"settings.quitWhenNoOpenedWindow.label" = "Lopeta kun kaikki ikkunat on suljettu";
+"settings.receiveBetaUpdate.label" = "Vastaanota beta-päivityksiä";
+"settings.recordPlaybackHistory.label" = "Ota toistohistoria käyttöön";
+"settings.recordRecentFiles.label" = "Ota käyttöön \"Avaa äskettäinen\" valikko";
+"settings.resumeLastPosition.label" = "Jatka toiston viimeisestä sijainnista";
+"settings.screenShotFormat.label" = "Muoto";
+"settings.screenShotIncludeSubtitle.label" = "Sisällytä tekstitykset";
+"settings.screenshotCopyToClipboard.desc" = "Kohde";
+"settings.screenshotCopyToClipboard.label" = "Kopioi leikepöydälle";
+"settings.screenshotSaveToFile.desc" = "/polku/kuvakaappaus/kansioon";
+"settings.screenshotSaveToFile.label" = "Tallenna kohteeseen";
+"settings.screenshotShowPreview.label" = "Näytä esikatselut kuvakaappausten ottamisen jälkeen";
+"settings.trackAllFilesInRecentOpenMenu.desc" = "Muutoin vain manuaalisesti avatut tiedostot näkyvät tässä valikossa.";
+"settings.trackAllFilesInRecentOpenMenu.label" = "Seuraa kaikkia toistettuja tiedostoja \"Avaa äskettäinen\" -valikosta";
+"settings.useLegacyFullScreen.label" = "Käytä vanhaa koko näytön tilaa";
+
+// Settings - Video
+"settings.forceDedicatedGPU.desc" = "Käytä aina erillistä GPU:ta renderointiin (jos sellainen on olemassa). Tämä voi parantaa suorituskykyä, mutta saattaa lyhentää akun kestoa.";
+"settings.forceDedicatedGPU.label" = "Pakota erillinen GPU";
+"settings.hardwareDecoder.items.0" = "Ei käytössä";
+"settings.hardwareDecoder.items.1" = "Automaattinen";
+"settings.hardwareDecoder.items.2" = "Automaattinen (Kopioi)";
+"settings.hardwareDecoder.label" = "Laitteistopohjainen purku";
+"settings.toneMappingAlgorithm.items.0" = "Automaattinen";
+"settings.videoThreads.desc" = "Oletus: 0 (Automaattinen)";
+"settings.videoThreads.label" = "Säikeiden määrä";
+
+// Settings - Audio
+"settings.enableInitialVolume.label" = "Alkuäänenvoimakkuus";
+"settings.gaplessAudio.items.0" = "Ei käytössä";
+"settings.maxVolume.label" = "Suurin äänenvoimakkuus";
+"settings.preferredAudioDevice.label" = "Ensisijainen äänilaite";
+
+// Settings - Control
+"settings.doubleClickAction.items.0" = "Ei mitään";
+"settings.doubleClickAction.items.1" = "Vaihda koko näytön tilaa";
+"settings.doubleClickAction.items.2" = "Tauota /Jatka";
+"settings.doubleClickAction.items.4" = "Vaihda kuva kuvassa -tilaa";
+"settings.doubleClickAction.items.5" = "A–B-silmukka";
+"settings.doubleClickAction.label" = "Kaksoisklikkaus";
+"settings.forceTouchAction.items.0" = "Ei mitään";
+"settings.forceTouchAction.items.1" = "Vaihda koko näytön tilaa";
+"settings.forceTouchAction.items.2" = "Tauota /Jatka";
+"settings.forceTouchAction.items.3" = "Piilota OSC";
+"settings.forceTouchAction.label" = "Voimakas klikkaus";
+"settings.horizontalScrollAction.items.0" = "Säädä äänenvoimakkuutta";
+"settings.horizontalScrollAction.items.1" = "Siirryntä";
+"settings.horizontalScrollAction.items.2" = "Ei mitään";
+"settings.horizontalScrollAction.label" = "Vieritä vaakasuunnassa";
+"settings.middleClickAction.items.0" = "Ei mitään";
+"settings.middleClickAction.items.1" = "Vaihda koko näytön tilaa";
+"settings.middleClickAction.items.2" = "Tauota /Jatka";
+"settings.middleClickAction.items.3" = "Piilota OSC";
+"settings.middleClickAction.items.4" = "Vaihda kuva kuvassa -tilaa";
+"settings.middleClickAction.items.5" = "A–B-silmukka";
+"settings.middleClickAction.label" = "Keskellä klikkaus";
+"settings.pinchAction.items.0" = "Säädä ikkunan kokoa";
+"settings.pinchAction.items.1" = "Koko näyttö";
+"settings.pinchAction.items.2" = "Ei mitään";
+"settings.pinchAction.label" = "Nipistä";
+"settings.relativeSeekAmount.label" = "Herkkyys normaalille siirrynnälle";
+"settings.rightClickAction.desc" = "Keskellä klikkaus";
+"settings.rightClickAction.items.0" = "Ei mitään";
+"settings.rightClickAction.items.2" = "Tauota /Jatka";
+"settings.rightClickAction.items.3" = "Piilota OSC";
+"settings.rightClickAction.items.4" = "Vaihda kuva kuvassa -tilaa";
+"settings.rightClickAction.items.5" = "A–B-silmukka";
+"settings.rightClickAction.label" = "Oikeaklikkaa";
+"settings.singleClickAction.items.0" = "Ei mitään";
+"settings.singleClickAction.items.2" = "Tauota /Jatka";
+"settings.singleClickAction.items.3" = "Piilota OSC";
+"settings.singleClickAction.label" = "Yksittäinen klikkaus";
+"settings.useExactSeek.desc" = "Tarkka siirryntä on tarkempi, mutta se voi aiheuttaa viiveitä ja korkeampaa suorittimen käyttöä.";
+"settings.useExactSeek.items.0" = "Avainkehyksen siirryntä";
+"settings.useExactSeek.items.1" = "Tarkka siirryntä";
+"settings.useExactSeek.items.2" = "Automaattinen";
+"settings.useExactSeek.label" = "Siirrynnän tyyppi";
+"settings.verticalScrollAction.items.0" = "Säädä äänenvoimakkuutta";
+"settings.verticalScrollAction.items.1" = "Siirry";
+"settings.verticalScrollAction.items.2" = "Ei mitään";
+"settings.verticalScrollAction.label" = "Vieritä pystysuunnassa";
+"settings.videoViewAcceptsFirstMouse.label" = "Hyväksyy ensimmäisen hiiren klikkauksen kun ei kohdistettu";
+"settings.volumeScrollAmount.label" = "Herkkyys äänenvoimakkuudelle";
+
+// Settings - Key Binding
+"settings.displayKeyBindingRawValues.label" = "Näytä raa'at arvot";
+"settings.useMediaKeys.label" = "Käytä järjestelmän mediaohjausta";
+
+// Settings - Network
+"settings.cacheBufferSize.desc" = "Oletus: 153600";
+"settings.cacheBufferSize.label" = "Välimuistin puskurin koko (KB)";
+"settings.enableCache.label" = "Ota välimuisti käyttöön";
+"settings.httpProxy.desc" = "Edellyttää IINA:n uudelleenkäynnistämistä voimaantullakseen.";
+"settings.httpProxy.label" = "HTTP välityspalvelin";
+"settings.secPrefech.desc" = "Oletus: 36000";
+"settings.secPrefech.label" = "Sekuntia ennen hakua";
+"settings.transportRTSPThrough.items.0" = "Automaattinen";
+"settings.transportRTSPThrough.label" = "Siirrä RTSP-virta seuraavalla tavalla";
+"settings.userAgent.label" = "Käyttäjäagentti";
+"settings.ytdlEnabled.label" = "Ota youtube-dl käyttöön";
+"settings.ytdlRawOptions.desc" = "Muoto: <key>=<value>[,<key>=<value>[,…]]";
+"settings.ytdlRawOptions.label" = "Raaka vaihtoehdot";
+"settings.ytdlSearchPath.desc" = "IINA hakee youtube-dl tästä kansiosta. Uudelleenkäynnistys vaaditaan.";
+"settings.ytdlSearchPath.label" = "Mukautettu youtube-dl polku";
+
+// Settings - Subtitles
+"settings.autoSearchOnlineSub.desc" = "If enabled, IINA will automatically search online subtitles only for videos without loaded subtitles and longer than 20 minutes.";
+"settings.autoSearchOnlineSub.label" = "Hae automaattisesti verkkotekstityksiä";
+"settings.displayInLetterBox.label" = "Näytä tekstitykset letterboxissa koko näytön tilassa";
+"settings.subAlignX.items.1" = "Keskitetty";
+"settings.subAlignX.items.2" = "Oikealla";
+"settings.subAlignX.label" = "Y";
+"settings.subAlignY.items.0" = "Ylhäällä";
+"settings.subAlignY.items.1" = "Keskitetty";
+"settings.subAlignY.items.2" = "Alhaalla";
+"settings.subAutoLoadIINA.items.0" = "Ei käytössä";
+"settings.subAutoLoadIINA.items.2" = "Tunnista älykkäästi IINA:lla";
+"settings.subAutoLoadIINA.label" = "Auto load";
+"settings.subAutoLoadPriorityString.desc" = "Syötä pilkulla erotettu luettelo merkkijonoja.";
+"settings.subAutoLoadPriorityString.label" = "Tekstityksillä on prioriteetti, kun tiedostonimi sisältää";
+"settings.subAutoLoadSearchPath.desc" = "Hakemistot on erotettu kaksoispisteillä (:). Suhteelliset polut ja jokerimerkit (*) lopussa ovat sallittuja.";
+"settings.subAutoLoadSearchPath.label" = "Hae myös tekstityksiä seuraavissa hakemistoissa";
+"settings.subBlur.label" = "Sumennus";
+"settings.subBold.label" = "Lihavointi";
+"settings.subItalic.label" = "Kursivoitu";
+"settings.subLang.desc" = "Tämä vaihtoehto tallennetaan ISO 639-2 -kielikoodiksi ja toimii sekä mpv- että opentekstitysten osalta.";
+"settings.subPos.label" = "Pystysuuntainen sijainti";
+"settings.subScaleWithWindow.label" = "Skaalaa tekstitykset ikkunan koolla";
+"settings.subSpacing.label" = "Kirjasinten välistys";
+
+// Settings - UI
+"settings.alwaysFloatOnTop.label" = "Kelluu aina päällä toiston aikana";
+"settings.arrowBtnAction.items.0" = "Nopeus";
+"settings.arrowBtnAction.items.1" = "Edellinen / seuraava media";
+"settings.arrowBtnAction.items.2" = "Kelaus eteen / taakse";
+"settings.arrowBtnAction.label" = "Käytä vasen/oikean näppäintä";
+"settings.controlBarStickToCenter.label" = "Kiinnitä keskelle vetämällä";
+"settings.disableOSDPauseResumeMsgs.label" = "Tauota /Jatka";
+"settings.disableOSDSeekMsg.label" = "Siirry";
+"settings.disableOSDSpeedMsg.label" = "Nopeus";
+"settings.displayTimeAndBatteryInFullScreen.label" = "Näytä aika ja akun tiedot koko näytön tilassa";
+"settings.enableOSD.label" = "Ota käyttöön OSD";
+"settings.enableThumbnailPreview.label" = "Ota esikatselu käyttöön";
+"settings.maxThumbnailPreviewCacheSize.label" = "Välimuistin enimmäiskoko";
+"settings.oscPosition.items.0" = "Kelluva";
+"settings.oscPosition.items.1" = "Ylhäällä";
+"settings.oscPosition.items.2" = "Alhaalla";
+"settings.oscPosition.label" = "Kuvaruudunohjaimet";
+"settings.osdTextSize.label" = "Tekstin koko";
+"settings.pauseWhenPip.label" = "Tauota toisto automaattisesti";
+"settings.resizeWindowOption.items.0" = "sovita näytölle";
+"settings.resizeWindowOption.items.1" = "0.5x videon koko";
+"settings.resizeWindowOption.items.2" = "1x videon koko";
+"settings.resizeWindowOption.items.3" = "1.5x videon koko";
+"settings.resizeWindowOption.items.4" = "2x videon koko";
+"settings.resizeWindowOption.label" = "Muuta ikkunan kokoa";
+"settings.showChapterPos.label" = "Näytä luvun sijainti seurantapalkissa";
+"settings.showRemainingTime.label" = "Näytä jäljellä oleva aika kokonaiskeston sijaan";
+"settings.themeMaterial.desc" = "Teema";
+"settings.themeMaterial.items.0" = "Tumma";
+"settings.themeMaterial.items.2" = "Vaalea";
+"settings.themeMaterial.items.4" = "Sovita järjestelmän ulkonäköön";
+"settings.themeMaterial.label" = "Ulkonäkö";
+"settings.togglePipByMinimizingWindow.label" = "Vaihda kuva kuvassa -tilaan pienentämällä/suurentamalla ikkunan";
+"settings.usePhysicalResolution.label" = "Käytä fyysistä resoluutiota Retina-näytöissä";
+"settings.windowBehaviorWhenPip.items.0" = "Älä tee mitään";
+"settings.windowBehaviorWhenPip.items.1" = "Piilota";
+"settings.windowBehaviorWhenPip.items.2" = "Pienennä";
+"settings.windowBehaviorWhenPip.label" = "Ikkuna";
+
+// Settings - Advanced
+"settings.enableAdvancedSettings.desc" = "Seuraavien asetusten voimaantulo edellyttää IINA:n uudelleenkäynnistämistä.";
+"settings.enableAdvancedSettings.label" = "Salli lisäasetukset";
+"settings.enableLogging.label" = "Ota lokiinkirjaaminen käyttöön";
+"settings.logLevel.items.2" = "Varoitus";
+"settings.logLevel.items.3" = "Virhe";
+"settings.useMpvOsd.label" = "Käytä mpv:n OSD:tä";
+"settings.useUserDefinedConfDir.label" = "Käytä asetushakemistoa";

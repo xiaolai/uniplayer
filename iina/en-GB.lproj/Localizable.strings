@@ -590,3 +590,52 @@
 "sidebar.add_url" = "Add URL…";
 
 "sidebar.plugins_placeholder" = "Plugins can display custom sidebar contents. Select a plugin to view its sidebar or install a new plugin in Settings.";
+
+// Settings
+
+// Settings - General
+"settings.alwaysOpenInNewWindow.label" = "Always open media in new window";
+"settings.autoRepeat.label" = "When media is opened manually";
+"settings.autoSwitchToMusicMode.label" = "Switch to “music mode” automatically when playing an audio file";
+"settings.pauseWhenMinimized.label" = "Minimised/un-minimised";
+"settings.playlistShowMetadataInMusicMode.label" = "Only in “music mode”";
+"settings.recordRecentFiles.label" = "Enable “Open Recent” menu";
+"settings.trackAllFilesInRecentOpenMenu.label" = "Track all played files in “Open Recent” menu";
+
+// Settings - Video
+"settings.toneMappingAlgorithm.items.0" = "Auto";
+
+// Settings - Control
+"settings.doubleClickAction.items.1" = "Toggle fullscreen";
+"settings.doubleClickAction.items.2" = "Pause / Resume";
+"settings.doubleClickAction.items.4" = "Toggle Picture-in-Picture";
+"settings.forceTouchAction.items.1" = "Toggle fullscreen";
+"settings.forceTouchAction.items.2" = "Pause / Resume";
+"settings.middleClickAction.items.1" = "Toggle fullscreen";
+"settings.middleClickAction.items.2" = "Pause / Resume";
+"settings.middleClickAction.items.4" = "Toggle Picture-in-Picture";
+"settings.rightClickAction.items.2" = "Pause / Resume";
+"settings.rightClickAction.items.4" = "Toggle Picture-in-Picture";
+"settings.singleClickAction.items.2" = "Pause / Resume";
+
+// Settings - Network
+"settings.cacheBufferSize.desc" = "Default: 153600";
+"settings.secPrefech.desc" = "Default: 36000";
+"settings.ytdlEnabled.label" = "Enable youtube-dl";
+"settings.ytdlRawOptions.desc" = "Format: <key>=<value>[,<key>=<value>[,…]]";
+
+// Settings - Subtitles
+"settings.autoSearchOnlineSub.desc" = "If enabled, IINA will automatically search online subtitles only for videos without loaded subtitles and longer than 20 minutes.";
+"settings.subAlignX.items.1" = "Centre";
+"settings.subAlignX.label" = "Y";
+"settings.subAlignY.items.1" = "Centre";
+"settings.subAutoLoadIINA.label" = "Auto load";
+
+// Settings - UI
+"settings.controlBarStickToCenter.label" = "Snap to centre when dragging";
+"settings.enableThumbnailForRemoteFiles.label" = "Include files on a mounted remote driv";
+"settings.togglePipByMinimizingWindow.label" = "Toggle Picture-in-Picture by minimising/un-minimising the window";
+"settings.windowBehaviorWhenPip.items.2" = "Minimise";
+
+// Settings - Advanced
+"settings.enableLogging.label" = "Enable logging";

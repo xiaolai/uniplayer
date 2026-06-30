@@ -590,3 +590,76 @@
 "sidebar.add_url" = "Add URL…";
 
 "sidebar.plugins_placeholder" = "Plugins can display custom sidebar contents. Select a plugin to view its sidebar or install a new plugin in Settings.";
+
+// Settings
+
+// Settings - General
+"settings.alwaysOpenInNewWindow.label" = "Always open media in new window";
+"settings.autoRepeat.label" = "When a file is opened manually";
+"settings.pauseWhenOpen.label" = "Пауза";
+"settings.screenShotFormat.label" = "Формат";
+"settings.screenshotSaveToFile.label" = "Запазване в";
+
+// Settings - Video
+"settings.toneMappingAlgorithm.items.0" = "Auto";
+
+// Settings - Control
+"settings.doubleClickAction.items.0" = "Няма";
+"settings.doubleClickAction.items.1" = "Toggle fullscreen";
+"settings.doubleClickAction.items.2" = "Pause / Resume";
+"settings.doubleClickAction.items.4" = "Toggle Picture-in-Picture";
+"settings.doubleClickAction.items.5" = "А-В повторение";
+"settings.forceTouchAction.items.0" = "Няма";
+"settings.forceTouchAction.items.1" = "Toggle fullscreen";
+"settings.forceTouchAction.items.2" = "Pause / Resume";
+"settings.horizontalScrollAction.items.1" = "Превъртане";
+"settings.horizontalScrollAction.items.2" = "Няма";
+"settings.middleClickAction.items.0" = "Няма";
+"settings.middleClickAction.items.1" = "Toggle fullscreen";
+"settings.middleClickAction.items.2" = "Pause / Resume";
+"settings.middleClickAction.items.4" = "Toggle Picture-in-Picture";
+"settings.middleClickAction.items.5" = "А-В повторение";
+"settings.pinchAction.items.1" = "Цял екран";
+"settings.pinchAction.items.2" = "Няма";
+"settings.rightClickAction.items.0" = "Няма";
+"settings.rightClickAction.items.2" = "Pause / Resume";
+"settings.rightClickAction.items.4" = "Toggle Picture-in-Picture";
+"settings.rightClickAction.items.5" = "А-В повторение";
+"settings.singleClickAction.items.0" = "Няма";
+"settings.singleClickAction.items.2" = "Pause / Resume";
+"settings.verticalScrollAction.items.1" = "Превъртане";
+"settings.verticalScrollAction.items.2" = "Няма";
+
+// Settings - Network
+"settings.cacheBufferSize.desc" = "Default: 153600";
+"settings.secPrefech.desc" = "Default: 36000";
+"settings.transportRTSPThrough.items.0" = "Автоматично";
+"settings.ytdlEnabled.label" = "Enable youtube-dl";
+"settings.ytdlRawOptions.desc" = "Format: <key>=<value>[,<key>=<value>[,…]]";
+
+// Settings - Subtitles
+"settings.autoSearchOnlineSub.desc" = "If enabled, IINA will automatically search online subtitles only for videos without loaded subtitles and longer than 20 minutes.";
+"settings.subAlignX.items.1" = "Център";
+"settings.subAlignX.label" = "Y";
+"settings.subAlignY.items.1" = "Център";
+"settings.subAutoLoadIINA.label" = "Auto load";
+"settings.subBlur.label" = "Размиване";
+"settings.subPos.label" = "Вертикално разположение";
+
+// Settings - UI
+"settings.arrowBtnAction.items.0" = "Скорост";
+"settings.disableAnimations.label" = "Деактивиране на анимациите";
+"settings.disableOSDSeekMsg.label" = "Превъртане";
+"settings.disableOSDSpeedMsg.label" = "Скорост";
+"settings.oscPosition.items.1" = "Горе";
+"settings.osdTextSize.label" = "Размер на текста";
+"settings.themeMaterial.desc" = "Тема";
+"settings.themeMaterial.items.2" = "Светъл";
+"settings.themeMaterial.label" = "Изглед";
+"settings.windowBehaviorWhenPip.items.1" = "Скрий";
+"settings.windowBehaviorWhenPip.label" = "Прозорец";
+
+// Settings - Advanced
+"settings.enableLogging.label" = "Enable logging";
+"settings.logLevel.items.2" = "Внимание";
+"settings.logLevel.items.3" = "Грешка";

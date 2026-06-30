@@ -590,3 +590,93 @@
 "sidebar.add_url" = "URLஐ சேர்…";
 
 "sidebar.plugins_placeholder" = "Plugins can display custom sidebar contents. Select a plugin to view its sidebar or install a new plugin in Settings.";
+
+// Settings
+
+// Settings - General
+"settings.actionAfterLaunch.items.2" = "எதுவும் செய்யாதே";
+"settings.actionAfterLaunch.label" = "தொடக்கத்தில்";
+"settings.alwaysOpenInNewWindow.label" = "Always open media in new window";
+"settings.autoRepeat.label" = "When a file is opened manually";
+"settings.pauseWhenOpen.label" = "இடைநிறுத்து";
+"settings.playlistAutoAdd.desc" = "重启IINA生效.";
+"settings.screenShotFormat.label" = "வடிவமைப்பு";
+"settings.screenshotCopyToClipboard.label" = "நகலகத்திற்கு நகலெடு";
+
+// Settings - Video
+"settings.hardwareDecoder.items.0" = "முடக்கப்பட்டுள்ளது";
+"settings.hardwareDecoder.items.1" = "தானியங்கு";
+"settings.toneMappingAlgorithm.items.0" = "தானியங்கு";
+
+// Settings - Audio
+"settings.gaplessAudio.items.0" = "முடக்கப்பட்டுள்ளது";
+
+// Settings - Control
+"settings.doubleClickAction.items.0" = "எதுவுமில்லை";
+"settings.doubleClickAction.items.1" = "Toggle fullscreen";
+"settings.doubleClickAction.items.2" = "Pause / Resume";
+"settings.doubleClickAction.items.4" = "Toggle Picture-in-Picture";
+"settings.forceTouchAction.items.0" = "எதுவுமில்லை";
+"settings.forceTouchAction.items.1" = "Toggle fullscreen";
+"settings.forceTouchAction.items.2" = "Pause / Resume";
+"settings.forceTouchAction.items.3" = "OSCஐ மறை";
+"settings.horizontalScrollAction.items.2" = "எதுவுமில்லை";
+"settings.middleClickAction.items.0" = "எதுவுமில்லை";
+"settings.middleClickAction.items.1" = "Toggle fullscreen";
+"settings.middleClickAction.items.2" = "Pause / Resume";
+"settings.middleClickAction.items.3" = "OSCஐ மறை";
+"settings.middleClickAction.items.4" = "Toggle Picture-in-Picture";
+"settings.pinchAction.items.1" = "முழுத்திரை";
+"settings.pinchAction.items.2" = "எதுவுமில்லை";
+"settings.rightClickAction.items.0" = "எதுவுமில்லை";
+"settings.rightClickAction.items.2" = "Pause / Resume";
+"settings.rightClickAction.items.3" = "OSCஐ மறை";
+"settings.rightClickAction.items.4" = "Toggle Picture-in-Picture";
+"settings.singleClickAction.items.0" = "எதுவுமில்லை";
+"settings.singleClickAction.items.2" = "Pause / Resume";
+"settings.singleClickAction.items.3" = "OSCஐ மறை";
+"settings.useExactSeek.items.2" = "தானியங்கு";
+"settings.verticalScrollAction.items.2" = "எதுவுமில்லை";
+
+// Settings - Key Binding
+"settings.useMediaKeys.label" = "முறைமை ஊடக கட்டுப்பாட்டை பயன்படுத்து";
+
+// Settings - Network
+"settings.cacheBufferSize.desc" = "இயல்புநிலை: 153600";
+"settings.httpProxy.desc" = "重启IINA生效.";
+"settings.secPrefech.desc" = "இயல்புநிலை: 36000";
+"settings.transportRTSPThrough.items.0" = "தானியங்கு";
+"settings.ytdlEnabled.label" = "youtube-dl -ஐ இயக்கு";
+"settings.ytdlRawOptions.desc" = "Format: <key>=<value>[,<key>=<value>[,…]]";
+"settings.ytdlSearchPath.label" = "தனிப்பயன் youtube-dl பாதை";
+
+// Settings - Subtitles
+"settings.autoSearchOnlineSub.desc" = "If enabled, IINA will automatically search online subtitles only for videos without loaded subtitles and longer than 20 minutes.";
+"settings.subAlignX.items.0" = "இடது";
+"settings.subAlignX.items.2" = "வலது";
+"settings.subAlignX.label" = "Y";
+"settings.subAlignY.items.0" = "மேல்";
+"settings.subAlignY.items.2" = "கீழ்";
+"settings.subAutoLoadIINA.items.0" = "முடக்கப்பட்டுள்ளது";
+"settings.subAutoLoadIINA.label" = "Auto load";
+
+// Settings - UI
+"settings.arrowBtnAction.items.0" = "வேகம்";
+"settings.disableOSDSpeedMsg.label" = "வேகம்";
+"settings.enableOSD.label" = "OSDஐ இயக்கு";
+"settings.oscPosition.items.1" = "மேல்";
+"settings.oscPosition.items.2" = "கீழ்";
+"settings.osdTextSize.label" = "உரை அளவு";
+"settings.themeMaterial.desc" = "கருப்பொருள்";
+"settings.themeMaterial.items.0" = "இருள்";
+"settings.themeMaterial.items.2" = "வெளிச்சம்";
+"settings.themeMaterial.label" = "தோற்றம்";
+"settings.windowBehaviorWhenPip.items.0" = "எதுவும் செய்யாதே";
+"settings.windowBehaviorWhenPip.items.1" = "மறை";
+"settings.windowBehaviorWhenPip.label" = "சாளரம்";
+
+// Settings - Advanced
+"settings.enableAdvancedSettings.label" = "மேம்பட்ட அமைப்புகளை இயக்கு";
+"settings.enableLogging.label" = "Enable logging";
+"settings.logLevel.items.2" = "எச்சரிக்கை";
+"settings.logLevel.items.3" = "பிழை";

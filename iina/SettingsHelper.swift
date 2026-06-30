@@ -23,12 +23,7 @@ extension NSTextField {
 let topConstraintOffset: CGFloat = if #available(macOS 26, *) { -4 } else { 0 }
 
 class SettingsUIHelper: UIHelper {
-  private var l10n: SettingsLocalization.Context
-
-  init(_ l10n: SettingsLocalization.Context) {
-    self.l10n = l10n
-    super.init()
-  }
+  static let sharedUI = SettingsUIHelper(scope: "settings")
 
   func button(_ key: SettingsLocalization.Key) -> NSButton {
     button(key.rawValue)
@@ -41,7 +36,7 @@ class SettingsUIHelper: UIHelper {
     button.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
     for (key, value) in items {
       let item = NSMenuItem()
-      item.title = l10n.localized(key)
+      item.title = localized(key)
       item.tag = value
       button.menu!.addItem(item)
     }
@@ -56,8 +51,8 @@ class SettingsUIHelper: UIHelper {
     label(key.rawValue, isSmall: isSmall, isSecondary: isSecondary)
   }
 
-  override func localized(_ key: String) -> String {
-    l10n.localized(.init(key))
+  func localized(_ key: SettingsLocalization.Key) -> String {
+    return localized(key.rawValue)
   }
 
   private class RadioTagTransformer: ValueTransformer {
@@ -82,7 +77,7 @@ class SettingsUIHelper: UIHelper {
 
   func radioGroup(_ prefKey: Preference.Key, size: NSControl.ControlSize = .small, _ items: [(SettingsLocalization.Key, Int)]) -> [NSButton] {
     return items.map { key, value in
-      let button = NSButton(radioButtonWithTitle: l10n.localized(key), target: nil, action: nil)
+      let button = NSButton(radioButtonWithTitle: localized(key), target: nil, action: nil)
       button.translatesAutoresizingMaskIntoConstraints = false
       button.controlSize = size
       button.bind(.value, to: UserDefaults.standard, withKeyPath: prefKey.rawValue, options: [

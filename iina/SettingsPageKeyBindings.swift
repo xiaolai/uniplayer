@@ -6,6 +6,9 @@
 //  Copyright © 2026 lhc. All rights reserved.
 //
 
+fileprivate let ui = SettingsUIHelper.sharedUI
+
+
 class SettingsPageKeyBindings: SettingsPage {
   override var identifier: String {
     "key.bindings"
@@ -23,7 +26,7 @@ class SettingsPageKeyBindings: SettingsPage {
     "SettingsKeyBindingLocalizable"
   }
 
-  private lazy var configEditor: ConfigEditor = .init(l10n: localizationContext)
+  private lazy var configEditor: ConfigEditor = ConfigEditor()
 
   override func content() -> [SettingsSection] {
     return sections {
@@ -129,7 +132,7 @@ fileprivate class ConfigEditor: SettingsAccessory.Base {
   // This variable is to prevent `NSTableView.reloadData()` in the `loadConfigFile` to trigger `loadConfigFile` again thus forming an infinite loop
   var isLoadingConfig = false
 
-  override init(l10n: SettingsLocalization.Context) {
+  override init() {
     self.mappingController = NSArrayController()
     self.kbTableView = NSTableView()
     self.searchField = NSSearchField()
@@ -151,7 +154,7 @@ fileprivate class ConfigEditor: SettingsAccessory.Base {
 
     self.addKeyMappingBtn = NSButton()
 
-    super.init(l10n: l10n)
+    super.init()
 
     kbTableView.bind(.content, to: mappingController, withKeyPath: "arrangedObjects", options: nil)
     kbTableView.bind(.selectionIndexes, to: mappingController, withKeyPath: "selectionIndexes", options: nil)
@@ -291,19 +294,19 @@ fileprivate class ConfigEditor: SettingsAccessory.Base {
   @objc private func addConfBtnAction() {
     let menu = NSMenu()
     if #available(macOS 14.0, *) {
-      menu.addItem(.sectionHeader(title: l10n.localized(.text_NewKeyBindingSet)))
+      menu.addItem(.sectionHeader(title: ui.localized(.text_NewKeyBindingSet)))
     } else {
-      menu.addItem(withTitle: l10n.localized(.text_NewKeyBindingSet))
+      menu.addItem(withTitle: ui.localized(.text_NewKeyBindingSet))
       menu.addItem(.separator())
     }
-    menu.addItem(withTitle: l10n.localized(.text_CreateAnEmptySet),
+    menu.addItem(withTitle: ui.localized(.text_CreateAnEmptySet),
                  action: #selector(newConfFileAction), target: self)
-    menu.addItem(withTitle: l10n.localized(.text_DuplicateCurrentSet),
+    menu.addItem(withTitle: ui.localized(.text_DuplicateCurrentSet),
                  action: #selector(duplicateConfFileAction), target: self)
-    menu.addItem(withTitle: l10n.localized(.text_ImportAnExistingConfigFile),
+    menu.addItem(withTitle: ui.localized(.text_ImportAnExistingConfigFile),
                  action: #selector(importConfigAction), target: self)
     menu.addItem(.separator())
-    menu.addItem(withTitle: l10n.localized(.text_ShowTheConfigFileIn),
+    menu.addItem(withTitle: ui.localized(.text_ShowTheConfigFileIn),
                  action: #selector(showConfFileAction), target: self)
     NSMenu.popUpContextMenu(menu, with: NSApp.currentEvent!, for: addConfBtn)
   }

@@ -9,6 +9,9 @@
 import WebKit
 import Just
 
+fileprivate let ui = SettingsUIHelper.sharedUI
+
+
 class SettingsPagePlugin: SettingsPage {
   override var identifier: String {
     "plugin"
@@ -30,9 +33,9 @@ class SettingsPagePlugin: SettingsPage {
     8
   }
 
-  fileprivate lazy var installView: PluginInstallView = .init(l10n: localizationContext, page: self)
-  fileprivate lazy var listView: PluginListView = .init(l10n: localizationContext, page: self)
-  fileprivate lazy var updateView: PluginUpdateView = .init(l10n: localizationContext, page: self)
+  fileprivate lazy var installView: PluginInstallView = .init(page: self)
+  fileprivate lazy var listView: PluginListView = .init(page: self)
+  fileprivate lazy var updateView: PluginUpdateView = .init(page: self)
 
   override func content() -> [SettingsSection] {
     return sections {
@@ -66,9 +69,9 @@ fileprivate class PluginInstallView: SettingsAccessory.Base {
   unowned let page: SettingsPagePlugin
   private lazy var pluginManager: PluginManager = PluginManager(window: self.view.window!)
 
-  init(l10n: SettingsLocalization.Context, page: SettingsPagePlugin) {
+  init(page: SettingsPagePlugin) {
     self.page = page
-    super.init(l10n: l10n)
+    super.init()
 
     let githubBtn = ui.button(.text_GetPlugins)
     githubBtn.target = self
@@ -101,7 +104,7 @@ fileprivate class PluginInstallView: SettingsAccessory.Base {
 
   @IBAction func installPluginFromGitHub(_ sender: Any) {
     if #available(macOS 12.0, *) {
-      let panel = PluginStorePanel(l10n: l10n)
+      let panel = PluginStorePanel()
       panel.contentMaxSize = NSSize(width: 800, height: 600)
       view.window!.beginSheet(panel) { _ in
         self.page.listView.reload()
@@ -136,7 +139,7 @@ fileprivate class PluginUpdateView: SettingsContainer {
   let checkUpdateButton: NSButton
   unowned let page: SettingsPagePlugin
 
-  init(l10n: SettingsLocalization.Context, page: SettingsPagePlugin) {
+  init(page: SettingsPagePlugin) {
     self.page = page
     self.view = .init(frame: .zero)
     self.checkUpdateLabel = NSTextField(labelWithString: "Checking for updates…")
@@ -168,7 +171,7 @@ fileprivate class PluginUpdateView: SettingsContainer {
     fatalError("init(coder:) has not been implemented")
   }
 
-  func makeView(context: SettingsLocalization.Context) -> NSView {
+  func makeView() -> NSView {
     return view
   }
 
@@ -225,11 +228,11 @@ fileprivate class PluginListView: SettingsAccessory.Base {
   let tableView: TableView
   unowned let page: SettingsPagePlugin
 
-  init(l10n: SettingsLocalization.Context, page: SettingsPagePlugin) {
+  init(page: SettingsPagePlugin) {
     self.tableView = TableView()
     self.page = page
 
-    super.init(l10n: l10n)
+    super.init()
     tableView.listView = self
 
     let column = NSTableColumn(identifier: .pluginItem)
@@ -401,12 +404,11 @@ extension PluginListView: NSTableViewDelegate, NSTableViewDataSource {
     @objc func actionsBtnAction(_ sender: NSButton) {
       PluginListView.currentPlugin = plugin
 
-      let l10n = listView.l10n!
       let actionMenu = NSMenu()
-      actionMenu.addItem(withTitle: l10n.localized(.text_Uninstall), image: ["trash"],
+      actionMenu.addItem(withTitle: ui.localized(.text_Uninstall), image: ["trash"],
                          action: #selector(uninstallAction),
                          target: plugin.isExternal ? nil : listView)
-      actionMenu.addItem(withTitle: l10n.localized(.text_ShowInFinder), image: ["folder"],
+      actionMenu.addItem(withTitle: ui.localized(.text_ShowInFinder), image: ["folder"],
                          action: #selector(showPluginInFinderAction), target: listView)
       NSMenu.popUpContextMenu(actionMenu, with: NSApp.currentEvent!, for: sender)
     }
@@ -414,7 +416,7 @@ extension PluginListView: NSTableViewDelegate, NSTableViewDataSource {
     @objc func aboutBtnAction(_ sender: NSButton) {
       PluginListView.currentPlugin = plugin
 
-      let sheetWindow = PluginDetailsWindow(l10n: listView.l10n, plugin: plugin, window: window!)
+      let sheetWindow = PluginDetailsWindow(plugin: plugin, window: window!)
       window!.beginSheet(sheetWindow)
     }
 
@@ -521,7 +523,6 @@ extension PluginListView {
 
 
 fileprivate class PluginDetailsWindow: NSWindow {
-  private unowned let l10n: SettingsLocalization.Context
   private unowned let plugin: JavascriptPlugin
   private let okButton: NSButton
   private var webView: WKWebView!
@@ -536,8 +537,7 @@ fileprivate class PluginDetailsWindow: NSWindow {
     case settings = 0, about, help
   }
 
-  init(l10n: SettingsLocalization.Context, plugin: JavascriptPlugin, window: NSWindow) {
-    self.l10n = l10n
+  init(plugin: JavascriptPlugin, window: NSWindow) {
     self.window = window
     self.plugin = plugin
     let style: NSWindow.StyleMask = [.titled, .resizable, .fullSizeContentView]
@@ -552,7 +552,7 @@ fileprivate class PluginDetailsWindow: NSWindow {
     self.segControl = NSSegmentedControl()
     segControl.translatesAutoresizingMaskIntoConstraints = false
 
-    self.loadingFailedView = NSTextField(labelWithString: l10n.localized(.text_FailedToLoadThePage))
+    self.loadingFailedView = NSTextField(labelWithString: ui.localized(.text_FailedToLoadThePage))
     loadingFailedView.translatesAutoresizingMaskIntoConstraints = false
 
     super.init(contentRect: NSRect(x: 0, y: 0, width: 600, height: 450),
@@ -599,7 +599,7 @@ fileprivate class PluginDetailsWindow: NSWindow {
     ]
     for (i, seg) in segments.enumerated() {
       segControl.setImage(.sf(seg.0), forSegment: i)
-      segControl.setLabel(l10n.localized(seg.1), forSegment: i)
+      segControl.setLabel(ui.localized(seg.1), forSegment: i)
     }
 
     contentView.addSubview(iconView)
@@ -694,16 +694,16 @@ fileprivate class PluginDetailsWindow: NSWindow {
       return "<a href='\(url)'>\(url)</a></div>"
     }
 
-    var body = entry(l10n.localized(.text_Identifier), plugin.identifier) +
-    entry(l10n.localized(.text_Author), plugin.authorName)
+    var body = entry(ui.localized(.text_Identifier), plugin.identifier) +
+    entry(ui.localized(.text_Author), plugin.authorName)
 
     if let url = plugin.authorURL, !url.isEmpty {
-      body += entry(l10n.localized(.text_Website), a(url))
+      body += entry(ui.localized(.text_Website), a(url))
     }
     if let url = plugin.githubURLString {
-      body += entry(l10n.localized(.text_Source), a(url))
+      body += entry(ui.localized(.text_Source), a(url))
     } else {
-      body += entry(l10n.localized(.text_Source), NSLocalizedString("plugin.local", comment: ""))
+      body += entry(ui.localized(.text_Source), NSLocalizedString("plugin.local", comment: ""))
     }
     if let subProviders = plugin.subProviders {
       body += entry(

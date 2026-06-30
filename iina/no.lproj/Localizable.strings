@@ -590,3 +590,150 @@
 "sidebar.add_url" = "Legg til URL…";
 
 "sidebar.plugins_placeholder" = "Plugins can display custom sidebar contents. Select a plugin to view its sidebar or install a new plugin in Settings.";
+
+// Settings
+
+// Settings - General
+"settings.actionAfterLaunch.items.1" = "Vis åpne filpanel";
+"settings.actionAfterLaunch.items.2" = "Gjør ingenting";
+"settings.actionAfterLaunch.label" = "Ved oppstart";
+"settings.alwaysOpenInNewWindow.label" = "Always open media in new window";
+"settings.autoRepeat.label" = "When a file is opened manually";
+"settings.keepOpenOnFileEnd.label" = "Hold vindu åpent etter avspilling er ferdig";
+"settings.pauseWhenGoesToSleep.label" = "Pause når maskinen går i dvale";
+"settings.pauseWhenInactive.label" = "Vindu blir inaktivt/aktivt";
+"settings.pauseWhenMinimized.label" = "Minimert/ikke-minimert";
+"settings.playlistAutoAdd.desc" = "Krever omstart at IINA for å tre i kraft.";
+"settings.recordRecentFiles.label" = "Aktiver \"Åpne nylige\"-meny";
+"settings.screenshotCopyToClipboard.desc" = "Mål";
+"settings.screenshotCopyToClipboard.label" = "Kopier til utklippstavle";
+"settings.screenshotSaveToFile.label" = "Arkiver til";
+"settings.trackAllFilesInRecentOpenMenu.label" = "Spor alle spilte filer i \"Åpnet nylig\"-menyen";
+
+// Settings - Video
+"settings.hardwareDecoder.items.0" = "Deaktivert";
+"settings.toneMappingAlgorithm.items.0" = "Auto";
+
+// Settings - Audio
+"settings.gaplessAudio.items.0" = "Deaktivert";
+
+// Settings - Control
+"settings.doubleClickAction.items.0" = "Ingen";
+"settings.doubleClickAction.items.1" = "Gå til fullskjerm";
+"settings.doubleClickAction.items.2" = "Pause / Gjenoppta";
+"settings.doubleClickAction.items.4" = "Bilde-i-bilde";
+"settings.doubleClickAction.items.5" = "A-B løkke";
+"settings.doubleClickAction.label" = "Dobbeltklikk for å";
+"settings.forceTouchAction.items.0" = "Ingen";
+"settings.forceTouchAction.items.1" = "Gå til fullskjerm";
+"settings.forceTouchAction.items.2" = "Pause / Gjenoppta";
+"settings.forceTouchAction.items.3" = "Skjul OSC";
+"settings.forceTouchAction.label" = "Hardt klikk for å";
+"settings.horizontalScrollAction.items.0" = "Juster volum";
+"settings.horizontalScrollAction.items.1" = "Søk";
+"settings.horizontalScrollAction.items.2" = "Ingen";
+"settings.horizontalScrollAction.label" = "Rull horisontalt for å";
+"settings.middleClickAction.items.0" = "Ingen";
+"settings.middleClickAction.items.1" = "Gå til fullskjerm";
+"settings.middleClickAction.items.2" = "Pause / Gjenoppta";
+"settings.middleClickAction.items.3" = "Skjul OSC";
+"settings.middleClickAction.items.4" = "Bilde-i-bilde";
+"settings.middleClickAction.items.5" = "A-B løkke";
+"settings.middleClickAction.label" = "Mellomklikk for å";
+"settings.pinchAction.items.0" = "Juster vindustørrelse";
+"settings.pinchAction.items.1" = "Fullskjerm";
+"settings.pinchAction.items.2" = "Ingen";
+"settings.pinchAction.label" = "Knip for å";
+"settings.relativeSeekAmount.label" = "Sensitivitet for normalt søk";
+"settings.rightClickAction.desc" = "Mellomklikk for å";
+"settings.rightClickAction.items.0" = "Ingen";
+"settings.rightClickAction.items.2" = "Pause / Gjenoppta";
+"settings.rightClickAction.items.3" = "Skjul OSC";
+"settings.rightClickAction.items.4" = "Bilde-i-bilde";
+"settings.rightClickAction.items.5" = "A-B løkke";
+"settings.rightClickAction.label" = "Høreklikk for å";
+"settings.singleClickAction.items.0" = "Ingen";
+"settings.singleClickAction.items.2" = "Pause / Gjenoppta";
+"settings.singleClickAction.items.3" = "Skjul OSC";
+"settings.singleClickAction.label" = "Enkeltklikk for å";
+"settings.useExactSeek.items.0" = "Nøkkelbildesøk";
+"settings.verticalScrollAction.items.0" = "Juster volum";
+"settings.verticalScrollAction.items.1" = "Søk";
+"settings.verticalScrollAction.items.2" = "Ingen";
+"settings.verticalScrollAction.label" = "Rull vertikalt for å";
+"settings.videoViewAcceptsFirstMouse.label" = "Godtar første museklikk når ikke i fokus";
+"settings.volumeScrollAmount.label" = "Sensitivitet for volum";
+
+// Settings - Key Binding
+"settings.useMediaKeys.label" = "Bruk systemmediakontroller";
+
+// Settings - Network
+"settings.cacheBufferSize.desc" = "Standard: 153600";
+"settings.cacheBufferSize.label" = "Bufferstørrelse (kB)";
+"settings.enableCache.label" = "Aktiver buffer";
+"settings.httpProxy.desc" = "Krever omstart at IINA for å tre i kraft.";
+"settings.secPrefech.desc" = "Standard: 36000";
+"settings.transportRTSPThrough.label" = "Strøm RTSP gjennom";
+"settings.userAgent.label" = "Brukeragent";
+"settings.ytdlEnabled.label" = "Aktiver YouTube-dl";
+"settings.ytdlRawOptions.desc" = "Format: <key>=<value>[,<key>=<value>[,…]]";
+"settings.ytdlRawOptions.label" = "Raw alternativer";
+
+// Settings - Subtitles
+"settings.autoSearchOnlineSub.desc" = "If enabled, IINA will automatically search online subtitles only for videos without loaded subtitles and longer than 20 minutes.";
+"settings.autoSearchOnlineSub.label" = "Søk etter undertekster på nett automatisk";
+"settings.displayInLetterBox.label" = "Vis undertekster i bredformat i fullskjerm";
+"settings.subAlignX.items.2" = "Høyre";
+"settings.subAlignX.label" = "Y";
+"settings.subAlignY.items.0" = "Topp";
+"settings.subAlignY.items.2" = "Bunn";
+"settings.subAutoLoadIINA.items.0" = "Deaktivert";
+"settings.subAutoLoadIINA.items.2" = "Oppdag automatisk av IINA";
+"settings.subAutoLoadIINA.label" = "Auto load";
+"settings.subAutoLoadPriorityString.desc" = "Vennligst angi en kommaseparert liste med kommandoer.";
+"settings.subAutoLoadPriorityString.label" = "Undertekster har prioritet når filnavnet inneholder";
+"settings.subAutoLoadSearchPath.desc" = "Mapper er adskilt ed kolon (:). Relative filstier og asteriks (*) på slutten er ikke tillatt.";
+"settings.subAutoLoadSearchPath.label" = "Søk også etter undertekster i følgende kataloger";
+"settings.subBlur.label" = "Uskarphet";
+"settings.subPos.label" = "Vertikal posisjon";
+"settings.subScaleWithWindow.label" = "Skaler undertekster til vindustørrelse";
+"settings.subSpacing.label" = "Sperring av tekst";
+
+// Settings - UI
+"settings.alwaysFloatOnTop.label" = "Vis alltid øverst under avspilling";
+"settings.arrowBtnAction.items.0" = "Hastighet";
+"settings.arrowBtnAction.items.1" = "Forrige / Neste media";
+"settings.arrowBtnAction.items.2" = "Hurtig fremover / bakover";
+"settings.arrowBtnAction.label" = "Bruk venstre-/høyreknapp for";
+"settings.controlBarStickToCenter.label" = "Fest til sentrum når du drar";
+"settings.disableOSDPauseResumeMsgs.label" = "Pause / Gjenoppta";
+"settings.disableOSDSeekMsg.label" = "Spol";
+"settings.disableOSDSpeedMsg.label" = "Hastighet";
+"settings.displayTimeAndBatteryInFullScreen.label" = "Vis tid og batteriinfo når i fullskjerm";
+"settings.enableOSD.label" = "Aktiver OSD";
+"settings.enableThumbnailPreview.label" = "Aktiver forhåndsvisning av miniatyrbilder";
+"settings.oscPosition.items.1" = "Topp";
+"settings.oscPosition.items.2" = "Bunn";
+"settings.oscPosition.label" = "Kontroller på skjermen";
+"settings.osdTextSize.label" = "Tekststørrelse";
+"settings.pauseWhenPip.label" = "Pause avspilling automatisk";
+"settings.resizeWindowOption.items.0" = "tilpass til skjerm";
+"settings.resizeWindowOption.items.2" = "1x videostørrelse";
+"settings.resizeWindowOption.items.4" = "2x videostørrelse";
+"settings.themeMaterial.desc" = "Tema";
+"settings.themeMaterial.items.0" = "Mørk";
+"settings.themeMaterial.items.2" = "Lys";
+"settings.themeMaterial.items.4" = "Match systemutseende";
+"settings.themeMaterial.label" = "Utseende";
+"settings.togglePipByMinimizingWindow.label" = "Start/slutt bilde-i-bilde ved å minimere/av-minimere vinduet";
+"settings.usePhysicalResolution.label" = "Bruk fysisk oppløsning på Retina-skjermer";
+"settings.windowBehaviorWhenPip.items.0" = "Gjør ingenting";
+"settings.windowBehaviorWhenPip.items.1" = "Skjul";
+"settings.windowBehaviorWhenPip.items.2" = "Minimer";
+"settings.windowBehaviorWhenPip.label" = "Vindu";
+
+// Settings - Advanced
+"settings.enableAdvancedSettings.label" = "Aktiver avanserte innstillinger";
+"settings.enableLogging.label" = "Enable logging";
+"settings.logLevel.items.2" = "Advarsel";
+"settings.logLevel.items.3" = "Feil";

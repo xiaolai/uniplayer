@@ -590,3 +590,214 @@
 "sidebar.add_url" = "Afegeix enllaç…";
 
 "sidebar.plugins_placeholder" = "Plugins can display custom sidebar contents. Select a plugin to view its sidebar or install a new plugin in Settings.";
+
+// Settings
+
+// Settings - General
+"settings.actionAfterLaunch.items.0" = "Mostra la finestra de benvinguda";
+"settings.actionAfterLaunch.items.1" = "Obre un fitxer";
+"settings.actionAfterLaunch.items.2" = "No fer res";
+"settings.actionAfterLaunch.label" = "Al executar-se";
+"settings.alwaysOpenInNewWindow.label" = "Sempre obrir en una nova finestra";
+"settings.autoRepeat.label" = "When a file is opened manually";
+"settings.autoSwitchToMusicMode.label" = "Canvia a \"mode música\" automàticament quan es reprodueixi un fitxer d'àudio";
+"settings.blackOutMonitor.label" = "Apagar els altres monitors en pantalla completa";
+"settings.fullScreenWhenOpen.label" = "Pantalla completa";
+"settings.keepOpenOnFileEnd.label" = "Manté la finstra activa una vegada acabada la reproducció";
+"settings.pauseWhenGoesToSleep.label" = "Pausa quan la màquina se'n vagi a dormir";
+"settings.pauseWhenInactive.label" = "La finestra esdevé activa/inactiva";
+"settings.pauseWhenLeavingFullScreen.label" = "Pausa quan surt de la pantalla completa";
+"settings.pauseWhenMinimized.label" = "Minimitza/desminitmitza";
+"settings.pauseWhenOpen.label" = "Pausa";
+"settings.pauseresumeWhen" = "Pausa/reprèn quan";
+"settings.playWhenEnteringFullScreen.label" = "Reprodueix quan canvia a pantalla completa";
+"settings.playlistAutoAdd.desc" = "És necessari reiniciar IINA per tenir efecte";
+"settings.playlistAutoAdd.label" = "Afegeix fitxers en la mateixa carpeta automàticament";
+"settings.playlistAutoPlayNext.label" = "Reprodueix següent element automàticament";
+"settings.playlistShowMetadata.label" = "Mostra el nom de l'artista i la pista per als fitxers d'àudio quan estigui disponible";
+"settings.playlistShowMetadataInMusicMode.label" = "Només en el \"mode música\"";
+"settings.quitWhenNoOpenedWindow.label" = "Surt quan totes les finestres es tanquin";
+"settings.receiveBetaUpdate.label" = "Rebre actualitzacions beta";
+"settings.recordPlaybackHistory.label" = "Activa historial de reproducció";
+"settings.recordRecentFiles.label" = "Habilita el menú \"Obre un fitxer recent\"";
+"settings.resumeLastPosition.label" = "Reprèn la reproducció en la última posició";
+"settings.screenShotIncludeSubtitle.label" = "Inclou subtítols";
+"settings.screenshotCopyToClipboard.desc" = "Destí";
+"settings.screenshotCopyToClipboard.label" = "Copia al porta-retalls";
+"settings.screenshotSaveToFile.desc" = "/camí/a/la/carpeta/captures/de/pantalla";
+"settings.screenshotSaveToFile.label" = "Desa a";
+"settings.screenshotShowPreview.label" = "Mostra previsualitzacions després de fer captures de pantalla";
+"settings.trackAllFilesInRecentOpenMenu.desc" = "D'altra manera només els fitxers oberts manualment es mostraràn en aquest menú.";
+"settings.trackAllFilesInRecentOpenMenu.label" = "Registra tots els fitxers reproduits en el menú \"Obre un fitxer recent\"";
+"settings.useLegacyFullScreen.label" = "Utilitza pantalla completa antic";
+
+// Settings - Video
+"settings.enableHdrSupport.desc" = "Activar mode HDR per defecte al mostrar vídeos HDR.";
+"settings.enableToneMapping.label" = "Activar mapeig de tons";
+"settings.forceDedicatedGPU.desc" = "Utilitza sempre la GPU dedicada per a la renderització (si existeix). Això pot millorar el rendiment, però pot reduir la durada de la bateria.";
+"settings.forceDedicatedGPU.label" = "Força GPU dedicada";
+"settings.hardwareDecoder.items.0" = "Inhabilitat";
+"settings.hardwareDecoder.items.1" = "Automàtic";
+"settings.hardwareDecoder.items.2" = "Automàtic (còpia)";
+"settings.hardwareDecoder.label" = "Decodificador de maquinari";
+"settings.loadIccProfile.desc" = "Carrega el perfil ICC per a la visualització actual i utilitza'l per transformar vídeo RGB a la sortida de pantalla. (només per al mode SDR)";
+"settings.loadIccProfile.label" = "Carrega el perfil ICC";
+"settings.toneMappingAlgorithm.items.0" = "Automàtic";
+"settings.toneMappingAlgorithm.label" = "Algoritme";
+"settings.toneMappingTargetPeak.label" = "Valor màxim a aconseguir";
+"settings.videoThreads.desc" = "Per defecte: 0 (Automàtic)";
+"settings.videoThreads.label" = "Nombre de fils";
+
+// Settings - Audio
+"settings.enableInitialVolume.label" = "Volum inicial";
+"settings.gaplessAudio.items.0" = "Inhabilitat";
+"settings.maxVolume.label" = "Volum màxim";
+"settings.preferredAudioDevice.label" = "Dispositiu d'àudio preferit";
+
+// Settings - Control
+"settings.doubleClickAction.items.0" = "Cap";
+"settings.doubleClickAction.items.1" = "Commuta pantalla completa";
+"settings.doubleClickAction.items.2" = "Pausa / Reprèn";
+"settings.doubleClickAction.items.4" = "Commuta Picture-in-Picture";
+"settings.doubleClickAction.items.5" = "Bucle A-B";
+"settings.doubleClickAction.label" = "Doble clic a";
+"settings.forceTouchAction.items.0" = "Cap";
+"settings.forceTouchAction.items.1" = "Commuta pantalla completa";
+"settings.forceTouchAction.items.2" = "Pausa / Reprèn";
+"settings.forceTouchAction.items.3" = "Amaga OSC";
+"settings.forceTouchAction.label" = "Force Touch a";
+"settings.horizontalScrollAction.items.0" = "Ajusta volum";
+"settings.horizontalScrollAction.items.1" = "Cerca";
+"settings.horizontalScrollAction.items.2" = "Cap";
+"settings.horizontalScrollAction.label" = "Desplaçament horitzontal a";
+"settings.middleClickAction.items.0" = "Cap";
+"settings.middleClickAction.items.1" = "Commuta pantalla completa";
+"settings.middleClickAction.items.2" = "Pausa / Reprèn";
+"settings.middleClickAction.items.3" = "Amaga OSC";
+"settings.middleClickAction.items.4" = "Commuta Picture-in-Picture";
+"settings.middleClickAction.items.5" = "Bucle A-B";
+"settings.middleClickAction.label" = "Clic del mig a";
+"settings.pinchAction.items.0" = "Ajusta la mida de la finestra";
+"settings.pinchAction.items.1" = "Pantalla completa";
+"settings.pinchAction.items.2" = "Cap";
+"settings.pinchAction.label" = "Pessiga a";
+"settings.relativeSeekAmount.label" = "Sensitivitat per la cerca normal";
+"settings.rightClickAction.desc" = "Clic del mig a";
+"settings.rightClickAction.items.0" = "Cap";
+"settings.rightClickAction.items.2" = "Pausa / Reprèn";
+"settings.rightClickAction.items.3" = "Amaga OSC";
+"settings.rightClickAction.items.4" = "Commuta Picture-in-Picture";
+"settings.rightClickAction.items.5" = "Bucle A-B";
+"settings.rightClickAction.label" = "Doble clic a";
+"settings.singleClickAction.items.0" = "Cap";
+"settings.singleClickAction.items.2" = "Pausa / Reprèn";
+"settings.singleClickAction.items.3" = "Amaga OSC";
+"settings.singleClickAction.label" = "Clic a";
+"settings.useExactSeek.desc" = "La cerca exacte és més precisa però fa un ús intensiu del processador.";
+"settings.useExactSeek.items.0" = "Cerca fotograma";
+"settings.useExactSeek.items.1" = "Cerca exacte";
+"settings.useExactSeek.items.2" = "Automàtic";
+"settings.useExactSeek.label" = "Tipus de cerca";
+"settings.verticalScrollAction.items.0" = "Ajusta volum";
+"settings.verticalScrollAction.items.1" = "Cerca";
+"settings.verticalScrollAction.items.2" = "Cap";
+"settings.verticalScrollAction.label" = "Desplaçament vertical a";
+"settings.videoViewAcceptsFirstMouse.label" = "Accepta el primer clic de ratolí quan la pantalla no té el focus";
+"settings.volumeScrollAmount.label" = "Sensibilitat del volum";
+
+// Settings - Key Binding
+"settings.displayKeyBindingRawValues.label" = "Mostra els valors en cru";
+"settings.useMediaKeys.label" = "Utilitza els controls multimèdia del sistema";
+
+// Settings - Network
+"settings.cacheBufferSize.desc" = "Per defecte: 153600";
+"settings.cacheBufferSize.label" = "Mida de la memòria cau (KB)";
+"settings.enableCache.label" = "Activa memòria cau";
+"settings.httpProxy.desc" = "És necessari reiniciar IINA per tenir efecte.";
+"settings.httpProxy.label" = "Servidor intermediari HTTP";
+"settings.secPrefech.desc" = "Per defecte: 36000";
+"settings.secPrefech.label" = "Segons a precarregar";
+"settings.transportRTSPThrough.items.0" = "Automàtic";
+"settings.transportRTSPThrough.label" = "Transporta RTSP a través de";
+"settings.userAgent.label" = "Agent d'usuari";
+"settings.ytdlEnabled.label" = "Activa youtube-dl";
+"settings.ytdlRawOptions.desc" = "Format: <clau>=<valor>[,<clau>=<valor>[,...]]";
+"settings.ytdlRawOptions.label" = "Opcions en cru";
+"settings.ytdlSearchPath.desc" = "IINA buscarà youtube-dl en aquesta carpeta. És necessari reiniciar.";
+"settings.ytdlSearchPath.label" = "Camí personalitzat de youtube-dl";
+
+// Settings - Subtitles
+"settings.autoSearchOnlineSub.desc" = "If enabled, IINA will automatically search online subtitles only for videos without loaded subtitles and longer than 20 minutes.";
+"settings.autoSearchOnlineSub.label" = "Cerca subtítols en línia automàticament";
+"settings.displayInLetterBox.label" = "Mostra els subtítols en mode cinema en pantalla completa";
+"settings.subAlignX.items.0" = "Esquerra";
+"settings.subAlignX.items.1" = "Centre";
+"settings.subAlignX.items.2" = "Dreta";
+"settings.subAlignX.label" = "Y";
+"settings.subAlignY.items.0" = "Superior";
+"settings.subAlignY.items.1" = "Centre";
+"settings.subAlignY.items.2" = "Inferior";
+"settings.subAutoLoadIINA.items.0" = "Inhabilitat";
+"settings.subAutoLoadIINA.items.1" = "Subtítols que contenen el nom del fitxer";
+"settings.subAutoLoadIINA.items.2" = "Detecció intel·ligent d'IINA";
+"settings.subAutoLoadIINA.label" = "Càrrega automàtica";
+"settings.subAutoLoadPriorityString.desc" = "Si us play, introdueix una llista de cadenes de text separada per comes.";
+"settings.subAutoLoadPriorityString.label" = "Els subtítols tenen prioritat quan el nom del fitxer conté";
+"settings.subAutoLoadSearchPath.desc" = "Els directoris estan separats per dos punts (:). Els camins relatius i comodins (*) són vàlids al final.";
+"settings.subAutoLoadSearchPath.label" = "També cerca suubtítols en els directoris següents";
+"settings.subBlur.label" = "Difuminat";
+"settings.subBold.label" = "Negreta";
+"settings.subItalic.label" = "Cursiva";
+"settings.subLang.desc" = "Aquesta opció es desarà amb format ISO 639'2 i funcionarà tant per mpv com per opensubtitles.";
+"settings.subPos.label" = "Posició vertical";
+"settings.subScaleWithWindow.label" = "Escala els subtítols a la mida de la finestra";
+"settings.subSpacing.label" = "Espaiat del tipus de lletra";
+
+// Settings - UI
+"settings.alwaysFloatOnTop.label" = "Mostra sempre al damunt durant la reproducció";
+"settings.arrowBtnAction.items.0" = "Velocitat";
+"settings.arrowBtnAction.items.1" = "Anterior / Següent fitxer";
+"settings.arrowBtnAction.items.2" = "Avanç ràpid / rebobinar";
+"settings.arrowBtnAction.label" = "Utilitza el botó esquerra/dreta per";
+"settings.controlBarStickToCenter.label" = "Ajusta al centre a l'arrossegar";
+"settings.disableOSDPauseResumeMsgs.label" = "Pausa / Reprèn";
+"settings.disableOSDSeekMsg.label" = "Cerca";
+"settings.disableOSDSpeedMsg.label" = "Velocitat";
+"settings.displayTimeAndBatteryInFullScreen.label" = "Mostra l'hora i la informació de la bateria en pantalla completa";
+"settings.enableOSD.label" = "Activa OSD";
+"settings.enableThumbnailPreview.label" = "Activa previsualització de miniatures";
+"settings.maxThumbnailPreviewCacheSize.label" = "Mida màxima de la emòria cau";
+"settings.oscPosition.items.0" = "Flotant";
+"settings.oscPosition.items.1" = "Superior";
+"settings.oscPosition.items.2" = "Inferior";
+"settings.oscPosition.label" = "Control de pantalla";
+"settings.osdTextSize.label" = "Mida del text";
+"settings.pauseWhenPip.label" = "Atura automàticament la reproducció";
+"settings.resizeWindowOption.items.0" = "ajusta a la pantalla";
+"settings.resizeWindowOption.items.1" = "0.5x mida del vídeo";
+"settings.resizeWindowOption.items.2" = "1x la mida del vídeo";
+"settings.resizeWindowOption.items.3" = "1.5x de la mida del vídeo";
+"settings.resizeWindowOption.items.4" = "2x la mida del vídeo";
+"settings.resizeWindowOption.label" = "Canvia la mida a";
+"settings.showChapterPos.label" = "Mostra la posició del capítol en la barra de progrés";
+"settings.showRemainingTime.label" = "Mostra el temps restant en comptes de la duració total";
+"settings.themeMaterial.desc" = "Tema";
+"settings.themeMaterial.items.0" = "Fosc";
+"settings.themeMaterial.items.2" = "Llum";
+"settings.themeMaterial.items.4" = "Coincidir amb l'aparença del sistema";
+"settings.themeMaterial.label" = "Aparença";
+"settings.togglePipByMinimizingWindow.label" = "Commuta Picture-in-Picture minimitzant/desminitmitzant la finestra";
+"settings.usePhysicalResolution.label" = "Utilitza la resolució en pantalles Retina";
+"settings.windowBehaviorWhenPip.items.0" = "No fer res";
+"settings.windowBehaviorWhenPip.items.1" = "Amaga";
+"settings.windowBehaviorWhenPip.items.2" = "Minimitza";
+"settings.windowBehaviorWhenPip.label" = "Finestra";
+
+// Settings - Advanced
+"settings.enableAdvancedSettings.desc" = "És necessari reiniciar IINA per tal que els següents paràmetres tinguin efecte.";
+"settings.enableAdvancedSettings.label" = "Habilita opcions avançadades";
+"settings.enableLogging.label" = "Activa el registre";
+"settings.logLevel.items.0" = "Detallat";
+"settings.logLevel.items.2" = "Avís";
+"settings.useMpvOsd.label" = "Utilitza l'OSD del mpv's";
+"settings.useUserDefinedConfDir.label" = "Utilitza el directori de configuració";

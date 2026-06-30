@@ -590,3 +590,117 @@
 "sidebar.add_url" = "Pievienot URL saiti…";
 
 "sidebar.plugins_placeholder" = "Plugins can display custom sidebar contents. Select a plugin to view its sidebar or install a new plugin in Settings.";
+
+// Settings
+
+// Settings - General
+"settings.actionAfterLaunch.items.1" = "Rādīt atvērto failu paneli";
+"settings.actionAfterLaunch.items.2" = "Nedarīt neko";
+"settings.alwaysOpenInNewWindow.label" = "Always open media in new window";
+"settings.autoRepeat.label" = "When a file is opened manually";
+"settings.keepOpenOnFileEnd.label" = "Saglabāt atvērtu logu pēc atskaņošanas beigām";
+"settings.pauseWhenInactive.label" = "Logs kļūst neaktīvs/aktīvs";
+"settings.pauseWhenMinimized.label" = "Minimizēts/neminimizēts";
+"settings.pauseWhenOpen.label" = "Pauze";
+"settings.playlistAutoAdd.desc" = "Lai tas stātos spēkā, ir nepieciešams restartēt IINA.";
+"settings.playlistShowMetadataInMusicMode.label" = "Tikai \"mūzikas režīmā\"";
+"settings.recordRecentFiles.label" = "Ieslēgt izvēlni \"Atvērt jaunākos\"";
+"settings.screenshotCopyToClipboard.label" = "Kopēt starpliktuvē";
+"settings.screenshotSaveToFile.label" = "Saglabāt";
+"settings.trackAllFilesInRecentOpenMenu.label" = "Visu atskaņoto failu izsekošana izvēlnē \"Atvērt jaunākos\"";
+
+// Settings - Video
+"settings.forceDedicatedGPU.desc" = "Video renderēšanai vienmēr izmantot diskrēto videokarti (ja tāda ir). Tā var uzlabot veiktspēju, bet var samazināt akumulatora darbības laiku.";
+"settings.forceDedicatedGPU.label" = "Piespiest izmantot diskrēto videokarti";
+"settings.hardwareDecoder.items.0" = "Izslēgta";
+"settings.hardwareDecoder.items.1" = "Automātiska";
+"settings.hardwareDecoder.items.2" = "Automātiska (Kopēt)";
+"settings.hardwareDecoder.label" = "Aparatūras dekodēšana";
+"settings.toneMappingAlgorithm.items.0" = "Automātiska";
+"settings.videoThreads.desc" = "Noklusēti: 0 (Automātiski)";
+"settings.videoThreads.label" = "Pavedienu skaits";
+
+// Settings - Audio
+"settings.enableInitialVolume.label" = "Sākotnējais skaļums";
+"settings.gaplessAudio.items.0" = "Izslēgta";
+"settings.maxVolume.label" = "Maksimālais skaļums";
+"settings.preferredAudioDevice.label" = "Vēlamā skaņas ierīce";
+
+// Settings - Control
+"settings.doubleClickAction.items.1" = "Toggle fullscreen";
+"settings.doubleClickAction.items.2" = "Pause / Resume";
+"settings.doubleClickAction.items.4" = "Toggle Picture-in-Picture";
+"settings.doubleClickAction.items.5" = "A-B cikls";
+"settings.forceTouchAction.items.1" = "Toggle fullscreen";
+"settings.forceTouchAction.items.2" = "Pause / Resume";
+"settings.horizontalScrollAction.items.1" = "Meklēt";
+"settings.middleClickAction.items.1" = "Toggle fullscreen";
+"settings.middleClickAction.items.2" = "Pause / Resume";
+"settings.middleClickAction.items.4" = "Toggle Picture-in-Picture";
+"settings.middleClickAction.items.5" = "A-B cikls";
+"settings.rightClickAction.items.2" = "Pause / Resume";
+"settings.rightClickAction.items.4" = "Toggle Picture-in-Picture";
+"settings.rightClickAction.items.5" = "A-B cikls";
+"settings.singleClickAction.items.2" = "Pause / Resume";
+"settings.useExactSeek.items.2" = "Automātiska";
+"settings.verticalScrollAction.items.1" = "Meklēt";
+
+// Settings - Network
+"settings.cacheBufferSize.desc" = "Default: 153600";
+"settings.httpProxy.desc" = "Lai tas stātos spēkā, ir nepieciešams restartēt IINA.";
+"settings.secPrefech.desc" = "Default: 36000";
+"settings.transportRTSPThrough.items.0" = "Automātiska";
+"settings.ytdlEnabled.label" = "Enable youtube-dl";
+"settings.ytdlRawOptions.desc" = "Format: <key>=<value>[,<key>=<value>[,…]]";
+
+// Settings - Subtitles
+"settings.autoSearchOnlineSub.desc" = "If enabled, IINA will automatically search online subtitles only for videos without loaded subtitles and longer than 20 minutes.";
+"settings.subAlignX.label" = "Y";
+"settings.subAlignY.items.0" = "Augšā";
+"settings.subAlignY.items.2" = "Apakšā";
+"settings.subAutoLoadIINA.items.0" = "Izslēgta";
+"settings.subAutoLoadIINA.label" = "Auto load";
+
+// Settings - UI
+"settings.alwaysFloatOnTop.label" = "Atskaņošanas laikā vienmēr novietot virspusē pārējiem logiem";
+"settings.arrowBtnAction.items.0" = "Mainīt ātrumu";
+"settings.arrowBtnAction.items.1" = "Atskaņot iepriekšējo / nākamo medijas failu";
+"settings.arrowBtnAction.items.2" = "Patīt uz priekšu/atpakaļ";
+"settings.arrowBtnAction.label" = "Izmantot kreiso/labo pogu ekrāna vadības panelī, lai";
+"settings.controlBarStickToCenter.label" = "Velkot, nofiksējiet to centrā";
+"settings.disableOSDSeekMsg.label" = "Meklēt";
+"settings.disableOSDSpeedMsg.label" = "Mainīt ātrumu";
+"settings.displayTimeAndBatteryInFullScreen.label" = "Rādīt laiku un akumulatora informāciju pilnekrāna režīmā";
+"settings.enableOSD.label" = "Iespējot Informācija ekrānā (OSD)";
+"settings.enableThumbnailPreview.label" = "Iespējot sīkattēla rādīšanu";
+"settings.maxThumbnailPreviewCacheSize.label" = "Maksimālais kešatmiņas izmērs";
+"settings.oscPosition.items.0" = "Peldošs";
+"settings.oscPosition.items.1" = "Augšā";
+"settings.oscPosition.items.2" = "Apakšā";
+"settings.oscPosition.label" = "Ekrāna vadības panelis";
+"settings.osdTextSize.label" = "Teksta izmērs";
+"settings.pauseWhenPip.label" = "Automātiski apturēt atskaņošanu";
+"settings.resizeWindowOption.items.0" = "Pielāgot ekrāna izmēram";
+"settings.resizeWindowOption.items.1" = "Puse no video izmēra - 0.5x";
+"settings.resizeWindowOption.items.2" = "Tiešs video izmērs - 1x";
+"settings.resizeWindowOption.items.3" = "Pusotra video izmēra - 1.5x";
+"settings.resizeWindowOption.items.4" = "Divkāršs video izmērs - 2x";
+"settings.resizeWindowOption.label" = "Loga izmērs";
+"settings.showChapterPos.label" = "Rādīt nodaļu laika atzīmes ekrāna atkaņošanas joslā";
+"settings.showRemainingTime.label" = "Rādīt atlikušo laiku, nevis kopējo ilgumu";
+"settings.themeMaterial.desc" = "Tēma";
+"settings.themeMaterial.items.0" = "Tumšs";
+"settings.themeMaterial.items.2" = "Gaišs";
+"settings.themeMaterial.items.4" = "Saskaņot ar sistēmas izskatu";
+"settings.themeMaterial.label" = "Izskats";
+"settings.togglePipByMinimizingWindow.label" = "Pārslēgties uz \"Attēls-Attēlā\", minimizējot/palielinot logu";
+"settings.usePhysicalResolution.label" = "Izmantot fizisko izšķirtspēju Retina ekrānos";
+"settings.windowBehaviorWhenPip.items.0" = "Darīt neko";
+"settings.windowBehaviorWhenPip.items.1" = "Paslēpt";
+"settings.windowBehaviorWhenPip.items.2" = "Minimizēt";
+"settings.windowBehaviorWhenPip.label" = "Logs";
+
+// Settings - Advanced
+"settings.enableLogging.label" = "Enable logging";
+"settings.logLevel.items.1" = "Atkļūdošana";
+"settings.logLevel.items.3" = "Kļūda";

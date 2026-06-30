@@ -590,3 +590,64 @@
 "sidebar.add_url" = "Add URL…";
 
 "sidebar.plugins_placeholder" = "Plugins can display custom sidebar contents. Select a plugin to view its sidebar or install a new plugin in Settings.";
+
+// Settings
+
+// Settings - General
+"settings.actionAfterLaunch.items.1" = "Паказаць панэль адкрыцця файла";
+"settings.alwaysOpenInNewWindow.label" = "Always open media in new window";
+"settings.autoRepeat.label" = "When a file is opened manually";
+"settings.pauseWhenOpen.label" = "Паўза";
+"settings.receiveBetaUpdate.label" = "Атрымліваць бэта абнаўленні";
+"settings.screenShotFormat.label" = "Фармат";
+
+// Settings - Video
+"settings.toneMappingAlgorithm.items.0" = "Auto";
+
+// Settings - Control
+"settings.doubleClickAction.items.0" = "Нiчога";
+"settings.doubleClickAction.items.1" = "Toggle fullscreen";
+"settings.doubleClickAction.items.2" = "Pause / Resume";
+"settings.doubleClickAction.items.4" = "Toggle Picture-in-Picture";
+"settings.forceTouchAction.items.0" = "Нiчога";
+"settings.forceTouchAction.items.1" = "Toggle fullscreen";
+"settings.forceTouchAction.items.2" = "Pause / Resume";
+"settings.horizontalScrollAction.items.1" = "Пераматаць";
+"settings.horizontalScrollAction.items.2" = "Нiчога";
+"settings.middleClickAction.items.0" = "Нiчога";
+"settings.middleClickAction.items.1" = "Toggle fullscreen";
+"settings.middleClickAction.items.2" = "Pause / Resume";
+"settings.middleClickAction.items.4" = "Toggle Picture-in-Picture";
+"settings.pinchAction.items.2" = "Нiчога";
+"settings.rightClickAction.items.0" = "Нiчога";
+"settings.rightClickAction.items.2" = "Pause / Resume";
+"settings.rightClickAction.items.4" = "Toggle Picture-in-Picture";
+"settings.singleClickAction.items.2" = "Pause / Resume";
+"settings.useExactSeek.items.2" = "Аўта";
+"settings.verticalScrollAction.items.1" = "Пераматаць";
+"settings.verticalScrollAction.items.2" = "Нiчога";
+
+// Settings - Network
+"settings.cacheBufferSize.desc" = "Default: 153600";
+"settings.secPrefech.desc" = "Default: 36000";
+"settings.ytdlEnabled.label" = "Enable youtube-dl";
+"settings.ytdlRawOptions.desc" = "Format: <key>=<value>[,<key>=<value>[,…]]";
+
+// Settings - Subtitles
+"settings.autoSearchOnlineSub.desc" = "If enabled, IINA will automatically search online subtitles only for videos without loaded subtitles and longer than 20 minutes.";
+"settings.subAlignX.label" = "Y";
+"settings.subAutoLoadIINA.label" = "Auto load";
+"settings.subBlur.label" = "Размытасць";
+
+// Settings - UI
+"settings.arrowBtnAction.items.0" = "Хуткасць";
+"settings.disableOSDSeekMsg.label" = "Пераматаць";
+"settings.disableOSDSpeedMsg.label" = "Хуткасць";
+"settings.windowBehaviorWhenPip.label" = "Акно";
+
+// Settings - Advanced
+"settings.enableLogging.label" = "Enable logging";
+"settings.logLevel.items.0" = "Падрабязна";
+"settings.logLevel.items.1" = "Адладка";
+"settings.logLevel.items.2" = "Папярэджанне";
+"settings.logLevel.items.3" = "Памылкі";

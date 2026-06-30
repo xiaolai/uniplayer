@@ -8,10 +8,12 @@
 
 import Cocoa
 
+fileprivate let ui = SettingsUIHelper.sharedUI
+
+
 struct SettingsItem {
   class Base: NSObject, SettingsContainer {
     lazy var itemID = SettingsContainerUUID.next()
-    var l10n: SettingsLocalization.Context!
 
     var isFirstItem = false
     var isLastItem = false
@@ -32,8 +34,7 @@ struct SettingsItem {
       }
     }
 
-    func makeView(context: SettingsLocalization.Context) -> NSView {
-      self.l10n = context
+    func makeView() -> NSView {
       let view = NSView()
       view.translatesAutoresizingMaskIntoConstraints = false
       return view
@@ -56,8 +57,7 @@ struct SettingsItem {
       return self
     }
 
-    override func makeView(context: SettingsLocalization.Context) -> NSView {
-      self.l10n = context
+    override func makeView() -> NSView {
       let view = View(tag: itemID)
       view.translatesAutoresizingMaskIntoConstraints = false
       customView.translatesAutoresizingMaskIntoConstraints = false
@@ -104,8 +104,7 @@ struct SettingsItem {
       return self
     }
 
-    override func makeView(context: SettingsLocalization.Context) -> NSView {
-      self.l10n = context
+    override func makeView() -> NSView {
       let view = View(tag: itemID)
       view.translatesAutoresizingMaskIntoConstraints = false
 
@@ -120,7 +119,7 @@ struct SettingsItem {
       setControlSize(textField)
 
       if let key = key {
-        label.stringValue = l10n.localized(.init("\(key.rawValue).label"))
+        label.stringValue = ui.localized(.init("\(key.rawValue).label"))
         textField.bind(.value, to: UserDefaults.standard, withKeyPath: key.rawValue)
       }
 
@@ -145,7 +144,7 @@ struct SettingsItem {
 
       if hasDesc {
         let descKey =  descKey ?? .init("\(key!.rawValue).desc")
-        let descLabel = NSTextField(labelWithString: l10n.localized(descKey))
+        let descLabel = NSTextField(labelWithString: ui.localized(descKey))
         descLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
         descLabel.textColor = .secondaryLabelColor
         stackView.addArrangedSubview(descLabel)
@@ -162,12 +161,11 @@ struct SettingsItem {
     }
 
     override func registerSearchEntry(context: SettingsSearch.Context) {
-      let l10n = context.l10n
       context.add(itemID,
-                  (key?.rawValue).map { l10n.localized(.init($0 + ".label")) },
+                  (key?.rawValue).map { ui.localized(.init($0 + ".label")) },
                   isMain: true)
       context.add(itemID,
-                  (descKey?.rawValue).map { l10n.localized(.init($0 + ".desc")) },
+                  (descKey?.rawValue).map { ui.localized(.init($0 + ".desc")) },
                   isMain: true)
     }
 
@@ -258,8 +256,7 @@ struct SettingsItem {
       return []
     }
 
-    override func makeView(context: SettingsLocalization.Context) -> NSView {
-      self.l10n = context
+    override func makeView() -> NSView {
       let view = View(owner: self, tag: itemID)
       view.translatesAutoresizingMaskIntoConstraints = false
       self.renderedView = view
@@ -268,23 +265,21 @@ struct SettingsItem {
       return view
     }
 
-    private func localizedTitle(_ context: SettingsLocalization.Context? = nil) -> String {
-      let l10n = context ?? l10n!
+    private func localizedTitle() -> String {
       if let labelLocalizationKey = labelLocalizationKey {
-        return l10n.localized(labelLocalizationKey)
+        return ui.localized(labelLocalizationKey)
       } else if let key = key {
         let l10nKey = labelLocalizationKey ?? .init("\(key.rawValue).label")
-        return l10n.localized(l10nKey)
+        return ui.localized(l10nKey)
       } else {
         return "# Localization Missing"
       }
     }
 
     override func registerSearchEntry(context: SettingsSearch.Context) {
-      let l10n = context.l10n
-      context.add(itemID, localizedTitle(l10n), isMain: true)
+      context.add(itemID, localizedTitle(), isMain: true)
       if hasDesc {
-        context.add(itemID, l10n.localized(descKey ?? .init("\(key!.rawValue).desc")))
+        context.add(itemID, ui.localized(descKey ?? .init("\(key!.rawValue).desc")))
       }
       if let detailContainer {
         let newContext = context.with(parent: itemID)
@@ -333,7 +328,7 @@ struct SettingsItem {
       backgroundView.addSubview(labelStackView)
 
       if hasDesc {
-        let descText = l10n.localized(descKey ?? .init("\(key!.rawValue).desc"))
+        let descText = ui.localized(descKey ?? .init("\(key!.rawValue).desc"))
         desc = NSTextField(labelWithString: descText)
         desc.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
         desc.textColor = .secondaryLabelColor
@@ -436,7 +431,7 @@ struct SettingsItem {
 
     private func prepareExpandableView() {
       guard let detailContainer else { return }
-      let detailView = detailContainer.makeView(context: l10n)
+      let detailView = detailContainer.makeView()
       renderedDetailView = detailView
       detailView.translatesAutoresizingMaskIntoConstraints = false
 
@@ -560,10 +555,9 @@ struct SettingsItem {
 
     override func registerSearchEntry(context: SettingsSearch.Context) {
       super.registerSearchEntry(context: context)
-      let l10n = context.l10n
       guard let l10nKey = key?.rawValue ?? labelLocalizationKey?.rawValue else { return }
       for (tag, _) in valueTypes {
-        let title = l10n.localized(.init("\(l10nKey).items.\(tag)"))
+        let title = ui.localized("\(l10nKey).items.\(tag)")
         context.add(itemID, title)
       }
     }
@@ -603,7 +597,7 @@ struct SettingsItem {
       guard let l10nKey = key?.rawValue ?? labelLocalizationKey?.rawValue else { return }
       for (tag, _) in valueTypes {
         guard availableTags?.contains(tag) != false else { continue }
-        let title = l10n.localized(.init("\(l10nKey).items.\(tag)"))
+        let title = ui.localized(.init("\(l10nKey).items.\(tag)"))
         popupButton.addItem(withTitle: title)
         popupButton.lastItem?.tag = tag
       }
@@ -788,7 +782,7 @@ struct SettingsItem {
       // popup
       guard let l10nKey = keyPopup?.rawValue ?? labelLocalizationKey?.rawValue else { return }
       for (tag, _) in valueTypes {
-        let title = l10n.localized(.init("\(l10nKey).items.\(tag)"))
+        let title = ui.localized("\(l10nKey).items.\(tag)")
         popupButton.addItem(withTitle: title)
         popupButton.lastItem?.tag = tag
       }
@@ -882,7 +876,7 @@ struct SettingsItem {
         stack.spacing = 2
       }
       if let trailingLabel = trailingLabel {
-        let label = NSTextField(labelWithString: l10n.localized(trailingLabel))
+        let label = NSTextField(labelWithString: ui.localized(trailingLabel))
         setControlSize(label)
         return [stack, label]
       } else {
@@ -936,7 +930,7 @@ struct SettingsItem {
       textField.size(width: 64)
       setControlSize(textField)
       if let trailingLabel = trailingLabel {
-        let label = NSTextField(labelWithString: l10n.localized(trailingLabel))
+        let label = NSTextField(labelWithString: ui.localized(trailingLabel))
         setControlSize(label)
         return [textField, label, nsSwitch]
       } else {
@@ -1085,23 +1079,21 @@ fileprivate class NonClickableButton: NSButton {
 
 class SettingsAccessory {
   /// A Base class for customized controls.
-  class Base: NSObject, WithSettingsLocalizationContext, SettingsContainer {
+  class Base: NSObject, SettingsContainer {
     lazy var itemID = SettingsContainerUUID.next()
-    var l10n: SettingsLocalization.Context!
     let view: NSView
-    lazy var ui: SettingsUIHelper = SettingsUIHelper(l10n)
 
-    init(l10n: SettingsLocalization.Context) {
-      self.l10n = l10n
+    override init() {
       self.view = NSView()
       self.view.translatesAutoresizingMaskIntoConstraints = false
+      super.init()
     }
 
     func registerSearchEntry(context: SettingsSearch.Context) {
       return
     }
 
-    func makeView(context: SettingsLocalization.Context) -> NSView {
+    func makeView() -> NSView {
       return view
     }
   }
@@ -1158,18 +1150,17 @@ class SettingsAccessory {
       fatalError("init(coder:) has not been implemented")
     }
 
-    func makeView(context: SettingsLocalization.Context) -> NSView {
+    func makeView() -> NSView {
       if let builtView {
         return builtView
       }
 
-      let l10n = context
       guard let l10nKey = localizationKey?.rawValue ?? key?.rawValue else {
         fatalError("No localization key provided")
       }
       for (tag, _) in valueTypes {
-        let title = l10n.localized(.init("\(l10nKey).items.\(tag)"))
-        let desc = l10n.localized(.init("\(l10nKey).items.\(tag).desc"))
+        let title = ui.localized("\(l10nKey).items.\(tag)")
+        let desc = ui.localized("\(l10nKey).items.\(tag).desc")
         let box = ClickableBox()
         box.translatesAutoresizingMaskIntoConstraints = false
         box.boxType = .custom
@@ -1211,11 +1202,10 @@ class SettingsAccessory {
     }
 
     func registerSearchEntry(context: SettingsSearch.Context) {
-      let l10n = context.l10n
       guard let l10nKey = localizationKey?.rawValue ?? key?.rawValue else { return }
       for (tag, _) in valueTypes {
-        let title = l10n.localized(.init("\(l10nKey).items.\(tag)"))
-        let desc = l10n.localized(.init("\(l10nKey).items.\(tag).desc"))
+        let title = ui.localized("\(l10nKey).items.\(tag)")
+        let desc = ui.localized("\(l10nKey).items.\(tag).desc")
         context.add(itemID, title)
         context.add(itemID, desc)
       }
@@ -1358,13 +1348,12 @@ class SettingsAccessory {
       return self
     }
 
-    func makeView(context: SettingsLocalization.Context) -> NSView {
-      let l10n = context
+    func makeView() -> NSView {
       audioLangTokenField.awakeFromNib()
       if let key = key {
         audioLangTokenField.commaSeparatedValues = Preference.string(for: key) ?? ""
         if hasDesc {
-          let descLabel = NSTextField(labelWithString: l10n.localized(.init("\(key.rawValue).desc")))
+          let descLabel = NSTextField(labelWithString: ui.localized("\(key.rawValue).desc"))
           descLabel.makeMultiLine()
           descLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
           descLabel.textColor = .secondaryLabelColor
