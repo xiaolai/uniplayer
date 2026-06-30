@@ -358,7 +358,8 @@ class JavascriptPlugin: NSObject {
 
     // e.g. "localized": { "fr": { "name": ..., "description": ..., "sidebarTab": { "name": ... } } }
     let l10nDict = jsonDict["localized"] as? [String: [String: Any]] ?? [:]
-    let preferredLang = Bundle.preferredLocalizations(from: Array(l10nDict.keys)).first
+    // Also search for "en" (we assume Info.json is in English; won't cause big problem if it's not).
+    let preferredLang = Bundle.preferredLocalizations(from: ["en"] + Array(l10nDict.keys)).first
     let preferredL10n: [String: Any]? = preferredLang.flatMap { l10nDict[$0] }
 
     func l10n(_ key: String, fallback: String?) -> String? {
