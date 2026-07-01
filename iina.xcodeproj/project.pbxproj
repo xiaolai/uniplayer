@@ -401,6 +401,7 @@
 		E3A239AE2FC7267300CE6ACC /* SideBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A239AD2FC7267000CE6ACC /* SideBar.swift */; };
 		E3A239B12FCB4D0900CE6ACC /* SidebarPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A239B02FCB4D0300CE6ACC /* SidebarPane.swift */; };
 		E3A239C12FCB4D2400CE6ACC /* SidebarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3A239C02FCB4D2400CE6ACC /* SidebarController.swift */; };
+		E3AD62772FF4C9BE00D2CAC5 /* VerbatimStrings.strings in Resources */ = {isa = PBXBuildFile; fileRef = E3AD62762FF4C9BE00D2CAC5 /* VerbatimStrings.strings */; };
 		E3B3DD5720FDB8A600325184 /* PreferenceWindowController.xib in Resources */ = {isa = PBXBuildFile; fileRef = E3B3DD5920FDB8A600325184 /* PreferenceWindowController.xib */; };
 		E3B93C872FE9F77600803513 /* InteractiveMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3B93C862FE9F77000803513 /* InteractiveMode.swift */; };
 		E3BA79EE2131443A00529D99 /* OpenURLWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3BA79EC2131443A00529D99 /* OpenURLWindowController.swift */; };
@@ -1812,6 +1813,7 @@
 		E3A239AD2FC7267000CE6ACC /* SideBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SideBar.swift; sourceTree = "<group>"; };
 		E3A239B02FCB4D0300CE6ACC /* SidebarPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarPane.swift; sourceTree = "<group>"; };
 		E3A239C02FCB4D2400CE6ACC /* SidebarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarController.swift; sourceTree = "<group>"; };
+		E3AD62762FF4C9BE00D2CAC5 /* VerbatimStrings.strings */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; path = VerbatimStrings.strings; sourceTree = "<group>"; };
 		E3B3DD5820FDB8A600325184 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/PreferenceWindowController.xib; sourceTree = "<group>"; };
 		E3B3DD5B20FDB8A900325184 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/PreferenceWindowController.strings"; sourceTree = "<group>"; };
 		E3B93C862FE9F77000803513 /* InteractiveMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractiveMode.swift; sourceTree = "<group>"; };
@@ -2264,6 +2266,7 @@
 				845AC09E1E1AE6C10080B614 /* Localizable.strings */,
 				34F294BF2C0B68B300F14962 /* Contribution.rtf */,
 				8483FAFF1EDFF325000F55D6 /* Credits.rtf */,
+				E3AD62762FF4C9BE00D2CAC5 /* VerbatimStrings.strings */,
 			);
 			name = Assets;
 			sourceTree = "<group>";
@@ -2954,6 +2957,7 @@
 				8F49C36E213EFB7E0076C4F9 /* MiniPlayerWindowController.xib in Resources */,
 				84A0BA951D2F9E9600BC8DA1 /* MainMenu.xib in Resources */,
 				8400D5D81E1AB31B006785F5 /* AboutWindowController.xib in Resources */,
+				E3AD62772FF4C9BE00D2CAC5 /* VerbatimStrings.strings in Resources */,
 				8400D5F31E1AB348006785F5 /* PrefSubViewController.xib in Resources */,
 				8400D5E11E1AB32F006785F5 /* PrefUIViewController.xib in Resources */,
 				E338368A202651CF00ABC812 /* PrefOSCToolbarDraggingItemViewController.xib in Resources */,

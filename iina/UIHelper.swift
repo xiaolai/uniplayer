@@ -184,7 +184,14 @@ class UIHelper {
 
   func localized(_ key: String) -> String {
     let key = if let scope { "\(scope).\(key)" } else { key }
-    return NSLocalizedString(key, tableName: table, comment: key)
+    let val = NSLocalizedString(key, tableName: table, comment: key)
+    if val == key {
+      let verbatimVal = NSLocalizedString(key, tableName: "VerbatimStrings", comment: key)
+      if verbatimVal != key {
+        return verbatimVal
+      }
+    }
+    return val
   }
 
   class TextFieldWithFixedAlignmentRect: NSTextField {

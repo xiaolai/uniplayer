@@ -604,7 +604,6 @@
 "settings.blackOutMonitor.label" = "Black out other monitors while in full screen";
 "settings.defaultRepeatMode.items.0" = "Loop playlist";
 "settings.defaultRepeatMode.items.1" = "Loop single file";
-"settings.defaultRepeatMode.label" = "";
 "settings.fullScreenWhenOpen.label" = "Enter fullscreen";
 "settings.groupSimultaneousOpensInPlaylist.label" = "Group media in playlist when opening multiple files at once";
 "settings.keepOpenOnFileEnd.label" = "Keep window open after playback finishes";
@@ -626,11 +625,6 @@
 "settings.recordPlaybackHistory.label" = "Enable playback history";
 "settings.recordRecentFiles.label" = "Enable \"Open Recent\" menu";
 "settings.resumeLastPosition.label" = "Resume last playback position";
-"settings.screenShotFormat.items.0" = "PNG";
-"settings.screenShotFormat.items.1" = "JPEG (.jpg)";
-"settings.screenShotFormat.items.2" = "JPEG (.jpeg)";
-"settings.screenShotFormat.items.3" = "WebP (.webp)";
-"settings.screenShotFormat.items.4" = "JPEG XL (.jxl)";
 "settings.screenShotFormat.label" = "Format";
 "settings.screenShotIncludeSubtitle.label" = "Include subtitles";
 "settings.screenshotCopyToClipboard.desc" = "Destination";
@@ -659,14 +653,6 @@
 "settings.hardwareDecoder.label" = "Hardware decoder";
 "settings.loadIccProfile.desc" = "Load the ICC profile for current display and use it to transform video RGB to screen output. (Only for SDR mode)";
 "settings.loadIccProfile.label" = "Load ICC profile";
-"settings.toneMappingAlgorithm.items.0" = "auto";
-"settings.toneMappingAlgorithm.items.1" = "clip";
-"settings.toneMappingAlgorithm.items.2" = "mobius";
-"settings.toneMappingAlgorithm.items.3" = "reinhard";
-"settings.toneMappingAlgorithm.items.4" = "hable";
-"settings.toneMappingAlgorithm.items.5" = "bt.2390";
-"settings.toneMappingAlgorithm.items.6" = "gamma";
-"settings.toneMappingAlgorithm.items.7" = "linear";
 "settings.toneMappingAlgorithm.label" = "Algorithm";
 "settings.toneMappingTargetPeak.desc" = "Measured peak brightness of the display. If set to 0, IINA detects this value. If detection fails, IINA sets the target peak to 400.";
 "settings.toneMappingTargetPeak.label" = "Target peak";
@@ -674,9 +660,7 @@
 "settings.videoThreads.label" = "Number of threads";
 
 // Settings - Audio
-"settings.audioDriverEnableAVFoundation.items.0" = "Core Audio";
 "settings.audioDriverEnableAVFoundation.items.0.desc" = "The default audio driver.";
-"settings.audioDriverEnableAVFoundation.items.1" = "AVFoundation";
 "settings.audioDriverEnableAVFoundation.items.1.desc" = "AVFoundation is a new, experimental audio driver offering Spatial Audio support. However, you may encounter some issues when using AVFoundation, such as audio delays.";
 "settings.audioDriverEnableAVFoundation.label" = "Audio driver";
 "settings.enableInitialVolume.label" = "Initial volume";
@@ -702,9 +686,6 @@
 "settings.replayGainFallback.label" = "Fallback";
 "settings.replayGainPreamp.desc" = "Pre-amplification gain to apply to the ReplayGain gain.";
 "settings.replayGainPreamp.label" = "Preamp gain";
-"settings.spdifAC3.label" = "AC3";
-"settings.spdifDTS.label" = "DTS";
-"settings.spdifDTSHD.label" = "DTS-HD";
 
 // Settings - Control
 "settings.doubleClickAction.items.0" = "None";
@@ -769,19 +750,16 @@
 "settings.useMediaKeys.label" = "Use system media control";
 
 // Settings - Network
-"settings.cacheBufferSize.desc" = "Default 153600";
+"settings.cacheBufferSize.desc" = "Default: 153600";
 "settings.cacheBufferSize.label" = "Cache buffer size (KB)";
 "settings.enableCache.label" = "Enable cache";
 "settings.httpProxy.desc" = "Requires restarting IINA to take effect.";
 "settings.httpProxy.label" = "HTTP proxy";
-"settings.secPrefech.desc" = "Default 36000";
+"settings.secPrefech.desc" = "Default: 36000";
 "settings.secPrefech.label" = "Seconds to prefetch";
 "settings.showBufferingThrobber.label" = "Show throbber when paused waiting for the cache";
 "settings.showSeekingThrobber.label" = "Show throbber when seeking";
 "settings.transportRTSPThrough.items.0" = "Auto";
-"settings.transportRTSPThrough.items.1" = "TCP";
-"settings.transportRTSPThrough.items.2" = "UDP";
-"settings.transportRTSPThrough.items.3" = "HTTP";
 "settings.transportRTSPThrough.label" = "Transport RTSP stream through";
 "settings.userAgent.label" = "User agent";
 "settings.ytdlEnabled.label" = "Enable mpv's youtube-dl script";
@@ -791,17 +769,15 @@
 "settings.ytdlSearchPath.label" = "Custom youtube-dl path";
 
 // Settings - Subtitles
-"settings.autoSearchOnlineSub.desc" = "If enabled, IINA will automatically search online subtitles only for videos without loaded subtitles and longer than 20 mintues.";
+"settings.autoSearchOnlineSub.desc" = "If enabled, IINA will automatically search online subtitles only for videos without loaded subtitles and longer than 20 minutes.";
 "settings.autoSearchOnlineSub.label" = "Search online subtitles automatically";
 "settings.displayInLetterBox.label" = "Display subtitles in letterboxes while in full screen";
 "settings.subAlignX.items.0" = "Left";
 "settings.subAlignX.items.1" = "Center";
 "settings.subAlignX.items.2" = "Right";
-"settings.subAlignX.label" = "Y";
 "settings.subAlignY.items.0" = "Top";
 "settings.subAlignY.items.1" = "Center";
 "settings.subAlignY.items.2" = "Bottom";
-"settings.subAlignY.label" = "";
 "settings.subAutoLoadIINA.items.0" = "Disabled";
 "settings.subAutoLoadIINA.items.1" = "Subtitles containing media filename";
 "settings.subAutoLoadIINA.items.2" = "Detect intelligently by IINA";
