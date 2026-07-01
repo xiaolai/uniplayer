@@ -917,6 +917,10 @@
 "settings.$Cache" = "Cache";
 "settings.$Cancel" = "Cancel";
 "settings.$CheckForUpdates" = "Check for updates";
+"settings.$CheckForUpdates.items.3600" = "Hourly";
+"settings.$CheckForUpdates.items.86400" = "Daily";
+"settings.$CheckForUpdates.items.604800" = "Weekly";
+"settings.$CheckForUpdates.items.2629800" = "Monthly";
 "settings.$Chrome" = "Chrome";
 "settings.$ClearCache" = "Clear Cache";
 "settings.$ClearPlaybackHistory" = "Clear Playback History…";
