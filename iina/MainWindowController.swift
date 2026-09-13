@@ -885,7 +885,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   @objc func removeVideoViewBlackBars() {
-    guard let window, Preference.unlockWindowAspectRatio else { return }
+    guard let window, Preference.unlockWindowAspectRatio, !fsState.isFullscreen else { return }
 
     let currentSize = videoViewContainer.frame.size
     let videoSize = player.videoSizeForDisplay
