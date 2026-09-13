@@ -25,6 +25,10 @@ class AdditionalInfoView: TranslucentView {
     self.title = NSTextField(labelWithString: "")
     title.translatesAutoresizingMaskIntoConstraints = false
     title.font = .systemFont(ofSize: 18)
+    title.setContentCompressionResistancePriority(
+      NSLayoutConstraint.Priority(rawValue: 200),
+      for: .horizontal
+    )
 
     self.stackView = NSStackView()
     stackView.translatesAutoresizingMaskIntoConstraints = false
