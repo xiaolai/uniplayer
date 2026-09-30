@@ -130,12 +130,21 @@ const LISTEN_PORTS: std::ops::Range<u16> = 42800..42900;
 /// this machine would be holding; a port that frees up between the probe and
 /// the bind is a race nobody can close from here, and it costs the same error
 /// 8.x gave when its whole range was busy.
+///
+/// Inside this process it *can* be closed, and is: callers hold `LISTEN_BIND`
+/// from the probe until the session has bound. Without it two sessions built at
+/// once both probe the first port as free and the second bind kills its session
+/// — what the parallel torrent tests hit as "Address already in use".
 fn listen_port() -> u16 {
     LISTEN_PORTS
         .clone()
         .find(|p| std::net::TcpListener::bind((std::net::Ipv4Addr::UNSPECIFIED, *p)).is_ok())
         .unwrap_or(0)
 }
+
+/// Held from `listen_port`'s probe until the session built with that port is
+/// listening, so no two sessions in this process are handed the same port.
+static LISTEN_BIND: AsyncMutex<()> = AsyncMutex::const_new(());
 
 /// How long `pause_restored` waits for one restored torrent to leave
 /// `Initializing`. Generous in tries and tiny in step: with `fastresume` there
@@ -644,6 +653,9 @@ impl TorrentService {
         // Before the session, never after: what it removes are torrents the
         // session is about to restore.
         prune_orphaned_store(&session_dir);
+        // See `LISTEN_BIND`: the probe inside the options below and the bind
+        // inside `new_with_opts` are one step as far as this process goes.
+        let bind_guard = LISTEN_BIND.lock().await;
         let session = Session::new_with_opts(
             dir,
             SessionOptions {
@@ -772,6 +784,7 @@ impl TorrentService {
         )
         .await
         .map_err(|e| format!("torrent session failed: {e:#}"))?;
+        drop(bind_guard);
 
         // **Before anything else can reach it.** A torrent that was live when
         // the app last closed is restored live, and would start talking to peers
