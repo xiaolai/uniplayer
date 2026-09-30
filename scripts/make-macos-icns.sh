@@ -12,7 +12,7 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 icons="$repo_root/src-tauri/icons"
 src="$icons/icon-master-macos.svg"
-iconset="${TMPDIR:-/tmp}/frameplayer-icon.iconset"
+iconset="${TMPDIR:-/tmp}/uniplayer-icon.iconset"
 
 command -v resvg >/dev/null || { echo "resvg not found: brew install resvg" >&2; exit 1; }
 

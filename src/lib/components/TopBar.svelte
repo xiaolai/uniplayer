@@ -118,7 +118,9 @@
 </script>
 
 {#snippet brandMark()}
-  <svg class="logo" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" d="M3.2 7.6V5.9c0-1.5 1.2-2.7 2.7-2.7h1.7M16.4 3.2h1.7c1.5 0 2.7 1.2 2.7 2.7v1.7M20.8 16.4v1.7c0 1.5-1.2 2.7-2.7 2.7h-1.7M7.6 20.8H5.9c-1.5 0-2.7-1.2-2.7-2.7v-1.7"/><path fill="#e8e8ec" stroke="#e8e8ec" stroke-width="1.6" stroke-linejoin="round" d="M10 9v6l5.4-3z"/></svg>
+  <!-- The app icon's own tile (icon-master-tile.svg at favicon scale): the bare
+       glyph's darkest face disappears on a dark bar at this size. -->
+  <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><defs><clipPath id="brand-glyph"><path d="M32.73 32.22 A10 10 0 0 1 47.73 23.56L78.53 41.34 A10 10 0 0 1 78.53 58.66L47.73 76.44 A10 10 0 0 1 32.73 67.78Z"/></clipPath></defs><rect width="32" height="32" rx="7" fill="#f3f0ea"/><g transform="translate(16 16) scale(0.29915) translate(-58 -50)"><g clip-path="url(#brand-glyph)"><polygon points="32.73,23.67 32.73,85.10 40.33,80.72 40.33,36.84 63.13,50.00 70.73,45.61" fill="#abc4f9"/><polygon points="40.33,80.72 93.53,50.00 85.93,45.61 47.93,67.55 47.93,41.22 40.33,36.84" fill="#507adf"/><polygon points="85.93,45.61 32.73,14.90 32.73,23.67 70.73,45.61 47.93,58.78 47.93,67.55" fill="#1f3c86"/></g></g></svg>
   <span class="appname">UniPlayer</span>
 {/snippet}
 
@@ -368,7 +370,6 @@
   .brand .logo {
     width: 18px;
     height: 18px;
-    color: #818cf8;
     filter: var(--ui-shadow-drop);
   }
 
