@@ -60,7 +60,17 @@ fi
 
 export APPLE_SIGNING_IDENTITY="$identity"
 export FFMPEG_DIR="$repo_root/src-tauri/ffmpeg-macos"
-export LIBCLANG_PATH=/Library/Developer/CommandLineTools/usr/lib
+# libclang lives beside the active toolchain's clang — under the Command Line
+# Tools on some machines and inside Xcode.app on others, so a fixed path to
+# either one breaks the build on the other. An explicit LIBCLANG_PATH wins.
+if [ -z "${LIBCLANG_PATH:-}" ]; then
+  LIBCLANG_PATH="$(dirname "$(dirname "$(xcrun --find clang)")")/lib"
+fi
+[ -f "$LIBCLANG_PATH/libclang.dylib" ] || {
+  echo "no libclang.dylib in $LIBCLANG_PATH — install Xcode or its Command Line Tools, or set LIBCLANG_PATH" >&2
+  exit 1
+}
+export LIBCLANG_PATH
 
 # Split rather than one `"${args[@]}"`: macOS ships bash **3.2**, where `set -u`
 # treats expanding an *empty* array as an unbound variable and kills the script
