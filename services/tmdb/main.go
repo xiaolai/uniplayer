@@ -131,7 +131,7 @@ func main() {
 	images, err := newImageCache(*cacheDir, ttlImage)
 	if err != nil {
 		log.Printf("WARNING: image cache unavailable at %s: %v", *cacheDir, err)
-		log.Printf("WARNING: posters will not be proxied. If this is a bind mount, "+
+		log.Printf("WARNING: posters will not be proxied. If this is a bind mount, " +
 			"chown it to the container's user (65534) or use a named volume instead.")
 		images = nil
 	}
