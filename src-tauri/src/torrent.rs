@@ -3299,7 +3299,7 @@ mod tests {
             // `PeerStatsFilter` is not exported, but it is `Deserialize` and
             // the call site pins the type — so it is built from JSON rather than
             // named. The alternative is no per-peer view at all.
-            let filter = serde_json::from_str(r#"{"state":"All"}"#).unwrap();
+            let filter = serde_json::from_str(r#"{"state":"all"}"#).unwrap();
             if let Ok(snap) = api.api_peer_stats(id, filter) {
                 println!("\n--- per peer ---");
                 for (addr, st) in &snap.peers {
