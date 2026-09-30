@@ -140,6 +140,6 @@ for (const { target, path, text, matches } of states) {
 }
 
 console.log(
-  `\nDone. Pushing this to main is what releases it: the workflow compares ` +
-    `tauri.conf.json's version against the previous commit's.`,
+  `\nDone. Nothing is released by pushing it — there is no release workflow; ` +
+    `build and sign locally (see Releases in the README).`,
 );
