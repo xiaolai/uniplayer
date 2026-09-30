@@ -14,7 +14,11 @@ describe('the room server setting', () => {
 
   it('is the shipped default until somebody changes it', () => {
     expect(relayUrl()).toBe(DEFAULT_RELAY);
-    expect(socketUrl(relayUrl())).toBe(`wss://${DEFAULT_RELAY}/ws`);
+    // This build ships with no relay, so the default has no socket and opening
+    // a room reports `no_relay` — pointing at the setting — instead of dialling
+    // a server nobody chose.
+    expect(DEFAULT_RELAY).toBe('');
+    expect(socketUrl(relayUrl())).toBeNull();
   });
 
   it('remembers one that was set, tidied', () => {

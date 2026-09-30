@@ -20,7 +20,7 @@ pub fn screenshot_dir(app: tauri::AppHandle) -> Result<String, String> {
         .picture_dir()
         .or_else(|_| app.path().home_dir())
         .map_err(|e| e.to_string())?;
-    let dir = base.join("Frame Player");
+    let dir = base.join("UniPlayer");
     std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     Ok(dir.to_string_lossy().into_owned())
 }

@@ -1,7 +1,9 @@
 # Third-party notices
 
-Frame Player is free software under the GNU General Public License, version
-3 or later — its own license text is at the end of this file. What follows
+UniPlayer is a modified version of Frame Player by Evgenii Zakharov
+(<https://github.com/risenxxx/frame-player>). It is free software under the GNU
+General Public License, version 3 or later — its own license text is at the
+end of this file. What follows
 first is every third-party component the application ships, the license each
 is used under, and those licenses in full.
 
@@ -15,14 +17,14 @@ macOS), and the application loads whatever is there.
 
 **Source code.** Every component below is unmodified upstream code except mpv, and the
 "Source" link for each goes to the project that publishes it. The scripts that
-fetch and build them are part of Frame Player's own repository —
+fetch and build them are part of UniPlayer's own repository —
 `scripts/build-macos-libs.sh` and `scripts/fetch-libs.ps1` — and record the exact
 versions and configure flags used.
 
 **Modifications to mpv.** mpv is built from its upstream release with the
 changes below applied, in this order. They are published as patches in the
-`patches/` directory of Frame Player's repository,
-<https://github.com/risenxxx/frame-player>, and the build script applies every
+`patches/` directory of UniPlayer's repository,
+<https://github.com/xiaolai/uniplayer>, and the build script applies every
 patch found there. This concerns the macOS build only: on Windows mpv is upstream's own build, unmodified.
 
 - `mpv-0.41.0-coreaudio-init-cleanup.patch`, changed 2026-09-29. A fix that mpv has merged and not yet released (mpv-player/mpv#18383). The CoreAudio device listener is registered only once the audio output has initialized, and an initialization that fails releases what it had set up. Files changed: `audio/out/ao_coreaudio.c`.
@@ -42,7 +44,7 @@ GPL-only component appears.
 - [JavaScript packages](#javascript-packages) (7)
 - [Online services](#online-services)
 - [License texts](#license-texts)
-- [Frame Player's own license](#frame-players-own-license)
+- [UniPlayer's own license](#uniplayers-own-license)
 
 ---
 
@@ -11288,9 +11290,10 @@ Permission is granted to anyone to use this software for any purpose, including 
 
 ---
 
-## Frame Player's own license
+## UniPlayer's own license
 
-Copyright (C) 2026 Evgenii Zakharov
+Copyright (C) 2026 Evgenii Zakharov (Frame Player)
+Copyright (C) 2026 UniPlayer contributors (modifications)
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
@@ -11299,7 +11302,8 @@ version. It is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 PARTICULAR PURPOSE. See the license below for details.
 
-Source code: <https://github.com/risenxxx/frame-player>
+Source code: <https://github.com/xiaolai/uniplayer>, modified from
+<https://github.com/risenxxx/frame-player>.
 
 ```
                     GNU GENERAL PUBLIC LICENSE

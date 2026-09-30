@@ -374,7 +374,7 @@ pub(crate) fn http() -> &'static reqwest::Client {
     CLIENT.get_or_init(|| {
         reqwest::Client::builder()
             .user_agent(format!(
-                "{}/1.0 UPnP/1.0 FramePlayer/{}",
+                "{}/1.0 UPnP/1.0 UniPlayer/{}",
                 std::env::consts::OS,
                 env!("CARGO_PKG_VERSION")
             ))
@@ -1563,7 +1563,7 @@ async fn load_url(
     // television. The Stop is best-effort by design; on an idle renderer it is
     // a no-op, and its failure says nothing about whether the load will work.
     let _ = soap(client, &control, AVTRANSPORT, "Stop", "").await;
-    let name = title.unwrap_or_else(|| "Frame Player".into());
+    let name = title.unwrap_or_else(|| "UniPlayer".into());
     // The URL is percent-encoded by the server that issued it, so nothing in it
     // needs escaping today; escaping anyway is what keeps that a property of
     // this call rather than of whoever registered the file.
@@ -1894,7 +1894,7 @@ pub async fn selftest(app: &tauri::AppHandle, target: Option<String>, path: Stri
         cast_service.clone(),
         path,
         0.0,
-        Some("Frame Player".into()),
+        Some("UniPlayer".into()),
         false,
     )
     .await

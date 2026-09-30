@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Notarises one artefact and staples the ticket to it.
 #
-#   scripts/macos-notarize.sh "src-tauri/target/release/bundle/macos/Frame Player.app"
-#   scripts/macos-notarize.sh "src-tauri/target/release/bundle/dmg/Frame Player_0.33.0_aarch64.dmg"
+#   scripts/macos-notarize.sh "src-tauri/target/release/bundle/macos/UniPlayer.app"
+#   scripts/macos-notarize.sh "src-tauri/target/release/bundle/dmg/UniPlayer_0.33.0_aarch64.dmg"
 #
 # Deliberately ours rather than Tauri's. The bundler will notarise the .app by
 # itself when the credentials are in the environment, but it cannot touch the

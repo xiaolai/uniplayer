@@ -88,7 +88,7 @@ fn client(proxy: &str) -> reqwest::Client {
     // of a tracker refuses such a request outright — the trap the announce has
     // already paid for.
     let mut builder = reqwest::Client::builder()
-        .user_agent(format!("FramePlayer/{}", env!("CARGO_PKG_VERSION")))
+        .user_agent(format!("UniPlayer/{}", env!("CARGO_PKG_VERSION")))
         .timeout(TIMEOUT);
     if let Some(p) = (!proxy.is_empty())
         .then(|| reqwest::Proxy::all(proxy).ok())

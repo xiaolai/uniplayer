@@ -61,7 +61,7 @@
   <!-- title block -->
   <text x="330" y="56" text-anchor="middle" font-size="23" font-weight="600"
         font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
-        fill="#ffffff" letter-spacing="0.3">Frame Player</text>
+        fill="#ffffff" letter-spacing="0.3">UniPlayer</text>
   <text x="330" y="80" text-anchor="middle" font-size="13"
         font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
         fill="#ffffff" fill-opacity="0.42">Drag the app into Applications</text>

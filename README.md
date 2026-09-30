@@ -1,11 +1,17 @@
-# Frame Player
+# UniPlayer
+
+> UniPlayer is a fork of [Frame Player](https://github.com/risenxxx/frame-player)
+> by Evgenii Zakharov, rebranded and modified; it is GPL-3.0-or-later like the
+> original. Everything below describes the player as inherited, adjusted where
+> the fork differs: there are no published builds, no auto-update and no hosted
+> services yet.
 
 Local files, links and magnet torrents in one window, on **Tauri 2 + libmpv** —
 frame-accurate, instant, and unusually careful about the details.
 
 <p align="center">
   <img src="docs/intro.webp" width="900"
-       alt="Frame Player playing a night-sky episode: hovering the seekbar shows a preview frame of a tent on a lakeshore, labelled 1:56 and with the chapter name Camp at the Shore, above a seekbar divided by chapter marks">
+       alt="The player playing a night-sky episode: hovering the seekbar shows a preview frame of a tent on a lakeshore, labelled 1:56 and with the chapter name Camp at the Shore, above a seekbar divided by chapter marks">
 </p>
 
 <p align="center">
@@ -99,76 +105,15 @@ rebound.
 
 ## Install
 
-Both platforms are built and published by CI on every version bump — take the
-files from
-[the latest release](https://github.com/risenxxx/frame-player/releases/latest):
+UniPlayer has no published builds yet — build it from source (see
+[Building](#building)). A build signed with your own Apple Developer ID and
+notarised with `scripts/macos-notarize.sh` opens like any other application;
+one produced without a certificate is signed ad-hoc, which seals the bundle but
+certifies nothing, so macOS refuses the first launch with an **Open Anyway**
+button in *System Settings → Privacy & Security*.
 
-| Platform | File | Requirements |
-|---|---|---|
-| Windows | `FramePlayer_<version>_x64-setup.exe` | Windows 10/11, x64 |
-| macOS | `FramePlayer_<version>_aarch64.dmg` | Apple Silicon |
-
-macOS is also a `brew install --cask` away — see [macOS](#macos) below.
-
-The macOS build is signed with an Apple Developer ID and notarised, so it opens
-like any other application. **The Windows build is not signed**, and stops the
-first launch with a SmartScreen warning — that is a fact about a certificate
-rather than about the binary, which is built in the open from this repository by
-[the release workflow](.github/workflows/release.yml). Updates are a separate
-mechanism and are verified on both platforms: every package is signed with the
-project's own key and the player refuses one whose signature does not match.
-
-Once installed, the player updates itself — it checks for a new version at
-startup and every six hours, and the update reopens the current video where it
-was.
-
-### Windows
-
-1. Run `FramePlayer_<version>_x64-setup.exe`. SmartScreen shows a blue
-   **"Windows protected your PC"** dialog with only a *Don't run* button.
-2. Click **More info** — the publisher line appears, and with it a **Run
-   anyway** button.
-3. Click it; the installer proceeds normally.
-
-SmartScreen is judging the file's *reputation* as much as its signature, and a
-new version is a new file, so expect the warning again after an update installed
-by hand. Updates applied from inside the player do not go through it.
-
-### macOS
-
-Download `FramePlayer_<version>_aarch64.dmg` from
-[the latest release](https://github.com/risenxxx/frame-player/releases/latest),
-open it and drag **Frame Player** to *Applications*.
-
-With [Homebrew](https://brew.sh) instead:
-
-```bash
-brew install --cask risenxxx/tap/frame-player
-```
-
-The fully qualified name taps the repository on the way past, so that is the
-whole installation; afterwards the cask answers to `frame-player` alone.
-
-The cask is in [a tap of its own](https://github.com/risenxxx/homebrew-tap)
-rather than in `homebrew-cask`, whose casks have to clear a popularity bar this
-project has not reached; it is bumped by the release workflow, so it names the
-current version within a minute of one being published. It declares the player
-as self-updating, which means `brew upgrade` deliberately leaves it alone: the
-player fetches its own signed updates, and Homebrew is the way in and the way
-out rather than the update channel. It also declares the build as Apple Silicon
-only, so an Intel machine is refused with a reason instead of receiving an
-application it cannot run.
-
-`brew uninstall --cask frame-player` removes the player and leaves watch
-positions, remembered tracks and the thumbnail cache where they are; adding
-`--zap` removes those too.
-
-A build you produce yourself from this repository is not signed the way the
-releases are: with no certificate it is signed ad-hoc, which seals the bundle
-but certifies nothing.
-macOS then refuses the first launch with an **Open Anyway** button in *System
-Settings → Privacy & Security* — the path that has a way out, as opposed to the
-*"is damaged"* refusal an unsealed binary gets, which has none.
+The self-updater is switched off (no update endpoint is configured), so a new
+version is installed by hand.
 
 ## Features
 
@@ -195,7 +140,8 @@ Settings → Privacy & Security* — the path that has a way out, as opposed to 
 - **Catalog** — browse what is popular or search by title, open a film or a
   series and pick a release for it: quality, dynamic range, size, dubs and
   seeders side by side, best copy first. Descriptions and posters come from
-  TMDB through a proxy of the project's own, so the player carries no API key;
+  TMDB through a proxy (`services/tmdb`), so the player carries no API key —
+  UniPlayer hosts none yet, so posters appear once its address is set;
   the release list comes from a Torznab-compatible indexer whose address
   is a setting. On by default, and switchable off — it is the one surface here
   that tells a third party what you are *looking for*.
@@ -252,9 +198,8 @@ Settings → Privacy & Security* — the path that has a way out, as opposed to 
 
 - File associations, single instance, media keys and taskbar progress on
   Windows; Apple-Event file opening and a native menu bar on macOS.
-- **Auto-updates** — signed installers; the player checks a manifest at startup
-  and every 6 hours and offers a one-click update that reopens the current video
-  at the same position.
+- **Auto-updates** — inherited but switched off in UniPlayer until it has an
+  update endpoint and its own signing key.
 
 ## Watch together
 
@@ -264,7 +209,7 @@ between the players and none passes through the relay.
 
 Open the context menu → **Watch together**. Create a room and
 you get a six-character code and a link; either one gets somebody else in. A
-`frameplayer://join/ABC123` link opens the player straight into the join dialog
+`uniplayer://join/ABC123` link opens the player straight into the join dialog
 with the code filled in — it is *offered* rather than obeyed, because a custom
 scheme is a surface any web page can aim at.
 
@@ -294,8 +239,8 @@ says who it is waiting for; a member who never reports stops holding it up after
 
 **The relay** is a small Go server in [`services/relay/`](services/relay/) — no database,
 nothing written to disk, and a room ceases to exist a few minutes after the last
-person leaves. Builds point at a default instance; the address is a field in
-**Settings → General**, so running your own is a setting rather than a fork.
+person leaves. UniPlayer ships with **no default instance**: set the address in
+**Settings → General** to one you run.
 See [services/relay/README.md](services/relay/README.md) to deploy one and
 [docs/watch-together.md](docs/watch-together.md) for the design.
 
@@ -306,8 +251,8 @@ first run:
 
 | Platform | Path |
 |---|---|
-| Windows | `%APPDATA%\app.frameplayer\mpv.conf` |
-| macOS | `~/Library/Application Support/app.frameplayer/mpv.conf` |
+| Windows | `%APPDATA%\live.uniplayer\mpv.conf` |
+| macOS | `~/Library/Application Support/live.uniplayer/mpv.conf` |
 
 The format and options are mpv's own (`option=value`,
 [full list](https://mpv.io/manual/stable/#options)); values are applied on top of
@@ -321,9 +266,9 @@ preserved, and changes apply live. The bottom of the dialog links to the file
 itself, and reports which decoder is actually in use, so a silent fallback to
 software decoding is visible.
 
-Three addresses are settings rather than build-time constants, each with a
-sensible default and each empty-means-default: the watch-together relay, the
-catalog's metadata proxy and its release indexer. Self-hosting any of them is a
+Three addresses are settings rather than build-time constants, each
+empty-means-default: the watch-together relay, the catalog's metadata proxy and
+its release indexer. UniPlayer ships all three empty. Self-hosting any of them is a
 setting, not a fork — see [services/](services/).
 
 ## Hotkeys
@@ -480,24 +425,11 @@ by name (`architecture.md`, `macos.md`, a numbered `ROADMAP` item).
 
 ## Releases
 
-Pushing a version bump in `src-tauri/tauri.conf.json` to `main` triggers CI:
-Windows and macOS artifacts are built, signed with the updater key, uploaded
-together with `latest.json` to Cloudflare R2 and published as a GitHub Release.
-Installed players pick the update up automatically.
-
-The macOS bundle and its disk image are signed with an Apple Developer ID and
-notarised as part of that run. The Windows installer is not code-signed yet, so
-it still shows a SmartScreen warning on first run; [Install](#install) has the
-way past it. The updater signature is a separate thing and is always verified,
-on both platforms.
-
-The last step of the run bumps the [Homebrew cask](https://github.com/risenxxx/homebrew-tap)
-to the release that has just been published. It is last because a stale tap
-hands out the previous version while a missing release is an artifact nobody can
-obtain, and a step must not stand in front of something more important than
-itself. The cask points at the GitHub Release asset rather than at R2, which
-keeps only the five newest versions — a download that 404s is worse than a
-version behind.
+There is no release workflow: upstream's (R2 hosting, updater manifest,
+Homebrew tap) was removed with the fork. Releases are built and signed locally —
+`scripts/macos-sign.sh`, `npm run tauri:macos:build`, `scripts/build-dmg.sh`,
+then `scripts/macos-notarize.sh` on the disk image. `npm run set-version` still
+keeps the five version fields in step.
 
 ## License
 
@@ -536,4 +468,4 @@ application as well, reachable from the bottom of the settings dialog. It is
 generated by `npm run notices` from [licenses/](licenses/), and `npm run gates`
 fails if a shipped library has no entry there or if the committed file is stale.
 
-Frame Player is not affiliated with the mpv, FFmpeg or OpenSubtitles projects.
+UniPlayer is not affiliated with the mpv, FFmpeg or OpenSubtitles projects.

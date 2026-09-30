@@ -50,7 +50,9 @@ export const DEFAULT_INDEXER = '';
  * viewers who have set nothing, and a self-hoster sets their own indexer
  * instead.
  */
-const CONFIG_URL = 'https://updates.frameplayer.app/catalog.json';
+// Empty: UniPlayer publishes no configuration document yet, and
+// `catalog_config` answers anything that is not https with its defaults.
+const CONFIG_URL = '';
 
 /**
  * Our own TMDB proxy (`services/tmdb`), which is where the API key lives.
@@ -59,7 +61,9 @@ const CONFIG_URL = 'https://updates.frameplayer.app/catalog.json';
  * `catalog.rs` for why that is a reading of their terms rather than caution.
  * Self-hosting is a setting, so this is a default and not a constant.
  */
-export const DEFAULT_TMDB = 'https://tmdb.frameplayer.app';
+// Empty until UniPlayer runs its own `services/tmdb`: the catalog then works
+// without pictures (`catalog_ready` is false) unless an address is set.
+export const DEFAULT_TMDB = '';
 
 /**
  * TMDB's own image CDN, tried first for every poster.

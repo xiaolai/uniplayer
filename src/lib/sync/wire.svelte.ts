@@ -50,6 +50,10 @@ import {
 /**
  * The relay this build points at by default.
  *
+ * Empty: UniPlayer hosts no relay yet, so watching together needs an address
+ * in the settings (`services/relay` is what to deploy). An empty address is
+ * refused as `no_relay`, which says where to set one.
+ *
  * A setting overrides it, and an **empty setting means this**, which is why
  * `setRelayUrl('')` removes the key rather than storing a blank: clearing the
  * field in the settings sheet has to restore the default rather than turn the
@@ -59,7 +63,7 @@ import {
  * name and what the room is watching (unless it is hidden), and it holds none of
  * it for longer than the evening. What it never sees is the film.
  */
-export const DEFAULT_RELAY = 'relay.frameplayer.app';
+export const DEFAULT_RELAY = '';
 
 const RELAY_KEY = 'frameplayer.relay';
 const NAME_KEY = 'frameplayer.syncName';

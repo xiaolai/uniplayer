@@ -62,7 +62,7 @@
   const fromInvite = invited !== '';
 
   /// A link a friend can actually be sent. The relay serves a page at `/j/<code>`
-  /// which offers `frameplayer://join/<code>` — a bare custom-scheme link is
+  /// which offers `uniplayer://join/<code>` — a bare custom-scheme link is
   /// left as plain text by most chat applications, so it would not be clickable
   /// where people actually paste it.
   const link = $derived.by(() => {

@@ -951,7 +951,7 @@
   /// not a workaround.
   let titleTimer: ReturnType<typeof setTimeout> | undefined;
   $effect(() => {
-    const next = hasFile ? `${displayTitle} — Frame Player` : 'Frame Player';
+    const next = hasFile ? `${displayTitle} — UniPlayer` : 'UniPlayer';
     clearTimeout(titleTimer);
     titleTimer = setTimeout(() => {
       void getCurrentWindow().setTitle(next).catch(() => {});

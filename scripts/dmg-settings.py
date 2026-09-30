@@ -1,4 +1,4 @@
-# dmgbuild settings for the Frame Player disk image.
+# dmgbuild settings for the UniPlayer disk image.
 #
 # This exists because Tauri's own dmg target cannot work on CI: bundle_dmg.sh
 # arranges the window by driving Finder over AppleScript, and a headless runner
@@ -12,7 +12,7 @@
 
 import os.path
 
-app = defines.get("app", "src-tauri/target/release/bundle/macos/Frame Player.app")
+app = defines.get("app", "src-tauri/target/release/bundle/macos/UniPlayer.app")
 appname = os.path.basename(app)
 
 # UDZO over the better-compressing ULFO: this is the artifact people download

@@ -1,5 +1,5 @@
 /**
- * `frameplayer://join/<code>` — an invitation somebody clicked.
+ * `uniplayer://join/<code>` — an invitation somebody clicked.
  *
  * The link exists because a room code alone is a thing to be dictated, and
  * because "click this and you are watching with me" is the whole of what a
@@ -35,7 +35,7 @@ class Invite {
 export const invite = new Invite();
 
 /**
- * The one shape understood: `frameplayer://join/<code>`.
+ * The one shape understood: `uniplayer://join/<code>`.
  *
  * Returns '' for anything else — another scheme, another action, a code that
  * cannot exist. Exported for its test, because this is the parser that decides
@@ -43,12 +43,12 @@ export const invite = new Invite();
  */
 export function codeFromLink(raw: string): string {
   const text = raw.trim();
-  if (!/^frameplayer:\/\//i.test(text)) return '';
+  if (!/^uniplayer:\/\//i.test(text)) return '';
   // Deliberately not `new URL`: for a custom scheme it puts the first segment
   // in `hostname` on one engine and in `pathname` on another, and a parser that
   // disagrees with itself across platforms is how a link works on macOS and
   // does nothing on Windows.
-  const rest = text.slice('frameplayer://'.length);
+  const rest = text.slice('uniplayer://'.length);
   const match = /^join\/+([^/?#]+)/i.exec(rest);
   if (!match) return '';
   // `decodeURIComponent` throws on a malformed escape — a lone `%`, a truncated
@@ -89,7 +89,7 @@ export async function initDeepLinks() {
   // install time, so this is what makes a link work in a development build and
   // after a copy-paste install. It is unsupported on macOS — the scheme is
   // declared in Info.plist there — and the refusal is expected, not an error.
-  await register('frameplayer').catch(() => {});
+  await register('uniplayer').catch(() => {});
 
   // One subscription for both arrivals: `onOpenUrl` is a listener on
   // `deep-link://new-url`, which is the event the plugin emits for the macOS

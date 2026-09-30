@@ -459,7 +459,7 @@ class Player {
     // Failing that the file name — tidied, because for a shared YouTube link
     // mpv's `filename` is the video id with its tracking query attached.
     if (this.mediaTitle) return this.mediaTitle;
-    return this.filename ? displayName(this.filename) : 'Frame Player';
+    return this.filename ? displayName(this.filename) : 'UniPlayer';
   }
 }
 

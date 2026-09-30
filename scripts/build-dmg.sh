@@ -8,9 +8,9 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-APP="src-tauri/target/release/bundle/macos/Frame Player.app"
+APP="src-tauri/target/release/bundle/macos/UniPlayer.app"
 VERSION=$(jq -r .version src-tauri/tauri.conf.json)
-OUT="src-tauri/target/release/bundle/dmg/Frame Player_${VERSION}_aarch64.dmg"
+OUT="src-tauri/target/release/bundle/dmg/UniPlayer_${VERSION}_aarch64.dmg"
 
 [ -d "$APP" ] || { echo "no app bundle at $APP — run the Tauri build first" >&2; exit 1; }
 [ -f src-tauri/dmg/background.tiff ] || {
@@ -21,6 +21,6 @@ mkdir -p "$(dirname "$OUT")"
 # otherwise be the one the release workflow picks up by glob.
 rm -f "$OUT"
 
-"${DMGBUILD:-dmgbuild}" -s scripts/dmg-settings.py -D app="$APP" "Frame Player" "$OUT"
+"${DMGBUILD:-dmgbuild}" -s scripts/dmg-settings.py -D app="$APP" "UniPlayer" "$OUT"
 
 echo "wrote $OUT"

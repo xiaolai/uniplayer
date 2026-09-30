@@ -243,8 +243,10 @@ function render() {
 
   w('# Third-party notices');
   w();
-  w('Frame Player is free software under the GNU General Public License, version');
-  w('3 or later — its own license text is at the end of this file. What follows');
+  w('UniPlayer is a modified version of Frame Player by Evgenii Zakharov');
+  w('(<https://github.com/risenxxx/frame-player>). It is free software under the GNU');
+  w('General Public License, version 3 or later — its own license text is at the');
+  w('end of this file. What follows');
   w('first is every third-party component the application ships, the license each');
   w('is used under, and those licenses in full.');
   w();
@@ -266,15 +268,15 @@ function render() {
       : '**Source code.** Every component below is unmodified upstream code, and the',
   );
   w('"Source" link for each goes to the project that publishes it. The scripts that');
-  w('fetch and build them are part of Frame Player\'s own repository —');
+  w('fetch and build them are part of UniPlayer\'s own repository —');
   w('`scripts/build-macos-libs.sh` and `scripts/fetch-libs.ps1` — and record the exact');
   w('versions and configure flags used.');
   w();
   for (const p of patched) {
     w(`**Modifications to ${p.name}.** ${p.name} is built from its upstream release with the`);
     w('changes below applied, in this order. They are published as patches in the');
-    w('`patches/` directory of Frame Player\'s repository,');
-    w('<https://github.com/risenxxx/frame-player>, and the build script applies every');
+    w('`patches/` directory of UniPlayer\'s repository,');
+    w('<https://github.com/xiaolai/uniplayer>, and the build script applies every');
     w(`patch found there. ${p.patches.applies}`);
     w();
     // In the order the build applies them: the shell's sort of the same names.
@@ -300,7 +302,7 @@ function render() {
   w(`- [JavaScript packages](#javascript-packages) (${js.length})`);
   w('- [Online services](#online-services)');
   w('- [License texts](#license-texts)');
-  w("- [Frame Player's own license](#frame-players-own-license)");
+  w("- [UniPlayer's own license](#uniplayers-own-license)");
   w();
   w('---');
   w();
@@ -420,9 +422,10 @@ function render() {
 
   w('---');
   w();
-  w("## Frame Player's own license");
+  w("## UniPlayer's own license");
   w();
-  w('Copyright (C) 2026 Evgenii Zakharov');
+  w('Copyright (C) 2026 Evgenii Zakharov (Frame Player)');
+  w('Copyright (C) 2026 UniPlayer contributors (modifications)');
   w();
   w('This program is free software: you can redistribute it and/or modify it under');
   w('the terms of the GNU General Public License as published by the Free Software');
@@ -431,7 +434,8 @@ function render() {
   w('WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A');
   w('PARTICULAR PURPOSE. See the license below for details.');
   w();
-  w('Source code: <https://github.com/risenxxx/frame-player>');
+  w('Source code: <https://github.com/xiaolai/uniplayer>, modified from');
+  w('<https://github.com/risenxxx/frame-player>.');
   w();
   w('```');
   // Read from LICENSE rather than restated, so the two cannot disagree: editing

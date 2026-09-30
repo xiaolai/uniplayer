@@ -316,7 +316,7 @@ function dlnaDescriptionUrl(d: DlnaDevice): string {
 /// The report as one block of text — what actually reaches a bug report.
 export function diagnosisText(device: TvDevice, lines: CheckLine[]): string {
   const head = [
-    `Frame Player — device check`,
+    `UniPlayer — device check`,
     `${device.name}${device.model && device.model !== device.name ? ` (${device.model})` : ''}`,
     `${device.ip} · transports: ${[device.cast && 'Chromecast', device.dlna && 'DLNA']
       .filter(Boolean)

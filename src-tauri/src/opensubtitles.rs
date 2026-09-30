@@ -40,7 +40,7 @@ const TIMEOUT: Duration = Duration::from_secs(15);
 const HASH_CHUNK: u64 = 64 * 1024;
 
 fn user_agent(app: &tauri::AppHandle) -> String {
-    format!("FramePlayer v{}", app.package_info().version)
+    format!("UniPlayer v{}", app.package_info().version)
 }
 
 /// The application's API key, looked up in the order that lets it be replaced
@@ -534,7 +534,7 @@ pub async fn subs_search(
 
 /// One service, two entries. Keyed by the bundle identifier so a future
 /// second account of some other kind cannot collide with this one.
-const KEYCHAIN_SERVICE: &str = "app.frameplayer.opensubtitles";
+const KEYCHAIN_SERVICE: &str = "live.uniplayer.opensubtitles";
 const KEYCHAIN_SESSION: &str = "session";
 const KEYCHAIN_PASSWORD: &str = "password";
 

@@ -97,14 +97,14 @@ struct Strings {
 }
 
 const EN: Strings = Strings {
-    about: "About Frame Player",
-    credits: "Frame Player is free software under the GNU GPL, version 3 or later. It uses mpv, FFmpeg, libplacebo and other libraries under the LGPL and other licenses. Full texts are in LICENSE and THIRD-PARTY-NOTICES.md inside the application.",
+    about: "About UniPlayer",
+    credits: "UniPlayer is a modified version of Frame Player by Evgenii Zakharov, and free software under the GNU GPL, version 3 or later. It uses mpv, FFmpeg, libplacebo and other libraries under the LGPL and other licenses. Full texts are in LICENSE and THIRD-PARTY-NOTICES.md inside the application.",
     settings: "Settings…",
     services: "Services",
-    hide: "Hide Frame Player",
+    hide: "Hide UniPlayer",
     hide_others: "Hide Others",
     show_all: "Show All",
-    quit: "Quit Frame Player",
+    quit: "Quit UniPlayer",
     file: "File",
     open: "Open Files…",
     open_link: "Open Location…",
@@ -135,14 +135,14 @@ const EN: Strings = Strings {
 };
 
 const RU: Strings = Strings {
-    about: "О Frame Player",
-    credits: "Frame Player — свободная программа под GNU GPL версии 3 или новее. Он использует mpv, FFmpeg, libplacebo и другие библиотеки — по LGPL и другим лицензиям. Полные тексты в LICENSE и THIRD-PARTY-NOTICES.md внутри приложения.",
+    about: "О UniPlayer",
+    credits: "UniPlayer — изменённая версия Frame Player Евгения Захарова и свободная программа под GNU GPL версии 3 или новее. Она использует mpv, FFmpeg, libplacebo и другие библиотеки — по LGPL и другим лицензиям. Полные тексты в LICENSE и THIRD-PARTY-NOTICES.md внутри приложения.",
     settings: "Параметры…",
     services: "Службы",
-    hide: "Скрыть Frame Player",
+    hide: "Скрыть UniPlayer",
     hide_others: "Скрыть остальные",
     show_all: "Показать все",
-    quit: "Завершить Frame Player",
+    quit: "Завершить UniPlayer",
     file: "Файл",
     open: "Открыть файлы…",
     open_link: "Открыть ссылку…",
@@ -188,7 +188,7 @@ pub fn build(app: &tauri::AppHandle<Wry>, locale: &str) -> tauri::Result<()> {
         app,
         Some(s.about),
         Some(AboutMetadata {
-            name: Some("Frame Player".into()),
+            name: Some("UniPlayer".into()),
             version: Some(pkg.version.to_string()),
             copyright: Some("Copyright © 2026 Evgenii Zakharov".into()),
             credits: Some(s.credits.into()),
@@ -198,7 +198,7 @@ pub fn build(app: &tauri::AppHandle<Wry>, locale: &str) -> tauri::Result<()> {
     let settings = MenuItem::with_id(app, "settings", s.settings, true, Some("CmdOrCtrl+,"))?;
     let app_menu = Submenu::with_items(
         app,
-        "Frame Player",
+        "UniPlayer",
         true,
         &[
             &about,

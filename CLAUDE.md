@@ -1,4 +1,4 @@
-# CLAUDE.md — Frame Player
+# CLAUDE.md — UniPlayer (a fork of Frame Player)
 
 Windows and macOS video player: **Tauri 2 + Svelte 5 (SvelteKit static) + in-process libmpv** via `tauri-plugin-libmpv` (wid embedding: mpv renders into a child HWND / NSView *behind* the transparent webview; the entire UI is HTML on top). On macOS that needs a patched libmpv — stock mpv does not implement `--wid` there at all; see `patches/` and `scripts/build-macos-libs.sh`.
 
@@ -87,7 +87,7 @@ cheapest way to test a change to any of them without spending a release on it:
 export APPLE_SIGNING_IDENTITY="Developer ID Application: … (TEAMID)"
 export APPLE_API_KEY=… APPLE_API_ISSUER=… APPLE_API_KEY_PATH=…/AuthKey_….p8
 scripts/macos-sign.sh && npm run tauri:macos:build
-scripts/macos-notarize.sh "src-tauri/target/release/bundle/macos/Frame Player.app"
+scripts/macos-notarize.sh "src-tauri/target/release/bundle/macos/UniPlayer.app"
 ```
 
 Rust validation while the user's dev instance may be running (target/ is locked by the running exe):
@@ -204,8 +204,7 @@ them), so any `cargo test` there also needs `DYLD_FALLBACK_LIBRARY_PATH=$PWD/lib
 | `licenses/` + `THIRD-PARTY-NOTICES.md` | The attribution that ships inside the app: `manifest.json` (one entry per third-party project, with the license of the artifact **as built**), `text/` (each project's own license, verbatim), `spdx/` (canonical texts for the ids the Rust and npm graphs declare). `scripts/gen-notices.mjs` renders the notices; `npm run notices:check` is a gate |
 | `scripts/fetch-libs.ps1` | Downloads all binary SDKs (also used by CI with an actions/cache keyed on this file's hash). Its two `releases/latest` lookups **must be authenticated in CI**: the anonymous GitHub API allowance is 60 an hour *per IP*, a hosted runner shares its address, and a release therefore fails on traffic that is not ours — `GITHUB_TOKEN` (automatic in Actions, optional locally) takes it to 1000. The header goes on the API calls only, never on an asset download: those redirect to a storage host that rejects a GitHub `Authorization` header, and PowerShell forwards headers across redirects |
 | `scripts/macos-{build,sign,notarize}.sh` | The macOS signing chain, in the order they run: `sign` puts the Developer ID on the native libraries (and, in CI, imports the certificate into a throwaway keychain), `build` decides whether the hardened runtime goes on at all, `notarize` submits and staples an `.app` or a `.dmg` and repacks the updater archive around the stapled bundle. Each one is a no-op or an ad-hoc fallback without `APPLE_SIGNING_IDENTITY`, so a checkout with no Apple account still builds |
-| `.github/workflows/release.yml` | Version-bump-gated release: build → sign → notarise → R2 upload (installer + latest.json) → GitHub Release |
-| `site/` | The landing page: Astro, static output, Cloudflare Workers static assets. Its own npm project and its own workflow (`site.yml`) — the root gates do not reach it, exactly as they do not reach `services/`. Every mock on the page is one of the application's own surfaces rebuilt in HTML, with the glyphs and the measurements taken from `src/lib/components/` rather than from a screenshot; the frames inside them are placeholders and `site/README.md` says what has to happen to them before the site is announced. `site/assets/img` holds one source per picture and `scripts/images.mjs` (`npm run images`) builds the AVIF/WebP/JPEG ladder into `public/gen` under hashed names, which is what lets that path be cached for a year. The output and `src/img-manifest.json` are **committed** — a clean encode outlasts the Site workflow's ten minutes — and `typecheck`/`build` only run it with `--check`, which fails when they are out of date. Beyond the home page are the guide pages — one MDX file each in `site/src/content/pages/`, rendered by one layout; how to add one is in `site/README.md`. Every guide is also built as Markdown (`<page>.md`, indexed by `/llms.txt`), and `site/worker/index.ts` serves that twin to a request asking for `text/markdown` — content negotiation of our own rather than Cloudflare's paid one |
+| `.github/workflows/` | `checks.yml` runs the gates on every push; `macos-libs.yml` builds the macOS library set (publishing it needs an R2 bucket this fork does not have). UniPlayer has **no release workflow yet** — upstream's `release.yml` (R2 + updater + Homebrew tap) was removed with the fork; releases are built and signed locally with the macOS scripts above |
 
 ## Critical gotchas (violating these causes crashes or subtle breakage)
 

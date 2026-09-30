@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Frame Player",
+  "productName": "UniPlayer",
   "version": "1.18.0",
-  "identifier": "app.frameplayer",
+  "identifier": "live.uniplayer",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -13,7 +13,7 @@
     "macOSPrivateApi": true,
     "windows": [
       {
-        "title": "Frame Player",
+        "title": "UniPlayer",
         "width": 1100,
         "height": 660,
         "minWidth": 480,
@@ -46,12 +46,12 @@
   "plugins": {
     "deep-link": {
       "desktop": {
-        "schemes": ["frameplayer"]
+        "schemes": ["uniplayer"]
       }
     },
     "updater": {
-      "endpoints": ["https://updates.frameplayer.app/latest.json"],
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDY4MEU1NDc4NUJDOTY1ODgKUldTSVpjbGJlRlFPYUh2L3cveS9qNW1oeTJMb0wvVmdGb1d5RkVPOG9kOFQ2Q2VZRnFXYm4rM1EK",
+      "endpoints": [],
+      "pubkey": "",
       "windows": {
         "installMode": "passive"
       }
@@ -59,12 +59,12 @@
   },
   "bundle": {
     "active": true,
-    "publisher": "Evgenii Zakharov",
-    "copyright": "Copyright © 2026 Evgenii Zakharov",
+    "publisher": "UniPlayer contributors",
+    "copyright": "Copyright © 2026 Evgenii Zakharov and UniPlayer contributors",
     "category": "Video",
     "shortDescription": "Frame-accurate video player",
     "longDescription": "A video player for Windows and macOS built on libmpv. Plays local files, links and magnet torrents in one window — a torrent can be watched while it is still downloading, with piece priority following the playhead and buffered ranges drawn on the seekbar. Frame stepping and seeking that land where you aim, previews that show the frame you land on, resume for every file, link and episode, subtitle search matched to your exact release, chapters with a skip-intro button, a mini player and frame export. Russian and English.",
-    "createUpdaterArtifacts": true,
+    "createUpdaterArtifacts": false,
     "targets": ["nsis"],
     "license": "GPL-3.0-or-later",
     "resources": {

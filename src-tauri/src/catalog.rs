@@ -76,7 +76,7 @@ fn http() -> &'static reqwest::Client {
     static CLIENT: std::sync::OnceLock<reqwest::Client> = std::sync::OnceLock::new();
     CLIENT.get_or_init(|| {
         reqwest::Client::builder()
-            .user_agent(format!("FramePlayer/{}", env!("CARGO_PKG_VERSION")))
+            .user_agent(format!("UniPlayer/{}", env!("CARGO_PKG_VERSION")))
             .timeout(TIMEOUT)
             .build()
             .unwrap_or_default()

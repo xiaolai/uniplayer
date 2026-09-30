@@ -251,7 +251,7 @@
        ran into the window edge. -->
   <div class="start-inner">
   <div class="panel">
-    <h1>Frame Player</h1>
+    <h1>UniPlayer</h1>
     <p>{t('start.hint')}</p>
     <div class="start-actions">
       <button class="primary" onclick={onOpenFile}>{withKey(t('start.open'), 'open_file')}</button>

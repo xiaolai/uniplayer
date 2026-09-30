@@ -685,7 +685,7 @@ const ru = {
   'set.licenses_open': 'открыть лицензии',
   'lic.title': 'Лицензии',
   'lic.intro':
-    'Frame Player распространяется по GPL-3.0-or-later — её текст в самом низу. Библиотеки, на которых он работает, идут под своими лицензиями: mpv, FFmpeg, libplacebo и другие под LGPL, остальные каждая под своей. Ниже полный перечень и все тексты, ровно те, что входят в поставку.',
+    'UniPlayer — изменённая версия Frame Player Евгения Захарова (github.com/risenxxx/frame-player) и распространяется по GPL-3.0-or-later — её текст в самом низу. Библиотеки, на которых он работает, идут под своими лицензиями: mpv, FFmpeg, libplacebo и другие под LGPL, остальные каждая под своей. Ниже полный перечень и все тексты, ровно те, что входят в поставку.',
   'lic.loading': 'Читаем…',
   'lic.failed':
     'Не удалось прочитать THIRD-PARTY-NOTICES.md — он должен лежать рядом с приложением.',
@@ -1617,11 +1617,11 @@ const en: Record<MessageKey, string> = {
   'set.conf_reveal_mac': 'show mpv.conf in Finder',
   'set.conf_reveal_win': 'show mpv.conf in Explorer',
   'set.licenses_foot':
-    'Frame Player runs on mpv, FFmpeg and other free software libraries — covered by the LGPL and other licenses, whose full texts ship with the application:',
+    'UniPlayer runs on mpv, FFmpeg and other free software libraries — covered by the LGPL and other licenses, whose full texts ship with the application:',
   'set.licenses_open': 'open the licenses',
   'lic.title': 'Licenses',
   'lic.intro':
-    'Frame Player itself is GPL-3.0-or-later — its text is at the very bottom. The libraries it runs on keep their own licenses: mpv, FFmpeg, libplacebo and others under the LGPL, the rest each under its own. Below is the full inventory and every license text, exactly as they ship with the application.',
+    'UniPlayer is a modified version of Frame Player by Evgenii Zakharov (github.com/risenxxx/frame-player), and is itself GPL-3.0-or-later — its text is at the very bottom. The libraries it runs on keep their own licenses: mpv, FFmpeg, libplacebo and others under the LGPL, the rest each under its own. Below is the full inventory and every license text, exactly as they ship with the application.',
   'lic.loading': 'Reading…',
   'lic.failed':
     'Could not read THIRD-PARTY-NOTICES.md — it should sit beside the application.',

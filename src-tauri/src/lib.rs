@@ -118,7 +118,7 @@ struct UserConf {
     options: Vec<(String, String)>,
 }
 
-const MPV_CONF_TEMPLATE: &str = r#"# Frame Player — low-level mpv options.
+const MPV_CONF_TEMPLATE: &str = r#"# UniPlayer — low-level mpv options.
 # Applied at player startup ON TOP of its defaults; mpv.conf syntax:
 #   option=value
 # lines starting with # are comments. Full list: https://mpv.io/manual/stable/#options
@@ -199,7 +199,7 @@ fn paths_exist(paths: Vec<String>) -> Vec<bool> {
 /// paths from it. Changed together with the config, and changing it moves the
 /// app data directory and the keychain entry: every stored setting, position
 /// and token is left behind under the old name.
-const APP_IDENTIFIER: &str = "app.frameplayer";
+const APP_IDENTIFIER: &str = "live.uniplayer";
 
 /// The app data directory, without an AppHandle. `ytdlp_path` is called from
 /// `initPlayer` before anything else and from `ytdlp_status`, and threading a
@@ -337,7 +337,7 @@ async fn oembed_title(url: String) -> Option<String> {
             .ok()?;
     let body: serde_json::Value = reqwest::Client::new()
         .get(request)
-        .header("User-Agent", "FramePlayer")
+        .header("User-Agent", "UniPlayer")
         .timeout(std::time::Duration::from_secs(8))
         .send()
         .await
@@ -436,7 +436,7 @@ async fn ytdlp_install(app: tauri::AppHandle) -> Result<String, String> {
     );
     let response = reqwest::Client::new()
         .get(&url)
-        .header("User-Agent", "FramePlayer")
+        .header("User-Agent", "UniPlayer")
         .send()
         .await
         .map_err(|e| e.to_string())?
@@ -998,7 +998,7 @@ fn point_vulkan_at_bundled_driver() {
 fn deliver_deep_links(app: &tauri::AppHandle, args: &[String]) {
     let urls: Vec<String> = args
         .iter()
-        .filter(|a| a.starts_with("frameplayer://"))
+        .filter(|a| a.starts_with("uniplayer://"))
         .cloned()
         .collect();
     if !urls.is_empty() {
@@ -1062,7 +1062,7 @@ pub fn run() {
                 let _ = win.set_focus();
             }
             deliver_files(app, pick_file_args(&args));
-            // A `frameplayer://join/<code>` link on Windows arrives as the argv
+            // A `uniplayer://join/<code>` link on Windows arrives as the argv
             // of a *second* launch, which single-instance forwards here. On
             // macOS the same link is an Apple Event and the deep-link plugin
             // picks it up itself, so this half is Windows-shaped by nature —

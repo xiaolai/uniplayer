@@ -303,7 +303,7 @@ mod mac_sc {
                 }
             }
 
-            let name = CFString::new("frame-player");
+            let name = CFString::new("uniplayer");
             let store = SCDynamicStoreCreate(
                 std::ptr::null(),
                 name.as_concrete_TypeRef(),

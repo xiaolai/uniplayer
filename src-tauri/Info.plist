@@ -12,14 +12,14 @@
 <plist version="1.0">
 <dict>
     <key>NSLocalNetworkUsageDescription</key>
-    <string>Frame Player looks for televisions and media receivers on your network so it can play videos on them.</string>
+    <string>UniPlayer looks for televisions and media receivers on your network so it can play videos on them.</string>
     <key>NSBonjourServices</key>
     <array>
         <string>_googlecast._tcp</string>
     </array>
 
     <!--
-      `frameplayer://join/<code>` — an invitation to a shared viewing.
+      `uniplayer://join/<code>` — an invitation to a shared viewing.
 
       Declared here by hand rather than left to the deep-link plugin's own
       build step, which writes `CFBundleURLTypes` only for the *mobile* half of
@@ -37,12 +37,12 @@
     <array>
         <dict>
             <key>CFBundleURLName</key>
-            <string>app.frameplayer</string>
+            <string>live.uniplayer</string>
             <key>CFBundleTypeRole</key>
             <string>Viewer</string>
             <key>CFBundleURLSchemes</key>
             <array>
-                <string>frameplayer</string>
+                <string>uniplayer</string>
             </array>
         </dict>
     </array>
