@@ -106,7 +106,7 @@ func defaultConfig() Config {
 // pointing at a page that has not been built yet would be a dead link on the
 // one screen shown to somebody who does not have the player, which is worse
 // than the release list it replaces.
-const defaultDownloadPage = "https://github.com/risenxxx/frame-player/releases/latest"
+const defaultDownloadPage = "https://github.com/xiaolai/uniplayer/releases/latest"
 
 type server struct {
 	cfg Config

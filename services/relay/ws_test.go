@@ -323,7 +323,7 @@ func TestAPageForARoomThatHasEnded(t *testing.T) {
 	if !strings.Contains(gone, "This room has ended") {
 		t.Error("an invitation was offered for a room that does not exist")
 	}
-	if strings.Contains(gone, "frameplayer://join/") {
+	if strings.Contains(gone, "uniplayer://join/") {
 		t.Error("the page still offers to open a room that is not there")
 	}
 
@@ -333,7 +333,7 @@ func TestAPageForARoomThatHasEnded(t *testing.T) {
 		t.Fatal(err)
 	}
 	live := render(room.code)
-	if !strings.Contains(live, "frameplayer://join/"+room.code) {
+	if !strings.Contains(live, "uniplayer://join/"+room.code) {
 		t.Error("a live room was not offered")
 	}
 	if strings.Contains(live, "This room has ended") {
@@ -369,7 +369,7 @@ func TestWalkingTheCodeSpaceGetsNoise(t *testing.T) {
 	// a 429 to a human who refreshed too often would be the worse trade.
 	if after := render(); strings.Contains(after, "This room has ended") {
 		t.Error("the page kept answering whether a room exists past the probe budget")
-	} else if !strings.Contains(after, "frameplayer://join/") {
+	} else if !strings.Contains(after, "uniplayer://join/") {
 		t.Error("past the budget the page should fall back to the plain invitation")
 	}
 }
@@ -389,7 +389,7 @@ func TestJoinPageAcceptsWhatAPersonTypes(t *testing.T) {
 			t.Errorf("%s → %d", path, rec.Code)
 			continue
 		}
-		if !strings.Contains(rec.Body.String(), "frameplayer://join/ABC123") {
+		if !strings.Contains(rec.Body.String(), "uniplayer://join/ABC123") {
 			t.Errorf("%s did not offer the normalised code", path)
 		}
 	}
@@ -519,14 +519,9 @@ func TestSomebodyWithoutThePlayerIsGivenSomewhereToGo(t *testing.T) {
 	}
 }
 
-// A product name broken across two lines reads as two products. Everything else
-// on the page is left to text-wrap; this pair is worth forbidding outright, and
-// the assertion has to be written with explicit escapes — the two spellings are
-// indistinguishable in a source file, which is exactly how the first version of
-// this test came to compare a string with itself.
-func TestTheProductNameNeverBreaks(t *testing.T) {
-	const joined = "Frame\u00a0Player"
-	const broken = "Frame Player"
+// The page names the player it opens, in both languages — the fork's name, not
+// the one it was forked from.
+func TestThePageNamesThePlayer(t *testing.T) {
 	s, _ := startRelay(t, nil)
 	for _, lang := range []string{"ru", "en"} {
 		rec := httptest.NewRecorder()
@@ -535,11 +530,11 @@ func TestTheProductNameNeverBreaks(t *testing.T) {
 		req.Header.Set("Accept-Language", lang)
 		s.serveJoinPage(rec, req)
 		body := rec.Body.String()
-		if !strings.Contains(body, joined) {
-			t.Errorf("%s: the product name is missing or breakable", lang)
+		if !strings.Contains(body, "UniPlayer") {
+			t.Errorf("%s: the page does not name UniPlayer", lang)
 		}
-		if strings.Contains(body, broken) {
-			t.Errorf("%s: an ordinary space survives inside the product name", lang)
+		if strings.Contains(body, "Frame") {
+			t.Errorf("%s: the page still names Frame Player", lang)
 		}
 	}
 }
@@ -555,16 +550,12 @@ func TestTheTabIcon(t *testing.T) {
 		t.Errorf("content type %q — a browser will not render it as an icon", ct)
 	}
 	icon := rec.Body.String()
-	// The player's own accent, not a colour drifted from it: the mark is the
-	// same glyph the application shows in its own title bar.
-	if !strings.Contains(icon, "#6366f1") {
-		t.Error("the icon is not drawn in the player's accent")
-	}
-	// No tile and no background rectangle. What sits behind the glyph has to be
-	// the tab bar's own colour, or the icon is right on one theme and a dark
-	// smudge on the other.
-	if strings.Contains(icon, "<rect") || strings.Contains(icon, "background") {
-		t.Error("the icon carries a background, which only works on one theme")
+	// The player's own mark: the three faces of the glyph on the cream tile —
+	// the tile is what keeps the navy face readable on a dark tab bar.
+	for _, c := range []string{"#f3f0ea", "#abc4f9", "#507adf", "#1f3c86"} {
+		if !strings.Contains(icon, c) {
+			t.Errorf("the icon is missing %s — not the player's mark", c)
+		}
 	}
 	// A vector answers 16, 32 and 64 from the same bytes, which is the whole
 	// reason there is one file rather than a set.

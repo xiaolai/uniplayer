@@ -1,7 +1,7 @@
 // The two pages the relay serves to a browser, and the fonts they are set in.
 //
 // `/j/<code>` is what a viewer's friend actually clicks. It exists because a
-// bare `frameplayer://join/ABC123` cannot be sent through most chat
+// bare `uniplayer://join/ABC123` cannot be sent through most chat
 // applications — they linkify `https://` and leave an unknown scheme as text —
 // and because somebody without the player has to land somewhere that says what
 // this is rather than on a browser error.
@@ -35,38 +35,23 @@ import (
 	"frameplayer/relay/internal/wire"
 )
 
-// The tab icon: the player's own viewfinder mark, from
-// `src-tauri/icons/icon-master.svg`, with the comments and the 1024-canvas
-// transform dropped so the paths sit in their own 24-grid.
+// The tab icon: the player's own mark on its cream tile — the same drawing as
+// the app's favicon (`src-tauri/icons/icon-master-tile.svg` at 32 units).
 //
 // **SVG rather than a PNG, and one file rather than a set.** A favicon is asked
 // for at 16, 32 and 64 depending on the browser, the tab bar and the display
-// scale, and a vector answers all of them from the same bytes — which is the
-// whole of the "what resolution" question.
+// scale, and a vector answers all of them from the same bytes.
 //
-// **One colour rather than a pair for light and dark.** The mark is a single
-// mid-tone indigo on nothing at all: no tile, no background, so what sits behind
-// it is the tab bar's own colour, and #6366f1 has enough contrast against both.
-// A `prefers-color-scheme` block inside the SVG would be machinery for a problem
-// this glyph does not have — the master file was drawn this way on purpose and
-// says so.
-//
-// The `viewBox` is tighter than the master's: the ink spans 2.0–22.0 of the
-// 24-grid, so starting at 1.2 with a 21.6 box leaves 0.8 of margin on every
-// side — about 3.7 %, which is what the master intends and what keeps the glyph
-// from shrinking to nothing inside a 16px tab.
+// **The tile rather than the bare glyph.** The glyph's darkest face is navy and
+// disappears on a dark tab bar; on the cream tile all three faces read, and on a
+// light tab bar the navy face still outlines the mark. The same reasoning put
+// the Windows icon on the tile.
 //
 // What this does not cover: Safari before 17, which ignores SVG favicons and
-// falls back to `/favicon.ico`, and gets the browser's default mark. A 32px PNG
-// beside this would close that, at the cost of a binary in the repository that
-// has to be kept in step with the master by hand. Not worth it for a page
-// opened once from a chat window.
-const faviconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="1.2 1.2 21.6 21.6">` +
-	`<path fill="none" stroke="#6366f1" stroke-width="2.4" stroke-linecap="round"` +
-	` d="M3.2 7.6V5.9c0-1.5 1.2-2.7 2.7-2.7h1.7M16.4 3.2h1.7c1.5 0 2.7 1.2 2.7 2.7v1.7` +
-	`M20.8 16.4v1.7c0 1.5-1.2 2.7-2.7 2.7h-1.7M7.6 20.8H5.9c-1.5 0-2.7-1.2-2.7-2.7v-1.7"/>` +
-	`<path fill="#6366f1" stroke="#6366f1" stroke-width="1.6" stroke-linejoin="round"` +
-	` d="M10 9v6l5.4-3z"/></svg>`
+// falls back to `/favicon.ico`. Not worth a binary kept in step by hand for a
+// page opened once from a chat window.
+const faviconSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">` +
+	`<defs><clipPath id="brand-glyph"><path d="M32.73 32.22 A10 10 0 0 1 47.73 23.56L78.53 41.34 A10 10 0 0 1 78.53 58.66L47.73 76.44 A10 10 0 0 1 32.73 67.78Z"/></clipPath></defs><rect width="32" height="32" rx="7" fill="#f3f0ea"/><g transform="translate(16 16) scale(0.43197) translate(-58 -50)"><g clip-path="url(#brand-glyph)"><polygon points="32.73,23.67 32.73,85.10 40.33,80.72 40.33,36.84 63.13,50.00 70.73,45.61" fill="#abc4f9"/><polygon points="40.33,80.72 93.53,50.00 85.93,45.61 47.93,67.55 47.93,41.22 40.33,36.84" fill="#507adf"/><polygon points="85.93,45.61 32.73,14.90 32.73,23.67 70.73,45.61 47.93,58.78 47.93,67.55" fill="#1f3c86"/></g></g></svg>`
 
 func (s *server) serveFavicon(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "image/svg+xml")
@@ -83,9 +68,7 @@ func (s *server) serveFavicon(w http.ResponseWriter, _ *http.Request) {
 // the thing it holds.
 type pageText struct {
 	Lang string
-	/// The product name, with the space that must never break. Data rather than
-	/// markup because the template is a raw string literal, where `\u00a0` is
-	/// six characters and not a space at all.
+	/// The product name. One word, so there is no space inside it to break.
 	Brand    string
 	Title    string
 	Sub      string
@@ -101,19 +84,15 @@ type pageText struct {
 }
 
 var textRU = pageText{
-	Lang:    "ru",
-	Brand:   "Frame\u00a0Player",
-	Title:   "Смотрим вместе",
-	Sub:     "Один фильм, одна позиция, общие паузы.",
-	CodeCap: "Код комнаты",
-	// `\u00a0` rather than a literal non-breaking space, which is invisible in
-	// the source and reads as an ordinary one to whoever edits it next. A product
-	// name split across two lines is the one break worth forbidding outright;
-	// everything else is left to `text-wrap: balance`.
-	Open:      "Открыть в Frame\u00a0Player",
+	Lang:      "ru",
+	Brand:     "UniPlayer",
+	Title:     "Смотрим вместе",
+	Sub:       "Один фильм, одна позиция, общие паузы.",
+	CodeCap:   "Код комнаты",
+	Open:      "Открыть в UniPlayer",
 	Manual:    "Или введите код в плеере — «Смотреть вместе».",
 	NoPlayer:  "Ещё нет плеера?",
-	Get:       "Скачать Frame\u00a0Player",
+	Get:       "Скачать UniPlayer",
 	Privacy:   "Через сервер идёт только позиция и пауза — не видео.",
 	GoneTitle: "Комната закрыта",
 	GoneSub:   "Комната живёт, пока в ней кто-то есть. Попросите новую ссылку.",
@@ -121,14 +100,14 @@ var textRU = pageText{
 
 var textEN = pageText{
 	Lang:      "en",
-	Brand:     "Frame\u00a0Player",
+	Brand:     "UniPlayer",
 	Title:     "Watch together",
 	Sub:       "One film, one position, the same pauses.",
 	CodeCap:   "Room code",
-	Open:      "Open in Frame\u00a0Player",
+	Open:      "Open in UniPlayer",
 	Manual:    "Or open the player and choose “Watch together”.",
 	NoPlayer:  "Don’t have it yet?",
-	Get:       "Get Frame\u00a0Player",
+	Get:       "Get UniPlayer",
 	Privacy:   "Only the position and pause travel through the server — never the video.",
 	GoneTitle: "This room has ended",
 	GoneSub:   "A room exists only while somebody is in it. Ask for a new link.",
@@ -339,7 +318,7 @@ var joinPage = template.Must(template.New("join").Parse(`<!doctype html>
     <div class="code">{{.Code}}</div>
   </div>
 
-  <a class="go" href="frameplayer://join/{{.Code}}">{{.Open}}</a>
+  <a class="go" href="uniplayer://join/{{.Code}}">{{.Open}}</a>
   <p class="sub">{{.Manual}}</p>
 {{end}}
 
@@ -394,7 +373,7 @@ func (s *server) serveJoinPage(w http.ResponseWriter, r *http.Request) {
 func (s *server) serveIndex(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	var b strings.Builder
-	b.WriteString("Frame Player watch-together relay.\n\n")
+	b.WriteString("UniPlayer watch-together relay.\n\n")
 	b.WriteString("Rooms are held in memory, nothing is written to disk, and no media\n")
 	b.WriteString("passes through here — only the shared timeline.\n\n")
 	if s.cfg.PublicURL != "" {

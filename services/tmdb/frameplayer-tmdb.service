@@ -10,7 +10,7 @@
 # deployed instance — see `proxy_base` in catalog.rs.
 
 [Unit]
-Description=Frame Player TMDB metadata proxy
+Description=UniPlayer TMDB metadata proxy
 After=network-online.target
 Wants=network-online.target
 

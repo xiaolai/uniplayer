@@ -24,12 +24,11 @@ terminator in front of it — the player will refuse a plaintext `ws://` address
 that is not on loopback — and set `RELAY_TRUST_PROXY` so the join rate limit
 keys on the viewer's address rather than on the proxy's.
 
-Shipped builds point at **`relay.frameplayer.app`** by default
-(`DEFAULT_RELAY` in `src/lib/sync/wire.svelte.ts`). Anything below is what it
-takes to run your own instead: the address is a field in the player's settings
-(«Основные») rather than a build-time constant, so self-hosting is a setting and
-not a fork. Leaving it empty restores the default rather than turning the
-feature off.
+UniPlayer ships with **no default relay** (`DEFAULT_RELAY` in
+`src/lib/sync/wire.svelte.ts` is empty), so watching together needs one of
+these running: the address is a field in the player's settings («Основные»)
+rather than a build-time constant. An empty field means "no relay", and opening
+a room then says where to set one.
 
 `Dockerfile` builds the same binary onto `scratch`;
 `frameplayer-relay.service` runs it under systemd with everything locked down
