@@ -11,6 +11,20 @@
 -->
 <plist version="1.0">
 <dict>
+    <!--
+      The layered macOS 26+ icon: the name of the app icon inside
+      Contents/Resources/Assets.car (tauri.macos.conf.json copies it there). It is
+      the `.icon` document's basename — src-tauri/icons/UniPlayer.icon — and the
+      `--app-icon` value scripts/build-icons.sh hands actool, so all three are
+      renamed together or not at all: a catalogue with no matching name makes
+      macOS fall back to the .icns without a word.
+
+      The bundler's own CFBundleIconFile (icon.icns) stays, and is not redundant:
+      macOS 26+ prefers the catalogue, everything older ignores this key.
+    -->
+    <key>CFBundleIconName</key>
+    <string>UniPlayer</string>
+
     <key>NSLocalNetworkUsageDescription</key>
     <string>UniPlayer looks for televisions and media receivers on your network so it can play videos on them.</string>
     <key>NSBonjourServices</key>

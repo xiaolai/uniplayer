@@ -7,7 +7,10 @@
     "targets": ["app"],
     "macOS": {
       "hardenedRuntime": true,
-      "entitlements": "entitlements.plist"
+      "entitlements": "entitlements.plist",
+      "files": {
+        "Resources/Assets.car": "icons/Assets.car"
+      }
     },
     "resources": {
       "ffmpeg/bin/*.dll": null,
