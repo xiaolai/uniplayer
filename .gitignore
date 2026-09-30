@@ -36,13 +36,16 @@ src-tauri/ffmpeg-macos/
 # committed was not in fact ignored.
 HANDOFF.md
 
-# `go build ./...` inside services/relay writes the binary next to its source.
+# `go build` inside a service directory writes the binary next to its source.
 server/relay
 services/relay/relay
+services/tmdb/tmdb
 
-# The compiled service binaries from `go build`, which land in the repo root.
-tmdb
-relay
+# The compiled service binaries from `go build` in the repo root. Anchored: a bare
+# `tmdb` or `relay` also matches the services/ directories, which silently
+# ignores every new file added under them.
+/tmdb
+/relay
 
 # Which prebuilt macOS library set was fetched (scripts/fetch-macos-libs.sh) — local state
 src-tauri/lib/.libs-key
