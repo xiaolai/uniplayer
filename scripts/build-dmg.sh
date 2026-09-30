@@ -13,8 +13,6 @@ VERSION=$(jq -r .version src-tauri/tauri.conf.json)
 OUT="src-tauri/target/release/bundle/dmg/UniPlayer_${VERSION}_aarch64.dmg"
 
 [ -d "$APP" ] || { echo "no app bundle at $APP — run the Tauri build first" >&2; exit 1; }
-[ -f src-tauri/dmg/background.tiff ] || {
-  echo "no background.tiff — run scripts/make-dmg-background.sh" >&2; exit 1; }
 
 mkdir -p "$(dirname "$OUT")"
 # dmgbuild refuses to overwrite, and a stale image from an earlier run would

@@ -6,9 +6,8 @@
 # image with no .DS_Store at all, which Finder then renders as a plain folder.
 # dmgbuild writes the .DS_Store itself, so the layout survives.
 #
-# Geometry is shared with src-tauri/dmg/background.svg: window_rect's size is
-# that image's size, and icon_locations are the centres it was drawn around.
-# Change one, change the other.
+# No background image: a plain window with the app beside the Applications
+# link. icon_locations centre the pair in window_rect's content area.
 
 import os.path
 
@@ -24,12 +23,9 @@ files = [app]
 symlinks = {"Applications": "/Applications"}
 icon = "src-tauri/icons/icon.icns"
 
-background = "src-tauri/dmg/background.tiff"
 # Finder's WindowBounds is the window *frame*, not its content: measured on
 # macOS 26, the title bar takes 32 pt off the top and a path bar another 28 at
-# the bottom. 400 here left 340 pt of content and cut the background off. 432 is
-# 400 + title bar, so a viewer without the path bar sees the full 400; the
-# artwork keeps everything inside the top 372 for the ones who have it on.
+# the bottom. 432 is 400 of content + the title bar.
 window_rect = ((200, 200), (660, 432))
 default_view = "icon-view"
 
