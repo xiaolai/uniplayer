@@ -2,9 +2,8 @@
 #
 # .cargo/config.toml points FFMPEG_DIR and LIBCLANG_PATH at the Windows SDK
 # layout (src-tauri/ffmpeg, src-tauri/tools), so on macOS both have to come from
-# here — which is why a plain `npm run tauri dev` fails on a Mac and
-# `npm run tauri:macos` does not. Shared by macos-dev.sh and macos-build.sh so
-# the two cannot drift apart.
+# here. Sourced by scripts/tauri.mjs (`npm run tauri …`), macos-dev.sh and
+# macos-build.sh, so none of them can drift from the others.
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 

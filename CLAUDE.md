@@ -58,8 +58,7 @@ whose device it was.
 ```bash
 npm install
 npm run fetch-libs        # one-time: downloads libmpv, FFmpeg SDK, libclang into src-tauri/{lib,ffmpeg,tools}
-npm run tauri dev         # dev run (vite on :1420 + cargo) — Windows
-npm run tauri:macos       # the same on macOS: .cargo/config.toml carries the Windows SDK paths, scripts/macos-env.sh supplies the macOS ones
+npm run tauri dev         # dev run (vite on :1420 + cargo), both platforms — scripts/tauri.mjs adds the macOS FFmpeg/libclang paths from scripts/macos-env.sh
 npm run check             # svelte-check — run after ANY frontend change (expect 0 errors; a few known a11y warnings are OK)
 npm run gates             # check + check-runes + check-imports + css-orphans + test, in one go
 npm test                  # vitest, the pure end of the codebase (see "Tests" below)
