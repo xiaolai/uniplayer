@@ -43,3 +43,6 @@ services/relay/relay
 # The compiled service binaries from `go build`, which land in the repo root.
 tmdb
 relay
+
+# Which prebuilt macOS library set was fetched (scripts/fetch-macos-libs.sh) — local state
+src-tauri/lib/.libs-key
