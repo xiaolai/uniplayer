@@ -97,9 +97,10 @@ class SettingsWindow: CommonWindow {
     self.searchBox = NSSearchField()
     self.highlightView = HighlightView()
 
-    super.init(contentRect: NSRect(x: 0, y: 0, width: 600, height: 480),
+    super.init(contentRect: NSRect(x: 0, y: 0, width: 650, height: 520),
                styleMask: [.closable, .miniaturizable, .resizable, .titled, .fullSizeContentView],
                backing: .buffered, defer: false)
+    self.minSize = NSSize(width: 650, height: 480)
 
     let splitViewController = NSSplitViewController()
     self.contentViewController = splitViewController
@@ -168,13 +169,13 @@ class SettingsWindow: CommonWindow {
 
     // Add the sidebar and content view controllers to the split view
     let sidebarSplitItem = NSSplitViewItem(sidebarWithViewController: sidebarViewController)
-    sidebarSplitItem.maximumThickness = 200
-    sidebarSplitItem.minimumThickness = 200
+    sidebarSplitItem.maximumThickness = 220
+    sidebarSplitItem.minimumThickness = 180
     sidebarSplitItem.canCollapse = false
     splitViewController.addSplitViewItem(sidebarSplitItem)
 
     let contentSplitItem = NSSplitViewItem(viewController: contentViewController)
-    contentSplitItem.minimumThickness = 400
+    contentSplitItem.minimumThickness = 430
     splitViewController.addSplitViewItem(contentSplitItem)
 
     sidebarSplitItem.titlebarSeparatorStyle = .automatic
