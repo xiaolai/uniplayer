@@ -4,11 +4,11 @@ body:
 - type: markdown
   attributes:
     value: |
-      Thanks for considering about contributing to IINA and making it even better! To help us focus on unique issues, please first check out the existing issues, including closed ones. If you see someone else has already opened an issue about the same stuff, you should reply to their existing issue instead of opening a new one.
+      Thanks for considering about contributing to UniPlayer and making it even better! To help us focus on unique issues, please first check out the existing issues, including closed ones. If you see someone else has already opened an issue about the same stuff, you should reply to their existing issue instead of opening a new one.
 
 - type: input
   attributes:
-    label: IINA Version
+    label: UniPlayer Version
   validations:
     required: true
 
@@ -21,7 +21,7 @@ body:
       - Nightly
       - Other
       - Not Sure
-    description: "If \"Other\" is selected, please specify in the IINA version text field."
+    description: "If \"Other\" is selected, please specify in the UniPlayer version text field."
   validations:
     required: true
 
@@ -56,14 +56,14 @@ body:
 - type: textarea
   attributes:
     label: Crash Report or Process Sample
-    description: "If you're reporting a crash, please drag and drop the trace log file below. You can find these in ~/Library/Logs/DiagnosticReports/; the filename should prefixed with IINA and include the crash time. If you are reporting a hang (IINA stops responding) please generate a process sample and drag and drop the file below. For more information see the FAQ question: [How to collect a process sample when reporting an issue?](https://github.com/iina/iina/wiki/FAQ#how-to-collect-a-process-sample-when-reporting-an-issue)"
+    description: "If you're reporting a crash, please drag and drop the trace log file below. You can find these in ~/Library/Logs/DiagnosticReports/; the filename should prefixed with UniPlayer and include the crash time. If you are reporting a hang (UniPlayer stops responding) please generate a process sample and drag and drop the file below. For more information see the FAQ question: [How to collect a process sample when reporting an issue?](https://github.com/iina/iina/wiki/FAQ#how-to-collect-a-process-sample-when-reporting-an-issue)"
     placeholder: Drag and drop the crash report or process sample file here; do not paste the content directly.
 
 - type: textarea
   attributes:
     label: Logs
     description: "If applicable, please provide the log files after reproducing the issue. If you haven't done so already, you can enable logging in Settings > Advanced. For more information see the FAQ question: [How to collect log files when reporting an issue?](https://github.com/iina/iina/wiki/FAQ#how-to-collect-log-files-when-reporting-an-issue)"
-    placeholder: Drag and drop the iina.log and mpv.log files here; do not paste the content directly.
+    placeholder: Drag and drop the uniplayer.log and mpv.log files here; do not paste the content directly.
 
 - type: textarea
   attributes:

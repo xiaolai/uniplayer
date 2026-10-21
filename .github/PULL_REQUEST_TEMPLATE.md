@@ -1,4 +1,4 @@
-- [ ] I have read [CONTRIBUTING.md](https://github.com/iina/iina/blob/develop/CONTRIBUTING.md)
+- [ ] I have read [CONTRIBUTING.md](CONTRIBUTING.md)
 - [ ] Related issue: #
 - [ ] Related Design Proposal: # / Not applicable
 ---

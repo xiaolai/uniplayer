@@ -5,9 +5,9 @@ permissions:
 
 on:
   push:
-      branches: [develop]
+      branches: [main]
   pull_request:
-      branches: [develop]
+      branches: [main]
 
 jobs:
   build:
@@ -27,16 +27,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build
-        run: xcodebuild -project iina.xcodeproj ONLY_ACTIVE_ARCH=NO -scheme iina -derivedDataPath . -configuration Nightly ${{ matrix.deployment_target }}
+        run: xcodebuild -project uniplayer.xcodeproj ONLY_ACTIVE_ARCH=NO -scheme uniplayer -derivedDataPath . -configuration Nightly ${{ matrix.deployment_target }}
         env:
           DEVELOPER_DIR: /Applications/Xcode_${{ matrix.xcode }}.app/Contents/Developer
 
       - name: Create DMG
-        run: hdiutil create -volname "IINA Nightly" -srcfolder Build/Products/Nightly/IINA.app -ov -format UDZO IINA.dmg
+        run: hdiutil create -volname "UniPlayer Nightly" -srcfolder Build/Products/Nightly/UniPlayer.app -ov -format UDZO UniPlayer.dmg
 
       - name: Save artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: IINA
-          path: IINA.dmg
+          name: UniPlayer
+          path: UniPlayer.dmg
           archive: false
