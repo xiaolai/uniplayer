@@ -1,0 +1,118 @@
+/*
+  KeyBinding.strings
+  uniplayer
+
+  Created by lhc on 4/2/2017.
+  Copyright © 2017 lhc. All rights reserved.
+*/
+
+"cmd.ignore" = "Ничего не делать";
+"cmd.seek" = "Промотать";
+"cmd.revert-seek" = "Промотать назад";
+"cmd.set" = "Установить";
+"cmd.cycle" = "Переключить";
+"cmd.cycle-values" = "Переключить между";
+"cmd.add" = "Изменить";
+"cmd.multiply" = "Умножить";
+"cmd.frame-step" = "Следующий кадр";
+"cmd.frame-back-step" = "Предыдущий кадр";
+"cmd.ab-loop" = "Повтор A–B";
+"cmd.sub-seek" = "Поиск субтитров";
+"cmd.playlist-next" = "Следующий файл";
+"cmd.playlist-prev" = "Предыдущий файл";
+"cmd.playlist-move" = "Переместить элемент плейлиста";
+"cmd.playlist-clear" = "Очистить плейлист";
+"cmd.playlist-remove" = "Убрать текущий файл";
+"cmd.playlist-shuffle" = "Перемешать";
+"cmd.write-watch-later-config" = "Сохранить историю воспроизведения";
+"cmd.stop" = "Остановить";
+"cmd.quit" = "Выйти";
+"cmd.quit-watch-later" = "Выйти (запомнить позицию)";
+"cmd.screenshot" = "Снимок экрана";
+"cmd.screenshot-to-file" = "Снимок экрана в файл";
+"cmd.loadfile" = "Загрузить файл";
+"cmd.loadlist" = "Загрузить плейлист";
+"cmd.run" = "Запустить";
+
+"uniplayer.flip" = "Вверх ногами";
+"uniplayer.mirror" = "Зеркально";
+
+"uniplayer.toggle-pip" = "Режим «Картинка в картинке»";
+"uniplayer.toggle-music-mode" = "Музыкальный режим";
+"uniplayer.open-file" = "Открыть файл";
+"uniplayer.open-url" = "Открыть адрес";
+"uniplayer.video-panel" = "Панель видео";
+"uniplayer.audio-panel" = "Панель аудио";
+"uniplayer.sub-panel" = "Панель субтитров";
+"uniplayer.playlist-panel" = "Панель плейлиста";
+"uniplayer.chapter-panel" = "Панель глав";
+"uniplayer.bigger-window" = "Увеличить окно";
+"uniplayer.smaller-window" = "Уменьшить окно";
+"uniplayer.fit-to-screen" = "По размеру экрана";
+"uniplayer.toggle-flip" = "Перевернуть вертикально";
+"uniplayer.toggle-mirror" = "Перевернуть горизонтально";
+"uniplayer.save-playlist" = "Сохранить текущий плейлист";
+"uniplayer.show-current-file-in-finder" = "Показать текущий файл в Finder";
+"uniplayer.delete-current-file" = "Удалить текущий файл";
+"uniplayer.delete-current-file-hard" = "Немедленно удалить текущий файл, не помещая его в корзину";
+"uniplayer.find-online-subs" = "Найти субтитры онлайн";
+"uniplayer.save-downloaded-sub" = "Сохранить загруженные субтитры";
+
+"yes" = "вкл.";
+"no" = "выкл.";
+"to" = "на";
+"by" = "на";
+"in" = "между";
+"add" = "увеличить на";
+"minus" = "уменьшить на";
+"forward" = "вперёд на";
+"backward" = "назад на";
+"seek-to" = "от начала на";
+
+"relative" = "с";
+"absolute" = "с";
+"absolute-percent" = "%";
+"relative-percent" = "%";
+"relative+exact" = "с (точно)";
+"relative-percent+exact" = "% (точно)";
+"absolute+keyframe" = "с (по кадрам)";
+"absolute-percent+keyframe" = "% (по кадрам)";
+
+"opt.pause" = "паузу";
+"opt.speed" = "скорость";
+
+"opt.window-scale" = "Масштаб окна";
+
+"opt.video" = "видеодорожку";
+"opt.video-aspect-override" = "соотношение сторон";
+"opt.contrast" = "контраст";
+"opt.brightness" = "яркость";
+"opt.gamma" = "гамму";
+"opt.saturation" = "насыщенность";
+"opt.deinterlace" = "деинтерлейсинг";
+
+"opt.audio" = "аудиодорожку";
+"opt.volume" = "Громкость";
+"opt.mute" = "режим «Без звука»";
+"opt.audio-delay" = "Задержка аудио";
+
+"opt.sub" = "субтитры";
+"opt.sub-delay" = "Задержка субтитров";
+"opt.sub-pos" = "позицию субтитров";
+"opt.sub-scale" = "масштаб субтитров";
+"opt.sub-visibility" = "видимость субтитров";
+"opt.secondary-sub-visibility" = "Видимость вторых субтитров";
+"opt.sub-ass-style-override" = "переопределение стиля ASS";
+
+"opt.fullscreen" = "полноэкранный режим";
+"opt.ontop" = "режим «Поверх всех окон»";
+
+"opt.chapter" = "Глава";
+
+"read.set" = "Установить {{property}} на {{value}}";
+"read.add" = "{{property}} {{value}}";
+"read.multiply" = "Увеличить {{property}} в {{factor}}x раз";
+"read.cycle" = "Переключить {{property}}{{#dir_down}} в обратном порядке{{/dir_down}}";
+"read.cycle-values" = "Переключить {{property}} между ({{{values}}})";
+"read.seek" = "Промотать {{#fwd}}вперед на{{/fwd}}{{#bwd}}назад на{{/bwd}}{{#abs}}от начала на{{/abs}} {{value}}{{#sec}} с{{/sec}}{{#per}}%{{/per}} {{#exact}}(точно){{/exact}}{{#kf}}(по кадрам){{/kf}}";
+"read.sub-seek" = "Переключить на {{#skip_1}}следующие{{/skip_1}}{{#skip_-1}}предыдущие{{/skip_-1}} субтитры";

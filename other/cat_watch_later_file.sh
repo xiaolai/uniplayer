@@ -2,7 +2,7 @@
 
 #
 #  cat_watch_later_file.sh
-#  iina
+#  uniplayer
 #
 #  Created by low-batt on 6/1/26.
 #  Copyright © 2026 lhc. All rights reserved.
@@ -10,7 +10,7 @@
 
 # Show the contents of the mpv watch later file for the specified media. This
 # script expects the full pathname or URL of the media as the first and only
-# argument. This must match the string IINA passed to libmpv in the loadfile
+# argument. This must match the string UniPlayer passed to libmpv in the loadfile
 # command for the watch later file to be found. This is a tool for developers
 # to use when working on watch later related issues.
 #
@@ -45,7 +45,7 @@ then
 fi
 
 filename=$(md5 -qs "$1" | awk '{print toupper($0)}')
-path="$HOME/Library/Application Support/com.colliderli.iina/watch_later/$filename"
+path="$HOME/Library/Application Support/com.lixiaolai.uniplayer/watch_later/$filename"
 
 # The media won't have a file if it is currently being played, if it was played
 # to the end or if the user switched to another file in the playlist, etc.

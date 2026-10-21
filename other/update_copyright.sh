@@ -7,7 +7,7 @@
 # Support running from either the top of the source tree or the
 # "other" directory containing this script.
 indir=${PWD##*/}
-srcdir='iina'
+srcdir='uniplayer'
 if [ "$indir" = 'other' ]; then
     srcdir="../$srcdir"
 fi
@@ -24,7 +24,7 @@ function update () {
 
 # Update the copyright displayed in the macOS "Get Info" window for
 # the application and at the start of the log file.
-update ../iina.xcodeproj project.pbxproj
+update ../uniplayer.xcodeproj project.pbxproj
 update en.lproj InfoPlist.strings
 
 # Update the copyright displayed in the about window.

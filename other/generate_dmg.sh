@@ -2,24 +2,24 @@
 
 #
 #  generate_dmg.sh
-#  iina
+#  uniplayer
 #
 #  Created by low-batt on 4/20/26.
 #  Copyright © 2026 lhc. All rights reserved.
 #
 
-# Running this script generates an IINA DMG file in Xcode's build directory.
-# Before running this script you must in Xcode edit the iina scheme and set the
-# build configuration to the desired type of IINA release (Beta, Debug, Nightly or
-# Release) and then build an IINA.app that can be run on any Mac. This script will
+# Running this script generates an UniPlayer DMG file in Xcode's build directory.
+# Before running this script you must in Xcode edit the uniplayer scheme and set the
+# build configuration to the desired type of UniPlayer release (Beta, Debug, Nightly or
+# Release) and then build an UniPlayer.app that can be run on any Mac. This script will
 # refuse to generate a DMG if the app is not universal. This script also tests
 # that the Safari extension can be installed and uninstalled.
 
 # IMPORTANT! This script requires that create-dmg has been installed.
 # See: https://github.com/create-dmg/create-dmg
 
-PROJECT_NAME='iina'
-SCHEME='iina'
+PROJECT_NAME='uniplayer'
+SCHEME='uniplayer'
 OUTPUT_DIR=''
 
 # Colors for output
@@ -126,7 +126,7 @@ HEIGHT=$(($HEIGHT + 32))
 echo -e "${YELLOW}Obtaining Xcode build settings…${NC}"
 
 SETTINGS=$(xcodebuild \
-  -workspace ${ROOT_PATH}/iina.xcodeproj/project.xcworkspace \
+  -workspace ${ROOT_PATH}/uniplayer.xcodeproj/project.xcworkspace \
   -scheme "$SCHEME" -destination 'generic/platform=macOS,name=Any Mac' \
   -showBuildSettings)
 
@@ -139,31 +139,31 @@ if [ -z "$TARGET_BUILD_DIR" ]; then
   exit 1
 fi
 
-# Confirm IINA.app has been built.
-APP_PATH="$TARGET_BUILD_DIR/IINA.app"
+# Confirm UniPlayer.app has been built.
+APP_PATH="$TARGET_BUILD_DIR/UniPlayer.app"
 if [ ! -e "$APP_PATH" ]; then
-  echo -e "${RED}An IINA.app file was not found in ${TARGET_BUILD_DIR}.${NC}" >&2
+  echo -e "${RED}An UniPlayer.app file was not found in ${TARGET_BUILD_DIR}.${NC}" >&2
   exit 1
 fi
-echo -e "${GREEN}Found IINA.app: ${APP_PATH}${NC}"
+echo -e "${GREEN}Found UniPlayer.app: ${APP_PATH}${NC}"
 
 # Confirm app was built for all Macs.
-IINA_BINARY_PATH="${APP_PATH}/Contents/MacOS/iina"
-if ! lipo "$IINA_BINARY_PATH" -verify_arch arm64; then
-  echo -e "${RED}IINA.app is missing support for arm64.${NC}" >&2
+UniPlayer_BINARY_PATH="${APP_PATH}/Contents/MacOS/UniPlayer"
+if ! lipo "$UniPlayer_BINARY_PATH" -verify_arch arm64; then
+  echo -e "${RED}UniPlayer.app is missing support for arm64.${NC}" >&2
   exit 1
 fi
-if ! lipo "$IINA_BINARY_PATH" -verify_arch x86_64; then
-  echo -e "${RED}IINA.app is missing support for x86_64.${NC}" >&2
+if ! lipo "$UniPlayer_BINARY_PATH" -verify_arch x86_64; then
+  echo -e "${RED}UniPlayer.app is missing support for x86_64.${NC}" >&2
   exit 1
 fi
 
 # As testing the Safari extension alters the user's environment make it clear
 # to the user the extension is being installed and uninstalled.
 echo -e "${YELLOW}Confirming Safari extension exists and can be installed…${NC}"
-EXTENSION_PATH="${APP_PATH}/Contents/PlugIns/OpenInIINA.appex"
+EXTENSION_PATH="${APP_PATH}/Contents/PlugIns/OpenInUniPlayer.appex"
 if [ ! -e "$EXTENSION_PATH" ]; then
-  echo -e "${RED}IINA.app is missing the Safari extension.${NC}" >&2
+  echo -e "${RED}UniPlayer.app is missing the Safari extension.${NC}" >&2
   exit 1
 fi
 echo -e "${YELLOW}Installing Safari extension…${NC}"
@@ -204,12 +204,12 @@ fi
 
 # Form a path to the correct app icon for use as the volume's icon.
 if [ "${CONFIGURATION}" = "Release" ]; then
-  VOL_ICON_PATH="$TARGET_BUILD_DIR/IINA.app/Contents/Resources/iina.icns"
+  VOL_ICON_PATH="$TARGET_BUILD_DIR/UniPlayer.app/Contents/Resources/uniplayer.icns"
 elif [ "${CONFIGURATION}" = "Beta" ]; then
-  VOL_ICON_PATH="$TARGET_BUILD_DIR/IINA.app/Contents/Resources/iina_beta.icns"
+  VOL_ICON_PATH="$TARGET_BUILD_DIR/UniPlayer.app/Contents/Resources/uniplayer_beta.icns"
 else
   # Debug also uses the Nightly icon.
-  VOL_ICON_PATH="$TARGET_BUILD_DIR/IINA.app/Contents/Resources/iina_nightly.icns"
+  VOL_ICON_PATH="$TARGET_BUILD_DIR/UniPlayer.app/Contents/Resources/uniplayer_nightly.icns"
 fi
 if [ ! -e "$VOL_ICON_PATH" ]; then
   echo -e "${RED}Icon for volume does not exist: ${VOL_ICON_PATH}${NC}" >&2
@@ -217,10 +217,10 @@ if [ ! -e "$VOL_ICON_PATH" ]; then
 fi
 echo -e "${GREEN}Found icon file to use for volume: ${VOL_ICON_PATH}${NC}"
 
-# Find the IINA version so it can be used in the DMG filename.
+# Find the UniPlayer version so it can be used in the DMG filename.
 MARKETING_VERSION=$(echo "$SETTINGS" | sed -rn 's/.*MARKETING_VERSION = (.*)/\1/p')
 if [ -z "$MARKETING_VERSION" ]; then
-  echo -e "${RED}Unable to find IINA version in Xcode build settings.${NC}" >&2
+  echo -e "${RED}Unable to find UniPlayer version in Xcode build settings.${NC}" >&2
   exit 1
 fi
 if [ -z "$OUTPUT_DIR" ]; then
@@ -228,7 +228,7 @@ if [ -z "$OUTPUT_DIR" ]; then
 else
   mkdir -p "$OUTPUT_DIR"
 fi
-DISK_IMAGE_PATH="$OUTPUT_DIR/IINA.v"$MARKETING_VERSION".dmg"
+DISK_IMAGE_PATH="$OUTPUT_DIR/UniPlayer.v"$MARKETING_VERSION".dmg"
 
 # If the disk image file already exists it must be removed or create-dmg will fail.
 if [ -e "$DISK_IMAGE_PATH" ]; then
@@ -248,9 +248,9 @@ else
   QUITE='--hdiutil-quiet'
 fi
 
-if ! create-dmg $QUITE --volname IINA --volicon "$VOL_ICON_PATH" --background "$DMG_BACKGROUND_PATH" \
+if ! create-dmg $QUITE --volname UniPlayer --volicon "$VOL_ICON_PATH" --background "$DMG_BACKGROUND_PATH" \
     --window-pos 200 120 --window-size $WIDTH $HEIGHT --icon-size 128 \
-    --icon "IINA.app" 140 230 --app-drop-link 400 230 --no-internet-enable \
+    --icon "UniPlayer.app" 140 230 --app-drop-link 400 230 --no-internet-enable \
     "$DISK_IMAGE_PATH" "$APP_PATH"; then
   echo -e "${RED}Failed to create disk image.${NC}" >&2
   exit 1

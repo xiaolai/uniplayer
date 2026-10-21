@@ -1,0 +1,118 @@
+/*
+  KeyBinding.strings
+  uniplayer
+
+  Created by lhc on 4/2/2017.
+  Copyright © 2017 lhc. All rights reserved.
+*/
+
+"cmd.ignore" = "Ignorieren";
+"cmd.seek" = "Spule";
+"cmd.revert-seek" = "Spulen widerrufen";
+"cmd.set" = "Setze";
+"cmd.cycle" = "Wechsle";
+"cmd.cycle-values" = "Wechsle in";
+"cmd.add" = "Ändere";
+"cmd.multiply" = "Multipliziere";
+"cmd.frame-step" = "Nächster Frame";
+"cmd.frame-back-step" = "Vorheriger Frame";
+"cmd.ab-loop" = "A-B-Schleife";
+"cmd.sub-seek" = "Untertitel suchen";
+"cmd.playlist-next" = "Nächste Datei";
+"cmd.playlist-prev" = "Vorherige Datei";
+"cmd.playlist-move" = "Wiedergabelisteneintrag bewegen";
+"cmd.playlist-clear" = "Wiedergabeliste leeren";
+"cmd.playlist-remove" = "Aus Wiedergabeliste entfernen";
+"cmd.playlist-shuffle" = "Zufällige Wiedergabe";
+"cmd.write-watch-later-config" = "Wiedergabeverlauf sichern";
+"cmd.stop" = "Stoppen";
+"cmd.quit" = "Beenden";
+"cmd.quit-watch-later" = "Beenden (Fortschritt sichern)";
+"cmd.screenshot" = "Bildschirmfoto";
+"cmd.screenshot-to-file" = "Bildschirmfoto in Datei";
+"cmd.loadfile" = "Datei laden";
+"cmd.loadlist" = "Wiedergabeliste laden";
+"cmd.run" = "Ausführen";
+
+"uniplayer.flip" = "Drehen";
+"uniplayer.mirror" = "Spiegeln";
+
+"uniplayer.toggle-pip" = "Bild-in-Bild ein-/ausschalten";
+"uniplayer.toggle-music-mode" = "Musikmodus ein-/ausschalten";
+"uniplayer.open-file" = "Datei öffnen";
+"uniplayer.open-url" = "Adresse öffnen";
+"uniplayer.video-panel" = "Videoeinstellungen";
+"uniplayer.audio-panel" = "Audioeinstellungen";
+"uniplayer.sub-panel" = "Untertiteleinstellungen";
+"uniplayer.playlist-panel" = "Wiedergabeliste";
+"uniplayer.chapter-panel" = "Kapitel";
+"uniplayer.bigger-window" = "Fenster vergrößern";
+"uniplayer.smaller-window" = "Fenster verkleinern";
+"uniplayer.fit-to-screen" = "An Bildschirm anpassen";
+"uniplayer.toggle-flip" = "Drehen ein-/ausschalten";
+"uniplayer.toggle-mirror" = "Spiegeln ein-/ausschalten";
+"uniplayer.save-playlist" = "Aktuelle Wiedergabeliste sichern";
+"uniplayer.show-current-file-in-finder" = "Aktuelle Datei im Finder anzeigen";
+"uniplayer.delete-current-file" = "Wiedergegebene Datei löschen";
+"uniplayer.delete-current-file-hard" = "Wiedergegebene Datei unwiderruflich löschen";
+"uniplayer.find-online-subs" = "Online nach Untertiteln suchen";
+"uniplayer.save-downloaded-sub" = "Geladene Untertitel sichern";
+
+"yes" = "Ein";
+"no" = "Aus";
+"to" = "auf";
+"by" = "mit";
+"in" = "in";
+"add" = "plus";
+"minus" = "minus";
+"forward" = "vorwärts";
+"backward" = "rückwärts";
+"seek-to" = "zu";
+
+"relative" = "Sekunden";
+"absolute" = "Sekunden";
+"absolute-percent" = "%";
+"relative-percent" = "%";
+"relative+exact" = "s (genau)";
+"relative-percent+exact" = "% (genau)";
+"absolute+keyframe" = "s (Keyframe)";
+"absolute-percent+keyframe" = "% (Keyframe)";
+
+"opt.pause" = "Pausieren";
+"opt.speed" = "Geschwindigkeit";
+
+"opt.window-scale" = "Fenstergröße";
+
+"opt.video" = "Videospur";
+"opt.video-aspect-override" = "Seitenverhältnis";
+"opt.contrast" = "Kontrast";
+"opt.brightness" = "Helligkeit";
+"opt.gamma" = "Gamma";
+"opt.saturation" = "Sättigung";
+"opt.deinterlace" = "Deinterlacing";
+
+"opt.audio" = "Audiospur";
+"opt.volume" = "Lautstärke";
+"opt.mute" = "Stumm";
+"opt.audio-delay" = "Verzögerung";
+
+"opt.sub" = "Untertitelspur";
+"opt.sub-delay" = "Verzögerung";
+"opt.sub-pos" = "Position";
+"opt.sub-scale" = "Größe";
+"opt.sub-visibility" = "Sichtbarkeit";
+"opt.secondary-sub-visibility" = "Sichtbarkeit des zweiten Untertitels";
+"opt.sub-ass-style-override" = "ASS-Stil überschreiben";
+
+"opt.fullscreen" = "Vollbild";
+"opt.ontop" = "Oben schweben";
+
+"opt.chapter" = "Kapitel";
+
+"read.set" = "Setze {{property}} auf {{value}}";
+"read.add" = "{{property}} {{value}}";
+"read.multiply" = "Multipliziere {{property}} mit {{factor}}x";
+"read.cycle" = "Wechsle {{property}}{{#dir_down}} Downwards{{/dir_down}}";
+"read.cycle-values" = "Wechsle {{property}} in ({{{values}}})";
+"read.seek" = "Spule {{#abs}}zu {{/abs}}{{value}} {{#sec}}s{{/sec}}{{#per}}%{{/per}} {{#fwd}}vor{{/fwd}}{{#bwd}}zurück{{/bwd}}{{#exact}} (genau){{/exact}}{{#kf}} (Keyframe){{/kf}}";
+"read.sub-seek" = "Wechsle zu {{#skip_1}}nächstem{{/skip_1}}{{#skip_-1}}vorherigem{{/skip_-1}} Untertitel";

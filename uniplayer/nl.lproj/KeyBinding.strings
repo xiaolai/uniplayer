@@ -1,0 +1,118 @@
+/*
+  KeyBinding.strings
+  uniplayer
+
+  Created by lhc on 4/2/2017.
+  Copyright © 2017 lhc. All rights reserved.
+*/
+
+"cmd.ignore" = "Negeren";
+"cmd.seek" = "Spoel vooruit of terug";
+"cmd.revert-seek" = "Herstel vooruit- of terugspoelen";
+"cmd.set" = "Stel in";
+"cmd.cycle" = "Schakel:";
+"cmd.cycle-values" = "Schakel:";
+"cmd.add" = "Wijzigen";
+"cmd.multiply" = "Vermenigvuldigen";
+"cmd.frame-step" = "Volgend frame";
+"cmd.frame-back-step" = "Vorig frame";
+"cmd.ab-loop" = "Herhaal gedeelte";
+"cmd.sub-seek" = "Zoek ondertiteling";
+"cmd.playlist-next" = "Open volgende bestand";
+"cmd.playlist-prev" = "Open vorige bestand";
+"cmd.playlist-move" = "Verplaats afspeellijstbestand";
+"cmd.playlist-clear" = "Wis afspeellijst";
+"cmd.playlist-remove" = "Verwijder huidige";
+"cmd.playlist-shuffle" = "Shuffle";
+"cmd.write-watch-later-config" = "Onthoud geschiedenis";
+"cmd.stop" = "Stop";
+"cmd.quit" = "Stop UniPlayer";
+"cmd.quit-watch-later" = "Stop UniPlayer (bewaar afspeelpositie)";
+"cmd.screenshot" = "Schermafbeelding";
+"cmd.screenshot-to-file" = "Schermafbeelding naar bestand";
+"cmd.loadfile" = "Laad bestand";
+"cmd.loadlist" = "Laad afspeellijst";
+"cmd.run" = "Voer uit";
+
+"uniplayer.flip" = "Spiegel verticaal";
+"uniplayer.mirror" = "Spiegel horizontaal";
+
+"uniplayer.toggle-pip" = "Schakel Beeld-in-beeld in/uit";
+"uniplayer.toggle-music-mode" = "Schakel muziekmodus in/uit";
+"uniplayer.open-file" = "Open bestand";
+"uniplayer.open-url" = "Open URL";
+"uniplayer.video-panel" = "Videopaneel";
+"uniplayer.audio-panel" = "Geluidspaneel";
+"uniplayer.sub-panel" = "Ondertitelingspaneel";
+"uniplayer.playlist-panel" = "Afspeellijstpaneel";
+"uniplayer.chapter-panel" = "Hoofdstukkenpaneel";
+"uniplayer.bigger-window" = "Groter venster";
+"uniplayer.smaller-window" = "Kleiner venster";
+"uniplayer.fit-to-screen" = "Pas aan schermformaat aan";
+"uniplayer.toggle-flip" = "Schakel verticaal spiegelen in/uit";
+"uniplayer.toggle-mirror" = "Schakel horizontaal spiegelen in/uit";
+"uniplayer.save-playlist" = "Bewaar huidige afspeellijst";
+"uniplayer.show-current-file-in-finder" = "Huidige bestand weergeven in Finder";
+"uniplayer.delete-current-file" = "Verwijder huidige bestand";
+"uniplayer.delete-current-file-hard" = "Verwijder huidige bestand permanent";
+"uniplayer.find-online-subs" = "Haal online ondertiteling op";
+"uniplayer.save-downloaded-sub" = "Bewaar gedownloade ondertiteling";
+
+"yes" = "Ja";
+"no" = "Nee";
+"to" = "op";
+"by" = "met";
+"in" = "in";
+"add" = "toenemen";
+"minus" = "afnemen";
+"forward" = "vooruit";
+"backward" = "terug";
+"seek-to" = "naar";
+
+"relative" = "sec";
+"absolute" = "sec";
+"absolute-percent" = "%";
+"relative-percent" = "%";
+"relative+exact" = "s (exact)";
+"relative-percent+exact" = "% (exact)";
+"absolute+keyframe" = "s (keyframe)";
+"absolute-percent+keyframe" = "% (keyframe)";
+
+"opt.pause" = "Pauzeer";
+"opt.speed" = "Snelheid";
+
+"opt.window-scale" = "Vensterschaal";
+
+"opt.video" = "Videospoor";
+"opt.video-aspect-override" = "Beeldverhouding";
+"opt.contrast" = "Contrast";
+"opt.brightness" = "Helderheid";
+"opt.gamma" = "Gamma";
+"opt.saturation" = "Verzadiging";
+"opt.deinterlace" = "Deinterlace";
+
+"opt.audio" = "Audiospoor";
+"opt.volume" = "Volume";
+"opt.mute" = "Geluid uit";
+"opt.audio-delay" = "Audiovertraging";
+
+"opt.sub" = "Ondertitelingspoor";
+"opt.sub-delay" = "Ondertitelingsvertraging";
+"opt.sub-pos" = "Ondertitelingspositie";
+"opt.sub-scale" = "Ondertitelingsschaal";
+"opt.sub-visibility" = "Ondertitelingszichtbaarheid";
+"opt.secondary-sub-visibility" = "Secundaire ondertitel zichtbaarheid";
+"opt.sub-ass-style-override" = "ASS-stijl negeren";
+
+"opt.fullscreen" = "Schermvullende weergave";
+"opt.ontop" = "Altijd op voorgrond";
+
+"opt.chapter" = "Hoofdstuk";
+
+"read.set" = "Stel {{property}} in op {{value}}";
+"read.add" = "{{property}} {{value}}";
+"read.multiply" = "Vermenigvuldig {{property}} met {{factor}}x";
+"read.cycle" = "Schakel: {{property}}{{#dir_down}} naar beneden{{/dir_down}}";
+"read.cycle-values" = "Schakel: {{property}} in ({{{values}}})";
+"read.seek" = "Ga{{#abs}} naar{{/abs}} {{value}}{{#sec}}s{{/sec}}{{#per}}%{{/per}} {{#fwd}}vooruit{{/fwd}}{{#bwd}}terug{{/bwd}} {{#exact}}(exact){{/exact}}{{#kf}}(keyframe){{/kf}}";
+"read.sub-seek" = "Ga naar {{#skip_1}}volgende{{/skip_1}}{{#skip_-1}}vorige{{/skip_-1}} ondertitel";

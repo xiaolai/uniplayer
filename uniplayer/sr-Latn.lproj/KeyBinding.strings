@@ -1,0 +1,118 @@
+/*
+  KeyBinding.strings
+  uniplayer
+
+  Created by lhc on 4/2/2017.
+  Copyright © 2017 lhc. All rights reserved.
+*/
+
+"cmd.ignore" = "Zanemari";
+"cmd.seek" = "Pomeri";
+"cmd.revert-seek" = "Pomeri unazad";
+"cmd.set" = "Postavi";
+"cmd.cycle" = "Rotiraj";
+"cmd.cycle-values" = "Rotiraj u";
+"cmd.add" = "Promeni";
+"cmd.multiply" = "Umnoži";
+"cmd.frame-step" = "Naredni kadar";
+"cmd.frame-back-step" = "Prethodni kadar";
+"cmd.ab-loop" = "A-B petlja";
+"cmd.sub-seek" = "Pomeri titl";
+"cmd.playlist-next" = "Naredna datoteka";
+"cmd.playlist-prev" = "Prethodna datoteka";
+"cmd.playlist-move" = "Pomeri stavku plejliste";
+"cmd.playlist-clear" = "Obriši plejlistu";
+"cmd.playlist-remove" = "Ukloni trenutnu";
+"cmd.playlist-shuffle" = "Promešaj";
+"cmd.write-watch-later-config" = "Zabeleži istoriju reprodukcije";
+"cmd.stop" = "Zaustavi";
+"cmd.quit" = "Napusti";
+"cmd.quit-watch-later" = "Napusti (zapamti položaj)";
+"cmd.screenshot" = "Snimak ekrana";
+"cmd.screenshot-to-file" = "Snimak ekrana u datoteku";
+"cmd.loadfile" = "Učitaj datoteku";
+"cmd.loadlist" = "Učitaj plejlistu";
+"cmd.run" = "Pokreni";
+
+"uniplayer.flip" = "Preokreni";
+"uniplayer.mirror" = "Preslikaj";
+
+"uniplayer.toggle-pip" = "Uključi/isključi sliku u slici";
+"uniplayer.toggle-music-mode" = "Uključi/isključi muzički režim";
+"uniplayer.open-file" = "Otvori datoteku";
+"uniplayer.open-url" = "Otvori URL";
+"uniplayer.video-panel" = "Tabla Video";
+"uniplayer.audio-panel" = "Tabla Audio";
+"uniplayer.sub-panel" = "Tabla Titlovi";
+"uniplayer.playlist-panel" = "Tabla Plejlista";
+"uniplayer.chapter-panel" = "Tabla Poglavlje";
+"uniplayer.bigger-window" = "Veći prozor";
+"uniplayer.smaller-window" = "Manji prozor";
+"uniplayer.fit-to-screen" = "Uklopi u ekran";
+"uniplayer.toggle-flip" = "Uključi/isključi preokretanje";
+"uniplayer.toggle-mirror" = "Uključi/isključi preslikavanje";
+"uniplayer.save-playlist" = "Sačuvaj trenutnu plejlistu";
+"uniplayer.show-current-file-in-finder" = "Show current file in Finder";
+"uniplayer.delete-current-file" = "Izbriši trenutnu datoteku";
+"uniplayer.delete-current-file-hard" = "Izbriši trenutnu datoteku bez premeštanja u otpad";
+"uniplayer.find-online-subs" = "Pronađi titlove na mreži";
+"uniplayer.save-downloaded-sub" = "Sačuvaj preuzeti titl";
+
+"yes" = "Da";
+"no" = "Ne";
+"to" = "na";
+"by" = "od";
+"in" = "u";
+"add" = "povećaj";
+"minus" = "smanji";
+"forward" = "unapred";
+"backward" = "unazad";
+"seek-to" = "na";
+
+"relative" = "s";
+"absolute" = "s";
+"absolute-percent" = "%";
+"relative-percent" = "%";
+"relative+exact" = "s (tačno)";
+"relative-percent+exact" = "% (tačno)";
+"absolute+keyframe" = "s (ključni kadar)";
+"absolute-percent+keyframe" = "% (ključni kadar)";
+
+"opt.pause" = "Pauziraj";
+"opt.speed" = "Brzina";
+
+"opt.window-scale" = "Razmera prozora";
+
+"opt.video" = "Video zapis";
+"opt.video-aspect-override" = "Razmera video zapisa";
+"opt.contrast" = "Kontrast";
+"opt.brightness" = "Svetlina";
+"opt.gamma" = "Gama";
+"opt.saturation" = "Zasićenje";
+"opt.deinterlace" = "Rasplitanje";
+
+"opt.audio" = "Audio zapis";
+"opt.volume" = "Jačina zvuka";
+"opt.mute" = "Isključen zvuk";
+"opt.audio-delay" = "Kašnjenje zvuka";
+
+"opt.sub" = "Zapis titla";
+"opt.sub-delay" = "Kašnjenje titla";
+"opt.sub-pos" = "Položaj titla";
+"opt.sub-scale" = "Razmera titla";
+"opt.sub-visibility" = "Vidljivost titla";
+"opt.secondary-sub-visibility" = "Secondary subtitle visibility";
+"opt.sub-ass-style-override" = "Zamena ASS stila";
+
+"opt.fullscreen" = "Ceo ekran";
+"opt.ontop" = "Zadrži u prvom planu";
+
+"opt.chapter" = "Poglavlje";
+
+"read.set" = "Postavi {{property}} na {{value}}";
+"read.add" = "{{property}} {{value}}";
+"read.multiply" = "Pomnoži {{property}} sa {{factor}}x";
+"read.cycle" = "Listaj {{property}}{{#dir_down}} nadole{{/dir_down}}";
+"read.cycle-values" = "Listaj {{property}} u ({{{values}}})";
+"read.seek" = "Pomeri {{#fwd}}napred{{/fwd}}{{#bwd}}nazad{{/bwd}}{{#abs}}na{{/abs}} {{value}}{{#sec}}s{{/sec}}{{#per}}%{{/per}} {{#exact}}(exact){{/exact}}{{#kf}}(keyframe){{/kf}}";
+"read.sub-seek" = "Pomeri na {{#skip_1}}sledeći{{/skip_1}}{{#skip_-1}}prethodni{{/skip_-1}} titl";

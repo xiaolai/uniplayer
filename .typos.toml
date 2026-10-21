@@ -2,8 +2,8 @@
 extend-exclude = [
     ".git/",
     "deps/",
-    "iina.xcodeproj/",
-    "iina/Assets.xcassets/Symbols/**/*.svg",
+    "uniplayer.xcodeproj/",
+    "uniplayer/Assets.xcassets/Symbols/**/*.svg",
     "**/*.strings",
 ]
 ignore-hidden = false
@@ -29,7 +29,7 @@ extend-ignore-re = [
 # Xcode uses this property in XIBs.
 "customObjectInstantitationMethod" = "customObjectInstantitationMethod"
 "iy" = "iy"
-"reloadSavedIINAfilters" = "reloadSavedIINAfilters"
+"reloadSavedUniPlayerfilters" = "reloadSavedUniPlayerfilters"
 "ScreenshootOSDView" = "ScreenshootOSDView"
 "tak" = "tak"
 "videoParamsMaxCll" = "videoParamsMaxCll"

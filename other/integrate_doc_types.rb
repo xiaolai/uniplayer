@@ -5,8 +5,8 @@ require "fileutils"
 require "shellwords"
 require "colorize"
 
-INFO_PLIST_PATH = 'iina/info.plist'
-ASSETS_PATH = 'iina/Assets.xcassets/'
+INFO_PLIST_PATH = 'uniplayer/Info.plist'
+ASSETS_PATH = 'uniplayer/Assets.xcassets/'
 ICON_PATH = 'psd/Doc/'
 
 FT_DATA = [
