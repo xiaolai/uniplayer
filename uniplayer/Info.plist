@@ -638,6 +638,8 @@
 	</array>
 	<key>SUFeedURL</key>
 	<string>https://github.com/xiaolai/uniplayer/releases/latest/download/appcast.xml</string>
+	<key>SUEnableAutomaticChecks</key>
+	<false/>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>
