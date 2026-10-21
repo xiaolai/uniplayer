@@ -1,7 +1,5 @@
 #!/bin/bash
 
-PROJECT_NAME='iina'
-
 # universal | arm64 | x86_64
 ARCH="universal"
 # github | iina (use iina to get the binary included in the latest release)
@@ -155,16 +153,14 @@ universal | arm64 | x86_64)
 esac
 
 SCRIPT_PATH=$(realpath "$0")
-ROOT_PATH=$(dirname "$SCRIPT_PATH")
+# This script lives in <repository root>/other/, so the root is two levels up.
+# Deriving it from the script's own path keeps the script working when the
+# checkout directory is not named after the project.
+ROOT_PATH=$(dirname "$(dirname "$SCRIPT_PATH")")
 
-if [[ $(basename "$ROOT_PATH") != "$PROJECT_NAME" ]]; then
-  while [[ "$ROOT_PATH" != "/" && $(basename "$ROOT_PATH") != "$PROJECT_NAME" ]]; do
-    ROOT_PATH=$(dirname "$ROOT_PATH")
-  done
-  if [[ "$ROOT_PATH" == "/" ]]; then
-    echo -e "${RED}Unable to find the root directory '$PROJECT_NAME' containing the script file.${NC}" >&2
-    exit 1
-  fi
+if [[ ! -d "$ROOT_PATH/deps" ]]; then
+  echo -e "${RED}Unable to locate the repository root at '$ROOT_PATH'.${NC}" >&2
+  exit 1
 fi
 
 DEPS_PATH="$ROOT_PATH/deps"
@@ -312,8 +308,8 @@ download_plugin() {
   echo -e "${GREEN}Downloaded ${asset_name}${NC}"
 }
 
-download_plugin "iina/plugin-online-media" "iina-plugin-ytdl" || exit 1
-download_plugin "iina/plugin-userscript" "iina-plugin-userscript" || exit 1
-download_plugin "iina/plugin-opensub" "iina-plugin-opensub" || exit 1
+download_plugin "uniplayer/plugin-online-media" "uniplayer-plugin-ytdl" || exit 1
+download_plugin "uniplayer/plugin-userscript" "uniplayer-plugin-userscript" || exit 1
+download_plugin "uniplayer/plugin-opensub" "uniplayer-plugin-opensub" || exit 1
 
 echo -e "${GREEN}All downloads completed.${NC}"
