@@ -2,13 +2,19 @@
   "fill-specializations" : [
     {
       "value" : {
-        "automatic-gradient" : "extended-srgb:0.95294,0.94118,0.91765,1.00000"
+        "linear-gradient" : [
+          "extended-srgb:0.20392,0.21176,0.23529,1.00000",
+          "extended-srgb:0.07059,0.07451,0.08627,1.00000"
+        ]
       }
     },
     {
       "appearance" : "dark",
       "value" : {
-        "automatic-gradient" : "extended-srgb:0.95294,0.94118,0.91765,1.00000"
+        "linear-gradient" : [
+          "extended-srgb:0.20392,0.21176,0.23529,1.00000",
+          "extended-srgb:0.07059,0.07451,0.08627,1.00000"
+        ]
       }
     }
   ],
@@ -16,7 +22,8 @@
     {
       "layers" : [
         {
-          "image-name" : "glyph.png",
+          "glass" : false,
+          "image-name" : "glyph.svg",
           "name" : "Glyph"
         }
       ],
