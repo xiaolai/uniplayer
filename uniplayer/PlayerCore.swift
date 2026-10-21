@@ -202,7 +202,7 @@ class PlayerCore: NSObject {
 
   private var backgroundTaskInUse = false
 
-  var initialWindow: InitialWindowController!
+  var initialWindow: LibraryWindowController!
 
   var mainWindow: MainWindowController!
   var miniPlayer: MiniPlayerWindowController!
@@ -334,7 +334,7 @@ class PlayerCore: NSObject {
     self.mpv = MPVController(playerCore: self)
     self.mainWindow = MainWindowController(playerCore: self)
     self.miniPlayer = MiniPlayerWindowController(playerCore: self)
-    self.initialWindow = InitialWindowController(playerCore: self)
+    self.initialWindow = LibraryWindowController(playerCore: self)
     self._touchBarSupport = TouchBarSupport(playerCore: self)
     TouchBarSettings.shared.addObserver(self, forKey: .PresentationModeFnModes)
     TouchBarSettings.shared.addObserver(self, forKey: .PresentationModeGlobal)

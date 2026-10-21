@@ -435,7 +435,7 @@
 "osc_toolbar.plugins" = "Show plugins panel";
 "osc_toolbar.live_text" = "Toggle Live Text";
 
-"osc_pos.floating" = "Floating";
+"osc_pos.floating" = "HUD";
 "osc_pos.top" = "Top";
 "osc_pos.bottom" = "Bottom";
 
@@ -851,7 +851,7 @@
 "settings.enableThumbnailForRemoteFiles.label" = "Include files on a mounted remote drive";
 "settings.enableThumbnailPreview.label" = "Enable thumbnail preview";
 "settings.maxThumbnailPreviewCacheSize.label" = "Maximum cache size";
-"settings.oscPosition.items.0" = "Floating";
+"settings.oscPosition.items.0" = "HUD";
 "settings.oscPosition.items.1" = "Top";
 "settings.oscPosition.items.2" = "Bottom";
 "settings.oscPosition.label" = "On Screen Controller";
@@ -1037,3 +1037,57 @@
 "settings.$toThe" = "to the";
 "settings.$top" = "top";
 "settings.$ytdlWarning" = "The Online Media plugin has additional features such as switching quality and video downloading. UniPlayer will use the plugin if it's installed and enabled. The settings below only work if the plugin is not available.";
+
+// Library
+
+"Home" = "Home";
+"Search" = "Search";
+"Library" = "Library";
+"Recently Added" = "Recently Added";
+"All Videos" = "All Videos";
+"Playlists" = "Playlists";
+"Continue Watching" = "Continue Watching";
+"Resume" = "Resume";
+"Play" = "Play";
+"Open File…" = "Open File…";
+"Open URL…" = "Open URL…";
+"No videos yet" = "No videos yet";
+"Open a video to start your library." = "Open a video to start your library.";
+"No Results" = "No Results";
+"Find a video by its title or folder." = "Find a video by its title or folder.";
+"Nothing matches “%@”." = "Nothing matches “%@”.";
+"No playlists yet" = "No playlists yet";
+"Playlists you create will appear here." = "Playlists you create will appear here.";
+"Drop to open" = "Drop to open";
+
+// Library detail
+
+"See All" = "See All";
+"Back" = "Back";
+"Show in Finder" = "Show in Finder";
+"Details" = "Details";
+"Folder" = "Folder";
+"File" = "File";
+"Duration" = "Duration";
+"Year" = "Year";
+"Episode" = "Episode";
+"Quality" = "Quality";
+"Size" = "Size";
+"Format" = "Format";
+"Location" = "Location";
+"Open a video and it will appear here." = "Open a video and it will appear here.";
+
+// Accessibility
+
+"Pause" = "Pause";
+"Volume" = "Volume";
+"Playback position" = "Playback position";
+"Open details" = "Open details";
+
+"Previous" = "Previous";
+"Next" = "Next";
+"Seek backward" = "Seek backward";
+"Seek forward" = "Seek forward";
+"Slower" = "Slower";
+"Faster" = "Faster";
+"Mute" = "Mute";

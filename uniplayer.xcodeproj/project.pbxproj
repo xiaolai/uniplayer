@@ -207,6 +207,12 @@
 		8492C2861E771FB200CE5825 /* ISO639.strings in Resources */ = {isa = PBXBuildFile; fileRef = 8492C2851E771FB200CE5825 /* ISO639.strings */; };
 		8492C2881E7721A600CE5825 /* ISO639Helper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8492C2871E7721A600CE5825 /* ISO639Helper.swift */; };
 		849581F11F02728700D3B359 /* InitialWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 849581EF1F02728700D3B359 /* InitialWindowController.swift */; };
+		AA1000000000000000000002 /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1000000000000000000001 /* DesignTokens.swift */; };
+		AA2000000000000000000002 /* LibraryModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA2000000000000000000001 /* LibraryModel.swift */; };
+		AA3000000000000000000002 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA3000000000000000000001 /* LibraryView.swift */; };
+		AA4000000000000000000002 /* LibraryWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA4000000000000000000001 /* LibraryWindowController.swift */; };
+		AA5000000000000000000002 /* LibraryMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA5000000000000000000001 /* LibraryMetadata.swift */; };
+		AA6000000000000000000002 /* PlayerHUDView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA6000000000000000000001 /* PlayerHUDView.swift */; };
 		849581F31F03D55A00D3B359 /* InitialWindowController.strings in Resources */ = {isa = PBXBuildFile; fileRef = 849581F51F03D55A00D3B359 /* InitialWindowController.strings */; };
 		84A09A0E1F2DF596000FF343 /* MiniPlayerWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84A09A0C1F2DF596000FF343 /* MiniPlayerWindowController.swift */; };
 		84A0BA951D2F9E9600BC8DA1 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 84A0BA931D2F9E9600BC8DA1 /* MainMenu.xib */; };
@@ -1302,6 +1308,12 @@
 		8492C2851E771FB200CE5825 /* ISO639.strings */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.strings; path = ISO639.strings; sourceTree = "<group>"; };
 		8492C2871E7721A600CE5825 /* ISO639Helper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ISO639Helper.swift; sourceTree = "<group>"; };
 		849581EF1F02728700D3B359 /* InitialWindowController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = InitialWindowController.swift; sourceTree = "<group>"; };
+		AA1000000000000000000001 /* DesignTokens.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DesignTokens.swift; sourceTree = "<group>"; };
+		AA2000000000000000000001 /* LibraryModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LibraryModel.swift; sourceTree = "<group>"; };
+		AA3000000000000000000001 /* LibraryView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
+		AA4000000000000000000001 /* LibraryWindowController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LibraryWindowController.swift; sourceTree = "<group>"; };
+		AA5000000000000000000001 /* LibraryMetadata.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LibraryMetadata.swift; sourceTree = "<group>"; };
+		AA6000000000000000000001 /* PlayerHUDView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PlayerHUDView.swift; sourceTree = "<group>"; };
 		849581F71F03D55C00D3B359 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/InitialWindowController.strings"; sourceTree = "<group>"; };
 		8497A4831D2FF573005F504F /* uniplayer-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "uniplayer-Bridging-Header.h"; sourceTree = "<group>"; };
 		84A09A0C1F2DF596000FF343 /* MiniPlayerWindowController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MiniPlayerWindowController.swift; sourceTree = "<group>"; };
@@ -2140,6 +2152,12 @@
 				846352571EEEE11A0043F0CC /* ThumbnailPeekView.swift */,
 				849581EF1F02728700D3B359 /* InitialWindowController.swift */,
 				849581F51F03D55A00D3B359 /* InitialWindowController.strings */,
+				AA1000000000000000000001 /* DesignTokens.swift */,
+				AA2000000000000000000001 /* LibraryModel.swift */,
+				AA3000000000000000000001 /* LibraryView.swift */,
+				AA4000000000000000000001 /* LibraryWindowController.swift */,
+				AA5000000000000000000001 /* LibraryMetadata.swift */,
+				AA6000000000000000000001 /* PlayerHUDView.swift */,
 				84A09A0C1F2DF596000FF343 /* MiniPlayerWindowController.swift */,
 				8F49C370213EFB7E0076C4F9 /* MiniPlayerWindowController.xib */,
 				E36E8D7A24F6052F00B8C097 /* GuideWindowController.swift */,
@@ -2905,6 +2923,12 @@
 				E3EC8C432F94330400FBB51E /* Dialog.swift in Sources */,
 				E35306FA214808AB008FE492 /* JavascriptAPIEvent.swift in Sources */,
 				849581F11F02728700D3B359 /* InitialWindowController.swift in Sources */,
+				AA1000000000000000000002 /* DesignTokens.swift in Sources */,
+				AA2000000000000000000002 /* LibraryModel.swift in Sources */,
+				AA3000000000000000000002 /* LibraryView.swift in Sources */,
+				AA4000000000000000000002 /* LibraryWindowController.swift in Sources */,
+				AA5000000000000000000002 /* LibraryMetadata.swift in Sources */,
+				AA6000000000000000000002 /* PlayerHUDView.swift in Sources */,
 				8461C52E1D45FFF6006E91FF /* PlaySliderCell.swift in Sources */,
 				84F5D4A21E4796F50060A838 /* KeyBindingTranslator.swift in Sources */,
 				E3DBD23E218EF4F100B3AFBF /* AboutWindowContributorAvatarItem.swift in Sources */,

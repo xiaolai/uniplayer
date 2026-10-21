@@ -435,7 +435,7 @@
 "osc_toolbar.plugins" = "Показать панель плагинов";
 "osc_toolbar.live_text" = "Включить Сканер текста";
 
-"osc_pos.floating" = "Свободное";
+"osc_pos.floating" = "HUD";
 "osc_pos.top" = "Сверху";
 "osc_pos.bottom" = "Снизу";
 
@@ -851,7 +851,7 @@
 "settings.enableThumbnailForRemoteFiles.label" = "Также для файлов на внешних дисках";
 "settings.enableThumbnailPreview.label" = "Включить показ миниатюр";
 "settings.maxThumbnailPreviewCacheSize.label" = "Максимальный размер кэша";
-"settings.oscPosition.items.0" = "Свободное";
+"settings.oscPosition.items.0" = "HUD";
 "settings.oscPosition.items.1" = "Сверху";
 "settings.oscPosition.items.2" = "Внизу";
 "settings.oscPosition.label" = "Экранное меню";
@@ -1037,3 +1037,57 @@
 "settings.$toThe" = "от";
 "settings.$top" = "верхней";
 "settings.$ytdlWarning" = "У плагина Online Media есть дополнительные функции, такие как смена качества и загрузка видео. UniPlayer сможет использовать плагин, если он установлен и включен. Настройки ниже работают только в том случае, если плагин недоступен.";
+
+// Library
+
+"Home" = "Главная";
+"Search" = "Поиск";
+"Library" = "Библиотека";
+"Recently Added" = "Недавно добавленные";
+"All Videos" = "Все видео";
+"Playlists" = "Плейлисты";
+"Continue Watching" = "Продолжить просмотр";
+"Resume" = "Продолжить";
+"Play" = "Воспроизвести";
+"Open File…" = "Открыть файл…";
+"Open URL…" = "Открыть URL…";
+"No videos yet" = "Видео пока нет";
+"Open a video to start your library." = "Откройте видео, чтобы начать библиотеку.";
+"No Results" = "Ничего не найдено";
+"Find a video by its title or folder." = "Найдите видео по названию или папке.";
+"Nothing matches “%@”." = "Ничего не найдено по запросу «%@».";
+"No playlists yet" = "Плейлистов пока нет";
+"Playlists you create will appear here." = "Плейлисты, которые вы создадите, появятся здесь.";
+"Drop to open" = "Отпустите, чтобы открыть";
+
+// Library detail
+
+"See All" = "Все";
+"Back" = "Назад";
+"Show in Finder" = "Показать в Finder";
+"Details" = "Подробности";
+"Folder" = "Папка";
+"File" = "Файл";
+"Duration" = "Длительность";
+"Year" = "Год";
+"Episode" = "Эпизод";
+"Quality" = "Качество";
+"Size" = "Размер";
+"Format" = "Формат";
+"Location" = "Расположение";
+"Open a video and it will appear here." = "Откройте видео — оно появится здесь.";
+
+// Accessibility
+
+"Pause" = "Пауза";
+"Volume" = "Громкость";
+"Playback position" = "Позиция воспроизведения";
+"Open details" = "Открыть подробности";
+
+"Previous" = "Предыдущий";
+"Next" = "Следующий";
+"Seek backward" = "Перемотать назад";
+"Seek forward" = "Перемотать вперёд";
+"Slower" = "Медленнее";
+"Faster" = "Быстрее";
+"Mute" = "Без звука";

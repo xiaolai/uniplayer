@@ -23,7 +23,7 @@ a build, you must publish the corresponding source under the GPL.
 
 ## Building
 
-Requirements: macOS, Xcode 27 or later, and the prebuilt media libraries.
+Requirements: macOS 27 or later, Xcode 27 or later, and the prebuilt media libraries.
 
 ```sh
 ./other/download_libs.sh --skip-plugins
