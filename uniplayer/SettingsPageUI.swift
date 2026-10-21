@@ -507,7 +507,7 @@ fileprivate class OSCLayoutView: SettingsContainer {
     container.translatesAutoresizingMaskIntoConstraints = false
 
     self.imageViews = [
-      NSImageView(image: .sf("osc_float_figure")!),
+      NSImageView(image: .sf("osc_bottom_figure")!),
       NSImageView(image: .sf("osc_top_figure")!),
       NSImageView(image: .sf("osc_bottom_figure")!),
     ]

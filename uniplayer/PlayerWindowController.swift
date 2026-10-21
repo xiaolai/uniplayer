@@ -220,6 +220,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     volumeSlider.maxValue = Double(Preference.integer(for: .maxVolume))
     volumeSlider.target = self
     volumeSlider.action = #selector(volumeSliderChanges)
+    volumeSlider.setAccessibilityLabel(NSLocalizedString("Volume", comment: ""))
+    muteButton.setAccessibilityLabel(NSLocalizedString("Mute", comment: ""))
 
     self.playSlider = PlaySlider()
     playSlider.translatesAutoresizingMaskIntoConstraints = false

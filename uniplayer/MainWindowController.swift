@@ -80,6 +80,7 @@ class MainWindowController: PlayerWindowController {
   var titleBarHeightConstraint: NSLayoutConstraint!
   var oscBottomView: OSCBottomView!
   var oscFloatingView: OSCFloatingView!
+  var hudView: PlayerHUDView!
 
   var currentControlBar: NSView?
 
@@ -423,7 +424,20 @@ class MainWindowController: PlayerWindowController {
   private var videoContainerConstraints: [NSLayoutConstraint.Attribute: NSLayoutConstraint] = [:]
 
   override var mouseActionDisabledViews: [NSView?] {
-    sidebars.mouseActionDisabledViews + [currentControlBar, titleBarView]
+    sidebars.mouseActionDisabledViews + controlBarAreas + [titleBarView]
+  }
+
+  /// The parts of the HUD that count as the control bar for mouse and scroll
+  /// handling. The HUD itself is full-window, so its empty area must not keep
+  /// the chrome awake or swallow a scrub.
+  private var controlBarAreas: [NSView?] {
+    if oscPosition == .floating, hudView != nil {
+      return [
+        hudView.topTrailing, hudView.center,
+        hudView.bottomLeading, hudView.bottomTrailing, hudView.timeline
+      ]
+    }
+    return [currentControlBar]
   }
 
   // MARK: - PIP
@@ -449,6 +463,8 @@ class MainWindowController: PlayerWindowController {
     guard let window, let cv = window.contentView else { return }
 
     window.styleMask.insert(.fullSizeContentView)
+    window.titleVisibility = .hidden
+    window.titlebarAppearsTransparent = true
 
     // need to deal with control bar, so we handle it manually
     // w.isMovableByWindowBackground  = true
@@ -496,6 +512,10 @@ class MainWindowController: PlayerWindowController {
     cv.addSubview(oscBottomView)
     oscFloatingView = OSCFloatingView(mainWindow: self)
     cv.addSubview(oscFloatingView)
+    hudView = PlayerHUDView(mainWindow: self)
+    cv.addSubview(hudView)
+    hudView.padding(.all)
+    hudView.isHidden = true
     osdView = OSDView(mainWindow: self)
     cv.addSubview(osdView)
     additionalInfoView = AdditionalInfoView(mainWindow: self)
@@ -521,6 +541,7 @@ class MainWindowController: PlayerWindowController {
 
     self.oscVolumeView = NSView()
     oscVolumeView.translatesAutoresizingMaskIntoConstraints = false
+    oscVolumeView.size(width: 108, height: 24)
 
     volumeSlider.size(width: 70)
 
@@ -598,6 +619,7 @@ class MainWindowController: PlayerWindowController {
     rightLabel.padding(.trailing(2)).spacing(.leading(2), to: playSlider)
       .center(.y, with: playSlider)
     playSlider.padding(.vertical(6))
+    playSlider.setAccessibilityLabel(NSLocalizedString("Playback position", comment: ""))
 
     // osd
 
@@ -652,11 +674,13 @@ class MainWindowController: PlayerWindowController {
     registerWindowButtonsAsFadeable()
 
     fadeableViews.add(titleBarView) { [unowned self] in
-      if fsState == .windowed {
-        Preference.isDocked ? .alwaysShown : .auto
-      } else { // full screen
-        oscPosition == .top ? .auto : .alwaysHidden
+      if oscPosition == .floating {
+        return .alwaysHidden
       }
+      if fsState == .windowed {
+        return Preference.isDocked ? .alwaysShown : .auto
+      }
+      return oscPosition == .top ? .auto : .alwaysHidden
     }
 
     fadeableViews.add(additionalInfoView) { [unowned self] in
@@ -675,7 +699,7 @@ class MainWindowController: PlayerWindowController {
       }
     }
 
-    fadeableViews.add(oscFloatingView) { [unowned self] in
+    fadeableViews.add(hudView) { [unowned self] in
       oscPosition == .floating ? .auto : .alwaysHidden
     }
 
@@ -807,6 +831,11 @@ class MainWindowController: PlayerWindowController {
   func setWindowToolbar() {
     guard let window else { return }
 
+    if oscPosition == .floating {
+      window.toolbar = nil
+      return
+    }
+
     let compactUI = Preference.bool(for: .compactUI)
     let hasLeadingSidebar = sidebars.leadingSidebar.status != .hidden
 
@@ -870,7 +899,7 @@ class MainWindowController: PlayerWindowController {
     guard let cv = window?.contentView else { return }
 
     layoutSides.forEach { videoContainerConstraints[$0].flatMap(cv.removeConstraint) }
-    if Preference.bool(for: .edgeToEdgeVideo) {
+    if Preference.bool(for: .edgeToEdgeVideo) || oscPosition == .floating {
       layoutSides.forEach { attr in
         videoContainerConstraints[attr] = NSLayoutConstraint(item: videoViewContainer!, attribute: attr, relatedBy: .equal,
                                                         toItem: cv, attribute: attr, multiplier: 1, constant: 0)
@@ -963,10 +992,9 @@ class MainWindowController: PlayerWindowController {
 
     let isSwitchingToTop = newPosition == .top
     let isSwitchingFromTop = oscPosition == .top
-    let isFloating = newPosition == .floating
 
     // reset
-    [oscFloatingView, oscBottomView].forEach { $0.isHidden = true }
+    [oscFloatingView, oscBottomView, hudView].forEach { $0.isHidden = true }
 
     oscFloatingView.isDragging = false
 
@@ -994,24 +1022,15 @@ class MainWindowController: PlayerWindowController {
     // add fragment views
     switch oscPosition {
     case .floating:
-      currentControlBar = oscFloatingView
-      oscPlayControlView.setVisibilityPriority(.detachOnlyIfNecessary, for: oscSpeedLabelLeftContainer)
-      oscPlayControlView.setVisibilityPriority(.detachOnlyIfNecessary, for: oscSpeedLabelRightContainer)
-      oscFloatingView.oscTopView.addView(oscVolumeView, in: .leading)
-      oscFloatingView.oscTopView.addView(oscToolbarView, in: .trailing)
-      oscFloatingView.oscTopView.addView(oscPlayControlView, in: .center)
-
-      // Setting the visibility priority to detach only will cause freeze when resizing the window
-      // (and triggering the detach) in macOS 11.
-      if !isMacOS11 {
-        oscFloatingView.oscTopView.setVisibilityPriority(.detachOnlyIfNecessary, for: oscVolumeView)
-        oscFloatingView.oscTopView.setVisibilityPriority(.detachOnlyIfNecessary, for: oscToolbarView)
-        oscFloatingView.oscTopView.setClippingResistancePriority(.defaultLow, for: .horizontal)
-      }
-      oscFloatingView.oscBottomView.addSubview(oscSliderView)
+      currentControlBar = hudView
+      hudView.isHidden = false
+      oscPlayControlView.setVisibilityPriority(.notVisible, for: oscSpeedLabelLeftContainer)
+      oscPlayControlView.setVisibilityPriority(.notVisible, for: oscSpeedLabelRightContainer)
+      hudView.topTrailing.addView(oscVolumeView, in: .trailing)
+      hudView.bottomTrailing.addView(oscToolbarView, in: .trailing)
+      hudView.center.addView(oscPlayControlView, in: .center)
+      hudView.timeline.addSubview(oscSliderView)
       Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": oscSliderView])
-      Utility.quickConstraints(["H:|-(>=0)-[v]-(>=0)-|"], ["v": oscPlayControlView])
-      oscFloatingView.initPosition()
     case .top:
       let oscTopMainView = titleBarView.oscView!
       currentControlBar = nil
@@ -1041,7 +1060,10 @@ class MainWindowController: PlayerWindowController {
       oscBottomMainView.setVisibilityPriority(.detachEarlier, for: oscToolbarView)
     }
 
-    oscPlayControlMiddleView.spacing = isFloating ? 24: 16
+    updateTransportSizes()
+    setupVideoContainerConstraints()
+    setWindowToolbar()
+    hudView.updateForFullScreen(fsState.isFullscreen)
 
     fadeableViews.update()
     showUI()
@@ -1242,7 +1264,7 @@ class MainWindowController: PlayerWindowController {
     } else if event.inAnyOf([volumeSlider]) && volumeSlider.isEnabled {
       volumeOverride = true
     } else {
-      guard !event.inAnyOf([currentControlBar]) else { return }
+      guard !event.inAnyOf(controlBarAreas) else { return }
     }
 
     guard !event.inAnyOf(sidebars.mouseActionDisabledViews + [titleBarView])
@@ -1302,7 +1324,7 @@ class MainWindowController: PlayerWindowController {
       showUI()
     }
     // check whether mouse is in osc
-    if event.inAnyOf([currentControlBar, titleBarView]) {
+    if event.inAnyOf(controlBarAreas + [titleBarView]) {
       destroyTimer()
     } else {
       updateTimer()
@@ -1506,6 +1528,7 @@ class MainWindowController: PlayerWindowController {
 
     // show titlebar
     titleBarView.update(hasOSC: oscPosition == .top, inFullScreen: true)
+    hudView?.updateForFullScreen(true)
     standardWindowButtons.forEach { $0.alphaValue = 0 }
     titleTextField?.alphaValue = 0
 
@@ -1598,6 +1621,7 @@ class MainWindowController: PlayerWindowController {
     fsState.finishAnimating()
 
     titleBarView.update(hasOSC: oscPosition == .top, inFullScreen: false)
+    hudView?.updateForFullScreen(false)
     setWindowToolbar()
     fadeableViews.update()
     showUI()
@@ -1633,6 +1657,7 @@ class MainWindowController: PlayerWindowController {
     liveText.clearAnalysis()
 
     titleBarView.update(hasOSC: oscPosition == .top, inFullScreen: false)
+    hudView?.updateForFullScreen(false)
 
     thumbnailPeekView.isHidden = true
     timePreviewView.isHidden = true
@@ -2163,6 +2188,27 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - UI: Title
 
+  private func updateHUDMetadata() {
+    let info = player.info
+    let title: String
+    if info.isNetworkResource {
+      title = player.getMediaTitle()
+    } else if let url = info.currentURL {
+      title = LibraryMetadata.parse(fileName: url.lastPathComponent).title
+    } else {
+      title = ""
+    }
+
+    var details: [String] = []
+    if let width = info.videoWidth, let height = info.videoHeight {
+      details.append("\(width)×\(height)")
+    }
+    if let duration = info.videoDuration {
+      details.append(duration.stringRepresentation)
+    }
+    hudView?.updateMetadata(title: title, subtitle: details.joined(separator: " · "))
+  }
+
   @objc
   override func updateTitle() {
     if player.info.isNetworkResource {
@@ -2195,6 +2241,7 @@ class MainWindowController: PlayerWindowController {
       }
     }
     titleBarView?.updateTitle()
+    updateHUDMetadata()
 
     // Sometimes the doc icon may not be available, eg. when opened an online video.
     // We should try to add it every time when window title changed.
@@ -2776,6 +2823,82 @@ class MainWindowController: PlayerWindowController {
       speedValueIndex = AppData.availableSpeedValues.count / 2
     }
     syncPIPPlaybackState()
+
+    guard loaded else { return }
+
+    let label = NSLocalizedString(paused ? "Play" : "Pause", comment: "")
+    playButton.setAccessibilityLabel(label)
+    playButton.toolTip = label
+
+    guard oscPosition == .floating else { return }
+    let configuration = NSImage.SymbolConfiguration(pointSize: 44, weight: .semibold)
+    playButton.image = NSImage(
+      systemSymbolName: paused ? "play.fill" : "pause.fill",
+      accessibilityDescription: nil)?.withSymbolConfiguration(configuration)
+  }
+
+  /// The HUD carries a 96-point play button and 64-point skips; the docked
+  /// bars keep the compact 24-point transport.
+  private func updateTransportSizes() {
+    let hud = oscPosition == .floating
+    let playSize: CGFloat = hud ? 96 : 24
+    let arrowSize: CGFloat = hud ? 64 : 24
+
+    let buttons: [(NSButton?, CGFloat)] = [
+      (playButton, playSize),
+      (leftArrowButton, arrowSize),
+      (rightArrowButton, arrowSize)
+    ]
+    for (button, size) in buttons {
+      guard let button else { continue }
+      button.constraints
+        .filter { $0.firstAttribute == .width || $0.firstAttribute == .height }
+        .forEach { $0.isActive = false }
+      button.size(width: size, height: size)
+      button.imageScaling = .scaleProportionallyUpOrDown
+    }
+
+    oscPlayControlMiddleView.spacing = hud ? 28 : 16
+
+    playButton.wantsLayer = true
+    if hud {
+      playButton.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.92).cgColor
+      playButton.layer?.cornerRadius = playSize / 2
+      playButton.contentTintColor = .black
+    } else {
+      playButton.layer?.backgroundColor = NSColor.clear.cgColor
+      playButton.layer?.cornerRadius = 0
+      playButton.contentTintColor = nil
+    }
+
+    for button in [leftArrowButton, rightArrowButton] {
+      guard let button else { continue }
+      button.wantsLayer = true
+      button.layer?.backgroundColor = hud
+        ? NSColor.black.withAlphaComponent(0.34).cgColor
+        : NSColor.clear.cgColor
+      button.layer?.cornerRadius = hud ? arrowSize / 2 : 0
+    }
+
+    let arrowLabels = arrowAccessibilityLabels
+    leftArrowButton.setAccessibilityLabel(arrowLabels.0)
+    rightArrowButton.setAccessibilityLabel(arrowLabels.1)
+
+    updatePlayButtonState(paused: player.info.state == .paused)
+  }
+
+  private var arrowAccessibilityLabels: (String, String) {
+    switch arrowBtnFunction {
+    case .playlist:
+      return (NSLocalizedString("Previous", comment: ""),
+              NSLocalizedString("Next", comment: ""))
+    case .seek:
+      return (NSLocalizedString("Seek backward", comment: ""),
+              NSLocalizedString("Seek forward", comment: ""))
+    case .speed:
+      return (NSLocalizedString("Slower", comment: ""),
+              NSLocalizedString("Faster", comment: ""))
+    }
   }
 
   /// Configure the OSC arrow buttons based on UniPlayer's `Use left/right button for` setting.
@@ -2800,6 +2923,10 @@ class MainWindowController: PlayerWindowController {
       leftArrowButton.setButtonType(.momentaryPushIn)
       rightArrowButton.setButtonType(.momentaryPushIn)
     }
+
+    let labels = arrowAccessibilityLabels
+    leftArrowButton.setAccessibilityLabel(labels.0)
+    rightArrowButton.setAccessibilityLabel(labels.1)
   }
 
   override func updateVolume() {

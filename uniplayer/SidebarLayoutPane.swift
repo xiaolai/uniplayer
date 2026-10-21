@@ -367,7 +367,8 @@ fileprivate class OSCLayoutSelector: NSBox {
   private func createView(_ position: Preference.OSCPosition) -> Item {
     let content = ui.vStack(
       align: .centerX,
-      ui.image("osc.\(position.description)", width: 40, height: 28, scaleUp: true),
+      ui.image(position == .floating ? "osc.bottom" : "osc.\(position.description)",
+               width: 40, height: 28, scaleUp: true),
       ui.label(NSLocalizedString("osc_pos.\(position.description)", comment: ""), isSmall: true)
     )
     content.distribution = .fillEqually
