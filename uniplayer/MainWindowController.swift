@@ -1081,13 +1081,17 @@ class MainWindowController: PlayerWindowController {
       disc.wantsLayer = true
       disc.layer?.backgroundColor = NSColor(white: 0.13, alpha: 0.90).cgColor
       disc.layer?.cornerRadius = radius
+      disc.layer?.masksToBounds = true
+      disc.layer?.contentsScale = window?.backingScaleFactor ?? 2
       disc.isHidden = true
       hudView.addSubview(disc, positioned: .below, relativeTo: hudView.center)
 
       let glass = NSGlassEffectView()
       glass.translatesAutoresizingMaskIntoConstraints = false
-      glass.style = .clear
+      glass.style = .regular
+      glass.tintColor = NSColor.black.withAlphaComponent(0.55)
       glass.cornerRadius = radius
+      glass.layer?.contentsScale = window?.backingScaleFactor ?? 2
       disc.addSubview(glass)
       glass.padding(.all)
 
