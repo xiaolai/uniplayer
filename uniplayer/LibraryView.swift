@@ -101,6 +101,11 @@ struct LibraryRootView: View {
     .navigationSplitViewStyle(.balanced)
     .tint(Tokens.Palette.accent.color)
     .background(Tokens.Palette.canvas.color)
+    .overlay(alignment: .topLeading) {
+      if columnVisibility == .detailOnly {
+        collapsedSidebarToggle
+      }
+    }
     .overlay {
       if dropTargeted {
         DropOverlay()
@@ -302,6 +307,7 @@ struct LibraryRootView: View {
         } label: {
           Image(systemName: "sidebar.squares.leading")
         }
+        .keyboardShortcut("s", modifiers: [.command, .control])
         .help(columnVisibility == .detailOnly ? L("Show Sidebar") : L("Hide Sidebar"))
       }
       .buttonStyle(.glass(.regular))
@@ -309,6 +315,23 @@ struct LibraryRootView: View {
       .imageScale(.medium)
     }
     .padding(.trailing, Tokens.Space.n8)
+    .padding(.top, Tokens.Space.n8)
+  }
+
+  /// The sidebar's own toggle disappears with the sidebar, so keep one at the
+  /// window's leading edge while the sidebar is collapsed.
+  private var collapsedSidebarToggle: some View {
+    Button {
+      columnVisibility = .all
+    } label: {
+      Image(systemName: "sidebar.squares.leading")
+    }
+    .buttonStyle(.glass(.regular))
+    .tint(Tokens.Palette.hudGlassTint.color)
+    .imageScale(.medium)
+    .keyboardShortcut("s", modifiers: [.command, .control])
+    .help(L("Show Sidebar"))
+    .padding(.leading, Tokens.Space.n80)
     .padding(.top, Tokens.Space.n8)
   }
 
