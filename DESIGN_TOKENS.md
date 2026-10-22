@@ -721,6 +721,8 @@ motion that honours Reduce Motion and the app's own animation setting.
 | `sectionSpacing` | `static let sectionSpacing: CGFloat = Space.n16` | The gap between sections. |
 | `cardCorner` | `static let cardCorner = Radius.settingsCard` | The settings card's corner. |
 | `indicatorOffset` | `static let indicatorOffset: CGFloat = Space.n8` | The section indicator's offset. |
+| `sectionRowHeight` | `static let sectionRowHeight: CGFloat = Size.n22` | The vertical step between section indicator rows. |
+| `sectionIndicatorAnimation` | `static let sectionIndicatorAnimation = Motion.n10` | The section indicator's animation. |
 | `contentWidth` | `static let contentWidth = Size.settingsContentWidth` | The settings content's width. |
 | `sidebarWidth` | `static let sidebarWidth = Size.settingsSidebarWidth` | The settings sidebar's width. |
 | `windowWidth` | `static let windowWidth = Size.settingsWindowWidth` | The settings window's width. |

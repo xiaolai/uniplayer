@@ -11,7 +11,7 @@ import Cocoa
 fileprivate func sameKeyAction(_ lhs: [String], _ rhs: [String], _ normalizeLastNum: Bool, _ numRange: ClosedRange<Double>?) -> (Bool, Double?, Any?) {
   var lhs = lhs
   var extraData: Any? = nil
-  if lhs.first == "seek", rhs.first == "seek", lhs.count > 2, let last = lhs.last {
+  if lhs.first == "seek", rhs.first == "seek", lhs.count > 2 {
     // This is a seek command that includes flags. Adjust the command before checking for a match.
     if lhs.count == 4 {
       // The original mpv seek command required that the keyframes and exact flags be passed as a
@@ -19,6 +19,9 @@ fileprivate func sameKeyAction(_ lhs: [String], _ rhs: [String], _ normalizeLast
       // the current command format by combining the flags using a "+" separator.
       lhs[2] = "\(lhs[2])+\(lhs[3])"
       lhs = [String](lhs.dropLast())
+    }
+    guard let last = lhs.last else {
+      return (false, nil, nil)
     }
     var splitArray = last.split(whereSeparator: { $0 == "+" })
     if let index = splitArray.firstIndex(of: "relative") {
@@ -668,6 +671,7 @@ class MenuController: NSObject, NSMenuDelegate {
             let moreItem = NSMenuItem()
             moreItem.title = NSLocalizedString("menu.more_plugin", comment: "More…")
             rootMenu = NSMenu()
+            rootMenu.autoenablesItems = false
             moreItem.submenu = rootMenu
             pluginMenu.addItem(moreItem)
           }
@@ -735,6 +739,7 @@ class MenuController: NSObject, NSMenuDelegate {
     }
     if !item.items.isEmpty {
       menuItem.submenu = NSMenu()
+      menuItem.submenu?.autoenablesItems = false
       for submenuItem in item.items {
         add(menuItemDef: submenuItem, to: menuItem.submenu!, for: plugin, errorList: &errorList)
       }
@@ -935,11 +940,9 @@ class MenuController: NSObject, NSMenuDelegate {
       (increaseSubDelay, false, ["add", "sub-delay", "0.5"], true, nil, "sub_delay_up"),
       (increaseSubDelaySlightly, false, ["add", "sub-delay", "0.1"], true, nil, "sub_delay_up"),
       (resetSubDelay, false, ["set", "sub-delay", "0"], true, nil, nil),
-      (increaseTextSize, false, ["multiply", "sub-scale", "1.1"], true, 1.01...1.49, nil),
-      (decreaseTextSize, false, ["multiply", "sub-scale", "0.9"], true, 0.71...0.99, nil),
+      (increaseTextSize, false, ["multiply", "sub-scale", "1.1"], true, 1.01...1.49, "sub_scale_up"),
+      (decreaseTextSize, false, ["multiply", "sub-scale", "0.9"], true, 0.71...0.99, "sub_scale_down"),
       (resetTextSize, false, ["set", "sub-scale", "1"], true, nil, nil),
-      (alwaysOnTop, false, ["cycle", "ontop"], false, nil, nil),
-      (fullScreen, false, ["cycle", "fullscreen"], false, nil, nil),
     ]
 
     var otherActionsMenuItems: [NSMenuItem] = []
@@ -991,8 +994,10 @@ class MenuController: NSObject, NSMenuDelegate {
     menuItem.keyEquivalent = kEqv
     menuItem.keyEquivalentModifierMask = kMdf
 
-    if let value, let l10nKey {
-      menuItem.title = String(format: NSLocalizedString("menu." + l10nKey, comment: ""), abs(value).groupedStringUpTo6Decimals)
+    if let value {
+      if let l10nKey {
+        menuItem.title = String(format: NSLocalizedString("menu." + l10nKey, comment: ""), abs(value).groupedStringUpTo6Decimals)
+      }
       if let extraData {
         menuItem.representedObject = (value, extraData)
       } else {

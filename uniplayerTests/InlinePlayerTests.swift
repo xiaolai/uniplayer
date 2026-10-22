@@ -371,7 +371,7 @@ final class AssistantViewModelTests: XCTestCase {
 
   func testStreamingTextIsAppendedAndFinished() async {
     let executor = StubExecutor()
-    let model = makeModel([[.text("Hel"), .text("lo")]], executor: executor)
+    let model = makeModel([[.text("He"), .text("llo")]], executor: executor)
     model.send("hi")
     await waitUntil { !model.isStreaming }
     XCTAssertEqual(model.transcript.last?.text, "Hello")

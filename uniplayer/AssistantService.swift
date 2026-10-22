@@ -255,6 +255,60 @@ struct ToolCallAccumulator {
   }
 }
 
+
+// MARK: - Shared stream transport
+
+/// Owns the read loop both providers share: HTTP validation, SSE line
+/// iteration, cancellation and terminal handling. Request encoding and event
+/// decoding stay provider-specific.
+enum AssistantStreamTransport {
+  enum Action {
+    case none
+    case text(String)
+    case stop
+    case failure(AssistantError)
+  }
+
+  static func stream(request: @escaping () throws -> URLRequest,
+                     session: URLSession,
+                     decode: @escaping (SSEParser.Event) -> Action,
+                     complete: @escaping () throws -> [AssistantStreamEvent])
+  -> AsyncThrowingStream<AssistantStreamEvent, Error> {
+    AsyncThrowingStream { continuation in
+      let task = Task {
+        do {
+          let urlRequest = try request()
+          let (bytes, response) = try await session.bytes(for: urlRequest)
+          try OpenAICompatibleProvider.validate(response)
+          var parser = SSEParser()
+          readLoop: for try await line in bytes.lines {
+            try Task.checkCancellation()
+            guard let event = parser.consume(line: line) else { continue }
+            switch decode(event) {
+            case .none:
+              continue
+            case .text(let text):
+              continuation.yield(.text(text))
+            case .stop:
+              break readLoop
+            case .failure(let error):
+              continuation.finish(throwing: error)
+              return
+            }
+          }
+          for event in try complete() {
+            continuation.yield(event)
+          }
+          continuation.finish()
+        } catch {
+          continuation.finish(throwing: OpenAICompatibleProvider.map(error))
+        }
+      }
+      continuation.onTermination = { _ in task.cancel() }
+    }
+  }
+}
+
 // MARK: - OpenAI-compatible provider
 
 struct OpenAICompatibleProvider: AssistantProvider {
@@ -263,78 +317,50 @@ struct OpenAICompatibleProvider: AssistantProvider {
 
   func stream(_ request: AssistantRequest,
               configuration: AssistantConfiguration) -> AsyncThrowingStream<AssistantStreamEvent, Error> {
-    AsyncThrowingStream { continuation in
-      let task = Task {
-        do {
-          let urlRequest = try makeRequest(request, configuration: configuration)
-          let (bytes, response) = try await session.bytes(for: urlRequest)
-          try Self.validate(response)
-          var parser = SSEParser()
-          var accumulator = ToolCallAccumulator()
-          var sawDone = false
-          var providerError: AssistantError?
+    var accumulator = ToolCallAccumulator()
+    var sawTerminal = false
 
-          /// - Returns: `true` when the stream reached its protocol terminal.
-          func handle(_ event: SSEParser.Event) -> Bool {
-            switch event {
-            case .done:
-              sawDone = true
-              return true
-            case .data(let payload):
-              guard let data = payload.data(using: .utf8),
-                    let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-                providerError = .malformedResponse
-                return true
-              }
-              if let error = object["error"] as? [String: Any] {
-                providerError = .provider(
-                  error["message"] as? String ?? AssistantError.malformedResponse.errorDescription ?? "")
-                return true
-              }
-              guard let choices = object["choices"] as? [[String: Any]],
-                    let choice = choices.first else { return false }
-              if let delta = choice["delta"] as? [String: Any] {
-                if let text = delta["content"] as? String, !text.isEmpty {
-                  continuation.yield(.text(text))
-                }
-                accumulator.openAIDelta(delta)
-              }
-              // `finish_reason` is a terminal marker even when the server
-              // closes without sending `[DONE]`.
-              if choice["finish_reason"] is String {
-                sawDone = true
-              }
-              return false
+    return AssistantStreamTransport.stream(
+      request: { try makeRequest(request, configuration: configuration) },
+      session: session,
+      decode: { event in
+        switch event {
+        case .done:
+          sawTerminal = true
+          return .stop
+        case .data(let payload):
+          guard let data = payload.data(using: .utf8),
+                let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return .failure(.malformedResponse)
+          }
+          if let error = object["error"] as? [String: Any] {
+            return .failure(.provider(
+              error["message"] as? String
+                ?? AssistantError.malformedResponse.errorDescription ?? ""))
+          }
+          guard let choices = object["choices"] as? [[String: Any]],
+                let choice = choices.first else { return .none }
+          if let delta = choice["delta"] as? [String: Any] {
+            accumulator.openAIDelta(delta)
+            if let text = delta["content"] as? String, !text.isEmpty {
+              return .text(text)
             }
           }
-
-          readLoop: for try await line in bytes.lines {
-            try Task.checkCancellation()
-            if let event = parser.consume(line: line) {
-              if handle(event) { break readLoop }
-            }
+          // `finish_reason` is a terminal marker even when the server closes
+          // without sending `[DONE]`.
+          if choice["finish_reason"] is String {
+            sawTerminal = true
           }
-          if let providerError {
-            continuation.finish(throwing: providerError)
-            return
-          }
-          let calls = accumulator.finalize()
-          // A clean close without a terminal marker leaves the answer's
-          // completeness unknown, so it is a partial response, not success.
-          guard sawDone else {
-            continuation.finish(throwing: AssistantError.malformedResponse)
-            return
-          }
-          if !calls.isEmpty {
-            continuation.yield(.toolCalls(calls))
-          }
-          continuation.finish()
-        } catch {
-          continuation.finish(throwing: Self.map(error))
+          return .none
         }
-      }
-      continuation.onTermination = { _ in task.cancel() }
-    }
+      },
+      complete: {
+        // A clean close without a terminal marker leaves the answer's
+        // completeness unknown, so it is a partial response, not success.
+        guard sawTerminal else { throw AssistantError.malformedResponse }
+        let calls = accumulator.finalize()
+        return calls.isEmpty ? [] : [.toolCalls(calls)]
+      })
   }
 
   private func makeRequest(_ request: AssistantRequest,
@@ -435,104 +461,68 @@ struct ClaudeProvider: AssistantProvider {
 
   func stream(_ request: AssistantRequest,
               configuration: AssistantConfiguration) -> AsyncThrowingStream<AssistantStreamEvent, Error> {
-    AsyncThrowingStream { continuation in
-      let task = Task {
-        do {
-          let urlRequest = try makeRequest(request, configuration: configuration)
-          let (bytes, response) = try await session.bytes(for: urlRequest)
-          try OpenAICompatibleProvider.validate(response)
-          var parser = SSEParser()
-          var accumulator = ToolCallAccumulator()
-          var sawMessageStop = false
-          var providerError: AssistantError?
+    var accumulator = ToolCallAccumulator()
+    var sawMessageStop = false
 
-          /// - Returns: `true` when the stream reached its protocol terminal.
-          func handle(_ payload: String) -> Bool {
-            guard let data = payload.data(using: .utf8),
-                  let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let type = object["type"] as? String else {
-              providerError = .malformedResponse
-              return true
-            }
-            switch type {
-            case "content_block_start":
-              guard let index = object["index"] as? Int,
-                    let block = object["content_block"] as? [String: Any],
-                    block["type"] as? String == "tool_use",
-                    let name = block["name"] as? String else { return false }
-              let id = block["id"] as? String ?? ""
-              accumulator.claudeStart(index: index, id: id, name: name)
-              return false
-            case "content_block_delta":
-              guard let index = object["index"] as? Int,
-                    let delta = object["delta"] as? [String: Any],
-                    let deltaType = delta["type"] as? String else { return false }
-              if deltaType == "text_delta", let text = delta["text"] as? String {
-                continuation.yield(.text(text))
-              } else if deltaType == "input_json_delta",
-                        let fragment = delta["partial_json"] as? String {
-                accumulator.claudeArguments(index: index, fragment: fragment)
-              }
-              return false
-            case "message_stop":
-              sawMessageStop = true
-              return true
-            case "error":
-              let message = (object["error"] as? [String: Any])?["message"] as? String
-              providerError = .provider(
-                message ?? AssistantError.malformedResponse.errorDescription ?? "Assistant error")
-              return true
-            default:
-              return false
-            }
-          }
-
-          readLoop: for try await line in bytes.lines {
-            try Task.checkCancellation()
-            if let event = parser.consume(line: line), case .data(let payload) = event {
-              if handle(payload) { break readLoop }
-            }
-          }
-          if let providerError {
-            continuation.finish(throwing: providerError)
-            return
-          }
-          // Tool arguments and the answer are only complete at message_stop.
-          guard sawMessageStop else {
-            continuation.finish(throwing: AssistantError.malformedResponse)
-            return
-          }
-          let calls = accumulator.finalize()
-          if !calls.isEmpty {
-            continuation.yield(.toolCalls(calls))
-          }
-          continuation.finish()
-        } catch {
-          continuation.finish(throwing: OpenAICompatibleProvider.map(error))
+    return AssistantStreamTransport.stream(
+      request: { try makeRequest(request, configuration: configuration) },
+      session: session,
+      decode: { event in
+        guard case .data(let payload) = event else { return .none }
+        guard let data = payload.data(using: .utf8),
+              let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let type = object["type"] as? String else {
+          return .failure(.malformedResponse)
         }
-      }
-      continuation.onTermination = { _ in task.cancel() }
-    }
+        switch type {
+        case "content_block_start":
+          guard let index = object["index"] as? Int,
+                let block = object["content_block"] as? [String: Any],
+                block["type"] as? String == "tool_use",
+                let name = block["name"] as? String else { return .none }
+          accumulator.claudeStart(index: index, id: block["id"] as? String ?? "", name: name)
+          return .none
+        case "content_block_delta":
+          guard let index = object["index"] as? Int,
+                let delta = object["delta"] as? [String: Any],
+                let deltaType = delta["type"] as? String else { return .none }
+          if deltaType == "text_delta", let text = delta["text"] as? String {
+            return .text(text)
+          }
+          if deltaType == "input_json_delta", let fragment = delta["partial_json"] as? String {
+            accumulator.claudeArguments(index: index, fragment: fragment)
+          }
+          return .none
+        case "message_stop":
+          sawMessageStop = true
+          return .stop
+        case "error":
+          let message = (object["error"] as? [String: Any])?["message"] as? String
+          return .failure(.provider(
+            message ?? AssistantError.malformedResponse.errorDescription ?? "Assistant error"))
+        default:
+          return .none
+        }
+      },
+      complete: {
+        // Tool arguments and the answer are only complete at message_stop.
+        guard sawMessageStop else { throw AssistantError.malformedResponse }
+        let calls = accumulator.finalize()
+        return calls.isEmpty ? [] : [.toolCalls(calls)]
+      })
   }
 
-  private func makeRequest(_ request: AssistantRequest,
-                           configuration: AssistantConfiguration) throws -> URLRequest {
-    guard let url = configuration.endpointURL else {
-      throw AssistantError.invalidEndpoint
-    }
-    let key = configuration.apiKey?.trimmingCharacters(in: .whitespacesAndNewlines)
-    if configuration.requiresAPIKey, key?.isEmpty != false {
-      throw AssistantError.missingAPIKey
-    }
-
+  private func claudeConversation(
+    _ messages: [AssistantProviderMessage]
+  ) -> (system: String?, messages: [[String: Any]]) {
     var systemParts: [String] = []
-    var messages: [[String: Any]] = []
-    for message in request.messages {
+    var encoded: [[String: Any]] = []
+    for message in messages {
       switch message.role {
       case .system:
         systemParts.append(message.content)
       case .user:
-        messages.append(["role": "user", "content": message.content])
+        encoded.append(["role": "user", "content": message.content])
       case .assistant:
         var content: [[String: Any]] = []
         if !message.content.isEmpty {
@@ -547,9 +537,9 @@ struct ClaudeProvider: AssistantProvider {
               with: Data(call.argumentsJSON.utf8))) ?? [:],
           ])
         }
-        messages.append(["role": "assistant", "content": content])
+        encoded.append(["role": "assistant", "content": content])
       case .tool:
-        messages.append([
+        encoded.append([
           "role": "user",
           "content": [[
             "type": "tool_result",
@@ -559,24 +549,39 @@ struct ClaudeProvider: AssistantProvider {
         ])
       }
     }
+    return (systemParts.isEmpty ? nil : systemParts.joined(separator: "\n\n"), encoded)
+  }
 
+  private static func claudeTool(_ tool: AssistantToolDefinition) -> [String: Any] {
+    [
+      "name": tool.name,
+      "description": tool.description,
+      "input_schema": tool.parameters,
+    ]
+  }
+
+  private func makeRequest(_ request: AssistantRequest,
+                           configuration: AssistantConfiguration) throws -> URLRequest {
+    guard let url = configuration.endpointURL else {
+      throw AssistantError.invalidEndpoint
+    }
+    let key = configuration.apiKey?.trimmingCharacters(in: .whitespacesAndNewlines)
+    if configuration.requiresAPIKey, key?.isEmpty != false {
+      throw AssistantError.missingAPIKey
+    }
+
+    let conversation = claudeConversation(request.messages)
     var body: [String: Any] = [
       "model": configuration.model,
       "max_tokens": 4096,
       "stream": true,
-      "messages": messages,
+      "messages": conversation.messages,
     ]
-    if !systemParts.isEmpty {
-      body["system"] = systemParts.joined(separator: "\n\n")
+    if let system = conversation.system {
+      body["system"] = system
     }
     if !request.tools.isEmpty {
-      body["tools"] = request.tools.map { tool in
-        [
-          "name": tool.name,
-          "description": tool.description,
-          "input_schema": tool.parameters,
-        ]
-      }
+      body["tools"] = request.tools.map(Self.claudeTool)
     }
 
     var urlRequest = URLRequest(url: url)

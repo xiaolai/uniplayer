@@ -346,6 +346,9 @@ class PlayerCore: NSObject {
 
   var isSearchingOnlineSubtitle = false
 
+  /// Subtitle files downloaded by the online-subtitle search this session.
+  var downloadedSubtitleURLs: Set<URL> = []
+
   /// For supporting mpv `--shuffle` arg, to shuffle playlist when launching from command line
   @Atomic private var shufflePending = false
 
@@ -424,6 +427,9 @@ class PlayerCore: NSObject {
   /// URL to open once an outstanding mpv stop command completes.
   private var pendingUrl: URL?
 
+  /// Remaining files from an open request whose first file was deferred.
+  private var pendingPlaylistURLs: [URL] = []
+
   let playerNumber: Int
 
   static var keyBindings: [String: KeyMapping] = [:]
@@ -498,10 +504,12 @@ class PlayerCore: NSObject {
 
   // MARK: - Control
 
-  private func open(_ url: URL?, shouldAutoLoad: Bool = false) {
+  /// - Returns: `true` when the open was deferred until a stop finishes.
+  @discardableResult
+  private func open(_ url: URL?, shouldAutoLoad: Bool = false) -> Bool {
     guard let url else {
       log("empty file path or url", level: .error)
-      return
+      return false
     }
     guard info.state != .stopping else {
       // The mpv core is currently processing an asynchronous stop command. To avoid the complexity
@@ -511,7 +519,7 @@ class PlayerCore: NSObject {
       log("Waiting for stop command to finish before opening: \(url.absoluteString)")
       pendingAutoLoad = shouldAutoLoad
       pendingUrl = url
-      return
+      return true
     }
     let isNetwork = !url.isFileURL || url.pathExtension.starts(with: "m3u")
     if isNetwork, info.state != .idle, let currentWindow, !isInline {
@@ -523,7 +531,7 @@ class PlayerCore: NSObject {
       pendingAutoLoad = shouldAutoLoad
       pendingUrl = url
       currentWindow.close()
-      return
+      return true
     }
     log("Open URL: \(url.absoluteString)")
     if shouldAutoLoad {
@@ -532,6 +540,7 @@ class PlayerCore: NSObject {
     info.hdrEnabled = Preference.bool(for: .enableHdrSupport)
     let path = url.isFileURL ? url.path : url.absoluteString
     openMainWindow(path: path, url: url, isNetwork: isNetwork)
+    return false
   }
 
   /**
@@ -573,18 +582,20 @@ class PlayerCore: NSObject {
       info.shouldAutoLoadFiles = (count == 1)
     }
 
-    // open the first file
-    open(playableFiles[0])
-    // add the remaining to playlist
-    playableFiles[1..<count].forEach { url in
-      mpv.playlistAppend(url.isFileURL ? url.path : url.absoluteString)
-    }
-
-    // refresh playlist
-    postNotification(.iinaPlaylistChanged)
-    // send OSD
-    if count > 1 {
-      sendOSD(.addToPlaylist(count))
+    // Open the first file. If that waits for a stop to finish, the playlist
+    // tail must wait with it; appending now would be discarded by the load.
+    let deferred = open(playableFiles[0])
+    if deferred {
+      pendingPlaylistURLs = Array(playableFiles[1..<count])
+    } else {
+      pendingPlaylistURLs = []
+      playableFiles[1..<count].forEach { url in
+        mpv.playlistAppend(url.isFileURL ? url.path : url.absoluteString)
+      }
+      postNotification(.iinaPlaylistChanged)
+      if count > 1 {
+        sendOSD(.addToPlaylist(count))
+      }
     }
     return count
   }
@@ -1646,36 +1657,30 @@ class PlayerCore: NSObject {
   }
 
   func setFlip(_ enable: Bool) {
-    if enable {
-      if info.flipFilter == nil {
-        let vf = MPVFilter.flip()
-        vf.label = Constants.FilterName.flip
-        if addVideoFilter(vf) {
-          info.flipFilter = vf
-        }
-      }
-    } else {
-      if let vf = info.flipFilter {
-        let _ = removeVideoFilter(vf)
-        info.flipFilter = nil
-      }
-    }
+    setLabeledFilter(enable, label: Constants.FilterName.flip,
+                     current: &info.flipFilter) { MPVFilter.flip() }
   }
 
   func setMirror(_ enable: Bool) {
+    setLabeledFilter(enable, label: Constants.FilterName.mirror,
+                     current: &info.mirrorFilter) { MPVFilter.mirror() }
+  }
+
+  /// Adds or removes a single labeled video filter and keeps its cached
+  /// reference in step with what mpv actually accepted.
+  private func setLabeledFilter(_ enable: Bool, label: String,
+                                current: inout MPVFilter?,
+                                make: () -> MPVFilter) {
     if enable {
-      if info.mirrorFilter == nil {
-        let vf = MPVFilter.mirror()
-        vf.label = Constants.FilterName.mirror
-        if addVideoFilter(vf) {
-          info.mirrorFilter = vf
-        }
+      guard current == nil else { return }
+      let filter = make()
+      filter.label = label
+      if addVideoFilter(filter) {
+        current = filter
       }
-    } else {
-      if let vf = info.mirrorFilter {
-        let _ = removeVideoFilter(vf)
-        info.mirrorFilter = nil
-      }
+    } else if let filter = current {
+      let _ = removeVideoFilter(filter)
+      current = nil
     }
   }
 
@@ -1961,11 +1966,9 @@ class PlayerCore: NSObject {
     if let aspect = Aspect(string: str) {
       let cropped = NSMakeSize(CGFloat(vwidth), CGFloat(vheight)).crop(withAspect: aspect)
       let vf = MPVFilter.crop(w: Int(cropped.width), h: Int(cropped.height), x: nil, y: nil)
-      vf.label = Constants.FilterName.crop
-      setCrop(fromFilter: vf)
-      // warning! may should not update it here
-      info.unsureCrop = str
-      info.cropFilter = vf
+      if setCrop(fromFilter: vf) {
+        info.unsureCrop = str
+      }
     } else {
       if let filter = info.cropFilter {
         let _ = removeVideoFilter(filter)
@@ -1974,11 +1977,12 @@ class PlayerCore: NSObject {
     }
   }
 
-  func setCrop(fromFilter filter: MPVFilter) {
+  @discardableResult
+  func setCrop(fromFilter filter: MPVFilter) -> Bool {
     filter.label = Constants.FilterName.crop
-    if addVideoFilter(filter) {
-      info.cropFilter = filter
-    }
+    guard addVideoFilter(filter) else { return false }
+    info.cropFilter = filter
+    return true
   }
 
   /// Remove the crop filter managed by UniPlayer.
@@ -2702,6 +2706,15 @@ class PlayerCore: NSObject {
         self.pendingUrl = nil
         log("Processing pending open")
         open(pendingUrl, shouldAutoLoad: pendingAutoLoad)
+        if !pendingPlaylistURLs.isEmpty {
+          let tail = pendingPlaylistURLs
+          pendingPlaylistURLs = []
+          tail.forEach { url in
+            mpv.playlistAppend(url.isFileURL ? url.path : url.absoluteString)
+          }
+          postNotification(.iinaPlaylistChanged)
+          sendOSD(.addToPlaylist(tail.count + 1))
+        }
       }
     }
   }
@@ -3203,7 +3216,7 @@ class PlayerCore: NSObject {
         if isInline {
           inlineRefreshHandler?()
         }
-        currentController.updatePlayTime(withDuration: isNetworkStream, andProgressBar: true)
+        currentController.updatePlayTime(andProgressBar: true)
         if !self.isInMiniPlayer && mainWindow.fsState.isFullscreen && mainWindow.displayTimeAndBatteryInFullScreen && !mainWindow.additionalInfoView.isHidden {
           self.mainWindow.additionalInfoView.update()
         }
@@ -3291,17 +3304,22 @@ class PlayerCore: NSObject {
     if Preference.bool(for: .enableThumbnailPreview) {
       if let cacheName = info.mpvMd5, ThumbnailCache.fileIsCached(forName: cacheName, forVideo: info.currentURL) {
         log("Found thumbnail cache")
+        let expectedURL = info.currentURL
         thumbnailQueue.async {
-          if let thumbnails = ThumbnailCache.read(forName: cacheName) {
+          guard let thumbnails = ThumbnailCache.read(forName: cacheName) else {
+            self.log("Cannot read thumbnail from cache", level: .error)
+            return
+          }
+          DispatchQueue.main.async {
+            // Playback may have changed while the cache was read.
+            guard self.info.mpvMd5 == cacheName, self.info.currentURL == expectedURL else { return }
             self.info.thumbnails = thumbnails
             self.info.thumbnailsReady = true
             self.info.thumbnailsProgress = 1
             self.refreshTouchBarSlider()
             // OSC thumbnails may be used in Now Playing. Notify the manager thumbnails are now
             // available.
-            DispatchQueue.main.async { NowPlayingInfoManager.shared.updateInfo() }
-          } else {
-            self.log("Cannot read thumbnail from cache", level: .error)
+            NowPlayingInfoManager.shared.updateInfo()
           }
         }
       } else {
@@ -3601,9 +3619,10 @@ extension PlayerCore: FFmpegControllerDelegate {
       refreshTouchBarSlider()
       // OSC thumbnails may be used in Now Playing. Notify the manager thumbnails are now available.
       DispatchQueue.main.async { NowPlayingInfoManager.shared.updateInfo() }
-      if let cacheName = info.mpvMd5 {
+      if let cacheName = info.mpvMd5, let sourceURL = info.currentURL {
+        let capturedThumbnails = thumbnails
         backgroundQueue.async {
-          ThumbnailCache.write(self.info.thumbnails, forName: cacheName, forVideo: self.info.currentURL)
+          ThumbnailCache.write(capturedThumbnails, forName: cacheName, forVideo: sourceURL)
         }
       }
       events.emit(.thumbnailsReady)

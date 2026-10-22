@@ -35,20 +35,22 @@ class SidebarController: NSObject {
   class Panel {
     let side: Side
     let view: SideBarContainer
+    unowned let player: PlayerCore
     var widthConstraint: NSLayoutConstraint!
     var edgeConstraint: NSLayoutConstraint!
     var status: ViewType = .hidden
     var animationState: MainWindowController.UIAnimationState = .hidden {
       didSet {
         if animationState == .hidden || animationState == .shown {
-          NotificationCenter.default.post(name: .iinaSidebarStatusChanged, object: nil)
+          NotificationCenter.default.post(name: .iinaSidebarStatusChanged, object: player)
         }
       }
     }
 
-    init(side: Side, view: SideBarContainer) {
+    init(side: Side, view: SideBarContainer, player: PlayerCore) {
       self.side = side
       self.view = view
+      self.player = player
     }
 
     var visibleEdgeMargin: CGFloat {
@@ -82,11 +84,13 @@ class SidebarController: NSObject {
 
   lazy var leadingSidebar: Panel = Panel(
     side: .leading,
-    view: SideBarContainer(mainWindow: mainWindow, isLeading: true)
+    view: SideBarContainer(mainWindow: mainWindow, isLeading: true),
+    player: mainWindow.player
   )
   lazy var trailingSidebar: Panel = Panel(
     side: .trailing,
-    view: SideBarContainer(mainWindow: mainWindow, isLeading: false)
+    view: SideBarContainer(mainWindow: mainWindow, isLeading: false),
+    player: mainWindow.player
   )
   var sideBars: [Panel] { [leadingSidebar, trailingSidebar] }
 
@@ -282,7 +286,7 @@ class SidebarController: NSObject {
     panel.view.setContent(viewController.view)
     viewController.view.padding(.all)
     viewController.downShift = 0
-    NotificationCenter.default.post(name: .iinaSidebarStatusChanged, object: nil)
+    NotificationCenter.default.post(name: .iinaSidebarStatusChanged, object: mainWindow.player)
   }
 
   /// Show the given sidebar on its configured side.

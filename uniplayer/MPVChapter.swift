@@ -13,7 +13,7 @@ class MPVChapter: NSObject {
   private var privTitle: String?
   var title: String {
     get {
-      return privTitle ?? "\(Constants.String.chapter) \(index)"
+      return privTitle ?? String(format: NSLocalizedString("Chapter %d", comment: "Chapter title fallback"), index)
     }
   }
   var time: VideoTime

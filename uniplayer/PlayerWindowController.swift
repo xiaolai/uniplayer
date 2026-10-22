@@ -133,6 +133,16 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       if let newValue = change[.newKey] as? Int {
         doubleClickAction = Preference.MouseClickAction(rawValue: newValue)!
       }
+    case PK.horizontalScrollAction.rawValue:
+      if let newValue = change[.newKey] as? Int,
+         let action = Preference.ScrollAction(rawValue: newValue) {
+        horizontalScrollAction = action
+      }
+    case PK.verticalScrollAction.rawValue:
+      if let newValue = change[.newKey] as? Int,
+         let action = Preference.ScrollAction(rawValue: newValue) {
+        verticalScrollAction = action
+      }
     case PK.autoSwitchToMusicMode.rawValue:
       player.overrideAutoSwitchToMusicMode = false
     default:
@@ -431,11 +441,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     PluginInputManager.handle(
       input: PluginInputManager.Input.otherMouse, event: .mouseUp, player: player,
       arguments: mouseEventArgs(event), defaultHandler: {
-      if event.type == .otherMouseUp {
-        self.performMouseAction(Preference.enum(for: .middleClickAction))
-      } else {
-        super.otherMouseUp(with: event)
-      }
+      self.performMouseAction(Preference.enum(for: .middleClickAction))
     })
   }
 
@@ -596,29 +602,33 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     muteButton.update()
   }
   
-  func updatePlayTime(withDuration: Bool, andProgressBar: Bool) {
+  func updatePlayTime(andProgressBar: Bool) {
     // UniPlayer listens for changes to mpv properties such as chapter that can occur during file loading
     // resulting in this function being called before mpv has set its position and duration
     // properties. Confirm the window and file have been loaded.
     guard loaded, player.info.state.loaded else { return }
-    // The mpv documentation for the duration property indicates mpv is not always able to determine
-    // the video duration in which case the property is not available.
-    guard let duration = player.info.videoDuration else {
-      log("Video duration not available", level: .warning)
-      return
-    }
+    // The duration of a stream is not always known. The elapsed position is
+    // still useful, so update it on its own and leave duration-dependent
+    // controls at their last value until a duration arrives.
     guard let pos = player.info.videoPosition else {
       log("Video position not available", level: .warning)
       return
     }
-    guard let remaining = player.info.videoRemaining else {
-      log("Video remaining not available", level: .warning)
-      return
+    let duration = player.info.videoDuration
+    let remaining = player.info.videoRemaining
+    if duration == nil {
+      log("Video duration not available", level: .warning)
     }
-    [leftLabel, rightLabel].forEach { $0.updateText(with: duration, given: pos, and: remaining) }
-    player.touchBarSupport.touchBarPosLabels.forEach { $0.updateText(with: duration, given: pos,
-                                                                     and: remaining) }
-    if andProgressBar {
+    if remaining == nil {
+      log("Video remaining not available", level: .warning)
+    }
+    [leftLabel, rightLabel].forEach {
+      $0.updateText(with: duration, given: pos, and: remaining)
+    }
+    player.touchBarSupport.touchBarPosLabels.forEach {
+      $0.updateText(with: duration, given: pos, and: remaining)
+    }
+    if andProgressBar, let duration, duration.second.isFinite, duration.second > 0 {
       let percentage = (pos.second / duration.second) * 100
       playSlider.doubleValue = percentage
       player.touchBarSupport.touchBarPlaySlider?.setDoubleValueSafely(percentage)

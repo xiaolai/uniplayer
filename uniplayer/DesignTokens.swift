@@ -1426,6 +1426,10 @@ enum Tokens {
     static let cardCorner = Radius.settingsCard
     /// The section indicator's offset.
     static let indicatorOffset: CGFloat = Space.n8
+    /// The vertical step between section indicator rows.
+    static let sectionRowHeight: CGFloat = Size.n22
+    /// The section indicator's animation.
+    static let sectionIndicatorAnimation = Motion.n10
     /// The settings content's width.
     static let contentWidth = Size.settingsContentWidth
     /// The settings sidebar's width.

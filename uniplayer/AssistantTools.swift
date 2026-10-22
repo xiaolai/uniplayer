@@ -227,9 +227,9 @@ enum AssistantToolExecutor {
         return String(format: NSLocalizedString("Could not seek to %@: playback is not active.", comment: "Assistant tool result"), target)
       }
       if let reason {
-        return String(format: NSLocalizedString("Seeked to %@: %@", comment: "Assistant tool result"), target, reason)
+        return String(format: NSLocalizedString("Moved playback to %@: %@", comment: "Assistant tool result"), target, reason)
       }
-      return String(format: NSLocalizedString("Seeked to %@.", comment: "Assistant tool result"), target)
+      return String(format: NSLocalizedString("Moved playback to %@.", comment: "Assistant tool result"), target)
     case .summarizeRange(let start, let end):
       return executor.rangeDescription(start: start, end: end)
     case .translateSubtitle(let language):

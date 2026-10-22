@@ -8,13 +8,8 @@
 
 import AVKit
 import Cocoa
-import Mustache
-import WebKit
-
-fileprivate let InteractiveModeBottomViewHeight = Tokens.Size.n60
 
 fileprivate let UIAnimationDuration = Tokens.Motion.n25.duration
-fileprivate let CropAnimationDuration = 0.2
 
 fileprivate extension NSStackView.VisibilityPriority {
   static let detachEarly = NSStackView.VisibilityPriority(rawValue: 850)
@@ -44,6 +39,8 @@ class MainWindowController: PlayerWindowController {
 
   /// Owns the sidebar panels, view controllers, and show/hide/resize logic.
   lazy var sidebars = SidebarController(mainWindow: self)
+
+  private var notificationObservers: [NSObjectProtocol] = []
 
   private lazy var magnificationGestureRecognizer: NSMagnificationGestureRecognizer = {
     return NSMagnificationGestureRecognizer(target: self, action: #selector(MainWindowController.handleMagnifyGesture(recognizer:)))
@@ -298,6 +295,10 @@ class MainWindowController: PlayerWindowController {
     super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
 
     switch keyPath {
+    case PK.maxVolume.rawValue:
+      if let newValue = change[.newKey] as? Int {
+        hudVolumeSlider?.maxValue = Double(newValue)
+      }
     case PK.oscPosition.rawValue:
       if let newValue = change[.newKey] as? Int {
         setupOnScreenController(withPosition: Preference.OSCPosition(rawValue: newValue) ?? .floating)
@@ -306,14 +307,6 @@ class MainWindowController: PlayerWindowController {
     case PK.showChapterPos.rawValue:
       if let newValue = change[.newKey] as? Bool {
         (playSlider.cell as! PlaySliderCell).drawChapters = newValue
-      }
-    case PK.verticalScrollAction.rawValue:
-      if let newValue = change[.newKey] as? Int {
-        verticalScrollAction = Preference.ScrollAction(rawValue: newValue)!
-      }
-    case PK.horizontalScrollAction.rawValue:
-      if let newValue = change[.newKey] as? Int {
-        horizontalScrollAction = Preference.ScrollAction(rawValue: newValue)!
       }
     case PK.arrowButtonAction.rawValue:
       if let newValue = change[.newKey] as? Int {
@@ -465,6 +458,7 @@ class MainWindowController: PlayerWindowController {
     if let commandDragMonitor {
       NSEvent.removeMonitor(commandDragMonitor)
     }
+    notificationObservers.forEach(NotificationCenter.default.removeObserver)
   }
 
   override func windowDidLoad() {
@@ -608,7 +602,7 @@ class MainWindowController: PlayerWindowController {
     oscPlayControlMiddleView.translatesAutoresizingMaskIntoConstraints = false
     oscPlayControlMiddleView.orientation = .horizontal
     oscPlayControlMiddleView.alignment = .centerY
-    oscPlayControlMiddleView.spacing = 24
+    oscPlayControlMiddleView.spacing = Tokens.Space.n24
 
     self.oscToolbarView = NSStackView()
     oscToolbarView.translatesAutoresizingMaskIntoConstraints = false
@@ -810,11 +804,15 @@ class MainWindowController: PlayerWindowController {
 
     // Observers for toolbar buttons
     let notifications: [Notification.Name] = [.iinaPIPStatusChanged, .iinaFullscreenChanged, .iinaSidebarStatusChanged]
-    notifications.forEach {
-      NotificationCenter.default
-        .addObserver(forName: $0, object: nil, queue: .main) { [weak self] n in
-          self?.updateOSCToolbarButtons(n)
+    notifications.forEach { name in
+      let token = NotificationCenter.default
+        .addObserver(forName: name, object: nil, queue: .main) { [weak self] n in
+          guard let self else { return }
+          if let source = n.object as? PlayerCore, source !== player { return }
+          if let source = n.object as? PlayerWindowController, source !== self { return }
+          self.updateOSCToolbarButtons(n)
         }
+      notificationObservers.append(token)
     }
 
     player.events.emit(.windowLoaded)
@@ -933,11 +931,6 @@ class MainWindowController: PlayerWindowController {
     layoutSides.forEach { videoContainerConstraints[$0]?.isActive = true }
   }
 
-  private func updateVideoContainerConstraints(_ constraints: [NSLayoutConstraint.Attribute: CGFloat]) {
-    for (attr, value) in constraints {
-      videoContainerConstraints[attr]?.constant = value
-    }
-  }
 
   @objc func removeVideoViewBlackBars() {
     guard let window, Preference.unlockWindowAspectRatio, !fsState.isFullscreen else { return }
@@ -1175,8 +1168,7 @@ class MainWindowController: PlayerWindowController {
   private func showSpeedChooseMenu(forView view: NSView) {
     let menu = NSMenu()
     menu.autoenablesItems = false
-    let current = AppData.availableSpeedValues.indices.contains(speedValueIndex)
-      ? AppData.availableSpeedValues[speedValueIndex] : 1
+    let current = player.info.playSpeed
     for (index, speed) in AppData.availableSpeedValues.enumerated() {
       menu.addItem(withTitle: String(format: "%.2fx", speed),
                    action: #selector(chosenSpeedFromMenu(_:)), target: self,
@@ -1272,38 +1264,19 @@ class MainWindowController: PlayerWindowController {
     case .floating:
       currentControlBar = hudView
       hudView.isHidden = false
-      oscPlayControlView.setVisibilityPriority(.notVisible, for: oscSpeedLabelLeftContainer)
-      oscPlayControlView.setVisibilityPriority(.notVisible, for: oscSpeedLabelRightContainer)
+      hideSpeedLabels()
       hudView.center.addView(oscPlayControlView, in: .center)
       hudView.timeline.addSubview(oscSliderView)
-      Utility.quickConstraints(["H:|-(10)-[v]-(10)-|", "V:|[v]|"], ["v": oscSliderView])
+      oscSliderView.padding(.horizontal(Tokens.Space.n10), from: hudView.timeline)
     case .top:
-      let oscTopMainView = titleBarView.oscView!
       currentControlBar = nil
-      oscPlayControlView.setVisibilityPriority(.notVisible, for: oscSpeedLabelLeftContainer)
-      oscPlayControlView.setVisibilityPriority(.notVisible, for: oscSpeedLabelRightContainer)
-      oscTopMainView.addView(oscVolumeView, in: .trailing)
-      oscTopMainView.addView(oscToolbarView, in: .trailing)
-      oscTopMainView.addView(oscPlayControlView, in: .leading)
-      oscTopMainView.addView(oscSliderView, in: .leading)
-      oscTopMainView.setClippingResistancePriority(.defaultLow, for: .horizontal)
-      oscTopMainView.setVisibilityPriority(.mustHold, for: oscSliderView)
-      oscTopMainView.setVisibilityPriority(.detachEarly, for: oscVolumeView)
-      oscTopMainView.setVisibilityPriority(.detachEarlier, for: oscToolbarView)
+      hideSpeedLabels()
+      configureDockedOSC(in: titleBarView.oscView!)
     case .bottom:
       oscBottomView.isHidden = false
-      let oscBottomMainView = oscBottomView.oscView!
       currentControlBar = oscBottomView
-      oscPlayControlView.setVisibilityPriority(.notVisible, for: oscSpeedLabelLeftContainer)
-      oscPlayControlView.setVisibilityPriority(.notVisible, for: oscSpeedLabelRightContainer)
-      oscBottomMainView.addView(oscVolumeView, in: .trailing)
-      oscBottomMainView.addView(oscToolbarView, in: .trailing)
-      oscBottomMainView.addView(oscPlayControlView, in: .leading)
-      oscBottomMainView.addView(oscSliderView, in: .leading)
-      oscBottomMainView.setClippingResistancePriority(.defaultLow, for: .horizontal)
-      oscBottomMainView.setVisibilityPriority(.mustHold, for: oscSliderView)
-      oscBottomMainView.setVisibilityPriority(.detachEarly, for: oscVolumeView)
-      oscBottomMainView.setVisibilityPriority(.detachEarlier, for: oscToolbarView)
+      hideSpeedLabels()
+      configureDockedOSC(in: oscBottomView.oscView!)
     }
 
     updateTransportSizes()
@@ -1313,6 +1286,23 @@ class MainWindowController: PlayerWindowController {
 
     fadeableViews.update()
     showUI()
+  }
+
+  private func hideSpeedLabels() {
+    oscPlayControlView.setVisibilityPriority(.notVisible, for: oscSpeedLabelLeftContainer)
+    oscPlayControlView.setVisibilityPriority(.notVisible, for: oscSpeedLabelRightContainer)
+  }
+
+  /// The top and bottom OSC layouts differ only in their container.
+  private func configureDockedOSC(in mainView: NSStackView) {
+    mainView.addView(oscVolumeView, in: .trailing)
+    mainView.addView(oscToolbarView, in: .trailing)
+    mainView.addView(oscPlayControlView, in: .leading)
+    mainView.addView(oscSliderView, in: .leading)
+    mainView.setClippingResistancePriority(.defaultLow, for: .horizontal)
+    mainView.setVisibilityPriority(.mustHold, for: oscSliderView)
+    mainView.setVisibilityPriority(.detachEarly, for: oscVolumeView)
+    mainView.setVisibilityPriority(.detachEarlier, for: oscToolbarView)
   }
 
   // MARK: - Mouse / Trackpad events
@@ -1826,7 +1816,7 @@ class MainWindowController: PlayerWindowController {
 
     additionalInfoView.update()
     player.events.emit(.windowFullscreenChanged, data: true)
-    NotificationCenter.default.post(name: .iinaFullscreenChanged, object: nil, userInfo: ["enable": true])
+    NotificationCenter.default.post(name: .iinaFullscreenChanged, object: self, userInfo: ["enable": true])
   }
 
   /// Called if the window failed to enter full screen mode.
@@ -1979,7 +1969,7 @@ class MainWindowController: PlayerWindowController {
     updateWindowParametersForMPV()
 
     player.events.emit(.windowFullscreenChanged, data: false)
-    NotificationCenter.default.post(name: .iinaFullscreenChanged, object: nil, userInfo: ["enable": false])
+    NotificationCenter.default.post(name: .iinaFullscreenChanged, object: self, userInfo: ["enable": false])
   }
 
   /// Called if the window failed to exit full screen mode.
@@ -2006,6 +1996,7 @@ class MainWindowController: PlayerWindowController {
     fsState.finishAnimating()
 
     titleBarView.update(hasOSC: oscPosition == .top, inFullScreen: true)
+    hudView?.updateForFullScreen(true)
     setWindowToolbar()
     fadeableViews.update()
     showUI()
@@ -2509,7 +2500,7 @@ class MainWindowController: PlayerWindowController {
       accessoryView.layer?.opacity = 0
 
       NSAnimationContext.runAnimationGroup({ context in
-        context.duration = AccessibilityPreferences.adjustedDuration(0.3)
+        context.duration = AccessibilityPreferences.adjustedDuration(Tokens.Motion.n30.duration)
         context.allowsImplicitAnimation = true
         window!.setFrame(newFrame, display: true)
         osdView.layoutSubtreeIfNeeded()
@@ -2611,6 +2602,8 @@ class MainWindowController: PlayerWindowController {
     }
     let winAspect = winFrame.size.aspect
     var widthOrHeightIsSet = false
+    var xIsRelativeToScreen = false
+    var yIsRelativeToScreen = false
     // w and h can't take effect at same time
     if let strw = geometry.w, strw != "0" {
       var w: CGFloat
@@ -2648,6 +2641,7 @@ class MainWindowController: PlayerWindowController {
       if (xSign == "-") {
         winFrame.origin.x -= winFrame.width
       }
+      xIsRelativeToScreen = true
     }
     // y
     if let stry = geometry.y, let ySign = geometry.ySign {
@@ -2661,15 +2655,23 @@ class MainWindowController: PlayerWindowController {
       if (ySign == "-") {
         winFrame.origin.y -= winFrame.height
       }
+      yIsRelativeToScreen = true
     }
     // if x and y are not specified
     if geometry.x == nil && geometry.y == nil && widthOrHeightIsSet {
       winFrame.origin.x = (screenFrame.width - winFrame.width) / 2
       winFrame.origin.y = (screenFrame.height - winFrame.height) / 2
+      xIsRelativeToScreen = true
+      yIsRelativeToScreen = true
     }
-    // if the screen has offset
-    winFrame.origin.x += screenFrame.origin.x
-    winFrame.origin.y += screenFrame.origin.y
+    // Only axes computed relative to the screen need its origin added;
+    // an unspecified axis still holds the window's global coordinate.
+    if xIsRelativeToScreen {
+      winFrame.origin.x += screenFrame.origin.x
+    }
+    if yIsRelativeToScreen {
+      winFrame.origin.y += screenFrame.origin.y
+    }
 
     return winFrame
   }
@@ -2846,7 +2848,7 @@ class MainWindowController: PlayerWindowController {
     }
 
     // UI and slider
-    updatePlayTime(withDuration: true, andProgressBar: true)
+    updatePlayTime(andProgressBar: true)
     player.events.emit(.windowSizeAdjusted, data: rect)
   }
 
@@ -3000,8 +3002,8 @@ class MainWindowController: PlayerWindowController {
     return isShowingFadeableViews || isShowingOSD
   }
 
-  override func updatePlayTime(withDuration duration: Bool, andProgressBar: Bool) {
-    super.updatePlayTime(withDuration: duration, andProgressBar: andProgressBar)
+  override func updatePlayTime(andProgressBar: Bool) {
+    super.updatePlayTime(andProgressBar: andProgressBar)
     syncPIPPlaybackState()
 
     if osdAnimationState == .shown, let osdLastMessage = self.osdLastMessage {
@@ -3370,12 +3372,12 @@ class MainWindowController: PlayerWindowController {
     }
 
     let mouseXPos = playSlider.convert(posInWindow, from: nil).x
-    let percentage = max(0, Double((mouseXPos - 3) / (playSlider.bounds.width - 6)))
+    let percentage = min(1, max(0, Double((mouseXPos - 3) / (playSlider.bounds.width - 6))))
 
     timePreviewView.isHidden = false
     let previewTime = duration * percentage
     updateTimePreview(percentage)
-    let sliderFrameInWindow = playSlider.convert(playSlider.frame, to: nil)
+    let sliderFrameInWindow = playSlider.convert(playSlider.bounds, to: nil)
 
     if player.info.thumbnailsReady, let image = player.info.getThumbnail(forSecond: previewTime.second)?.image {
       thumbnailPeekView.imageView.image = image.rotate(rotation)

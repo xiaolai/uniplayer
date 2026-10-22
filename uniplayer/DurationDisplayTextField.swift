@@ -41,11 +41,11 @@ class DurationDisplayTextField: NSTextField {
     }
   }
 
-  func updateText(with duration: VideoTime, given current: VideoTime,
-                  and remaining: VideoTime) {
-    self.duration = duration
+  func updateText(with duration: VideoTime?, given current: VideoTime,
+                  and remaining: VideoTime?) {
+    if let duration { self.duration = duration }
+    if let remaining { self.remaining = remaining }
     self.current = current
-    self.remaining = remaining
     updateText()
   }
   

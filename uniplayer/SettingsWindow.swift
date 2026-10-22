@@ -77,7 +77,6 @@ class SettingsWindow: CommonWindow {
 
   private let searchBox: NSSearchField
   private lazy var completionPopover: NSPopover = createSearchPopover()
-  private var currentCompletionResults: [SettingsSearch.Entry] = []
 
   private var pendingHighlightItem: (id: Int, parentId: Int?)?
 
@@ -92,9 +91,14 @@ class SettingsWindow: CommonWindow {
 
     super.init(contentRect: NSRect(x: 0, y: 0, width: Tokens.Settings.windowWidth, height: Tokens.Size.n520),
                styleMask: [.closable, .miniaturizable, .resizable, .titled, .fullSizeContentView],
-               backing: .buffered, defer: false)
+               backing: .buffered, defer: false, usesUnifiedToolbar: true)
     self.minSize = NSSize(width: Tokens.Settings.windowWidth, height: Tokens.Size.n480)
 
+    buildInterface()
+  }
+
+  /// Builds the split view, sidebar, content area, toolbar and first page.
+  private func buildInterface() {
     let splitViewController = NSSplitViewController()
     self.contentViewController = splitViewController
 
@@ -269,9 +273,9 @@ class SettingsWindow: CommonWindow {
     let titleIndex = sectionNames.firstIndex(of: firstVisibleTitle) ?? 0
 
     NSAnimationContext.runAnimationGroup({ context in
-      context.duration = AccessibilityPreferences.adjustedDuration(0.1)
+      context.duration = AccessibilityPreferences.adjustedDuration(Tokens.Settings.sectionIndicatorAnimation.duration)
       context.timingFunction = CAMediaTimingFunction(name: .linear)
-      sectionIndicatorTopConstraint?.animator().constant = Tokens.Space.n8 + 22 * CGFloat(titleIndex)
+      sectionIndicatorTopConstraint?.animator().constant = Tokens.Space.n8 + Tokens.Settings.sectionRowHeight * CGFloat(titleIndex)
     }, completionHandler: {
       sectionNameStackView.arrangedSubviews.forEach {
         guard let button = $0 as? NSButton else { return }
@@ -381,6 +385,13 @@ extension SettingsWindow {
     var results: [SettingsSearch.Entry] = []
 
     private var contentHeightConstraint: NSLayoutConstraint!
+    private var frameObserver: NSObjectProtocol?
+
+    deinit {
+      if let frameObserver {
+        NotificationCenter.default.removeObserver(frameObserver)
+      }
+    }
 
     init(window: SettingsWindow) {
       self.window = window
@@ -404,7 +415,7 @@ extension SettingsWindow {
 
       // make the scroll view's height synchronize with its content
       tableView.postsFrameChangedNotifications = true
-      NotificationCenter.default.addObserver(
+      frameObserver = NotificationCenter.default.addObserver(
         forName: NSView.frameDidChangeNotification,
         object: tableView,
         queue: .main
@@ -444,17 +455,13 @@ extension SettingsWindow {
           results.append(SettingsSearch.Entry(pageHeader: page.title, icon: page.image))
           // only show one entry per anchor
           // make sure parent entries displayed before children
+          func sortKey(_ entry: SettingsSearch.Entry) -> (String, Int, String) {
+            let group = entry.parentEntry?.title ?? entry.section ?? entry.pageTitle ?? ""
+            let depth = entry.parentEntry == nil ? 0 : 1
+            return (group, depth, entry.title)
+          }
           let sorted = Dictionary(grouping: entries, by: \.anchor).values.map { $0.first! }.sorted {
-            if $0.parentEntry === $1 { return false }
-            if $1.parentEntry === $0 { return true }
-            if let section0 = $0.section, let section1 = $1.section {
-              switch section0.localizedCompare(section1) {
-              case .orderedSame: return $0.title.localizedCompare($1.title) == .orderedAscending
-              case .orderedAscending: return true
-              case .orderedDescending: return false
-              }
-            }
-            return $0.title.localizedCompare($1.title) == .orderedAscending
+            sortKey($0) < sortKey($1)
           }
           results.append(contentsOf: sorted)
         }
@@ -548,15 +555,7 @@ extension SettingsWindow {
 
       func setup(entry: SettingsSearch.Entry) {
         if textField == nil {
-          sectionLabel = NSTextField(labelWithString: "")
-          sectionLabel.setContentHuggingPriority(.defaultHigh, for: .horizontal)
-          sectionLabel.font = Tokens.Typography.caption.nsFont
-          sectionLabel.textColor = .textBackgroundColor
-          sectionLabel.translatesAutoresizingMaskIntoConstraints = false
-          sectionLabel.wantsLayer = true
-          sectionLabel.layer?.cornerRadius = Tokens.Radius.n3
-          sectionLabel.drawsBackground = true
-          sectionLabel.backgroundColor = Tokens.Palette.textSecondary.nsColor
+          sectionLabel = makeSectionBadge()
           addSubview(sectionLabel)
 
           titleLabel = NSTextField(labelWithString: "")
@@ -583,15 +582,7 @@ extension SettingsWindow {
 
       func setup(entry: SettingsSearch.Entry) {
         if textField == nil {
-          sectionLabel = NSTextField(labelWithString: "")
-          sectionLabel.setContentHuggingPriority(.defaultHigh, for: .horizontal)
-          sectionLabel.font = Tokens.Typography.caption.nsFont
-          sectionLabel.textColor = .textBackgroundColor
-          sectionLabel.translatesAutoresizingMaskIntoConstraints = false
-          sectionLabel.wantsLayer = true
-          sectionLabel.layer?.cornerRadius = Tokens.Radius.n3
-          sectionLabel.drawsBackground = true
-          sectionLabel.backgroundColor = Tokens.Palette.textSecondary.nsColor
+          sectionLabel = makeSectionBadge()
           addSubview(sectionLabel)
 
           parentLabel = NSTextField(labelWithString: "")
@@ -714,7 +705,7 @@ extension SettingsWindow: NSTableViewDataSource, NSTableViewDelegate {
     }
 
     NSAnimationContext.runAnimationGroup({ context in
-      context.duration = AccessibilityPreferences.adjustedDuration(0.25)
+      context.duration = AccessibilityPreferences.adjustedDuration(Tokens.Motion.n25.duration)
       clipView.animator().setBoundsOrigin(newOrigin)
     }, completionHandler: {
       self.contentScrollView.reflectScrolledClipView(clipView)
@@ -763,6 +754,8 @@ extension SettingsWindow: NSTableViewDataSource, NSTableViewDelegate {
       sectionStackView.center(.y).padding(.leading(Tokens.Space.n4), .trailing(Tokens.Space.n4))
 
       self.sectionNameStackView = sectionNameStackView
+      // New buttons are unstyled; do not let the cached title skip them.
+      currentSectionTitle = nil
       return cell
     }
 
@@ -915,4 +908,18 @@ fileprivate extension String {
   func trimWhitespaceSuffix() -> String {
     self.replacingOccurrences(of: "\\s+$", with: "", options: .regularExpression)
   }
+}
+
+/// The constant section badge shared by both search-result cell layouts.
+private func makeSectionBadge() -> NSTextField {
+  let label = NSTextField(labelWithString: "")
+  label.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+  label.font = Tokens.Typography.caption.nsFont
+  label.textColor = .textBackgroundColor
+  label.translatesAutoresizingMaskIntoConstraints = false
+  label.wantsLayer = true
+  label.layer?.cornerRadius = Tokens.Radius.n3
+  label.drawsBackground = true
+  label.backgroundColor = Tokens.Palette.textSecondary.nsColor
+  return label
 }

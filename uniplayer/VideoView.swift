@@ -590,10 +590,7 @@ extension VideoView {
   private func setToneMappingForHDR() {
     guard let mpv = player.mpv else { return }
     guard Preference.bool(for: .enableToneMapping) else {
-      // Reset options to their defaults.
-      mpv.setStringToDefault(MPVOption.GPURendererOptions.targetPeak)
-      mpv.setStringToDefault(MPVOption.GPURendererOptions.toneMapping)
-      mpv.setStringToDefault(MPVOption.GPURendererOptions.toneMappingParam)
+      resetToneMappingOptions(mpv)
       return
     }
     var targetPeak = "auto"
@@ -646,16 +643,20 @@ extension VideoView {
   private func setToneMappingForSDR() {
     guard let mpv = player.mpv else { return }
     guard Preference.bool(for: .enableToneMapping) else {
-      // Reset options to their defaults.
-      mpv.setStringToDefault(MPVOption.GPURendererOptions.targetPeak)
-      mpv.setStringToDefault(MPVOption.GPURendererOptions.toneMapping)
-      mpv.setStringToDefault(MPVOption.GPURendererOptions.toneMappingParam)
+      resetToneMappingOptions(mpv)
       return
     }
     logHDR("Will enable tone mapping: target-peak=auto algorithm=auto param=default")
     mpv.setString(MPVOption.GPURendererOptions.targetPeak, "auto")
     mpv.setString(MPVOption.GPURendererOptions.toneMapping, "auto")
     mpv.setString(MPVOption.GPURendererOptions.toneMappingParam, "default")
+  }
+
+  /// Restore the tone-mapping options to mpv's defaults.
+  private func resetToneMappingOptions(_ mpv: MPVController) {
+    mpv.setStringToDefault(MPVOption.GPURendererOptions.targetPeak)
+    mpv.setStringToDefault(MPVOption.GPURendererOptions.toneMapping)
+    mpv.setStringToDefault(MPVOption.GPURendererOptions.toneMappingParam)
   }
 
   // MARK: - Utils

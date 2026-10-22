@@ -34,11 +34,20 @@ class KeychainAccess {
   }
 
   static func identityQuery(username: String?, service: ServiceName, server: String?, port: Int?) -> [String: Any] {
-    var query: [String: Any] = [kSecAttrService as String: service.rawValue]
+    // kSecAttrService belongs to generic passwords; Internet passwords are
+    // identified by their server and port instead.
+    var query: [String: Any]
+    if server == nil && port == nil {
+      query = [
+        kSecClass as String: kSecClassGenericPassword,
+        kSecAttrService as String: service.rawValue,
+      ]
+    } else {
+      query = [kSecClass as String: kSecClassInternetPassword]
+    }
     if let username { query[kSecAttrAccount as String] = username }
     if let server { query[kSecAttrServer as String] = server }
     if let port { query[kSecAttrPort as String] = port }
-    query[kSecClass as String] = server == nil && port == nil ? kSecClassGenericPassword : kSecClassInternetPassword
     return query
   }
 

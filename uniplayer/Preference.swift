@@ -15,6 +15,13 @@ protocol InitializingFromKey: CustomStringConvertible {
   init?(key: Preference.Key)
 }
 
+extension InitializingFromKey where Self: RawRepresentable, Self.RawValue == Int {
+  /// Every integer-backed preference enum decodes the same way.
+  init?(key: Preference.Key) {
+    self.init(rawValue: Preference.integer(for: key))
+  }
+}
+
 struct Preference {
 
   // MARK: - Keys
@@ -387,10 +394,6 @@ struct Preference {
 
     static var defaultValue = ActionAfterLaunch.welcomeWindow
 
-    init?(key: Key) {
-      self.init(rawValue: Preference.integer(for: key))
-    }
-
     var description: String {
       switch self {
       case .welcomeWindow: "welcomeWindow"
@@ -406,10 +409,6 @@ struct Preference {
     case seek = 2
 
     static var defaultValue = ArrowButtonAction.seek
-
-    init?(key: Key) {
-      self.init(rawValue: Preference.integer(for: key))
-    }
 
     var description: String {
       switch self {
@@ -453,10 +452,6 @@ struct Preference {
 
     static var defaultValue = OSCPosition.floating
 
-    init?(key: Key) {
-      self.init(rawValue: Preference.integer(for: key))
-    }
-
     var description: String {
       switch self {
       case .floating: "floating"
@@ -472,10 +467,6 @@ struct Preference {
     case auto
 
     static var defaultValue = SeekOption.relative
-
-    init?(key: Key) {
-      self.init(rawValue: Preference.integer(for: key))
-    }
 
     var description: String {
       switch self {
@@ -496,10 +487,6 @@ struct Preference {
     case resetSpeed
 
     static var defaultValue = MouseClickAction.none
-
-    init?(key: Key) {
-      self.init(rawValue: Preference.integer(for: key))
-    }
 
     var description: String {
       switch self {
@@ -523,10 +510,6 @@ struct Preference {
 
     static var defaultValue = ScrollAction.volume
 
-    init?(key: Key) {
-      self.init(rawValue: Preference.integer(for: key))
-    }
-
     var description: String {
       switch self {
       case .volume: "volume"
@@ -544,10 +527,6 @@ struct Preference {
 
     static var defaultValue = PinchAction.windowSize
 
-    init?(key: Key) {
-      self.init(rawValue: Preference.integer(for: key))
-    }
-
     var description: String {
       switch self {
       case .windowSize: "windowSize"
@@ -563,10 +542,6 @@ struct Preference {
     case uniplayer
 
     static var defaultValue = UniPlayerAutoLoadAction.uniplayer
-
-    init?(key: Key) {
-      self.init(rawValue: Preference.integer(for: key))
-    }
 
     func shouldLoadSubsContainingVideoName() -> Bool {
       return self != .disabled
@@ -585,27 +560,6 @@ struct Preference {
     }
   }
 
-  enum AutoLoadAction: Int, InitializingFromKey {
-    case no = 0
-    case exact
-    case fuzzy
-    case all
-
-    static var defaultValue = AutoLoadAction.fuzzy
-
-    init?(key: Key) {
-      self.init(rawValue: Preference.integer(for: key))
-    }
-
-    var description: String {
-      switch self {
-      case .no: "no"
-      case .exact: "exact"
-      case .fuzzy: "fuzzy"
-      case .all: "all"
-      }
-    }
-  }
 
   /// Enum values for the UniPlayer settings that correspond to the `mpv`
   /// [sub-ass-override](https://mpv.io/manual/stable/#options-sub-ass-override) and
@@ -620,10 +574,6 @@ struct Preference {
     case no
 
     static var defaultValue = SubOverrideLevel.scale
-
-    init?(key: Key) {
-      self.init(rawValue: Preference.integer(for: key))
-    }
 
     var description: String {
       switch self {
@@ -643,10 +593,6 @@ struct Preference {
 
     static var defaultValue = SubBorderStyle.outlineAndShadow
 
-    init?(key: Key) {
-      self.init(rawValue: Preference.integer(for: key))
-    }
-
     var description: String {
       switch self {
       case .outlineAndShadow: "outline-and-shadow"
@@ -662,10 +608,6 @@ struct Preference {
     case right
 
     static var defaultValue = SubAlignX.center
-
-    init?(key: Key) {
-      self.init(rawValue: Preference.integer(for: key))
-    }
 
     var description: String {
       switch self {
@@ -683,10 +625,6 @@ struct Preference {
 
     static var defaultValue = SubAlignY.bottom
 
-    init?(key: Key) {
-      self.init(rawValue: Preference.integer(for: key))
-    }
-
     var description: String {
       switch self {
       case .top: "top"
@@ -703,10 +641,6 @@ struct Preference {
     case http
 
     static var defaultValue = RTSPTransportation.tcp
-
-    init?(key: Key) {
-      self.init(rawValue: Preference.integer(for: key))
-    }
 
     var description: String {
       switch self {
@@ -728,10 +662,6 @@ struct Preference {
 
     static var defaultValue = ScreenshotFormat.png
 
-    init?(key: Key) {
-      self.init(rawValue: Preference.integer(for: key))
-    }
-
     var description: String {
       switch self {
       case .png: "png"
@@ -750,10 +680,6 @@ struct Preference {
     case autoCopy
 
     static var defaultValue = HardwareDecoderOption.auto
-
-    init?(key: Key) {
-      self.init(rawValue: Preference.integer(for: key))
-    }
 
     var description: String {
       switch self {
@@ -780,10 +706,6 @@ struct Preference {
 
     static var defaultValue = ToneMappingAlgorithmOption.auto
 
-    init?(key: Key) {
-      self.init(rawValue: Preference.integer(for: key))
-    }
-
     var description: String {
       switch self {
       case .auto: "auto"
@@ -805,10 +727,6 @@ struct Preference {
 
     static var defaultValue = ResizeWindowTiming.onlyWhenOpen
 
-    init?(key: Key) {
-      self.init(rawValue: Preference.integer(for: key))
-    }
-
     var description: String {
       switch self {
       case .always: "always"
@@ -826,10 +744,6 @@ struct Preference {
     case videoSize20
 
     static var defaultValue = ResizeWindowOption.videoSize10
-
-    init?(key: Key) {
-      self.init(rawValue: Preference.integer(for: key))
-    }
 
     var ratio: Double {
       switch self {
@@ -850,10 +764,6 @@ struct Preference {
     case minimize
 
     static var defaultValue = WindowBehaviorWhenPip.hide
-
-    init?(key: Key) {
-      self.init(rawValue: Preference.integer(for: key))
-    }
 
     var description: String {
       switch self {
@@ -950,10 +860,6 @@ struct Preference {
 
     static var defaultValue = ReplayGainOption.no
 
-    init?(key: Key) {
-      self.init(rawValue: Preference.integer(for: key))
-    }
-
     var description: String {
       switch self {
       case .no: "no"
@@ -969,10 +875,6 @@ struct Preference {
     case strong
 
     static var defaultValue = GaplessAudioOption.weak
-
-    init?(key: Key) {
-      self.init(rawValue: Preference.integer(for: key))
-    }
 
     var localizedDescription: String {
       NSLocalizedString("gaplessAudio." + description, comment: description)
@@ -992,10 +894,6 @@ struct Preference {
     case file
 
     static var defaultValue = DefaultRepeatMode.playlist
-
-    init?(key: Key) {
-      self.init(rawValue: Preference.integer(for: key))
-    }
 
     var description: String {
       switch self {
@@ -1410,266 +1308,8 @@ struct Preference {
       // avoids the work to convert the value and its default to their respective type and then into
       // a string.
       guard hashableValue.hashValue != hashableDefault.hashValue else { continue }
-      // The values of many settings are not stored in a human friendly representation. The values
-      // must be converted to their respective types and then converted to a string.
-      let defaultAsString: String
-      let valueAsString: String
-      // Other than the first entry the cases in the switch are ordered based on the name of the
-      // type of the value.
-      switch key {
-      case .assrtToken, .openSubUsername:
-        // These keys should have been filtered above, so this code should never be executed. This
-        // code makes sure that if a change to the code causes these keys to be logged the value
-        // will be hidden.
-        defaultAsString = ""
-        valueAsString = "<private>"
-      case .actionAfterLaunch:
-        defaultAsString = String(describing: ActionAfterLaunch.defaultValue)
-        valueAsString = String(describing: Preference.enum(for: key) as ActionAfterLaunch)
-      case .arrowButtonAction:
-        defaultAsString = String(describing: ArrowButtonAction.defaultValue)
-        valueAsString = String(describing: Preference.enum(for: key) as ArrowButtonAction)
-      case .allowDuplicatePlayers,
-           .allowScreenSaverForAudio,
-           .alwaysFloatOnTop,
-           .alwaysOpenInNewWindow,
-           .alwaysShowOnTopIcon,
-           .audioDriverEnableAVFoundation,
-           .autoRepeat,
-           .autoSearchOnlineSub,
-           .autoSwitchToMusicMode,
-           .blackOutMonitor,
-           .cachePauseInitial,
-           .compactUI,
-           .controlBarStickToCenter,
-           .disableAnimations,
-           .disableOSDFileStartMsg,
-           .disableOSDPauseResumeMsgs,
-           .disableOSDSeekMsg,
-           .disableOSDSpeedMsg,
-           .disablePlaySliderScrolling,
-           .enableToneMappingParamOverride,
-           .enableToneMappingTargetPeakOverride,
-           .disableVolumeSliderScrolling,
-           .displayInLetterBox,
-           .displayKeyBindingRawValues,
-           .displayTimeAndBatteryInFullScreen,
-           .edgeToEdgeVideo,
-           .enableAdvancedSettings,
-           .enableCache,
-           .enableCmdN,
-           .enableControlBarAutoHide,
-           .enableDisplayIdle,
-           .enableFFmpegImageDecoder,
-           .enableHdrSupport,
-           .enableHdrWorkaround,
-           .enableInitialVolume,
-           .enableLiveText,
-           .enableLogging,
-           .enableNowPlayingArtwork,
-           .enableOSD,
-           .enableRecentDocumentsWorkaround,
-           .enableThumbnailForRemoteFiles,
-           .enableThumbnailPreview,
-           .enableToneMapping,
-           .enableWrongScreenWorkaround,
-           .followGlobalSeekTypeWhenAdjustSlider,
-           .forceDedicatedGPU,
-           .fullScreenWhenOpen,
-           .ignoreAssStyles,
-           .iinaEnablePluginSystem,
-           .keepOpenOnFileEnd,
-           .loadIccProfile,
-           .musicModeShowAlbumArt,
-           .musicModeShowPlaylist,
-           .pauseWhenGoesToSleep,
-           .pauseWhenInactive,
-           .pauseWhenLeavingFullScreen,
-           .pauseWhenMinimized,
-           .pauseWhenOpen,
-           .pauseWhenPip,
-           .playlistAutoAdd,
-           .playlistAutoPlayNext,
-           .playlistShowMetadata,
-           .playlistShowMetadataInMusicMode,
-           .playWhenEnteringFullScreen,
-           .prefetchPlaylistVideoDuration,
-           .preventScreenSaver,
-           .quitWhenNoOpenedWindow,
-           .recordPlaybackHistory,
-           .recordRecentFiles,
-           .replayGainClip,
-           .resumeLastPosition,
-           .scaleRemainingTime,
-           .screenshotCopyToClipboard,
-           .screenshotIncludeSubtitle,
-           .screenshotSaveToFile,
-           .screenshotShowPreview,
-           .showBufferingThrobber,
-           .showChapterPos,
-           .showRemainingTime,
-           .showSeekingThrobber,
-           .spdifAC3,
-           .spdifDTS,
-           .spdifDTSHD,
-           .spdifEAC3,
-           .spdifTRUEHD,
-           .subBold,
-           .subItalic,
-           .subScaleWithWindow,
-           .togglePipByMinimizingWindow,
-           .togglePipByMinimizingWindowForVideoOnly,
-           .touchbarShowRemainingTime,
-           .trackAllFilesInRecentOpenMenu,
-           .useAppleRemote,
-           .useLegacyFullScreen,
-           .useLiquidGlassOSC,
-           .useLiquidGlassOSD,
-           .useLiquidGlassSidebar,
-           .useMediaKeys,
-           .useMpvOsd,
-           .usePhysicalResolution,
-           .useUserDefinedConfDir,
-           .videoViewAcceptsFirstMouse,
-           .ytdlEnabled:
-        guard let defaultAsBool = defaultValue as? Bool else {
-          // Should not occur. Internal error.
-          log("Default for \(key) is of type \(type(of: value)) and cannot be cast to Bool",
-              level: .error)
-          continue
-        }
-        defaultAsString = String(defaultAsBool)
-        valueAsString = String(Preference.bool(for: key))
-      case .defaultRepeatMode:
-        defaultAsString = String(describing: DefaultRepeatMode.defaultValue)
-        valueAsString = String(describing: Preference.enum(for: key) as DefaultRepeatMode)
-      case .cachePauseWait,
-           .controlBarAutoHideTimeout,
-           .controlBarPositionHorizontal,
-           .controlBarPositionVertical,
-           .osdAutoHideTimeout,
-           .osdTextSize,
-           .subBlur,
-           .subBorderSize,
-           .subMarginX,
-           .subMarginY,
-           .subPos,
-           .subShadowSize,
-           .subSpacing,
-           .subTextSize,
-           .toneMappingParamOverride:
-        guard let defaultAsFloat = defaultValue as? Float else {
-          // Should not occur. Internal error.
-          log("Default for \(key) is of type \(type(of: value)) and cannot be cast to Float",
-              level: .error)
-          continue
-        }
-        defaultAsString = String(defaultAsFloat)
-        valueAsString = String(Preference.float(for: key))
-      case .gaplessAudio:
-        defaultAsString = String(describing: GaplessAudioOption.defaultValue)
-        valueAsString = String(describing: Preference.enum(for: key) as GaplessAudioOption)
-      case .hardwareDecoder:
-        defaultAsString = String(describing: HardwareDecoderOption.defaultValue)
-        valueAsString = String(describing: Preference.enum(for: key) as HardwareDecoderOption)
-      case .subAutoLoadUniPlayer:
-        defaultAsString = String(describing: UniPlayerAutoLoadAction.defaultValue)
-        valueAsString = String(describing: Preference.enum(for: key) as UniPlayerAutoLoadAction)
-      case .logLevel:
-        defaultAsString = String(describing: Logger.Level.defaultValue)
-        valueAsString = String(describing: Preference.enum(for: key) as Logger.Level)
-      case .doubleClickAction,
-           .forceTouchAction,
-           .middleClickAction,
-           .rightClickAction,
-           .singleClickAction:
-        defaultAsString = String(describing: MouseClickAction.defaultValue)
-        valueAsString = String(describing: Preference.enum(for: key) as MouseClickAction)
-      case .oscPosition:
-        defaultAsString = String(describing: OSCPosition.defaultValue)
-        valueAsString = String(describing: Preference.enum(for: key) as OSCPosition)
-      case .pinchAction:
-        defaultAsString = String(describing: PinchAction.defaultValue)
-        valueAsString = String(describing: Preference.enum(for: key) as PinchAction)
-      case .replayGain:
-        defaultAsString = String(describing: ReplayGainOption.defaultValue)
-        valueAsString = String(describing: Preference.enum(for: key) as ReplayGainOption)
-      case .resizeWindowOption:
-        defaultAsString = String(describing: ResizeWindowOption.defaultValue)
-        valueAsString = String(describing: Preference.enum(for: key) as ResizeWindowOption)
-      case .resizeWindowTiming:
-        defaultAsString = String(describing: ResizeWindowTiming.defaultValue)
-        valueAsString = String(describing: Preference.enum(for: key) as ResizeWindowTiming)
-      case .transportRTSPThrough:
-        defaultAsString = String(describing: RTSPTransportation.defaultValue)
-        valueAsString = String(describing: Preference.enum(for: key) as RTSPTransportation)
-      case .screenshotFormat:
-        defaultAsString = String(describing: ScreenshotFormat.defaultValue)
-        valueAsString = String(describing: Preference.enum(for: key) as ScreenshotFormat)
-      case .horizontalScrollAction, .verticalScrollAction:
-        defaultAsString = String(describing: ScrollAction.defaultValue)
-        valueAsString = String(describing: Preference.enum(for: key) as ScrollAction)
-      case .useExactSeek:
-        defaultAsString = String(describing: SeekOption.defaultValue)
-        valueAsString = String(describing: Preference.enum(for: key) as SeekOption)
-      case.userOptions:
-        defaultAsString = "[]"
-        guard let valueAsArray = value as? [[String]] else {
-          // Should not occur. Internal error.
-          log("Default for \(key) is of type \(type(of: value)) and cannot be cast to [[String]]",
-              level: .error)
-          continue
-        }
-        valueAsString = valueAsArray.reduce("[", { $0 + $1.joined(separator: " = ") }) + "]"
-      case .subAlignX:
-        defaultAsString = String(describing: SubAlignX.defaultValue)
-        valueAsString = String(describing: Preference.enum(for: key) as SubAlignX)
-      case .subAlignY:
-        defaultAsString = String(describing: SubAlignY.defaultValue)
-        valueAsString = String(describing: Preference.enum(for: key) as SubAlignY)
-      case .subBorderStyle:
-        defaultAsString = String(describing: SubBorderStyle.defaultValue)
-        valueAsString = String(describing: Preference.enum(for: key) as SubBorderStyle)
-      case .secondarySubOverrideLevel, .subOverrideLevel:
-        defaultAsString = String(describing: SubOverrideLevel.defaultValue)
-        valueAsString = String(describing: Preference.enum(for: key) as SubOverrideLevel)
-      case .themeMaterial:
-        defaultAsString = String(describing: Theme.defaultValue)
-        valueAsString = String(describing: Preference.enum(for: key) as Theme)
-      case .toneMappingAlgorithm:
-        defaultAsString = String(describing: ToneMappingAlgorithmOption.defaultValue)
-        valueAsString = String(describing: Preference.enum(for: key) as ToneMappingAlgorithmOption)
-      case .controlBarToolbarButtons:
-        // The value is an array of ToolBarButton enum values stored as integers.
-        guard let defaultAsArray = defaultValue as? [Int] else {
-          // Should not occur. Internal error.
-          log("Default for \(key) is of type \(type(of: value)) and cannot be cast to [Int]",
-              level: .error)
-          continue
-        }
-        defaultAsString = "[" + defaultAsArray.compactMap({
-          guard let button = ToolBarButton.init(rawValue: $0) else { return "unknown(\($0))" }
-          return String(describing: button)
-        }).joined(separator: ", ") + "]"
-        guard let valueAsArray = value as? [Int] else {
-          // Should not occur. Internal error.
-          log("Value for \(key) is of type \(type(of: value)) and cannot be cast to [Int]",
-              level: .error)
-          continue
-        }
-        valueAsString = "[" + valueAsArray.compactMap({
-          guard let button = ToolBarButton.init(rawValue: $0) else { return "unknown(\($0))" }
-          return String(describing: button)
-        }).joined(separator: ", ") + "]"
-      case .windowBehaviorWhenPip:
-        defaultAsString = String(describing: WindowBehaviorWhenPip.defaultValue)
-        valueAsString = String(describing: Preference.enum(for: key) as WindowBehaviorWhenPip)
-      default:
-        // The remaining settings have values that are integers or strings and can be directly
-        // converted to strings.
-        defaultAsString = String(describing: defaultValue)
-        valueAsString = String(describing: value)
-      }
+      guard let (defaultAsString, valueAsString) = readableValues(
+        key: key, value: value, defaultValue: defaultValue) else { continue }
       // Now that the value and the default have both been converted to their human readable form
       // we can deterministically check if the setting has been changed from its default.
       guard valueAsString != defaultAsString else { continue }
@@ -1683,6 +1323,277 @@ struct Preference {
         log("\(key.rawValue) = \(valueAsString) (default: \(defaultAsString))")
       }
     }
+  }
+
+  /// Converts a setting and its own default to the same human-readable form.
+  /// Returns nil when the stored types do not match the key's expectation.
+  private static func readableValues(key: Key, value: Any,
+                                     defaultValue: Any) -> (String, String)? {
+    func enumDefault<T: RawRepresentable>(_ type: T.Type, fallback: T,
+                                          defaultValue: Any) -> String
+    where T.RawValue == Int {
+      let raw = defaultValue as? Int ?? fallback.rawValue
+      return String(describing: T(rawValue: raw) ?? fallback)
+    }
+  let defaultAsString: String
+  let valueAsString: String
+  // Other than the first entry the cases in the switch are ordered based on the name of the
+  // type of the value.
+  switch key {
+  case .assrtToken, .openSubUsername:
+    // These keys should have been filtered above, so this code should never be executed. This
+    // code makes sure that if a change to the code causes these keys to be logged the value
+    // will be hidden.
+    defaultAsString = ""
+    valueAsString = "<private>"
+  case .actionAfterLaunch:
+    defaultAsString = enumDefault(ActionAfterLaunch.self, fallback: .defaultValue, defaultValue: defaultValue)
+    valueAsString = String(describing: Preference.enum(for: key) as ActionAfterLaunch)
+  case .arrowButtonAction:
+    defaultAsString = enumDefault(ArrowButtonAction.self, fallback: .defaultValue, defaultValue: defaultValue)
+    valueAsString = String(describing: Preference.enum(for: key) as ArrowButtonAction)
+  case .allowDuplicatePlayers,
+       .allowScreenSaverForAudio,
+       .alwaysFloatOnTop,
+       .alwaysOpenInNewWindow,
+       .alwaysShowOnTopIcon,
+       .audioDriverEnableAVFoundation,
+       .autoRepeat,
+       .autoSearchOnlineSub,
+       .autoSwitchToMusicMode,
+       .blackOutMonitor,
+       .cachePauseInitial,
+       .compactUI,
+       .controlBarStickToCenter,
+       .disableAnimations,
+       .disableOSDFileStartMsg,
+       .disableOSDPauseResumeMsgs,
+       .disableOSDSeekMsg,
+       .disableOSDSpeedMsg,
+       .disablePlaySliderScrolling,
+       .enableToneMappingParamOverride,
+       .enableToneMappingTargetPeakOverride,
+       .disableVolumeSliderScrolling,
+       .displayInLetterBox,
+       .displayKeyBindingRawValues,
+       .displayTimeAndBatteryInFullScreen,
+       .edgeToEdgeVideo,
+       .enableAdvancedSettings,
+       .enableCache,
+       .enableCmdN,
+       .enableControlBarAutoHide,
+       .enableDisplayIdle,
+       .enableFFmpegImageDecoder,
+       .enableHdrSupport,
+       .enableHdrWorkaround,
+       .enableInitialVolume,
+       .enableLiveText,
+       .enableLogging,
+       .enableNowPlayingArtwork,
+       .enableOSD,
+       .enableRecentDocumentsWorkaround,
+       .enableThumbnailForRemoteFiles,
+       .enableThumbnailPreview,
+       .enableToneMapping,
+       .enableWrongScreenWorkaround,
+       .followGlobalSeekTypeWhenAdjustSlider,
+       .forceDedicatedGPU,
+       .fullScreenWhenOpen,
+       .ignoreAssStyles,
+       .iinaEnablePluginSystem,
+       .keepOpenOnFileEnd,
+       .loadIccProfile,
+       .musicModeShowAlbumArt,
+       .musicModeShowPlaylist,
+       .pauseWhenGoesToSleep,
+       .pauseWhenInactive,
+       .pauseWhenLeavingFullScreen,
+       .pauseWhenMinimized,
+       .pauseWhenOpen,
+       .pauseWhenPip,
+       .playlistAutoAdd,
+       .playlistAutoPlayNext,
+       .playlistShowMetadata,
+       .playlistShowMetadataInMusicMode,
+       .playWhenEnteringFullScreen,
+       .prefetchPlaylistVideoDuration,
+       .preventScreenSaver,
+       .quitWhenNoOpenedWindow,
+       .recordPlaybackHistory,
+       .recordRecentFiles,
+       .replayGainClip,
+       .resumeLastPosition,
+       .scaleRemainingTime,
+       .screenshotCopyToClipboard,
+       .screenshotIncludeSubtitle,
+       .screenshotSaveToFile,
+       .screenshotShowPreview,
+       .showBufferingThrobber,
+       .showChapterPos,
+       .showRemainingTime,
+       .showSeekingThrobber,
+       .spdifAC3,
+       .spdifDTS,
+       .spdifDTSHD,
+       .spdifEAC3,
+       .spdifTRUEHD,
+       .subBold,
+       .subItalic,
+       .subScaleWithWindow,
+       .togglePipByMinimizingWindow,
+       .togglePipByMinimizingWindowForVideoOnly,
+       .touchbarShowRemainingTime,
+       .trackAllFilesInRecentOpenMenu,
+       .useAppleRemote,
+       .useLegacyFullScreen,
+       .useLiquidGlassOSC,
+       .useLiquidGlassOSD,
+       .useLiquidGlassSidebar,
+       .useMediaKeys,
+       .useMpvOsd,
+       .usePhysicalResolution,
+       .useUserDefinedConfDir,
+       .videoViewAcceptsFirstMouse,
+       .ytdlEnabled:
+    guard let defaultAsBool = defaultValue as? Bool else {
+      // Should not occur. Internal error.
+      log("Default for \(key) is of type \(type(of: value)) and cannot be cast to Bool",
+          level: .error)
+      return nil
+    }
+    defaultAsString = String(defaultAsBool)
+    valueAsString = String(Preference.bool(for: key))
+  case .defaultRepeatMode:
+    defaultAsString = enumDefault(DefaultRepeatMode.self, fallback: .defaultValue, defaultValue: defaultValue)
+    valueAsString = String(describing: Preference.enum(for: key) as DefaultRepeatMode)
+  case .cachePauseWait,
+       .controlBarAutoHideTimeout,
+       .controlBarPositionHorizontal,
+       .controlBarPositionVertical,
+       .osdAutoHideTimeout,
+       .osdTextSize,
+       .subBlur,
+       .subBorderSize,
+       .subMarginX,
+       .subMarginY,
+       .subPos,
+       .subShadowSize,
+       .subSpacing,
+       .subTextSize,
+       .toneMappingParamOverride:
+    guard let defaultAsFloat = defaultValue as? Float else {
+      // Should not occur. Internal error.
+      log("Default for \(key) is of type \(type(of: value)) and cannot be cast to Float",
+          level: .error)
+      return nil
+    }
+    defaultAsString = String(defaultAsFloat)
+    valueAsString = String(Preference.float(for: key))
+  case .gaplessAudio:
+    defaultAsString = enumDefault(GaplessAudioOption.self, fallback: .defaultValue, defaultValue: defaultValue)
+    valueAsString = String(describing: Preference.enum(for: key) as GaplessAudioOption)
+  case .hardwareDecoder:
+    defaultAsString = enumDefault(HardwareDecoderOption.self, fallback: .defaultValue, defaultValue: defaultValue)
+    valueAsString = String(describing: Preference.enum(for: key) as HardwareDecoderOption)
+  case .subAutoLoadUniPlayer:
+    defaultAsString = enumDefault(UniPlayerAutoLoadAction.self, fallback: .defaultValue, defaultValue: defaultValue)
+    valueAsString = String(describing: Preference.enum(for: key) as UniPlayerAutoLoadAction)
+  case .logLevel:
+    defaultAsString = String(describing: Logger.Level.defaultValue)
+    valueAsString = String(describing: Preference.enum(for: key) as Logger.Level)
+  case .doubleClickAction,
+       .forceTouchAction,
+       .middleClickAction,
+       .rightClickAction,
+       .singleClickAction:
+    defaultAsString = enumDefault(MouseClickAction.self, fallback: .defaultValue, defaultValue: defaultValue)
+    valueAsString = String(describing: Preference.enum(for: key) as MouseClickAction)
+  case .oscPosition:
+    defaultAsString = enumDefault(OSCPosition.self, fallback: .defaultValue, defaultValue: defaultValue)
+    valueAsString = String(describing: Preference.enum(for: key) as OSCPosition)
+  case .pinchAction:
+    defaultAsString = enumDefault(PinchAction.self, fallback: .defaultValue, defaultValue: defaultValue)
+    valueAsString = String(describing: Preference.enum(for: key) as PinchAction)
+  case .replayGain:
+    defaultAsString = enumDefault(ReplayGainOption.self, fallback: .defaultValue, defaultValue: defaultValue)
+    valueAsString = String(describing: Preference.enum(for: key) as ReplayGainOption)
+  case .resizeWindowOption:
+    defaultAsString = enumDefault(ResizeWindowOption.self, fallback: .defaultValue, defaultValue: defaultValue)
+    valueAsString = String(describing: Preference.enum(for: key) as ResizeWindowOption)
+  case .resizeWindowTiming:
+    defaultAsString = enumDefault(ResizeWindowTiming.self, fallback: .defaultValue, defaultValue: defaultValue)
+    valueAsString = String(describing: Preference.enum(for: key) as ResizeWindowTiming)
+  case .transportRTSPThrough:
+    defaultAsString = enumDefault(RTSPTransportation.self, fallback: .defaultValue, defaultValue: defaultValue)
+    valueAsString = String(describing: Preference.enum(for: key) as RTSPTransportation)
+  case .screenshotFormat:
+    defaultAsString = enumDefault(ScreenshotFormat.self, fallback: .defaultValue, defaultValue: defaultValue)
+    valueAsString = String(describing: Preference.enum(for: key) as ScreenshotFormat)
+  case .horizontalScrollAction, .verticalScrollAction:
+    defaultAsString = enumDefault(ScrollAction.self, fallback: .defaultValue, defaultValue: defaultValue)
+    valueAsString = String(describing: Preference.enum(for: key) as ScrollAction)
+  case .useExactSeek:
+    defaultAsString = enumDefault(SeekOption.self, fallback: .defaultValue, defaultValue: defaultValue)
+    valueAsString = String(describing: Preference.enum(for: key) as SeekOption)
+  case.userOptions:
+    defaultAsString = "[]"
+    guard let valueAsArray = value as? [[String]] else {
+      // Should not occur. Internal error.
+      log("Default for \(key) is of type \(type(of: value)) and cannot be cast to [[String]]",
+          level: .error)
+      return nil
+    }
+    valueAsString = "[" + valueAsArray.map { $0.joined(separator: " = ") }.joined(separator: ", ") + "]"
+  case .subAlignX:
+    defaultAsString = enumDefault(SubAlignX.self, fallback: .defaultValue, defaultValue: defaultValue)
+    valueAsString = String(describing: Preference.enum(for: key) as SubAlignX)
+  case .subAlignY:
+    defaultAsString = enumDefault(SubAlignY.self, fallback: .defaultValue, defaultValue: defaultValue)
+    valueAsString = String(describing: Preference.enum(for: key) as SubAlignY)
+  case .subBorderStyle:
+    defaultAsString = enumDefault(SubBorderStyle.self, fallback: .defaultValue, defaultValue: defaultValue)
+    valueAsString = String(describing: Preference.enum(for: key) as SubBorderStyle)
+  case .secondarySubOverrideLevel, .subOverrideLevel:
+    defaultAsString = enumDefault(SubOverrideLevel.self, fallback: .defaultValue, defaultValue: defaultValue)
+    valueAsString = String(describing: Preference.enum(for: key) as SubOverrideLevel)
+  case .themeMaterial:
+    defaultAsString = enumDefault(Theme.self, fallback: .defaultValue, defaultValue: defaultValue)
+    valueAsString = String(describing: Preference.enum(for: key) as Theme)
+  case .toneMappingAlgorithm:
+    defaultAsString = enumDefault(ToneMappingAlgorithmOption.self, fallback: .defaultValue, defaultValue: defaultValue)
+    valueAsString = String(describing: Preference.enum(for: key) as ToneMappingAlgorithmOption)
+  case .controlBarToolbarButtons:
+    // The value is an array of ToolBarButton enum values stored as integers.
+    guard let defaultAsArray = defaultValue as? [Int] else {
+      // Should not occur. Internal error.
+      log("Default for \(key) is of type \(type(of: value)) and cannot be cast to [Int]",
+          level: .error)
+      return nil
+    }
+    defaultAsString = "[" + defaultAsArray.compactMap({
+      guard let button = ToolBarButton.init(rawValue: $0) else { return "unknown(\($0))" }
+      return String(describing: button)
+    }).joined(separator: ", ") + "]"
+    guard let valueAsArray = value as? [Int] else {
+      // Should not occur. Internal error.
+      log("Value for \(key) is of type \(type(of: value)) and cannot be cast to [Int]",
+          level: .error)
+      return nil
+    }
+    valueAsString = "[" + valueAsArray.compactMap({
+      guard let button = ToolBarButton.init(rawValue: $0) else { return "unknown(\($0))" }
+      return String(describing: button)
+    }).joined(separator: ", ") + "]"
+  case .windowBehaviorWhenPip:
+    defaultAsString = enumDefault(WindowBehaviorWhenPip.self, fallback: .defaultValue, defaultValue: defaultValue)
+    valueAsString = String(describing: Preference.enum(for: key) as WindowBehaviorWhenPip)
+  default:
+    // The remaining settings have values that are integers or strings and can be directly
+    // converted to strings.
+    defaultAsString = String(describing: defaultValue)
+    valueAsString = String(describing: value)
+  }
+    return (defaultAsString, valueAsString)
   }
 
   private static let subsystem = Logger.makeSubsystem("settings", ["gearshape"])
@@ -1707,13 +1618,14 @@ extension Preference {
     private var observedKeys: [Key: (Key) -> Void] = [:]
 
     func add(_ key: Key, runNow: Bool = false, block: @escaping (Key) -> Void) {
-      if observedKeys[key] == nil {
+      let isNew = observedKeys[key] == nil
+      observedKeys[key] = block
+      if isNew {
         UserDefaults.standard.addObserver(self, forKeyPath: key.rawValue, options: [.new], context: nil)
       }
       if runNow {
         block(key)
       }
-      observedKeys[key] = block
     }
 
     func addAll(_ keys: Key..., runNow: Bool = false, block: @escaping (Key) -> Void) {
@@ -1729,7 +1641,6 @@ extension Preference {
     deinit {
       observedKeys.keys.forEach {
         UserDefaults.standard.removeObserver(self, forKeyPath: $0.rawValue)
-        print("removed \($0.rawValue)")
       }
     }
 

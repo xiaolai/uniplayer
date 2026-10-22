@@ -280,72 +280,16 @@ struct LibraryRootView: View {
     }
     .onAppear {
       model.reload()
-      inlinePlayer.onToggleFullscreen = { [weak chrome] in
-        chrome?.toggleFullscreen?()
-      }
-      inlinePlayer.onOpenInNewWindow = { [weak chrome] in
-        chrome?.openInNewWindow?()
-      }
-      chrome.registerInlineActivity = { [weak inlinePlayer] in
-        inlinePlayer?.registerActivity()
-      }
-      chrome.inlineHost.onActivity = { [weak inlinePlayer] in
-        inlinePlayer?.registerActivity()
-      }
-      inlinePlayer.fullscreenProvider = { [weak chrome] in
-        chrome?.isFullscreen?() ?? false
-      }
-      chrome.inlineHost.onDoubleClick = { [weak inlinePlayer] in
-        inlinePlayer?.toggleFullscreen()
-      }
-      assistant.playerContextProvider = { [weak player] includeFilePath in
-        guard let player, player.isInline, player.info.state.active else { return nil }
-        let snapshot = PlayerSnapshot.capture(from: player)
-        return PlaybackContextBuilder.make(
-          snapshot: snapshot,
-          options: .init(includeFilePath: includeFilePath))
-      }
-      assistant.currentMediaID = { [weak player] in
-        player?.info.currentURL?.absoluteString
-      }
-      assistant.onSeek = { [weak player, weak inlinePlayer] seconds in
-        // Seek only when a file is loaded; seeking an idle mpv core is fatal.
-        guard let player, player.info.state.loaded else { return }
-        player.seek(absoluteSecond: seconds)
-        inlinePlayer?.refresh()
-        inlinePlayer?.registerActivity()
-      }
-      assistant.onToolPlaybackChanged = { [weak inlinePlayer] in
-        inlinePlayer?.refresh()
-        inlinePlayer?.registerActivity()
-      }
+      configureCallbacks()
     }
     .onChange(of: selection) { _, _ in
-      // Navigating away pauses the inline player and keeps its position; the
-      // detail resumes it when the same item is opened again.
-      inlinePlayer.pauseForNavigation()
-      selectedItem = nil
-      assistant.setChannelContext(nil)
-      assistant.refreshContext()
+      handleSelectionChange()
     }
     .onChange(of: inlinePlayer.isActive) { _, active in
-      // Playback started from a drop, the URL panel or the hero: make sure a
-      // detail exists, or the surface would render into no visible view.
-      if active, let url = inlinePlayer.currentURL {
-        if selectedItem?.url != url {
-          selectedItem = libraryItem(for: url)
-        }
-        // Playback replaced whatever page was showing, so a channel page's
-        // context is no longer what the user is looking at.
-        assistant.setChannelContext(nil)
-      }
-      assistant.refreshContext()
+      handleInlineActiveChange(active)
     }
     .onChange(of: inlinePlayer.currentURL) { _, url in
-      if inlinePlayer.isActive, let url, selectedItem?.url != url {
-        selectedItem = libraryItem(for: url)
-      }
-      assistant.refreshContext()
+      handleInlineURLChange(url)
     }
     .sheet(item: $channelEditor) { mode in
       ChannelEditorSheet(store: channels, mode: mode) { channel in
@@ -362,6 +306,81 @@ struct LibraryRootView: View {
     } message: {
       Text(channelPendingDeletion?.name ?? "")
     }
+  }
+
+
+  /// Wires the models to the window controller's actions. Called once when
+  /// the view appears; all captures are weak or unowned by construction.
+  private func configureCallbacks() {
+    inlinePlayer.onToggleFullscreen = { [weak chrome] in
+      chrome?.toggleFullscreen?()
+    }
+    inlinePlayer.onOpenInNewWindow = { [weak chrome] in
+      chrome?.openInNewWindow?()
+    }
+    chrome.registerInlineActivity = { [weak inlinePlayer] in
+      inlinePlayer?.registerActivity()
+    }
+    chrome.inlineHost.onActivity = { [weak inlinePlayer] in
+      inlinePlayer?.registerActivity()
+    }
+    inlinePlayer.fullscreenProvider = { [weak chrome] in
+      chrome?.isFullscreen?() ?? false
+    }
+    chrome.inlineHost.onDoubleClick = { [weak inlinePlayer] in
+      inlinePlayer?.toggleFullscreen()
+    }
+    assistant.playerContextProvider = { [weak player] includeFilePath in
+      guard let player, player.isInline, player.info.state.active else { return nil }
+      let snapshot = PlayerSnapshot.capture(from: player)
+      return PlaybackContextBuilder.make(
+        snapshot: snapshot,
+        options: .init(includeFilePath: includeFilePath))
+    }
+    assistant.currentMediaID = { [weak player] in
+      player?.info.currentURL?.absoluteString
+    }
+    assistant.onSeek = { [weak player, weak inlinePlayer] seconds in
+      // Seek only when a file is loaded; seeking an idle mpv core is fatal.
+      guard let player, player.info.state.loaded else { return }
+      player.seek(absoluteSecond: seconds)
+      inlinePlayer?.refresh()
+      inlinePlayer?.registerActivity()
+    }
+    assistant.onToolPlaybackChanged = { [weak inlinePlayer] in
+      inlinePlayer?.refresh()
+      inlinePlayer?.registerActivity()
+    }
+  }
+
+  private func handleSelectionChange() {
+    // Navigating away pauses the inline player and keeps its position; the
+    // detail resumes it when the same item is opened again.
+    inlinePlayer.pauseForNavigation()
+    selectedItem = nil
+    assistant.setChannelContext(nil)
+    assistant.refreshContext()
+  }
+
+  private func handleInlineActiveChange(_ active: Bool) {
+    // Playback started from a drop, the URL panel or the hero: make sure a
+    // detail exists, or the surface would render into no visible view.
+    if active, let url = inlinePlayer.currentURL {
+      if selectedItem?.url != url {
+        selectedItem = libraryItem(for: url)
+      }
+      // Playback replaced whatever page was showing, so a channel page's
+      // context is no longer what the user is looking at.
+      assistant.setChannelContext(nil)
+    }
+    assistant.refreshContext()
+  }
+
+  private func handleInlineURLChange(_ url: URL?) {
+    if inlinePlayer.isActive, let url, selectedItem?.url != url {
+      selectedItem = libraryItem(for: url)
+    }
+    assistant.refreshContext()
   }
 
   private var isDeletingChannel: Binding<Bool> {
@@ -747,11 +766,6 @@ private struct RecentlyAddedShelf: View {
   let select: (LibraryItem) -> Void
   let seeAll: () -> Void
 
-  private let columns = [
-    GridItem(.adaptive(minimum: Tokens.Size.gridMinimum, maximum: Tokens.Size.gridMaximum),
-             spacing: Tokens.Library.cardGap)
-  ]
-
   var body: some View {
     VStack(alignment: .leading, spacing: Tokens.Space.n14) {
       HStack(alignment: .firstTextBaseline) {
@@ -765,13 +779,7 @@ private struct RecentlyAddedShelf: View {
           .foregroundStyle(Tokens.Palette.textSecondary.color)
       }
 
-      LazyVGrid(columns: columns, alignment: .leading, spacing: Tokens.Library.gridRowGap) {
-        ForEach(items) { item in
-          LibraryCard(item: item) {
-            select(item)
-          }
-        }
-      }
+      LibraryCardGrid(items: items, select: select)
     }
   }
 }
@@ -785,11 +793,6 @@ private struct LibraryGridView: View {
   let select: (LibraryItem) -> Void
   let emptyMessage: String
   var onBack: (() -> Void)?
-
-  private let columns = [
-    GridItem(.adaptive(minimum: Tokens.Size.gridMinimum, maximum: Tokens.Size.gridMaximum),
-             spacing: Tokens.Library.cardGap)
-  ]
 
   var body: some View {
     ScrollView {
@@ -823,18 +826,33 @@ private struct LibraryGridView: View {
             }
           .frame(minHeight: Tokens.Library.gridEmptyStateMinimum)
         } else {
-          LazyVGrid(columns: columns, alignment: .leading, spacing: Tokens.Library.gridRowGap) {
-            ForEach(items) { item in
-              LibraryCard(item: item) {
-                select(item)
-              }
-            }
-          }
+          LibraryCardGrid(items: items, select: select)
         }
       }
       .padding(.horizontal, Tokens.Space.pageMargin)
       .padding(.top, Tokens.Space.n28)
       .padding(.bottom, Tokens.Space.pageBottom)
+    }
+  }
+}
+
+/// The one adaptive card grid used by shelves, sections and search.
+private struct LibraryCardGrid: View {
+  let items: [LibraryItem]
+  let select: (LibraryItem) -> Void
+
+  private let columns = [
+    GridItem(.adaptive(minimum: Tokens.Size.gridMinimum, maximum: Tokens.Size.gridMaximum),
+             spacing: Tokens.Library.cardGap)
+  ]
+
+  var body: some View {
+    LazyVGrid(columns: columns, alignment: .leading, spacing: Tokens.Library.gridRowGap) {
+      ForEach(items) { item in
+        LibraryCard(item: item) {
+          select(item)
+        }
+      }
     }
   }
 }
@@ -905,11 +923,6 @@ private struct SearchView: View {
   let select: (LibraryItem) -> Void
   @FocusState private var focused: Bool
 
-  private let columns = [
-    GridItem(.adaptive(minimum: Tokens.Size.gridMinimum, maximum: Tokens.Size.gridMaximum),
-             spacing: Tokens.Library.cardGap)
-  ]
-
   var body: some View {
     VStack(spacing: Tokens.Space.n28) {
       HStack(spacing: Tokens.Space.n10) {
@@ -944,15 +957,9 @@ private struct SearchView: View {
           .frame(maxHeight: .infinity)
       } else {
         ScrollView {
-          LazyVGrid(columns: columns, alignment: .leading, spacing: Tokens.Library.gridRowGap) {
-            ForEach(model.searchResults) { item in
-              LibraryCard(item: item) {
-                select(item)
-              }
-            }
-          }
-          .padding(.horizontal, Tokens.Space.pageMargin)
-          .padding(.bottom, Tokens.Space.pageBottom)
+          LibraryCardGrid(items: model.searchResults, select: select)
+            .padding(.horizontal, Tokens.Space.pageMargin)
+            .padding(.bottom, Tokens.Space.pageBottom)
         }
       }
     }

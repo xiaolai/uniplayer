@@ -219,6 +219,8 @@
 "menu.speed_up" = "Speed Up by %@x";
 "menu.speed_down" = "Speed Down by %@x";
 "menu.volume_up" = "Volume + %@%%";
+"menu.sub_scale_up" = "Scale Up %@";
+"menu.sub_scale_down" = "Scale Down %@";
 "menu.volume_down" = "Volume - %@%%";
 "menu.audio_delay_up" = "Audio Delay + %@s";
 "menu.audio_delay_down" = "Audio Delay - %@s";
@@ -1110,6 +1112,7 @@
 // Inline player
 "Open in New Window" = "Open in New Window";
 "Open in Library" = "Open in Library";
+"Chapter %d" = "Chapter %d";
 "Back 10 Seconds" = "Back 10 Seconds";
 "Forward 10 Seconds" = "Forward 10 Seconds";
 "Unmute" = "Unmute";
@@ -1164,8 +1167,8 @@
 "The request was cancelled." = "The request was cancelled.";
 "The assistant asked for an unknown tool: %@" = "The assistant asked for an unknown tool: %@";
 "Invalid arguments for %@: %@" = "Invalid arguments for %@: %@";
-"Seeked to %@: %@" = "Seeked to %@: %@";
-"Seeked to %@." = "Seeked to %@.";
+"Moved playback to %@: %@" = "Moved playback to %@: %@";
+"Moved playback to %@." = "Moved playback to %@.";
 "Tool %@ result: %@" = "Tool %@ result: %@";
 "… (full result sent)" = "… (full result sent)";
 "Playback changed before confirmation; the request was discarded." = "Playback changed before confirmation; the request was discarded.";

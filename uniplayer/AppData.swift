@@ -16,7 +16,6 @@ struct AppData {
 
   /** speed values when clicking left / right arrow button */
 
-//  static let availableSpeedValues: [Double] = [-32, -16, -8, -4, -2, -1, 1, 2, 4, 8, 16, 32]
   // Stopgap for https://github.com/mpv-player/mpv/issues/4000
   static let availableSpeedValues: [Double] = [0.03125, 0.0625, 0.125, 0.25, 0.5, 1, 2, 4, 8, 16, 32]
 
@@ -74,13 +73,11 @@ struct AppData {
 struct Constants {
   struct String {
     static let degree = "°"
-    static let dot = "●"
     static let blackRightPointingTriangle = "▶︎"
     static let blackLeftPointingTriangle = "◀"
     static let mpvDefaultFont = "sans-serif"
     static let videoTimePlaceholder = "--:--:--"
     static let trackNone = NSLocalizedString("track.none", comment: "<None>")
-    static let chapter = "Chapter"
     static let fullScreen = NSLocalizedString("menu.fullscreen", comment: "Fullscreen")
     static let exitFullScreen = NSLocalizedString("menu.exit_fullscreen", comment: "Exit Fullscreen")
     static let pause = NSLocalizedString("menu.pause", comment: "Pause")
