@@ -396,8 +396,8 @@ download_plugin() {
   echo -e "${GREEN}Downloaded ${asset_name}${NC}"
 }
 
-download_plugin "iina/plugin-online-media" "uniplayer-plugin-ytdl" || exit 1
-download_plugin "iina/plugin-userscript" "uniplayer-plugin-userscript" || exit 1
-download_plugin "iina/plugin-opensub" "uniplayer-plugin-opensub" || exit 1
+download_plugin "iina/plugin-online-media" "iina-plugin-ytdl" || exit 1
+download_plugin "iina/plugin-userscript" "iina-plugin-userscript" || exit 1
+download_plugin "iina/plugin-opensub" "iina-plugin-opensub" || exit 1
 
 echo -e "${GREEN}All downloads completed.${NC}"
