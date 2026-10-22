@@ -507,177 +507,7 @@ class MainWindowController: PlayerWindowController {
       self?.sidebars.pluginView.loadViewIfNeeded()
     }
 
-    // create translucent views
-    oscBottomView = OSCBottomView(mainWindow: self)
-    cv.addSubview(oscBottomView)
-    oscFloatingView = OSCFloatingView(mainWindow: self)
-    cv.addSubview(oscFloatingView)
-    hudView = PlayerHUDView(mainWindow: self)
-    cv.addSubview(hudView)
-    hudView.padding(.all)
-    hudView.isHidden = true
-
-    hudUtilityCapsule = makeHUDUtilityCapsule()
-    hudView.topLeading.addView(hudUtilityCapsule, in: .leading)
-    hudVolumeCapsule = makeHUDVolumeCapsule()
-    hudView.topTrailing.addView(hudVolumeCapsule, in: .trailing)
-    hudAuxiliaryCapsule = makeHUDAuxiliaryCapsule()
-    hudView.bottomTrailing.addView(hudAuxiliaryCapsule, in: .trailing)
-
-    osdView = OSDView(mainWindow: self)
-    cv.addSubview(osdView)
-    additionalInfoView = AdditionalInfoView(mainWindow: self)
-    cv.addSubview(additionalInfoView)
-    bufferIndicatorView = BufferIndicatorView(mainWindow: self)
-    cv.addSubview(bufferIndicatorView)
-    titleBarView = Titlebar(mainWindow: self)
-    cv.addSubview(titleBarView)
-    sidebars.installSubviews(in: cv)
-
-    // thumbnail peek view
-    thumbnailPeekView = ThumbnailPeekView()
-    cv.addSubview(thumbnailPeekView)
-    self.timePreviewView = TimePreviewView(mainWindow: self)
-    cv.addSubview(timePreviewView)
-    thumbnailPeekView.isHidden = true
-    timePreviewView.isHidden = true
-    timePreviewView.textField.font = .monospacedDigitFont(for: .small)
-
-    // osc
-
-    oscBottomView.padding(.horizontal)
-
-    self.oscVolumeView = NSView()
-    oscVolumeView.translatesAutoresizingMaskIntoConstraints = false
-    oscVolumeView.size(width: Tokens.Size.n108, height: Tokens.Size.n24)
-
-    volumeSlider.size(width: Tokens.Size.n70)
-
-    oscVolumeView.addSubview(muteButton)
-    oscVolumeView.addSubview(volumeSlider)
-    muteButton.size(width: Tokens.Size.n24, height: Tokens.Size.n24)
-      .padding(.vertical, .leading(Tokens.Space.n4)).spacing(.trailing(Tokens.Space.n4), to: volumeSlider)
-    volumeSlider.size(width: Tokens.Size.n70).center(.y)
-      .padding(.trailing(Tokens.Space.n6))
-
-    self.oscPlayControlView = NSStackView()
-    oscPlayControlView.translatesAutoresizingMaskIntoConstraints = false
-    oscPlayControlView.orientation = .horizontal
-    oscPlayControlView.alignment = .centerY
-    oscPlayControlView.spacing = 0
-
-    self.leftArrowButton = NSButton(image: .speedl, target: self, action: #selector(leftButtonAction))
-    leftArrowButton.maxAcceleratorLevel = 5
-
-    self.rightArrowButton = NSButton(image: .speed, target: self, action: #selector(rightButtonAction))
-    rightArrowButton.maxAcceleratorLevel = 5
-
-    [playButton, leftArrowButton, rightArrowButton].forEach { button in
-      button!.translatesAutoresizingMaskIntoConstraints = false
-      button!.bezelStyle = .smallSquare
-      button!.isBordered = false
-      button!.size(width: Tokens.Size.n24, height: Tokens.Size.n24)
-    }
-
-    self.oscSpeedLabelLeftContainer = NSView()
-    self.oscSpeedLabelRightContainer = NSView()
-    [oscSpeedLabelLeftContainer, oscSpeedLabelRightContainer].forEach { view in
-      view!.translatesAutoresizingMaskIntoConstraints = false
-      view!.size(width: Tokens.Size.n30)  // label: 26 + padding: 8
-    }
-
-    self.oscSpeedLabelLeft = NSTextField(labelWithString: "")
-    self.oscSpeedLabelRight = NSTextField(labelWithString: "")
-    [oscSpeedLabelLeft, oscSpeedLabelRight].forEach { label in
-      label!.translatesAutoresizingMaskIntoConstraints = false
-      label!.font = Tokens.Typography.size10.nsFont
-      label!.textColor = Tokens.Palette.textSecondary.nsColor
-    }
-    oscSpeedLabelLeftContainer.addSubview(oscSpeedLabelLeft)
-    oscSpeedLabelLeft.padding(.vertical, .trailing(Tokens.Space.n8))
-    oscSpeedLabelRightContainer.addSubview(oscSpeedLabelRight)
-    oscSpeedLabelRight.padding(.vertical, .leading(Tokens.Space.n8))
-
-    self.oscPlayControlMiddleView = NSStackView(views: [leftArrowButton, playButton, rightArrowButton])
-    oscPlayControlMiddleView.translatesAutoresizingMaskIntoConstraints = false
-    oscPlayControlMiddleView.orientation = .horizontal
-    oscPlayControlMiddleView.alignment = .centerY
-    oscPlayControlMiddleView.spacing = Tokens.Space.n24
-
-    self.oscToolbarView = NSStackView()
-    oscToolbarView.translatesAutoresizingMaskIntoConstraints = false
-    oscToolbarView.orientation = .horizontal
-    oscToolbarView.alignment = .centerY
-    oscToolbarView.spacing = 0
-    oscToolbarView.size(height: Tokens.Size.n24)
-
-    self.oscSliderView = TimeLabelOverflowedView()
-    [leftLabel, rightLabel].forEach { label in
-      label!.textColor = Tokens.Palette.textSecondary.nsColor
-      label!.alignment = .center
-      label!.font = Tokens.Typography.numeric.nsFont
-      label!.widthAnchor.constraint(greaterThanOrEqualToConstant: Tokens.Size.n46).isActive = true
-    }
-    oscSliderView.translatesAutoresizingMaskIntoConstraints = false
-    oscSliderView.addSubview(leftLabel)
-    oscSliderView.addSubview(rightLabel)
-    oscSliderView.addSubview(playSlider)
-    leftLabel.padding(.leading(Tokens.Space.n2)).spacing(.trailing(Tokens.Space.n2), to: playSlider)
-      .center(.y, with: playSlider)
-    rightLabel.padding(.trailing(Tokens.Space.n2)).spacing(.leading(Tokens.Space.n2), to: playSlider)
-      .center(.y, with: playSlider)
-    playSlider.padding(.vertical(Tokens.Space.n6))
-    playSlider.setAccessibilityLabel(NSLocalizedString("Playback position", comment: ""))
-
-    // osd
-
-    osdView.padding(.trailing(greaterThan: 8), .bottom(greaterThan: 8))
-      .spacing(.top(Tokens.Space.n8), to: titleBarView)
-      .spacing(.leading(Tokens.Space.n8), to: sidebars.leadingSidebar.view)
-
-    // additional info view
-
-    additionalInfoView.padding(.leading(greaterThan: 8), .bottom(greaterThan: 8))
-      .spacing(.top(Tokens.Space.n8), to: titleBarView)
-      .spacing(.trailing(Tokens.Space.n8), to: sidebars.trailingSidebar.view)
-    additionalInfoView.isHidden = true
-
-    // buffer indicator view
-
-    bufferIndicatorView.center()
-    bufferIndicatorView.update()
-
-    [timePreviewView, osdView, additionalInfoView, bufferIndicatorView].forEach {
-      $0?.setStyle(Preference.liquidGlass(.osd) ? .liquidGlass : .visualEffect)
-    }
-
-    // titlebar
-
-    titleBarView.padding(.horizontal)
-
-    // video view
-
-    cv.addSubview(videoViewContainer, positioned: .below, relativeTo: nil)
-    setupVideoContainerConstraints()
-
-    addVideoViewToWindow()
-    player.initVideo()
-    videoView.postsFrameChangedNotifications = true
-
-    // osc views
-
-    oscFloatingView.setupConstraints()
-    oscPlayControlView.addView(oscSpeedLabelLeftContainer, in: .center)
-    oscPlayControlView.addView(oscPlayControlMiddleView, in: .center)
-    oscPlayControlView.addView(oscSpeedLabelRightContainer, in: .center)
-    // Video controllers and timeline indicators should not flip in a right-to-left language.
-    oscPlayControlView.userInterfaceLayoutDirection = .leftToRight
-    setupOnScreenController(withPosition: oscPosition, forced: true)
-    let buttons = (Preference.array(for: .controlBarToolbarButtons) as? [Int] ?? []).compactMap(Preference.ToolBarButton.init(rawValue:))
-    updateArrowButtons()
-    setupOSCToolbarButtons(buttons)
-    installHUDTransportGlass()
-
+    installPlayerViews(cv)
     // fade-able views
 
     registerWindowButtonsAsFadeable()
@@ -841,6 +671,181 @@ class MainWindowController: PlayerWindowController {
     forceDraw("window loaded")
   }
 
+
+  /// Builds the OSC, HUD, OSD and video views that make up the player.
+  private func installPlayerViews(_ cv: NSView) {
+  // create translucent views
+  oscBottomView = OSCBottomView(mainWindow: self)
+  cv.addSubview(oscBottomView)
+  oscFloatingView = OSCFloatingView(mainWindow: self)
+  cv.addSubview(oscFloatingView)
+  hudView = PlayerHUDView(mainWindow: self)
+  cv.addSubview(hudView)
+  hudView.padding(.all)
+  hudView.isHidden = true
+
+  hudUtilityCapsule = makeHUDUtilityCapsule()
+  hudView.topLeading.addView(hudUtilityCapsule, in: .leading)
+  hudVolumeCapsule = makeHUDVolumeCapsule()
+  hudView.topTrailing.addView(hudVolumeCapsule, in: .trailing)
+  hudAuxiliaryCapsule = makeHUDAuxiliaryCapsule()
+  hudView.bottomTrailing.addView(hudAuxiliaryCapsule, in: .trailing)
+
+  osdView = OSDView(mainWindow: self)
+  cv.addSubview(osdView)
+  additionalInfoView = AdditionalInfoView(mainWindow: self)
+  cv.addSubview(additionalInfoView)
+  bufferIndicatorView = BufferIndicatorView(mainWindow: self)
+  cv.addSubview(bufferIndicatorView)
+  titleBarView = Titlebar(mainWindow: self)
+  cv.addSubview(titleBarView)
+  sidebars.installSubviews(in: cv)
+
+  // thumbnail peek view
+  thumbnailPeekView = ThumbnailPeekView()
+  cv.addSubview(thumbnailPeekView)
+  self.timePreviewView = TimePreviewView(mainWindow: self)
+  cv.addSubview(timePreviewView)
+  thumbnailPeekView.isHidden = true
+  timePreviewView.isHidden = true
+  timePreviewView.textField.font = .monospacedDigitFont(for: .small)
+
+  // osc
+
+  oscBottomView.padding(.horizontal)
+
+  self.oscVolumeView = NSView()
+  oscVolumeView.translatesAutoresizingMaskIntoConstraints = false
+  oscVolumeView.size(width: Tokens.Size.n108, height: Tokens.Size.n24)
+
+  volumeSlider.size(width: Tokens.Size.n70)
+
+  oscVolumeView.addSubview(muteButton)
+  oscVolumeView.addSubview(volumeSlider)
+  muteButton.size(width: Tokens.Size.n24, height: Tokens.Size.n24)
+    .padding(.vertical, .leading(Tokens.Space.n4)).spacing(.trailing(Tokens.Space.n4), to: volumeSlider)
+  volumeSlider.size(width: Tokens.Size.n70).center(.y)
+    .padding(.trailing(Tokens.Space.n6))
+
+  self.oscPlayControlView = NSStackView()
+  oscPlayControlView.translatesAutoresizingMaskIntoConstraints = false
+  oscPlayControlView.orientation = .horizontal
+  oscPlayControlView.alignment = .centerY
+  oscPlayControlView.spacing = 0
+
+  self.leftArrowButton = NSButton(image: .speedl, target: self, action: #selector(leftButtonAction))
+  leftArrowButton.maxAcceleratorLevel = 5
+
+  self.rightArrowButton = NSButton(image: .speed, target: self, action: #selector(rightButtonAction))
+  rightArrowButton.maxAcceleratorLevel = 5
+
+  [playButton, leftArrowButton, rightArrowButton].forEach { button in
+    button!.translatesAutoresizingMaskIntoConstraints = false
+    button!.bezelStyle = .smallSquare
+    button!.isBordered = false
+    button!.size(width: Tokens.Size.n24, height: Tokens.Size.n24)
+  }
+
+  self.oscSpeedLabelLeftContainer = NSView()
+  self.oscSpeedLabelRightContainer = NSView()
+  [oscSpeedLabelLeftContainer, oscSpeedLabelRightContainer].forEach { view in
+    view!.translatesAutoresizingMaskIntoConstraints = false
+    view!.size(width: Tokens.Size.n30)  // label: 26 + padding: 8
+  }
+
+  self.oscSpeedLabelLeft = NSTextField(labelWithString: "")
+  self.oscSpeedLabelRight = NSTextField(labelWithString: "")
+  [oscSpeedLabelLeft, oscSpeedLabelRight].forEach { label in
+    label!.translatesAutoresizingMaskIntoConstraints = false
+    label!.font = Tokens.Typography.size10.nsFont
+    label!.textColor = Tokens.Palette.textSecondary.nsColor
+  }
+  oscSpeedLabelLeftContainer.addSubview(oscSpeedLabelLeft)
+  oscSpeedLabelLeft.padding(.vertical, .trailing(Tokens.Space.n8))
+  oscSpeedLabelRightContainer.addSubview(oscSpeedLabelRight)
+  oscSpeedLabelRight.padding(.vertical, .leading(Tokens.Space.n8))
+
+  self.oscPlayControlMiddleView = NSStackView(views: [leftArrowButton, playButton, rightArrowButton])
+  oscPlayControlMiddleView.translatesAutoresizingMaskIntoConstraints = false
+  oscPlayControlMiddleView.orientation = .horizontal
+  oscPlayControlMiddleView.alignment = .centerY
+  oscPlayControlMiddleView.spacing = Tokens.Space.n24
+
+  self.oscToolbarView = NSStackView()
+  oscToolbarView.translatesAutoresizingMaskIntoConstraints = false
+  oscToolbarView.orientation = .horizontal
+  oscToolbarView.alignment = .centerY
+  oscToolbarView.spacing = 0
+  oscToolbarView.size(height: Tokens.Size.n24)
+
+  self.oscSliderView = TimeLabelOverflowedView()
+  [leftLabel, rightLabel].forEach { label in
+    label!.textColor = Tokens.Palette.textSecondary.nsColor
+    label!.alignment = .center
+    label!.font = Tokens.Typography.numeric.nsFont
+    label!.widthAnchor.constraint(greaterThanOrEqualToConstant: Tokens.Size.n46).isActive = true
+  }
+  oscSliderView.translatesAutoresizingMaskIntoConstraints = false
+  oscSliderView.addSubview(leftLabel)
+  oscSliderView.addSubview(rightLabel)
+  oscSliderView.addSubview(playSlider)
+  leftLabel.padding(.leading(Tokens.Space.n2)).spacing(.trailing(Tokens.Space.n2), to: playSlider)
+    .center(.y, with: playSlider)
+  rightLabel.padding(.trailing(Tokens.Space.n2)).spacing(.leading(Tokens.Space.n2), to: playSlider)
+    .center(.y, with: playSlider)
+  playSlider.padding(.vertical(Tokens.Space.n6))
+  playSlider.setAccessibilityLabel(NSLocalizedString("Playback position", comment: ""))
+
+  // osd
+
+  osdView.padding(.trailing(greaterThan: 8), .bottom(greaterThan: 8))
+    .spacing(.top(Tokens.Space.n8), to: titleBarView)
+    .spacing(.leading(Tokens.Space.n8), to: sidebars.leadingSidebar.view)
+
+  // additional info view
+
+  additionalInfoView.padding(.leading(greaterThan: 8), .bottom(greaterThan: 8))
+    .spacing(.top(Tokens.Space.n8), to: titleBarView)
+    .spacing(.trailing(Tokens.Space.n8), to: sidebars.trailingSidebar.view)
+  additionalInfoView.isHidden = true
+
+  // buffer indicator view
+
+  bufferIndicatorView.center()
+  bufferIndicatorView.update()
+
+  [timePreviewView, osdView, additionalInfoView, bufferIndicatorView].forEach {
+    $0?.setStyle(Preference.liquidGlass(.osd) ? .liquidGlass : .visualEffect)
+  }
+
+  // titlebar
+
+  titleBarView.padding(.horizontal)
+
+  // video view
+
+  cv.addSubview(videoViewContainer, positioned: .below, relativeTo: nil)
+  setupVideoContainerConstraints()
+
+  addVideoViewToWindow()
+  player.initVideo()
+  videoView.postsFrameChangedNotifications = true
+
+  // osc views
+
+  oscFloatingView.setupConstraints()
+  oscPlayControlView.addView(oscSpeedLabelLeftContainer, in: .center)
+  oscPlayControlView.addView(oscPlayControlMiddleView, in: .center)
+  oscPlayControlView.addView(oscSpeedLabelRightContainer, in: .center)
+  // Video controllers and timeline indicators should not flip in a right-to-left language.
+  oscPlayControlView.userInterfaceLayoutDirection = .leftToRight
+  setupOnScreenController(withPosition: oscPosition, forced: true)
+  let buttons = (Preference.array(for: .controlBarToolbarButtons) as? [Int] ?? []).compactMap(Preference.ToolBarButton.init(rawValue:))
+  updateArrowButtons()
+  setupOSCToolbarButtons(buttons)
+  installHUDTransportGlass()
+
+  }
   func setWindowToolbar() {
     guard let window else { return }
 

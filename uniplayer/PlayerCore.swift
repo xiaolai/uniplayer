@@ -2486,15 +2486,27 @@ class PlayerCore: NSObject {
   func fileLoaded() {
     guard info.state.active else { return }
     log("File loaded")
-
     info.state = .loaded
 
-    // Must force drawing to cover the case where this player was previously used to play a video
-    // and is now playing an audio file without an album cover and without using music mode.
-    // See issue #5403.
+    // Must force drawing to cover the case where this player was previously
+    // used to play a video and is now playing an audio file without an album
+    // cover and without using music mode. See issue #5403.
     mainWindow.forceDraw("file loaded", always: true)
 
-    // Get video size and set the initial window size
+    loadLoadedMediaMetadata()
+    refreshUIAfterFileLoad()
+    recordHistoryEntry()
+
+    postNotification(.iinaFileLoaded)
+    events.emit(.fileLoaded, data: info.currentURL?.absoluteString ?? "")
+
+    Task { @MainActor in
+      mainWindow.liveText.requestAnalysis()
+    }
+  }
+
+  /// Reads the freshly loaded file's dimensions, duration and position.
+  private func loadLoadedMediaMetadata() {
     let width = mpv.getInt(MPVProperty.width)
     let height = mpv.getInt(MPVProperty.height)
     let duration = mpv.getDouble(MPVProperty.duration)
@@ -2512,6 +2524,10 @@ class PlayerCore: NSObject {
     }
     info.videoPosition = VideoTime(pos)
     info.videoRemaining = VideoTime(remaining)
+  }
+
+  /// Brings the presentation and derived data in line with a loaded file.
+  private func refreshUIAfterFileLoad() {
     triedUsingExactSeekForCurrentFile = false
     checkUnsyncedWindowOptions()
     // generate thumbnails if window has loaded video
@@ -2539,29 +2555,24 @@ class PlayerCore: NSObject {
       miniPlayer.refreshArtworkVisibility()
       miniPlayer.handleVideoSizeChange()
     }
+  }
 
-    // add to history
-    if let url = info.currentURL {
-      let duration = info.videoDuration ?? .zero
-      let mediaTitle = mpv.getString(MPVProperty.mediaTitle)
-      // Unfortunately the mpv media-title property returns the filename when there isn't a title.
-      // Don't store a title unless the media actually has one.
-      let titleToUse: String? = {
-        guard let mediaTitle else { return nil }
-        guard mediaTitle != url.lastPathComponent else { return nil }
-        return mediaTitle
-      }()
-      HistoryController.shared.add(url, duration: duration.second, title: titleToUse,
-                                   ignorePathInWatchLaterConfig)
-      if Preference.bool(for: .recordRecentFiles) && Preference.bool(for: .trackAllFilesInRecentOpenMenu) {
-        AppDelegate.shared.noteNewRecentDocumentURL(url)
-      }
-    }
-    postNotification(.iinaFileLoaded)
-    events.emit(.fileLoaded, data: info.currentURL?.absoluteString ?? "")
-
-    Task { @MainActor in
-      mainWindow.liveText.requestAnalysis()
+  private func recordHistoryEntry() {
+    guard let url = info.currentURL else { return }
+    let duration = info.videoDuration ?? .zero
+    let mediaTitle = mpv.getString(MPVProperty.mediaTitle)
+    // Unfortunately the mpv media-title property returns the filename when
+    // there isn't a title. Don't store a title unless the media has one.
+    let titleToUse: String? = {
+      guard let mediaTitle else { return nil }
+      guard mediaTitle != url.lastPathComponent else { return nil }
+      return mediaTitle
+    }()
+    HistoryController.shared.add(url, duration: duration.second, title: titleToUse,
+                                 ignorePathInWatchLaterConfig)
+    if Preference.bool(for: .recordRecentFiles)
+        && Preference.bool(for: .trackAllFilesInRecentOpenMenu) {
+      AppDelegate.shared.noteNewRecentDocumentURL(url)
     }
   }
 

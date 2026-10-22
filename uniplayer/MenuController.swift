@@ -221,7 +221,16 @@ class MenuController: NSObject, NSMenuDelegate {
       item?.action = #selector(MainMenuActionHandler.menuCycleTrack(_:))
     }
 
-    // File menu
+    configureFileMenu()
+    configurePlaybackMenu()
+    configureVideoMenu()
+    configureAudioMenu()
+    configureSubtitleMenu()
+    configureWindowMenu()
+    configureHelpMenu()
+  }
+
+  private func configureFileMenu() {
 
     fileMenu.delegate = self
 
@@ -240,8 +249,9 @@ class MenuController: NSObject, NSMenuDelegate {
     }
 
     otherKeyBindingsMenu.delegate = self
+  }
 
-    // Playback menu
+  private func configurePlaybackMenu() {
 
     playbackMenu.delegate = self
 
@@ -280,8 +290,9 @@ class MenuController: NSObject, NSMenuDelegate {
 
     nextChapter.action = #selector(MainMenuActionHandler.menuNextChapter(_:))
     previousChapter.action = #selector(MainMenuActionHandler.menuPreviousChapter(_:))
+  }
 
-    // Video menu
+  private func configureVideoMenu() {
 
     videoMenu.delegate = self
 
@@ -349,8 +360,9 @@ class MenuController: NSObject, NSMenuDelegate {
     savedVideoFiltersMenu.delegate = self
     updateSavedFilters(forType: MPVProperty.vf,
                        from: Preference.array(for: .savedVideoFilters)?.compactMap(SavedFilter.init(dict:)) ?? [])
+  }
 
-    // Audio menu
+  private func configureAudioMenu() {
 
     audioMenu.delegate = self
     quickSettingsAudio.action = #selector(MainWindowController.menuShowAudioQuickSettings(_:))
@@ -378,8 +390,9 @@ class MenuController: NSObject, NSMenuDelegate {
     savedAudioFiltersMenu.delegate = self
     updateSavedFilters(forType: MPVProperty.af,
                        from: Preference.array(for: .savedAudioFilters)?.compactMap(SavedFilter.init(dict:)) ?? [])
+  }
 
-    // Subtitle
+  private func configureSubtitleMenu() {
 
     subMenu.delegate = self
     quickSettingsSub.action = #selector(MainWindowController.menuShowSubQuickSettings(_:))
@@ -423,8 +436,9 @@ class MenuController: NSObject, NSMenuDelegate {
     } else {
       pluginMenuItem.isHidden = true
     }
+  }
 
-    // Window
+  private func configureWindowMenu() {
 
     customTouchBar.action = #selector(NSApplication.toggleTouchBarCustomizationPalette(_:))
 
@@ -443,8 +457,9 @@ class MenuController: NSObject, NSMenuDelegate {
     } else {
       miniPlayer.menu?.addItem(openInLibrary)
     }
+  }
 
-    // Help
+  private func configureHelpMenu() {
     
     helpMenu.delegate = self
     useNewSettingsWindow.action = #selector(AppDelegate.toggleNewSettings)
@@ -452,6 +467,7 @@ class MenuController: NSObject, NSMenuDelegate {
     debugDump.isAlternate = true
     debugDump.keyEquivalentModifierMask = .option
   }
+
 
   // MARK: - Update Menus
 
