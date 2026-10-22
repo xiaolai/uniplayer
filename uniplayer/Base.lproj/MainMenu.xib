@@ -237,6 +237,19 @@ CA
                         </items>
                     </menu>
                 </menuItem>
+                <menuItem title="View" id="Vw1-mn-001">
+                    <modifierMask key="keyEquivalentModifierMask"/>
+                    <menu key="submenu" title="View" id="Vw1-mn-002">
+                        <items>
+                            <menuItem title="Toggle Sidebar" keyEquivalent="s" id="Vw1-mn-003">
+                                <modifierMask key="keyEquivalentModifierMask" control="YES" command="YES"/>
+                                <connections>
+                                    <action selector="toggleSidebar:" target="-1" id="Vw1-mn-004"/>
+                                </connections>
+                            </menuItem>
+                        </items>
+                    </menu>
+                </menuItem>
                 <menuItem title="Playback" id="jxT-CU-nIS" userLabel="Control">
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <menu key="submenu" title="Playback" id="GEO-Iw-cKr">

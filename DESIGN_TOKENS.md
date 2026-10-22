@@ -208,6 +208,7 @@ motion that honours Reduce Motion and the app's own animation setting.
 | `sectionTitle` | `static let sectionTitle = FontToken(size: 17, weight: .semibold)` | A page or section heading. |
 | `pageTitle` | `static let pageTitle = FontToken(size: 26, weight: .bold)` | A page title above a grid. |
 | `cardTitle` | `static let cardTitle = FontToken(size: 13, weight: .semibold)` | A card's title. |
+| `titlebarIcon` | `static let titlebarIcon = FontToken(size: 16, weight: .regular)` | A titlebar icon glyph, matching the reference app's toolbar symbols. |
 | `body` | `static let body = FontToken(size: NSFont.systemFontSize, weight: .regular)` | Body copy. |
 | `button` | `static let button = FontToken(size: NSFont.systemFontSize, weight: .medium)` | A button's label. |
 | `bodyStrong` | `static let bodyStrong = FontToken(size: NSFont.systemFontSize, weight: .bold)` | Emphasised body copy. |

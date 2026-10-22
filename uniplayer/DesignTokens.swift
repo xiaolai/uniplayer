@@ -457,6 +457,8 @@ enum Tokens {
     static let pageTitle = FontToken(size: 26, weight: .bold)
     /// A card's title.
     static let cardTitle = FontToken(size: 13, weight: .semibold)
+    /// A titlebar icon glyph, matching the reference app's toolbar symbols.
+    static let titlebarIcon = FontToken(size: 16, weight: .regular)
     /// Body copy.
     static let body = FontToken(size: NSFont.systemFontSize, weight: .regular)
     /// A button's label.

@@ -15,6 +15,9 @@ final class LibraryWindowController: NSWindowController {
   weak var player: PlayerCore!
   private(set) var loaded = false
   private var commandDragMonitor: Any?
+  private var sidebarShortcutMonitor: Any?
+  private var titlebarAccessory: NSTitlebarAccessoryViewController?
+  private let chrome = LibraryChrome()
 
   init(playerCore: PlayerCore) {
     self.player = playerCore
@@ -56,18 +59,54 @@ final class LibraryWindowController: NSWindowController {
     }
     window.setFrameAutosaveName("UniPlayerLibraryWindow")
 
-    let hostingView = NSHostingView(rootView: LibraryRootView(player: player))
+    let hostingView = NSHostingView(rootView: LibraryRootView(player: player, chrome: chrome))
     window.contentView = hostingView
+
+    // An empty unified toolbar gives the window the current titlebar metrics:
+    // the traffic lights and the accessory share one centered row.
+    let toolbar = NSToolbar(identifier: "UniPlayerLibraryChrome")
+    toolbar.displayMode = .iconOnly
+    toolbar.allowsUserCustomization = false
+    toolbar.autosavesConfiguration = false
+    toolbar.showsBaselineSeparator = false
+    window.toolbar = toolbar
+
+    let controls = NSHostingView(rootView: LibraryTitlebarControls(chrome: chrome))
+    // The accessory starts at the titlebar's leading inset; end the group at
+    // the sidepane's trailing edge.
+    let controlsWidth = Tokens.Size.sidebarWidth - Tokens.Space.n86 - Tokens.Space.n4
+    controls.frame = NSRect(origin: .zero, size: NSSize(width: controlsWidth, height: Tokens.Size.n52))
+    let accessory = NSTitlebarAccessoryViewController()
+    accessory.view = controls
+    accessory.layoutAttribute = .left
+    window.addTitlebarAccessoryViewController(accessory)
+    titlebarAccessory = accessory
 
     self.window = window
     self.loaded = true
     commandDragMonitor = window.installCommandDragMonitor()
+    sidebarShortcutMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+      guard let self, event.window === self.window,
+            event.modifierFlags.intersection(.deviceIndependentFlagsMask) == [.command, .control],
+            event.charactersIgnoringModifiers?.lowercased() == "s" else {
+        return event
+      }
+      self.chrome.toggleSidebar()
+      return nil
+    }
   }
 
   deinit {
     if let commandDragMonitor {
       NSEvent.removeMonitor(commandDragMonitor)
     }
+    if let sidebarShortcutMonitor {
+      NSEvent.removeMonitor(sidebarShortcutMonitor)
+    }
+  }
+
+  @IBAction func toggleSidebar(_ sender: Any?) {
+    chrome.toggleSidebar()
   }
 
   /// Called when history or recent documents have changed.
@@ -79,4 +118,5 @@ final class LibraryWindowController: NSWindowController {
   func loadLastPlaybackInfo() {
     reloadData()
   }
+
 }

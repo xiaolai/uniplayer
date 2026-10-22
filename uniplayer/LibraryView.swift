@@ -54,6 +54,86 @@ enum LibrarySection: String, CaseIterable, Identifiable {
   }
 }
 
+// MARK: - Chrome
+
+/// The library window's column state and the actions its toolbar invokes.
+@MainActor
+final class LibraryChrome: ObservableObject {
+  @Published var columnVisibility: NavigationSplitViewVisibility = .all
+  var openFile: (() -> Void)?
+  var openURL: (() -> Void)?
+
+  func toggleSidebar() {
+    columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
+  }
+}
+
+/// The titlebar controls: Open File and Open URL grouped in one glass capsule
+/// at the sidepane's trailing edge, plus a circular sidebar toggle. While the
+/// sidebar is collapsed, only the hover-revealed toggle remains.
+struct LibraryTitlebarControls: View {
+  @ObservedObject var chrome: LibraryChrome
+  @State private var hovering = false
+
+  private var isCollapsed: Bool {
+    chrome.columnVisibility == .detailOnly
+  }
+
+  var body: some View {
+    HStack(spacing: Tokens.Space.n8) {
+      if isCollapsed {
+        sidebarToggle
+          .opacity(hovering ? 1 : 0)
+        Spacer(minLength: 0)
+      } else {
+        Spacer(minLength: 0)
+        openGroup
+        sidebarToggle
+      }
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .onHover { hovering = $0 }
+  }
+
+  /// The reference app groups related icon buttons in one capsule.
+  private var openGroup: some View {
+    HStack(spacing: 0) {
+      iconButton("folder", help: L("Open File…")) { chrome.openFile?() }
+      iconButton("link", help: L("Open URL…")) { chrome.openURL?() }
+    }
+    .glassEffect(.regular.interactive(), in: .capsule)
+  }
+
+  private var sidebarToggle: some View {
+    Button {
+      chrome.toggleSidebar()
+    } label: {
+      iconLabel("sidebar.squares.leading")
+    }
+    .buttonStyle(.plain)
+    .foregroundStyle(Tokens.Palette.textPrimary.color)
+    .glassEffect(.regular.interactive(), in: .circle)
+    .help(isCollapsed ? L("Show Sidebar") : L("Hide Sidebar"))
+  }
+
+  private func iconButton(_ symbol: String, help: String,
+                          action: @escaping () -> Void) -> some View {
+    Button(action: action) {
+      iconLabel(symbol)
+    }
+    .buttonStyle(.plain)
+    .foregroundStyle(Tokens.Palette.textPrimary.color)
+    .help(help)
+  }
+
+  private func iconLabel(_ symbol: String) -> some View {
+    Image(systemName: symbol)
+      .font(Tokens.Typography.titlebarIcon.font)
+      .frame(width: Tokens.Size.n36, height: Tokens.Size.n36)
+      .contentShape(Rectangle())
+  }
+}
+
 // MARK: - Root
 
 struct LibraryRootView: View {
@@ -61,16 +141,16 @@ struct LibraryRootView: View {
   private let openMany: ([URL]) -> Void
 
   @StateObject private var model: LibraryModel
+  @ObservedObject private var chrome: LibraryChrome
   @ObservedObject private var channels = ChannelStore.shared
   @StateObject private var browser = ChannelBrowserModel()
   @State private var selection: LibrarySidebarItem? = .section(.home)
-  @State private var columnVisibility: NavigationSplitViewVisibility = .all
   @State private var selectedItem: LibraryItem?
   @State private var dropTargeted = false
   @State private var channelEditor: ChannelEditorSheet.Mode?
   @State private var channelPendingDeletion: Channel?
 
-  init(player: PlayerCore) {
+  init(player: PlayerCore, chrome: LibraryChrome) {
     // Weak on purpose: PlayerCore owns the window that owns this view.
     let open: (URL) -> Void = { [weak player] url in
       DispatchQueue.main.async {
@@ -85,12 +165,21 @@ struct LibraryRootView: View {
     }
     self.open = open
     self.openMany = openMany
-    _model = StateObject(wrappedValue: LibraryModel(open: open))
+    self.chrome = chrome
+    let model = LibraryModel(open: open)
+    _model = StateObject(wrappedValue: model)
+    chrome.openFile = { [weak model] in
+      model?.openFilePanel()
+    }
+    chrome.openURL = {
+      AppDelegate.shared.openURL(NSApp)
+    }
   }
 
   var body: some View {
-    NavigationSplitView(columnVisibility: $columnVisibility) {
+    NavigationSplitView(columnVisibility: $chrome.columnVisibility) {
       sidebar
+        .frame(width: Tokens.Size.sidebarWidth)
         .toolbar(removing: .sidebarToggle)
     } detail: {
       detail
@@ -101,11 +190,6 @@ struct LibraryRootView: View {
     .navigationSplitViewStyle(.balanced)
     .tint(Tokens.Palette.accent.color)
     .background(Tokens.Palette.canvas.color)
-    .overlay(alignment: .topLeading) {
-      if columnVisibility == .detailOnly {
-        collapsedSidebarToggle
-      }
-    }
     .overlay {
       if dropTargeted {
         DropOverlay()
@@ -216,12 +300,6 @@ struct LibraryRootView: View {
       min: Tokens.Library.sidebarMinimum,
       ideal: Tokens.Size.sidebarWidth,
       max: Tokens.Library.sidebarMaximum)
-    .safeAreaInset(edge: .top, spacing: 0) {
-      Tokens.Palette.clear.color.frame(height: Tokens.Size.n40)
-    }
-    .overlay(alignment: .topTrailing) {
-      sidebarControls
-    }
     .safeAreaInset(edge: .bottom) {
       Text(versionText)
         .font(Tokens.Typography.caption.font)
@@ -283,56 +361,6 @@ struct LibraryRootView: View {
         }
       }
     }
-  }
-
-  private var sidebarControls: some View {
-    GlassEffectContainer(spacing: Tokens.Space.n4) {
-      HStack(spacing: Tokens.Space.n4) {
-        Button {
-          model.openFilePanel()
-        } label: {
-          Image(systemName: "folder")
-        }
-        .help(L("Open File…"))
-
-        Button {
-          AppDelegate.shared.openURL(NSApp)
-        } label: {
-          Image(systemName: "link")
-        }
-        .help(L("Open URL…"))
-
-        Button {
-          columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
-        } label: {
-          Image(systemName: "sidebar.squares.leading")
-        }
-        .keyboardShortcut("s", modifiers: [.command, .control])
-        .help(columnVisibility == .detailOnly ? L("Show Sidebar") : L("Hide Sidebar"))
-      }
-      .buttonStyle(.glass(.regular))
-      .tint(Tokens.Palette.hudGlassTint.color)
-      .imageScale(.medium)
-    }
-    .padding(.trailing, Tokens.Space.n8)
-    .padding(.top, Tokens.Space.n8)
-  }
-
-  /// The sidebar's own toggle disappears with the sidebar, so keep one at the
-  /// window's leading edge while the sidebar is collapsed.
-  private var collapsedSidebarToggle: some View {
-    Button {
-      columnVisibility = .all
-    } label: {
-      Image(systemName: "sidebar.squares.leading")
-    }
-    .buttonStyle(.glass(.regular))
-    .tint(Tokens.Palette.hudGlassTint.color)
-    .imageScale(.medium)
-    .keyboardShortcut("s", modifiers: [.command, .control])
-    .help(L("Show Sidebar"))
-    .padding(.leading, Tokens.Space.n80)
-    .padding(.top, Tokens.Space.n8)
   }
 
   private var versionText: String {
