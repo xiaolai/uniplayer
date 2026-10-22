@@ -28,11 +28,15 @@ class JavascriptAPIWebSocketController: JavascriptAPI, JavascriptAPIWebSocketCon
   var connStateHandler: JSManagedValue?
 
   func createServer(_ options: [String : Any]) {
+    guard permitted(to: .networkListener) else {
+      throwError(withMessage: "ws.createServer: the network-listener permission is required")
+      return
+    }
     if let previousServer = server {
-      previousServer.listener.cancel()
+      previousServer.stop()
       self.server = nil
     }
-    guard let port = options["port"] as? UInt16 else {
+    guard let port = (options["port"] as? NSNumber)?.uint16Value else {
       throwError(withMessage: "ws.createServer: port not specified")
       return
     }
@@ -76,109 +80,116 @@ class JavascriptAPIWebSocketController: JavascriptAPI, JavascriptAPIWebSocketCon
   }
 
   private func setHandler(_ handler: JSValue, field: ReferenceWritableKeyPath<JavascriptAPIWebSocketController, JSManagedValue?>) {
-    func removePreviousHandler() {
+    if let previous = self[keyPath: field] {
+      JSContext.current()!.virtualMachine.removeManagedReference(previous, withOwner: self)
       self[keyPath: field] = nil
-      JSContext.current()!.virtualMachine.removeManagedReference(self[keyPath: field], withOwner: self)
     }
-    if handler.isNull || handler.isUndefined || self[keyPath: field] != nil {
-      removePreviousHandler()
-      return
-    }
+    guard !handler.isNull, !handler.isUndefined else { return }
     guard handler.isObject else {
       throwError(withMessage: "ws.on: the handler is not an object")
       return
     }
-    self[keyPath: field] = JSManagedValue(value: handler)
-    JSContext.current()!.virtualMachine.addManagedReference(self[keyPath: field], withOwner: self)
+    let managed = JSManagedValue(value: handler)
+    self[keyPath: field] = managed
+    JSContext.current()!.virtualMachine.addManagedReference(managed, withOwner: self)
   }
 
   func sendText(_ conn: String, _ string: String) -> JSValue {
-    let data = string.data(using: .utf8)!
+    guard let data = string.data(using: .utf8) else {
+      return JSValue(undefinedIn: context)
+    }
 
     return createPromise { [unowned self] resolve, reject in
       guard let server = self.server else {
         reject.call(withArguments: ["server does not exist"])
         return
       }
-      guard let connEntry = server.connections[conn] else {
-        // not throwing an error hereif there's no such connection ID.
-        // because it's not the server's fault and we just want to "ignore the request"
-        resolve.call(withArguments: ["no_connection"])
-        return
-      }
-      do {
-        try server.send(data: data, to: connEntry, callback: { error in
-          if let error {
-            reject.call(withArguments: [error.toDict()])
-          } else {
+      server.send(data: data, toID: conn, opcode: .text) { result in
+        self.pluginInstance.queue.async {
+          switch result {
+          case .sent:
             resolve.call(withArguments: ["success"])
+          case .noConnection:
+            // Not the server's fault; treat it as an ignorable request.
+            resolve.call(withArguments: ["no_connection"])
+          case .failed(let error):
+            reject.call(withArguments: [error.toDict()])
           }
-        })
-      } catch (let error) {
-        reject.call(withArguments: [error.localizedDescription])
+        }
       }
     }
+  }
+
+  override func cleanUp(_ instance: JavascriptPluginInstance) {
+    server?.stop()
+    server = nil
   }
 }
 
 
 extension JavascriptAPIWebSocketController: WebSocketServerDelegate {
-  func stateUpdated(_ state: NWListener.State) {
-    guard let handler = stateHandler?.value else { return }
-
-    switch state {
-    case .setup:
-      handler.call(withArguments: ["setup"])
-    case .waiting(let nWError):
-      handler.call(withArguments: ["waiting", nWError.toDict()])
-    case .ready:
-      handler.call(withArguments: ["ready"])
-    case .failed(let nWError):
-      handler.call(withArguments: ["failed", nWError.toDict()])
-    case .cancelled:
-      handler.call(withArguments: ["cancelled"])
-    @unknown default:
-      handler.call(withArguments: ["\(state)"])
+  private func emit(_ handler: JSManagedValue?, _ arguments: [Any?]) {
+    guard let value = handler?.value else { return }
+    pluginInstance.queue.async {
+      value.call(withArguments: arguments.map { $0 ?? NSNull() })
     }
   }
 
+  func stateUpdated(_ state: NWListener.State) {
+    let name: String
+    var extra: Any?
+    switch state {
+    case .setup:
+      name = "setup"
+    case .waiting(let error):
+      name = "waiting"
+      extra = error.toDict()
+    case .ready:
+      name = "ready"
+    case .failed(let error):
+      name = "failed"
+      extra = error.toDict()
+    case .cancelled:
+      name = "cancelled"
+    @unknown default:
+      name = "\(state)"
+    }
+    emit(stateHandler, extra.map { [name, $0] } ?? [name])
+  }
+
   func newConnection(_ conn: NWConnection, connID: String) {
-    guard let handler = newConnHandler?.value else { return }
-    handler.call(withArguments: [
+    emit(newConnHandler, [
       connID,
-      // may add more useful information in the future
-      [
-        "path": conn.currentPath?.remoteEndpoint?.debugDescription
-      ] as [String: Any?]
+      ["path": conn.currentPath?.remoteEndpoint?.debugDescription] as [String: Any?]
     ])
   }
 
   func connection(_ conn: String, stateUpdated state: NWConnection.State) {
-    guard let handler = connStateHandler?.value else { return }
-
+    let name: String
+    var extra: Any?
     switch state {
     case .setup:
-      handler.call(withArguments: [conn, "setup"])
-    case .waiting(let nWError):
-      handler.call(withArguments: [conn, "waiting", nWError.toDict()])
+      name = "setup"
+    case .waiting(let error):
+      name = "waiting"
+      extra = error.toDict()
     case .preparing:
-      handler.call(withArguments: [conn, "preparing"])
+      name = "preparing"
     case .ready:
-      handler.call(withArguments: [conn, "ready"])
-    case .failed(let nWError):
-      handler.call(withArguments: [conn, "failed", nWError.toDict()])
+      name = "ready"
+    case .failed(let error):
+      name = "failed"
+      extra = error.toDict()
     case .cancelled:
-      handler.call(withArguments: [conn, "cancelled"])
+      name = "cancelled"
     @unknown default:
-      handler.call(withArguments: [conn, "\(state)"])
+      name = "\(state)"
     }
+    emit(connStateHandler, extra.map { [conn, name, $0] } ?? [conn, name])
   }
 
   func connection(_ conn: String, receivedData data: Data, context: NWConnection.ContentContext) {
-    guard let handler = self.messageHandler?.value else { return }
-
-    let wsMessage = WSMessage(data: data)
-    handler.call(withArguments: [conn, wsMessage])
+    emit(messageHandler, [conn, WSMessage(data: data)])
   }
 }
 

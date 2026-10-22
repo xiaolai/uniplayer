@@ -10,7 +10,7 @@ import Foundation
 import Network
 
 
-protocol WebSocketServerDelegate {
+protocol WebSocketServerDelegate: AnyObject {
   func stateUpdated(_ state: NWListener.State)
   func newConnection(_ conn: NWConnection, connID: String)
   func connection(_ conn: String, stateUpdated state: NWConnection.State)
@@ -20,11 +20,10 @@ protocol WebSocketServerDelegate {
 
 class WebSocketServer {
   let label: String
-  var delegate: WebSocketServerDelegate?
+  weak var delegate: WebSocketServerDelegate?
 
   var listener: NWListener
-  var connections: [String: NWConnection] = [:]
-  var timer: Timer?
+  private var connections: [String: NWConnection] = [:]
 
   lazy var serverQueue = DispatchQueue(label: "UniPlayerWebSocketServer.\(self.label)")
   let subsystem: Logger.Subsystem
@@ -32,22 +31,23 @@ class WebSocketServer {
   init?(port: UInt16, label: String, logger: Logger.Subsystem? = nil) {
     self.label = label
     self.subsystem = logger ?? Logger.makeSubsystem("ws-server")
-    // TODO: Support TLS
+    guard let endpointPort = NWEndpoint.Port(rawValue: port) else {
+      Logger.log("Cannot start WebSocket server on port \(port)", level: .error, subsystem: subsystem)
+      return nil
+    }
+    // Loopback only. LAN exposure is a product decision that needs consent,
+    // authentication and TLS; it is not enabled implicitly.
     let parameters = NWParameters(tls: nil)
     parameters.allowLocalEndpointReuse = true
-    parameters.includePeerToPeer = true
+    parameters.includePeerToPeer = false
+    parameters.requiredLocalEndpoint = .hostPort(host: "127.0.0.1", port: endpointPort)
 
     let wsOptions = NWProtocolWebSocket.Options()
     wsOptions.autoReplyPing = true
     parameters.defaultProtocolStack.applicationProtocols.insert(wsOptions, at: 0)
 
     do {
-      if let port = NWEndpoint.Port(rawValue: port) {
-        listener = try NWListener(using: parameters, on: port)
-      } else {
-        Logger.log("Cannot start WebSocket server on port \(port)", level: .error, subsystem: subsystem)
-        return nil
-      }
+      listener = try NWListener(using: parameters)
     } catch {
       Logger.log(error.localizedDescription, level: .error, subsystem: subsystem)
       return nil
@@ -63,6 +63,11 @@ class WebSocketServer {
 
   func stop() {
     listener.cancel()
+    serverQueue.async { [weak self] in
+      guard let self else { return }
+      self.connections.values.forEach { $0.cancel() }
+      self.connections.removeAll()
+    }
   }
 
   private func handleNewConnection(_ connection: NWConnection) {
@@ -73,15 +78,16 @@ class WebSocketServer {
     connections[connID] = connection
     delegate?.newConnection(connection, connID: connID)
 
-    connection.stateUpdateHandler = { [unowned self] state in
-      Logger.log("Connection \(state) (\(connID))", subsystem: subsystem)
+    connection.stateUpdateHandler = { [weak self] state in
+      guard let self else { return }
+      Logger.log("Connection \(state) (\(connID))", subsystem: self.subsystem)
       self.delegate?.connection(connID, stateUpdated: state)
       switch state {
-      case .failed(_):
-        connection.cancel()  // do we need to cancel here?
+      case .failed:
+        connection.cancel()
         fallthrough
       case .cancelled:
-        connections[connID] = nil
+        self.connections[connID] = nil
       default:
         break
       }
@@ -90,7 +96,8 @@ class WebSocketServer {
     connection.start(queue: serverQueue)
 
     func receive() {
-       connection.receiveMessage { [unowned self] (data, context, isComplete, error) in
+       connection.receiveMessage { [weak self] (data, context, isComplete, error) in
+        guard let self else { return }
         if let data, let context {
           // handle ping frames
           if let metadata = context.protocolMetadata as? [NWProtocolWebSocket.Metadata],
@@ -119,13 +126,30 @@ class WebSocketServer {
     delegate?.stateUpdated(state)
   }
 
-  func send(data: Data, to connection: NWConnection, callback: ((NWError?) -> Void)?) throws {
-    // do we need a separate send(text:to:) method to send text frames?
-    let metadata = NWProtocolWebSocket.Metadata(opcode: .binary)
-    let context = NWConnection.ContentContext(identifier: "message", metadata: [metadata])
-    connection.send(content: data, contentContext: context, isComplete: true, completion: .contentProcessed({ error in
-      callback?(error)
-    }))
+  enum SendResult {
+    case sent
+    case noConnection
+    case failed(NWError)
+  }
+
+  /// Send on the server queue; connection lookup and state stay on that queue.
+  func send(data: Data, toID connID: String, opcode: NWProtocolWebSocket.Opcode = .binary, completion: @escaping (SendResult) -> Void) {
+    serverQueue.async { [weak self] in
+      guard let self else { return }
+      guard let connection = self.connections[connID] else {
+        completion(.noConnection)
+        return
+      }
+      let metadata = NWProtocolWebSocket.Metadata(opcode: opcode)
+      let context = NWConnection.ContentContext(identifier: "message", metadata: [metadata])
+      connection.send(content: data, contentContext: context, isComplete: true, completion: .contentProcessed({ error in
+        if let error {
+          completion(.failed(error))
+        } else {
+          completion(.sent)
+        }
+      }))
+    }
   }
 }
 
