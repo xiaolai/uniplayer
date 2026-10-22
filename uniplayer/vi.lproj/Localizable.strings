@@ -628,7 +628,6 @@
 "settings.playlistShowMetadataInMusicMode.label" = "Only in \"music mode\"";
 "settings.preventScreenSaver.label" = "Prevent screen saver from starting while playing";
 "settings.quitWhenNoOpenedWindow.label" = "Thoát sau khi mọi cửa sổ khác đã đóng";
-"settings.receiveBetaUpdate.label" = "Nhận các bản cập nhật thử nghiệm";
 "settings.recordPlaybackHistory.label" = "Bật lịch sử phát";
 "settings.recordRecentFiles.label" = "Enable \"Open Recent\" menu";
 "settings.resumeLastPosition.label" = "Resume last playback position";
@@ -908,11 +907,6 @@
 "settings.$BrowserExtensions" = "Browser Extensions";
 "settings.$Cache" = "Cache";
 "settings.$Cancel" = "Hủy";
-"settings.$CheckForUpdates" = "Kiểm tra cập nhật";
-"settings.$CheckForUpdates.items.3600" = "Hàng giờ";
-"settings.$CheckForUpdates.items.86400" = "Hàng ngày";
-"settings.$CheckForUpdates.items.604800" = "Hàng tuần";
-"settings.$CheckForUpdates.items.2629800" = "Hàng tháng";
 "settings.$Chrome" = "Chrome";
 "settings.$ClearCache" = "Xóa bộ nhớ đệm";
 "settings.$ClearPlaybackHistory" = "Xoá lịch sử xem";

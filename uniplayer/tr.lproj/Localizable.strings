@@ -628,7 +628,6 @@
 "settings.playlistShowMetadataInMusicMode.label" = "Yalnızca “müzik kipi”ndeyken";
 "settings.preventScreenSaver.label" = "Oynatırken ekran koruyucunun başlamasını engeller";
 "settings.quitWhenNoOpenedWindow.label" = "Tüm pencereler kapatıldıktan sonra çık";
-"settings.receiveBetaUpdate.label" = "Beta güncellemeleri al";
 "settings.recordPlaybackHistory.label" = "Oynatma geçmişini anımsa";
 "settings.recordRecentFiles.label" = "“Son Kullanılanları Aç” menüsünü etkinleştir";
 "settings.resumeLastPosition.label" = "Son oynatma konumundan sürdür";
@@ -908,11 +907,6 @@
 "settings.$BrowserExtensions" = "Browser Extensions";
 "settings.$Cache" = "Önbellek";
 "settings.$Cancel" = "Vazgeç";
-"settings.$CheckForUpdates" = "Güncellemeleri denetle";
-"settings.$CheckForUpdates.items.3600" = "Her Saat";
-"settings.$CheckForUpdates.items.86400" = "Günlük";
-"settings.$CheckForUpdates.items.604800" = "Haftalık";
-"settings.$CheckForUpdates.items.2629800" = "Aylık";
 "settings.$Chrome" = "Chrome";
 "settings.$ClearCache" = "Önbelleği Temizle";
 "settings.$ClearPlaybackHistory" = "Oynatma Geçmişini Temizle";

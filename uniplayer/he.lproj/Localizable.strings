@@ -628,7 +628,6 @@
 "settings.playlistShowMetadataInMusicMode.label" = "רק ב\"מצב מוזיקה\"";
 "settings.preventScreenSaver.label" = "מנע את הפעלת שומר המסך בזמן ניגון";
 "settings.quitWhenNoOpenedWindow.label" = "צא מהתוכנה לאחר סגירת כל החלונות";
-"settings.receiveBetaUpdate.label" = "קבל עדכוני בטא";
 "settings.recordPlaybackHistory.label" = "הפעל היסטוריית השמעה";
 "settings.recordRecentFiles.label" = "הפעל תפריט \"נפתח לאחרונה\"";
 "settings.resumeLastPosition.label" = "המשך את ההשמעה האחרונה";
@@ -908,11 +907,6 @@
 "settings.$BrowserExtensions" = "Browser Extensions";
 "settings.$Cache" = "מטמון";
 "settings.$Cancel" = "ביטול";
-"settings.$CheckForUpdates" = "חפש עדכונים";
-"settings.$CheckForUpdates.items.3600" = "מדי שעה";
-"settings.$CheckForUpdates.items.86400" = "מדי יום";
-"settings.$CheckForUpdates.items.604800" = "מדי שבוע";
-"settings.$CheckForUpdates.items.2629800" = "מדי חודש";
 "settings.$Chrome" = "גוגל כרום";
 "settings.$ClearCache" = "נקה מטמון";
 "settings.$ClearPlaybackHistory" = "מחק היסטוריית השמעה";

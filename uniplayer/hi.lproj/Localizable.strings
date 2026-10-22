@@ -628,7 +628,6 @@
 "settings.playlistShowMetadataInMusicMode.label" = "Only in \"music mode\"";
 "settings.preventScreenSaver.label" = "Prevent screen saver from starting while playing";
 "settings.quitWhenNoOpenedWindow.label" = "सभी विंडो बंद होने के बाद छोड़ें";
-"settings.receiveBetaUpdate.label" = "बीटा अपडेट प्राप्त करें";
 "settings.recordPlaybackHistory.label" = "प्लेबैक इतिहास सक्षम करें";
 "settings.recordRecentFiles.label" = "\"हाल ही में खुला\" मेनू सक्षम करें";
 "settings.resumeLastPosition.label" = "अंतिम प्लेबैक स्थिति फिर से शुरू करें";
@@ -908,11 +907,6 @@
 "settings.$BrowserExtensions" = "Browser Extensions";
 "settings.$Cache" = "कैश";
 "settings.$Cancel" = "रद्द करें";
-"settings.$CheckForUpdates" = "अद्यतन के लिए जाँच";
-"settings.$CheckForUpdates.items.3600" = "प्रति घंटा";
-"settings.$CheckForUpdates.items.86400" = "रोज";
-"settings.$CheckForUpdates.items.604800" = "साप्ताहिक";
-"settings.$CheckForUpdates.items.2629800" = "महीने के";
 "settings.$Chrome" = "Chrome";
 "settings.$ClearCache" = "कैश को साफ़ करें";
 "settings.$ClearPlaybackHistory" = "प्लेबैक इतिहास मिटा दें";

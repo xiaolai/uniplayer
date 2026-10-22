@@ -629,7 +629,6 @@ Nočné zostavy sa neodporúčajú používať ako denný ovládač. V súčasno
 "settings.playlistShowMetadataInMusicMode.label" = "Iba v \"režime hudby\"";
 "settings.preventScreenSaver.label" = "Zabránenie spusteniu šetriča obrazovky počas prehrávania";
 "settings.quitWhenNoOpenedWindow.label" = "Ukončiť program, keď sa zatvoria všetky okná";
-"settings.receiveBetaUpdate.label" = "Dostávať beta aktualizácie";
 "settings.recordPlaybackHistory.label" = "Povoliť históriu prehrávania";
 "settings.recordRecentFiles.label" = "Povoliť \"Otvoriť nedávne\"";
 "settings.resumeLastPosition.label" = "Obnoviť pozíciu prehrávania";
@@ -909,11 +908,6 @@ Nočné zostavy sa neodporúčajú používať ako denný ovládač. V súčasno
 "settings.$BrowserExtensions" = "Browser Extensions";
 "settings.$Cache" = "Vyrovnávacia pamäť";
 "settings.$Cancel" = "Zrušiť";
-"settings.$CheckForUpdates" = "Kontrolovať aktualizácie";
-"settings.$CheckForUpdates.items.3600" = "Každú hodinu";
-"settings.$CheckForUpdates.items.86400" = "Denne";
-"settings.$CheckForUpdates.items.604800" = "Týždeňne";
-"settings.$CheckForUpdates.items.2629800" = "Mesačne";
 "settings.$Chrome" = "Chrome";
 "settings.$ClearCache" = "Vymazať Cache";
 "settings.$ClearPlaybackHistory" = "Vymazať históriu prehrávania";

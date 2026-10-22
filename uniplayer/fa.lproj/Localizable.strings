@@ -630,7 +630,6 @@
 "settings.playlistShowMetadataInMusicMode.label" = "فقط در \"حالت موزیک\"";
 "settings.preventScreenSaver.label" = "Prevent screen saver from starting while playing";
 "settings.quitWhenNoOpenedWindow.label" = "Quit after all windows are closed";
-"settings.receiveBetaUpdate.label" = "دریافت بروزرسانی های بتا";
 "settings.recordPlaybackHistory.label" = "Enable playback history";
 "settings.recordRecentFiles.label" = "فعال کردن منوی \"فایلهای اخیر\"";
 "settings.resumeLastPosition.label" = "Resume last playback position";
@@ -910,11 +909,6 @@
 "settings.$BrowserExtensions" = "Browser Extensions";
 "settings.$Cache" = "حافظه نهان";
 "settings.$Cancel" = "لغو";
-"settings.$CheckForUpdates" = "بررسی برای بروزرسانی";
-"settings.$CheckForUpdates.items.3600" = "ساعتی";
-"settings.$CheckForUpdates.items.86400" = "روزانه";
-"settings.$CheckForUpdates.items.604800" = "هفتگی";
-"settings.$CheckForUpdates.items.2629800" = "ماهانه";
 "settings.$Chrome" = "مرورگر Chrome";
 "settings.$ClearCache" = "پاک کردن حافظه نهان";
 "settings.$ClearPlaybackHistory" = "پاک کردن تاریخچه‌ی پخش";

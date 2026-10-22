@@ -630,7 +630,6 @@
 "settings.playlistShowMetadataInMusicMode.label" = "Només en el \"mode música\"";
 "settings.preventScreenSaver.label" = "Prevent screen saver from starting while playing";
 "settings.quitWhenNoOpenedWindow.label" = "Surt quan totes les finestres es tanquin";
-"settings.receiveBetaUpdate.label" = "Rebre actualitzacions beta";
 "settings.recordPlaybackHistory.label" = "Activa historial de reproducció";
 "settings.recordRecentFiles.label" = "Habilita el menú \"Obre un fitxer recent\"";
 "settings.resumeLastPosition.label" = "Reprèn la reproducció en la última posició";
@@ -911,11 +910,6 @@
 "settings.$BrowserExtensions" = "Browser Extensions";
 "settings.$Cache" = "Memòria cau";
 "settings.$Cancel" = "Cancel·la";
-"settings.$CheckForUpdates" = "Cerca actualitzacions";
-"settings.$CheckForUpdates.items.3600" = "Cada hora";
-"settings.$CheckForUpdates.items.86400" = "Diariàment";
-"settings.$CheckForUpdates.items.604800" = "Setmanalment";
-"settings.$CheckForUpdates.items.2629800" = "Mensualment";
 "settings.$Chrome" = "Chrome";
 "settings.$ClearCache" = "Neteja memòria cau";
 "settings.$ClearPlaybackHistory" = "Suprimeix l'historial de reproducció";

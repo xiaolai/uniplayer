@@ -629,7 +629,6 @@
 "settings.playlistShowMetadataInMusicMode.label" = "\"ミュージックモード\" 時のみ";
 "settings.preventScreenSaver.label" = "再生中はスクリーンセーバを開始しない";
 "settings.quitWhenNoOpenedWindow.label" = "すべてのウインドウを閉じたらアプリを終了";
-"settings.receiveBetaUpdate.label" = "ベータ版のアップデート通知を受け取る";
 "settings.recordPlaybackHistory.label" = "再生履歴の保存を有効にする";
 "settings.recordRecentFiles.label" = "\"最近使った項目を開く\" メニューを有効にする";
 "settings.resumeLastPosition.label" = "最後の再生位置から再開";
@@ -909,11 +908,6 @@
 "settings.$BrowserExtensions" = "ブラウザ拡張機能";
 "settings.$Cache" = "キャッシュ";
 "settings.$Cancel" = "キャンセル";
-"settings.$CheckForUpdates" = "アップデートの確認";
-"settings.$CheckForUpdates.items.3600" = "毎時";
-"settings.$CheckForUpdates.items.86400" = "毎日";
-"settings.$CheckForUpdates.items.604800" = "毎週";
-"settings.$CheckForUpdates.items.2629800" = "毎月";
 "settings.$Chrome" = "Chrome";
 "settings.$ClearCache" = "キャッシュを消去";
 "settings.$ClearPlaybackHistory" = "再生履歴を消去";

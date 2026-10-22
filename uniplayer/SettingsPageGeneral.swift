@@ -107,20 +107,6 @@ class SettingsPageGeneral: SettingsPage {
           .bindTo(.autoSwitchToMusicMode)
       }
 
-      SettingsList {
-        SettingsItem.SwitchWithPopupButton(title: .text_CheckForUpdates)
-          .image(name: "arrowshape.up.circle")
-          .bindSwitchToCustom {
-            $0.bind(.value, to: NSApplication.shared, withKeyPath: "delegate.updaterController.updater.automaticallyChecksForUpdates")
-          }
-          .bindPopupToCustom(type: Preference.SparkleInterval.self) {
-            $0.bind(.selectedTag, to: NSApplication.shared, withKeyPath: "delegate.updaterController.updater.updateCheckInterval")
-          }
-          .withDetailView {
-            SettingsItem.Switch()
-              .bindTo(.receiveBetaUpdate)
-          }
-      }
     }
   }
 
@@ -194,29 +180,6 @@ class SettingsPageGeneral: SettingsPage {
 }
 
 
-fileprivate extension Preference {
-  enum SparkleInterval: Int, InitializingFromKey, CaseIterable {
-    case hourly = 3600
-    case daily = 86400
-    case weekly = 604800
-    case monthly = 2629800
-
-    static var defaultValue = SparkleInterval.daily
-
-    init?(key: Preference.Key) {
-      self.init(rawValue: Preference.integer(for: key))
-    }
-
-    var description: String {
-      switch self {
-      case .hourly: "hourly"
-      case .daily: "daily"
-      case .weekly: "weekly"
-      case .monthly: "monthly"
-      }
-    }
-  }
-}
 
 extension Preference.ScreenshotFormat: Comparable {
   static func <(lhs: Preference.ScreenshotFormat, rhs: Preference.ScreenshotFormat) -> Bool {

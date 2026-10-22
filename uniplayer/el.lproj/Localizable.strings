@@ -628,7 +628,6 @@
 "settings.playlistShowMetadataInMusicMode.label" = "Only in \"music mode\"";
 "settings.preventScreenSaver.label" = "Prevent screen saver from starting while playing";
 "settings.quitWhenNoOpenedWindow.label" = "Quit after all windows are closed";
-"settings.receiveBetaUpdate.label" = "Receive beta updates";
 "settings.recordPlaybackHistory.label" = "Enable playback history";
 "settings.recordRecentFiles.label" = "Enable \"Open Recent\" menu";
 "settings.resumeLastPosition.label" = "Resume last playback position";
@@ -908,11 +907,6 @@
 "settings.$BrowserExtensions" = "Browser Extensions";
 "settings.$Cache" = "Cache";
 "settings.$Cancel" = "Άκυρο";
-"settings.$CheckForUpdates" = "Check for updates";
-"settings.$CheckForUpdates.items.3600" = "Hourly";
-"settings.$CheckForUpdates.items.86400" = "Daily";
-"settings.$CheckForUpdates.items.604800" = "Weekly";
-"settings.$CheckForUpdates.items.2629800" = "Monthly";
 "settings.$Chrome" = "Chrome";
 "settings.$ClearCache" = "Εκκαθάριση προσωρινής μνήμης";
 "settings.$ClearPlaybackHistory" = "Εκκαθάριση Ιστορικού Αναπαραγωγής";

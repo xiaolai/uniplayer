@@ -628,7 +628,6 @@
 "settings.playlistShowMetadataInMusicMode.label" = "\"음악 모드\"에서만";
 "settings.preventScreenSaver.label" = "재생 중에는 화면 보호기 시작을 막기";
 "settings.quitWhenNoOpenedWindow.label" = "모든 윈도우를 닫으면 앱을 종료";
-"settings.receiveBetaUpdate.label" = "베타 업데이트 받기";
 "settings.recordPlaybackHistory.label" = "재생 기록 사용하기";
 "settings.recordRecentFiles.label" = "최근 재생된 항목 기억하기";
 "settings.resumeLastPosition.label" = "최근에 재생했던 위치로 복원";
@@ -908,11 +907,6 @@
 "settings.$BrowserExtensions" = "Browser Extensions";
 "settings.$Cache" = "캐시";
 "settings.$Cancel" = "취소";
-"settings.$CheckForUpdates" = "자동 업데이트 확인";
-"settings.$CheckForUpdates.items.3600" = "매시간";
-"settings.$CheckForUpdates.items.86400" = "매일";
-"settings.$CheckForUpdates.items.604800" = "매주";
-"settings.$CheckForUpdates.items.2629800" = "매월";
 "settings.$Chrome" = "Chrome";
 "settings.$ClearCache" = "캐시 지우기";
 "settings.$ClearPlaybackHistory" = "재생 기록 지우기";

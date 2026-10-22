@@ -628,7 +628,6 @@
 "settings.playlistShowMetadataInMusicMode.label" = "Endast i \"musikläge\"";
 "settings.preventScreenSaver.label" = "Förhindra skärmsläckare från att starta medan du spelar";
 "settings.quitWhenNoOpenedWindow.label" = "Avsluta efter att alla fönster har stängts";
-"settings.receiveBetaUpdate.label" = "Ta emot beta-uppdateringar";
 "settings.recordPlaybackHistory.label" = "Aktivera uppspelningshistorik";
 "settings.recordRecentFiles.label" = "Använd menyn \"Öppna senaste\"";
 "settings.resumeLastPosition.label" = "Återuppta position från föregående uppspelning";
@@ -908,11 +907,6 @@
 "settings.$BrowserExtensions" = "Webbläsartillägg";
 "settings.$Cache" = "Cache";
 "settings.$Cancel" = "Avbryt";
-"settings.$CheckForUpdates" = "Sök efter uppdateringar";
-"settings.$CheckForUpdates.items.3600" = "Timvis";
-"settings.$CheckForUpdates.items.86400" = "Dagligen";
-"settings.$CheckForUpdates.items.604800" = "Veckovis";
-"settings.$CheckForUpdates.items.2629800" = "Månadsvis";
 "settings.$Chrome" = "Chrome";
 "settings.$ClearCache" = "Rensa cache";
 "settings.$ClearPlaybackHistory" = "Rensa uppspelningshistorik";

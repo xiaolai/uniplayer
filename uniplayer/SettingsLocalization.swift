@@ -29,7 +29,6 @@ extension SettingsLocalization.Key {
   // General
   static let text_Playlist = SettingsLocalization.Key("$Playlist")
   static let text_WhenMediaIsOpened = SettingsLocalization.Key("$WhenMediaIsOpened")
-  static let text_CheckForUpdates = SettingsLocalization.Key("$CheckForUpdates")
   static let text_History = SettingsLocalization.Key("$History")
   static let text_Screenshots = SettingsLocalization.Key("$Screenshots")
   static let text_Behavior = SettingsLocalization.Key("$Behavior")

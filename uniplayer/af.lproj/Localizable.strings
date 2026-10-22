@@ -628,7 +628,6 @@
 "settings.playlistShowMetadataInMusicMode.label" = "Slegs in “musiekmodus”";
 "settings.preventScreenSaver.label" = "Voorkom dat skermskut geaktiveer word tydens afspeel";
 "settings.quitWhenNoOpenedWindow.label" = "Stop nadat alle vensters gesluit is";
-"settings.receiveBetaUpdate.label" = "Ontvang betabywerkings";
 "settings.recordPlaybackHistory.label" = "Aktiveer afspeelgeskiedenis";
 "settings.recordRecentFiles.label" = "Aktiveer “Open onlangse”-kieslys";
 "settings.resumeLastPosition.label" = "Hervat vorige afspeelposisie";
@@ -908,11 +907,6 @@
 "settings.$BrowserExtensions" = "Browser Extensions";
 "settings.$Cache" = "Kasgeheue";
 "settings.$Cancel" = "Kanselleer";
-"settings.$CheckForUpdates" = "Soek na bywerkings";
-"settings.$CheckForUpdates.items.3600" = "Uurliks";
-"settings.$CheckForUpdates.items.86400" = "Daagliks";
-"settings.$CheckForUpdates.items.604800" = "Weekliks";
-"settings.$CheckForUpdates.items.2629800" = "Maandeliks";
 "settings.$Chrome" = "Chrome";
 "settings.$ClearCache" = "Wis kasgeheue";
 "settings.$ClearPlaybackHistory" = "Wis afspeelgeskiedenis";

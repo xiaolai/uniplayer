@@ -628,7 +628,6 @@
 "settings.playlistShowMetadataInMusicMode.label" = "Samo u „Modus glazbe”";
 "settings.preventScreenSaver.label" = "Spriječi pokretanje čuvara ekrana tijekom reprodukcije";
 "settings.quitWhenNoOpenedWindow.label" = "Izlaz kada su zatvoren sve prozora";
-"settings.receiveBetaUpdate.label" = "Primaj beta verzije";
 "settings.recordPlaybackHistory.label" = "Aktiviraj povijest reprodukcije";
 "settings.recordRecentFiles.label" = "Aktiviraj izbornik „Otvori nedavne”";
 "settings.resumeLastPosition.label" = "Nastavi posljednju reprodukciju";
@@ -908,11 +907,6 @@
 "settings.$BrowserExtensions" = "Proširenja preglednika";
 "settings.$Cache" = "Predmemorija";
 "settings.$Cancel" = "Odustani";
-"settings.$CheckForUpdates" = "Traži nove verzije";
-"settings.$CheckForUpdates.items.3600" = "Svaki sat";
-"settings.$CheckForUpdates.items.86400" = "Dnevno";
-"settings.$CheckForUpdates.items.604800" = "Tjedno";
-"settings.$CheckForUpdates.items.2629800" = "Mjesečno";
 "settings.$Chrome" = "Chrome";
 "settings.$ClearCache" = "Izbriši predmemoriju";
 "settings.$ClearPlaybackHistory" = "Izbriši povijest reprodukcija";

@@ -628,7 +628,6 @@
 "settings.playlistShowMetadataInMusicMode.label" = "Csak \"zene\" módban";
 "settings.preventScreenSaver.label" = "A képernyőkímélő elindulásának megakadályozása lejátszás közben";
 "settings.quitWhenNoOpenedWindow.label" = "Lépjen ki az összes ablak bezárása után";
-"settings.receiveBetaUpdate.label" = "Béta frissítések engedélyezése";
 "settings.recordPlaybackHistory.label" = "Lejátszási előzmények engedélyezése";
 "settings.recordRecentFiles.label" = "Engedélyezze a \"Legutóbbi fájlok\" menüt";
 "settings.resumeLastPosition.label" = "Folytatás az utolsó lejátszási pozícióból";
@@ -908,11 +907,6 @@
 "settings.$BrowserExtensions" = "Browser Extensions";
 "settings.$Cache" = "Gyorsítótár";
 "settings.$Cancel" = "Mégse";
-"settings.$CheckForUpdates" = "Frissítések keresése";
-"settings.$CheckForUpdates.items.3600" = "Óránként";
-"settings.$CheckForUpdates.items.86400" = "Naponta";
-"settings.$CheckForUpdates.items.604800" = "Hetente";
-"settings.$CheckForUpdates.items.2629800" = "Havonta";
 "settings.$Chrome" = "Chrome";
 "settings.$ClearCache" = "Gyorsítótár ürítése";
 "settings.$ClearPlaybackHistory" = "Lejátszási elõzmények törlése";

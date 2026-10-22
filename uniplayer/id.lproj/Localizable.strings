@@ -628,7 +628,6 @@
 "settings.playlistShowMetadataInMusicMode.label" = "Hanya pada \"mode musik\"";
 "settings.preventScreenSaver.label" = "Cegah Penghemat Layar aktif saat memutar";
 "settings.quitWhenNoOpenedWindow.label" = "Matikan aplikasi setelah semua window ditutup";
-"settings.receiveBetaUpdate.label" = "Terima pembaruan versi beta";
 "settings.recordPlaybackHistory.label" = "Aktifkan riwayat pemutaran";
 "settings.recordRecentFiles.label" = "Aktifkan menu \"Buka File Terkini\"";
 "settings.resumeLastPosition.label" = "Lanjutkan posisi pemutaran terakhir";
@@ -908,11 +907,6 @@
 "settings.$BrowserExtensions" = "Browser Extensions";
 "settings.$Cache" = "Cache";
 "settings.$Cancel" = "Batal";
-"settings.$CheckForUpdates" = "Periksa pembaruan";
-"settings.$CheckForUpdates.items.3600" = "Per jam";
-"settings.$CheckForUpdates.items.86400" = "Setiap hari";
-"settings.$CheckForUpdates.items.604800" = "Setiap minggu";
-"settings.$CheckForUpdates.items.2629800" = "Setiap bulan";
 "settings.$Chrome" = "Chrome";
 "settings.$ClearCache" = "Bersihkan Cache";
 "settings.$ClearPlaybackHistory" = "Bersihkan Riwayat Pemutaran";

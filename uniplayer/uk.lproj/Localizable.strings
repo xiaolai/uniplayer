@@ -628,7 +628,6 @@
 "settings.playlistShowMetadataInMusicMode.label" = "Тільки в \"музичному режимі\"";
 "settings.preventScreenSaver.label" = "Запобігає запуск режиму збереження екрана під час відтворення";
 "settings.quitWhenNoOpenedWindow.label" = "Завершити, коли всі вікна закрито";
-"settings.receiveBetaUpdate.label" = "Отримувати бета-оновлення";
 "settings.recordPlaybackHistory.label" = "Увімкнути історію перегляду";
 "settings.recordRecentFiles.label" = "Увімкнути меню «Відкрити останні»";
 "settings.resumeLastPosition.label" = "Відновити перегляд з останньої позиції";
@@ -908,11 +907,6 @@
 "settings.$BrowserExtensions" = "Розширення браузера";
 "settings.$Cache" = "Кеш";
 "settings.$Cancel" = "Скасувати";
-"settings.$CheckForUpdates" = "Перевіряти наявність оновлень";
-"settings.$CheckForUpdates.items.3600" = "Щогодини";
-"settings.$CheckForUpdates.items.86400" = "Щодня";
-"settings.$CheckForUpdates.items.604800" = "Щотижня";
-"settings.$CheckForUpdates.items.2629800" = "Щомісяця";
 "settings.$Chrome" = "Chrome";
 "settings.$ClearCache" = "Очистити кеш";
 "settings.$ClearPlaybackHistory" = "Почистити історію перегляду";

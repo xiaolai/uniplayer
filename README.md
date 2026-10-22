@@ -45,12 +45,12 @@ For a distributable build, set `DEVELOPMENT_TEAM` in
 | CLI / plugin / extension | `.cli`, `.plugin`, `.OpenInUniPlayer` |
 | URL scheme | `uniplayer://` |
 | App icons | `uniplayer`, `uniplayer_beta`, `uniplayer_nightly` (Icon Composer) |
-| Update feed | Release asset in this repository (`AppData.appcastLink`) |
+| Distribution | Homebrew cask |
 | Plugin API | Unchanged: `iina.*` and `.iinaplgz` |
 
-Sparkle's public keys were removed from `Info.plist`, so update checks fail closed
-until a key pair and a signed appcast are published. `plugins.json` still lists
-upstream plugins because the plugin API is unchanged.
+UniPlayer has no in-app updater and publishes no appcast; upgrades come from
+Homebrew. `plugins.json` still lists upstream plugins because the plugin API is
+unchanged.
 
 ## Upstream
 

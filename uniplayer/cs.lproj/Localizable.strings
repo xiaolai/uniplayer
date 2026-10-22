@@ -628,7 +628,6 @@
 "settings.playlistShowMetadataInMusicMode.label" = "Pouze v „Hudebním režimu“";
 "settings.preventScreenSaver.label" = "Zakázat spuštění spořiče obrazovky při přehrávání";
 "settings.quitWhenNoOpenedWindow.label" = "Ukončit aplikaci po zavření všech oken";
-"settings.receiveBetaUpdate.label" = "Dostávat beta aktualizace";
 "settings.recordPlaybackHistory.label" = "Povolit historii přehrávání";
 "settings.recordRecentFiles.label" = "Povolit nabídku „Otevřít poslední položku“";
 "settings.resumeLastPosition.label" = "Pokračovat od poslední pozice přehrávání";
@@ -908,11 +907,6 @@
 "settings.$BrowserExtensions" = "Rozšíření prohlížeče";
 "settings.$Cache" = "Mezipaměť";
 "settings.$Cancel" = "Zrušit";
-"settings.$CheckForUpdates" = "Vyhledávat aktualizace";
-"settings.$CheckForUpdates.items.3600" = "Každou hodinu";
-"settings.$CheckForUpdates.items.86400" = "Denně";
-"settings.$CheckForUpdates.items.604800" = "Týdně";
-"settings.$CheckForUpdates.items.2629800" = "Měsíčně";
 "settings.$Chrome" = "Chrome";
 "settings.$ClearCache" = "Vymazat obsah mezipaměti";
 "settings.$ClearPlaybackHistory" = "Smazat historii přehrávání";

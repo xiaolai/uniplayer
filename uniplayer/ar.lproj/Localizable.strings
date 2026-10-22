@@ -628,7 +628,6 @@
 "settings.playlistShowMetadataInMusicMode.label" = "فقط في \"وضع الموسيقى\"";
 "settings.preventScreenSaver.label" = "منع حامي الشاشة عند بدء التشغيل";
 "settings.quitWhenNoOpenedWindow.label" = "الخروج بعد إغلاق جميع النوافذ";
-"settings.receiveBetaUpdate.label" = "تلقي تحديثات الإصدار التجريبي";
 "settings.recordPlaybackHistory.label" = "تمكين سجل التشغيل";
 "settings.recordRecentFiles.label" = "تمكين قائمة \"فتح الأحدث\"";
 "settings.resumeLastPosition.label" = "استئناف آخر موضع تشغيل";
@@ -908,11 +907,6 @@
 "settings.$BrowserExtensions" = "Browser Extensions";
 "settings.$Cache" = "تخزين مؤقت";
 "settings.$Cancel" = "إلغاء";
-"settings.$CheckForUpdates" = "التحقق من وجود تحديثات";
-"settings.$CheckForUpdates.items.3600" = "كل ساعة";
-"settings.$CheckForUpdates.items.86400" = "يومياً";
-"settings.$CheckForUpdates.items.604800" = "أسبوعيًا";
-"settings.$CheckForUpdates.items.2629800" = "شهرياً";
 "settings.$Chrome" = "متصفح كروم";
 "settings.$ClearCache" = "مسح ذاكرة التخزين المؤقتة";
 "settings.$ClearPlaybackHistory" = "مسح سجل التشغيل";

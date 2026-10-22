@@ -628,7 +628,6 @@
 "settings.playlistShowMetadataInMusicMode.label" = "Numai în modul \"muzică\"";
 "settings.preventScreenSaver.label" = "Împiedică pornirea screen saver-ului în timpul redării";
 "settings.quitWhenNoOpenedWindow.label" = "Termină după ce toate feresetrele sunt închise";
-"settings.receiveBetaUpdate.label" = "Primește versiuni beta";
 "settings.recordPlaybackHistory.label" = "Activează istoricul de redare";
 "settings.recordRecentFiles.label" = "Activează meniul „Deschise recent”";
 "settings.resumeLastPosition.label" = "Reia ultima poziție de redare";
@@ -908,11 +907,6 @@
 "settings.$BrowserExtensions" = "Browser Extensions";
 "settings.$Cache" = "Cache";
 "settings.$Cancel" = "Anulează";
-"settings.$CheckForUpdates" = "Verifică dacă există versiuni noi";
-"settings.$CheckForUpdates.items.3600" = "O dată pe oră";
-"settings.$CheckForUpdates.items.86400" = "Zilnic";
-"settings.$CheckForUpdates.items.604800" = "Zilnic";
-"settings.$CheckForUpdates.items.2629800" = "Lunar";
 "settings.$Chrome" = "Chrome";
 "settings.$ClearCache" = "Șterge Cache";
 "settings.$ClearPlaybackHistory" = "Șterge istoricul de redare";

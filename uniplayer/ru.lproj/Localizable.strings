@@ -628,7 +628,6 @@
 "settings.playlistShowMetadataInMusicMode.label" = "Только в «музыкальном режиме»";
 "settings.preventScreenSaver.label" = "Блокировать запуск экранной заставки во время воспроизведения";
 "settings.quitWhenNoOpenedWindow.label" = "Завершать приложение при закрытии всех окон";
-"settings.receiveBetaUpdate.label" = "Получать бета-обновления";
 "settings.recordPlaybackHistory.label" = "Включить историю воспроизведения";
 "settings.recordRecentFiles.label" = "Включить меню «Открыть недавние»";
 "settings.resumeLastPosition.label" = "Запоминать позицию в файле";
@@ -908,11 +907,6 @@
 "settings.$BrowserExtensions" = "Расширения браузера";
 "settings.$Cache" = "Кэш";
 "settings.$Cancel" = "Отмена";
-"settings.$CheckForUpdates" = "Проверять наличие обновлений";
-"settings.$CheckForUpdates.items.3600" = "Каждый час";
-"settings.$CheckForUpdates.items.86400" = "Каждый день";
-"settings.$CheckForUpdates.items.604800" = "Каждую неделю";
-"settings.$CheckForUpdates.items.2629800" = "Каждый месяц";
 "settings.$Chrome" = "Chrome";
 "settings.$ClearCache" = "Очистка кэша";
 "settings.$ClearPlaybackHistory" = "Очистить историю воспроизведения";

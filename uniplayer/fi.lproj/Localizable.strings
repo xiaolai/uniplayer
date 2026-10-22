@@ -628,7 +628,6 @@
 "settings.playlistShowMetadataInMusicMode.label" = "Vain \"musiikkitilassa\"";
 "settings.preventScreenSaver.label" = "Prevent screen saver from starting while playing";
 "settings.quitWhenNoOpenedWindow.label" = "Lopeta kun kaikki ikkunat on suljettu";
-"settings.receiveBetaUpdate.label" = "Vastaanota beta-päivityksiä";
 "settings.recordPlaybackHistory.label" = "Ota toistohistoria käyttöön";
 "settings.recordRecentFiles.label" = "Ota käyttöön \"Avaa äskettäinen\" valikko";
 "settings.resumeLastPosition.label" = "Jatka toiston viimeisestä sijainnista";
@@ -908,11 +907,6 @@
 "settings.$BrowserExtensions" = "Browser Extensions";
 "settings.$Cache" = "Välimuisti";
 "settings.$Cancel" = "Peruuta";
-"settings.$CheckForUpdates" = "Tarkista päivitykset";
-"settings.$CheckForUpdates.items.3600" = "Tunneittain";
-"settings.$CheckForUpdates.items.86400" = "Päivittäin";
-"settings.$CheckForUpdates.items.604800" = "Viikoittain";
-"settings.$CheckForUpdates.items.2629800" = "Kuukausittain";
 "settings.$Chrome" = "Chrome";
 "settings.$ClearCache" = "Tyhjennä välimuisti";
 "settings.$ClearPlaybackHistory" = "Tyhjennä toistohistoria";

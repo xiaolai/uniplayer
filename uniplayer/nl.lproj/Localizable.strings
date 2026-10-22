@@ -628,7 +628,6 @@
 "settings.playlistShowMetadataInMusicMode.label" = "Alleen in \"muziek modus\"";
 "settings.preventScreenSaver.label" = "Voorkom dat de schermbeveiliging start tijdens het afspelen";
 "settings.quitWhenNoOpenedWindow.label" = "Stop UniPlayer wanneer alle vensters gesloten zijn";
-"settings.receiveBetaUpdate.label" = "Ontvang bètaversies";
 "settings.recordPlaybackHistory.label" = "Houd afspeelgeschiedenis bij";
 "settings.recordRecentFiles.label" = "Schakel \"Open recente bestanden\"-menu in";
 "settings.resumeLastPosition.label" = "Onthoud laatste afspeelpositie";
@@ -908,11 +907,6 @@
 "settings.$BrowserExtensions" = "Browser Extensions";
 "settings.$Cache" = "Cache";
 "settings.$Cancel" = "Annuleer";
-"settings.$CheckForUpdates" = "Zoek automatisch naar updates";
-"settings.$CheckForUpdates.items.3600" = "Ieder uur";
-"settings.$CheckForUpdates.items.86400" = "Dagelijks";
-"settings.$CheckForUpdates.items.604800" = "Wekelijks";
-"settings.$CheckForUpdates.items.2629800" = "Maandelijks";
 "settings.$Chrome" = "Chrome";
 "settings.$ClearCache" = "Leeg caches";
 "settings.$ClearPlaybackHistory" = "Wis afspeelgeschiedenis";

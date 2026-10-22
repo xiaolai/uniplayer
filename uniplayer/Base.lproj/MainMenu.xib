@@ -16,7 +16,6 @@
             <connections>
                 <outlet property="dockMenu" destination="fxS-xv-Jb2" id="YdT-kw-qmk"/>
                 <outlet property="menuController" destination="cyK-tE-xgA" id="6U6-oJ-g0G"/>
-                <outlet property="updaterController" destination="wTK-gz-aTs" id="pWT-ES-mjo"/>
             </connections>
         </customObject>
         <customObject id="YLy-65-1bz" customClass="NSFontManager"/>
@@ -30,12 +29,6 @@
                                 <modifierMask key="keyEquivalentModifierMask"/>
                                 <connections>
                                     <action selector="showAboutWindow:" target="Voe-Tx-rLC" id="HGv-E1-lQH"/>
-                                </connections>
-                            </menuItem>
-                            <menuItem title="Check for Updates..." id="gMo-qL-m08">
-                                <modifierMask key="keyEquivalentModifierMask"/>
-                                <connections>
-                                    <action selector="checkForUpdates:" target="wTK-gz-aTs" id="MFD-wN-SXh"/>
                                 </connections>
                             </menuItem>
                             <menuItem isSeparatorItem="YES" id="VOq-y0-SEH"/>
@@ -842,10 +835,5 @@ CA
             </items>
             <point key="canvasLocation" x="18" y="689.5"/>
         </menu>
-        <customObject id="wTK-gz-aTs" customClass="SPUStandardUpdaterController">
-            <connections>
-                <outlet property="updaterDelegate" destination="Voe-Tx-rLC" id="AvP-Na-qhG"/>
-            </connections>
-        </customObject>
     </objects>
 </document>

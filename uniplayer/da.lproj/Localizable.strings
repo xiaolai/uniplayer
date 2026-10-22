@@ -628,7 +628,6 @@
 "settings.playlistShowMetadataInMusicMode.label" = "Kun i \"musiktilstand\"";
 "settings.preventScreenSaver.label" = "Undgå pauseskærm fra at starte, mens du afspiller";
 "settings.quitWhenNoOpenedWindow.label" = "Afslut efter alle viduer lukkes";
-"settings.receiveBetaUpdate.label" = "Modtag betaopdateringer";
 "settings.recordPlaybackHistory.label" = "Aktiver playback historik";
 "settings.recordRecentFiles.label" = "Aktiver \"Åben Senest\" menu";
 "settings.resumeLastPosition.label" = "Genoptag sidste playback position";
@@ -908,11 +907,6 @@
 "settings.$BrowserExtensions" = "Browser Extensions";
 "settings.$Cache" = "Cache";
 "settings.$Cancel" = "Annuller";
-"settings.$CheckForUpdates" = "Tjek efter opdateringer";
-"settings.$CheckForUpdates.items.3600" = "Hver time";
-"settings.$CheckForUpdates.items.86400" = "Daglig";
-"settings.$CheckForUpdates.items.604800" = "Ugentlig";
-"settings.$CheckForUpdates.items.2629800" = "Månedlige";
 "settings.$Chrome" = "Chrome";
 "settings.$ClearCache" = "Tøm cache";
 "settings.$ClearPlaybackHistory" = "Ryd afspilningshistorik";

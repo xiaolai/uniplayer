@@ -628,7 +628,6 @@
 "settings.playlistShowMetadataInMusicMode.label" = "Apenas no \"modo de música\"";
 "settings.preventScreenSaver.label" = "Prevent screen saver from starting while playing";
 "settings.quitWhenNoOpenedWindow.label" = "Sair quando todas as janelas estiverem fechadas";
-"settings.receiveBetaUpdate.label" = "Receber atualizações beta";
 "settings.recordPlaybackHistory.label" = "Ativar histórico de reprodução";
 "settings.recordRecentFiles.label" = "Ativar menu \"Abrir Recente\"";
 "settings.resumeLastPosition.label" = "Retomar a última posição de reprodução";
@@ -908,11 +907,6 @@
 "settings.$BrowserExtensions" = "Browser Extensions";
 "settings.$Cache" = "Cache";
 "settings.$Cancel" = "Cancelar";
-"settings.$CheckForUpdates" = "Procurar atualizações";
-"settings.$CheckForUpdates.items.3600" = "De hora em hora";
-"settings.$CheckForUpdates.items.86400" = "Diariamente";
-"settings.$CheckForUpdates.items.604800" = "Semanalmente";
-"settings.$CheckForUpdates.items.2629800" = "Mensalmente";
 "settings.$Chrome" = "Chrome";
 "settings.$ClearCache" = "Limpar Cache";
 "settings.$ClearPlaybackHistory" = "Limpar Histórico de Reprodução";

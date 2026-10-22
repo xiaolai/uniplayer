@@ -628,7 +628,6 @@
 "settings.playlistShowMetadataInMusicMode.label" = "仅在“音乐模式”下显示";
 "settings.preventScreenSaver.label" = "在播放时阻止屏幕保护程序启动";
 "settings.quitWhenNoOpenedWindow.label" = "没有打开的窗口时退出";
-"settings.receiveBetaUpdate.label" = "接收测试版本（Beta）更新";
 "settings.recordPlaybackHistory.label" = "记录播放历史";
 "settings.recordRecentFiles.label" = "启用“最近打开”菜单";
 "settings.resumeLastPosition.label" = "自动恢复上次播放进度";
@@ -908,11 +907,6 @@
 "settings.$BrowserExtensions" = "浏览器扩展";
 "settings.$Cache" = "缓存";
 "settings.$Cancel" = "取消";
-"settings.$CheckForUpdates" = "自动检查更新";
-"settings.$CheckForUpdates.items.3600" = "每小时";
-"settings.$CheckForUpdates.items.86400" = "每天";
-"settings.$CheckForUpdates.items.604800" = "每周";
-"settings.$CheckForUpdates.items.2629800" = "每月";
 "settings.$Chrome" = "Chrome";
 "settings.$ClearCache" = "清除缓存";
 "settings.$ClearPlaybackHistory" = "清除播放历史";

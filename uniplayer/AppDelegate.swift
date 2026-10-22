@@ -8,7 +8,6 @@
 
 import Cocoa
 import MediaPlayer
-import Sparkle
 
 let UNIPLAYER_ENABLE_PLUGIN_SYSTEM = true
 
@@ -21,7 +20,7 @@ fileprivate let AlternativeMenuItemTag = 1
 
 
 @NSApplicationMain
-class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate {
 
   /// The `AppDelegate` singleton object.
   static var shared: AppDelegate { NSApp.delegate as! AppDelegate }
@@ -189,13 +188,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     }
   }
 
-  // MARK: - SPUUpdaterDelegate
-  @IBOutlet var updaterController: SPUStandardUpdaterController!
-
-  func feedURLString(for updater: SPUUpdater) -> String? {
-    return Preference.bool(for: .receiveBetaUpdate) ? AppData.appcastBetaLink : AppData.appcastLink
-  }
-
   // MARK: - App Delegate
 
   func applicationWillFinishLaunching(_ notification: Notification) {
@@ -354,9 +346,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     if !isReady {
       getReady()
     }
-
-    // see https://sparkle-project.org/documentation/api-reference/Classes/SPUUpdater.html#/c:objc(cs)SPUUpdater(im)clearFeedURLFromUserDefaults
-    updaterController.updater.clearFeedURLFromUserDefaults()
 
     // show alpha in color panels
     NSColorPanel.shared.showsAlpha = true
