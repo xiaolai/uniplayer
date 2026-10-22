@@ -114,6 +114,12 @@ class VideoView: NSView {
   ///
   /// See `MainWindowController.workaroundCursorDefect` and the issue for details on this workaround.
   override func rightMouseDown(with event: NSEvent) {
+    if player.isInline {
+      // Do not dispatch plugin input or cursor work through the hidden player
+      // window while the library owns the surface.
+      player.inlineHost?.handleSurfaceEvent(event)
+      return
+    }
     player.mainWindow.rightMouseDown(with: event)
     super.rightMouseDown(with: event)
   }
@@ -128,6 +134,12 @@ class VideoView: NSView {
   /// the view which then calls the window controller's method.
   override func mouseUp(with event: NSEvent) {
     lastEventId = event.eventNumber
+    if player.isInline {
+      // The surface lives in the library; the player window's mouse handling
+      // would interpret coordinates against the wrong window.
+      player.inlineHost?.handleSurfaceEvent(event)
+      return
+    }
     // Only check for Big Sur or greater, not if the preference use legacy full screen is enabled as
     // that can be changed while running and once the window title has been removed and added back
     // AppKit malfunctions from then on. The check for running under Big Sur or later isn't really
@@ -139,6 +151,7 @@ class VideoView: NSView {
   // MARK: Drag and drop
 
   override func draggingEntered(_ sender: NSDraggingInfo) -> NSDragOperation {
+    guard !player.isInline else { return [] }
     hasPlayableFiles = (player.acceptFromPasteboard(sender, isPlaylist: true) == .copy)
     return player.acceptFromPasteboard(sender)
   }
@@ -162,7 +175,8 @@ class VideoView: NSView {
 
   override func draggingUpdated(_ sender: NSDraggingInfo) -> NSDragOperation {
 
-    guard !player.isInMiniPlayer && !playlistShown && hasPlayableFiles else { return super.draggingUpdated(sender) }
+    guard !player.isInMiniPlayer, !player.isInline,
+          !playlistShown, hasPlayableFiles else { return super.draggingUpdated(sender) }
 
     func inTriggerArea(_ point: NSPoint?) -> Bool {
       guard let point, let frame = player.mainWindow.window?.frame else { return false }
@@ -189,10 +203,12 @@ class VideoView: NSView {
   }
 
   override func performDragOperation(_ sender: NSDraggingInfo) -> Bool {
+    destroyTimer()
     return player.openFromPasteboard(sender)
   }
 
   override func draggingEnded(_ sender: NSDraggingInfo) {
+    destroyTimer()
     if playlistShown {
       player.mainWindow.sidebars.hideAllSideBars()
     }
@@ -244,9 +260,10 @@ class VideoView: NSView {
 
     // Do nothing if on the same display
     if (currentDisplay == displayId) { return }
-    currentDisplay = displayId
 
     checkResult(CVDisplayLinkSetCurrentCGDisplay(link, displayId), "CVDisplayLinkSetCurrentCGDisplay")
+    // Cache only after the bind succeeds; a failed bind must be retried.
+    currentDisplay = displayId
     let actualData = CVDisplayLinkGetActualOutputVideoRefreshPeriod(link)
     let nominalData = CVDisplayLinkGetNominalOutputVideoRefreshPeriod(link)
     var actualFps: Double = 0
@@ -348,7 +365,9 @@ class VideoView: NSView {
   ///     problem is fixed, UniPlayer must go back to using `icc-profile`. The code to support `icc-profile-auto` can be
   ///     enabled by setting `USE_ICC_PROFILE_AUTO` in Xcode settings to test a proposed fix to `libmpv`.
   private func setICCProfile() {
-    let screenColorSpace = player.mainWindow.window?.screen?.colorSpace
+    // Use the screen of the window that actually contains the surface; while
+    // inline that is the library window, not the hidden player window.
+    let screenColorSpace = window?.screen?.colorSpace
     if !Preference.bool(for: .loadIccProfile) {
       logHDR("Not using ICC profile due to user preference")
 #if USE_ICC_PROFILE_AUTO

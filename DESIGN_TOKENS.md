@@ -668,6 +668,14 @@ motion that honours Reduce Motion and the app's own animation setting.
 | `hoverScale` | `static let hoverScale: CGFloat = 1.02` | The Continue Watching card's hover scale. |
 | `cardHoverScale` | `static let cardHoverScale: CGFloat = 1.015` | The library card's hover scale. |
 
+## Inspector
+
+| Token | Declaration | Purpose |
+|---|---|---|
+| `minimumWidth` | `static let minimumWidth: CGFloat = Size.n260` | The narrowest useful transcript column. |
+| `idealWidth` | `static let idealWidth: CGFloat = Size.n360` | The default column width beside a 16:9 surface. |
+| `maximumWidth` | `static let maximumWidth: CGFloat = Size.n420` | The widest the column may grow before the video shrinks too far. |
+
 ## Player HUD
 
 | Token | Declaration | Purpose |

@@ -57,11 +57,23 @@ enum LibrarySection: String, CaseIterable, Identifiable {
 // MARK: - Chrome
 
 /// The library window's column state and the actions its toolbar invokes.
-@MainActor
 final class LibraryChrome: ObservableObject {
   @Published var columnVisibility: NavigationSplitViewVisibility = .all
+  @Published var inspectorPresented = false
+  /// True while the library window is in macOS fullscreen or Focus mode.
+  @Published var isImmersive = false
+  /// The one inline surface host for this window, created with the window and
+  /// kept for its whole lifetime.
+  let inlineHost = InlinePlayerSurfaceHost()
   var openFile: (() -> Void)?
   var openURL: (() -> Void)?
+  var toggleFullscreen: (() -> Void)?
+  var openInNewWindow: (() -> Void)?
+  var toggleInspector: (() -> Void)?
+  /// Wakes the inline controls on a key press.
+  var registerInlineActivity: (() -> Void)?
+  /// Reports the library window's fullscreen state.
+  var isFullscreen: (() -> Bool)?
 
   func toggleSidebar() {
     columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
@@ -133,13 +145,40 @@ struct LibraryTitlebarControls: View {
   }
 }
 
+/// The trailing titlebar control that opens the AI inspector.
+struct InspectorTitlebarControls: View {
+  @ObservedObject var chrome: LibraryChrome
+
+  var body: some View {
+    Button {
+      // Routed through the window controller so the fullscreen guard applies.
+      chrome.toggleInspector?()
+    } label: {
+      Image(systemName: "sidebar.trailing")
+        .font(Tokens.Typography.titlebarIcon.font)
+        .frame(width: Tokens.Size.n30, height: Tokens.Size.n30)
+        .contentShape(Circle())
+    }
+    .buttonStyle(.plain)
+    .foregroundStyle(Tokens.Palette.textPrimary.color)
+    .glassEffect(.regular.interactive(), in: .circle)
+    .help(L("Show or Hide AI Inspector"))
+    .accessibilityLabel(L("Show or Hide AI Inspector"))
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+  }
+}
+
 // MARK: - Root
 
 struct LibraryRootView: View {
   private let open: (URL) -> Void
   private let openMany: ([URL]) -> Void
+  /// Unowned: the window that hosts this view is owned by `PlayerCore`.
+  private unowned let player: PlayerCore
 
   @StateObject private var model: LibraryModel
+  @StateObject private var inlinePlayer: InlinePlayerModel
+  @StateObject private var assistant: AssistantViewModel
   @ObservedObject private var chrome: LibraryChrome
   @ObservedObject private var channels = ChannelStore.shared
   @StateObject private var browser = ChannelBrowserModel()
@@ -151,22 +190,31 @@ struct LibraryRootView: View {
 
   init(player: PlayerCore, chrome: LibraryChrome) {
     // Weak on purpose: PlayerCore owns the window that owns this view.
+    let host = chrome.inlineHost
     let open: (URL) -> Void = { [weak player] url in
       DispatchQueue.main.async {
-        player?.openURL(url)
+        guard let player else { return }
+        player.presentInline(in: host)
+        player.openURL(url)
       }
     }
     let openMany: ([URL]) -> Void = { [weak player] urls in
       guard !urls.isEmpty else { return }
       DispatchQueue.main.async {
-        _ = player?.openURLs(urls)
+        guard let player else { return }
+        player.presentInline(in: host)
+        _ = player.openURLs(urls)
       }
     }
     self.open = open
     self.openMany = openMany
+    self.player = player
     self.chrome = chrome
     let model = LibraryModel(open: open)
     _model = StateObject(wrappedValue: model)
+    _inlinePlayer = StateObject(wrappedValue: InlinePlayerModel(player: player))
+    _assistant = StateObject(wrappedValue: AssistantViewModel(
+      toolExecutor: PlayerAssistantToolExecutor(player: player)))
     chrome.openFile = { [weak model] in
       model?.openFilePanel()
     }
@@ -184,6 +232,13 @@ struct LibraryRootView: View {
       detail
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Tokens.Palette.canvas.color)
+        .inspector(isPresented: $chrome.inspectorPresented) {
+          AIInspectorView(model: assistant)
+            .inspectorColumnWidth(
+              min: Tokens.Inspector.minimumWidth,
+              ideal: Tokens.Inspector.idealWidth,
+              max: Tokens.Inspector.maximumWidth)
+        }
         .ignoresSafeArea(.container, edges: .top)
     }
     .navigationSplitViewStyle(.balanced)
@@ -195,19 +250,26 @@ struct LibraryRootView: View {
       }
     }
     .onDrop(of: [UTType.fileURL.identifier], isTargeted: $dropTargeted) { providers in
+      let lock = NSLock()
       var urls = Array<URL?>(repeating: nil, count: providers.count)
       let group = DispatchGroup()
       for (index, provider) in providers.enumerated() {
         group.enter()
         _ = provider.loadObject(ofClass: URL.self) { url, _ in
           if let url, url.isFileURL {
+            // Provider callbacks arrive on different queues; an array is not
+            // safe to mutate concurrently even at distinct indices.
+            lock.lock()
             urls[index] = url
+            lock.unlock()
           }
           group.leave()
         }
       }
       group.notify(queue: .main) {
+        lock.lock()
         let resolved = urls.compactMap { $0 }
+        lock.unlock()
         if resolved.count == 1 {
           open(resolved[0])
         } else {
@@ -218,9 +280,72 @@ struct LibraryRootView: View {
     }
     .onAppear {
       model.reload()
+      inlinePlayer.onToggleFullscreen = { [weak chrome] in
+        chrome?.toggleFullscreen?()
+      }
+      inlinePlayer.onOpenInNewWindow = { [weak chrome] in
+        chrome?.openInNewWindow?()
+      }
+      chrome.registerInlineActivity = { [weak inlinePlayer] in
+        inlinePlayer?.registerActivity()
+      }
+      chrome.inlineHost.onActivity = { [weak inlinePlayer] in
+        inlinePlayer?.registerActivity()
+      }
+      inlinePlayer.fullscreenProvider = { [weak chrome] in
+        chrome?.isFullscreen?() ?? false
+      }
+      chrome.inlineHost.onDoubleClick = { [weak inlinePlayer] in
+        inlinePlayer?.toggleFullscreen()
+      }
+      assistant.playerContextProvider = { [weak player] includeFilePath in
+        guard let player, player.isInline, player.info.state.active else { return nil }
+        let snapshot = PlayerSnapshot.capture(from: player)
+        return PlaybackContextBuilder.make(
+          snapshot: snapshot,
+          options: .init(includeFilePath: includeFilePath))
+      }
+      assistant.currentMediaID = { [weak player] in
+        player?.info.currentURL?.absoluteString
+      }
+      assistant.onSeek = { [weak player, weak inlinePlayer] seconds in
+        // Seek only when a file is loaded; seeking an idle mpv core is fatal.
+        guard let player, player.info.state.loaded else { return }
+        player.seek(absoluteSecond: seconds)
+        inlinePlayer?.refresh()
+        inlinePlayer?.registerActivity()
+      }
+      assistant.onToolPlaybackChanged = { [weak inlinePlayer] in
+        inlinePlayer?.refresh()
+        inlinePlayer?.registerActivity()
+      }
     }
     .onChange(of: selection) { _, _ in
+      // Navigating away pauses the inline player and keeps its position; the
+      // detail resumes it when the same item is opened again.
+      inlinePlayer.pauseForNavigation()
       selectedItem = nil
+      assistant.setChannelContext(nil)
+      assistant.refreshContext()
+    }
+    .onChange(of: inlinePlayer.isActive) { _, active in
+      // Playback started from a drop, the URL panel or the hero: make sure a
+      // detail exists, or the surface would render into no visible view.
+      if active, let url = inlinePlayer.currentURL {
+        if selectedItem?.url != url {
+          selectedItem = libraryItem(for: url)
+        }
+        // Playback replaced whatever page was showing, so a channel page's
+        // context is no longer what the user is looking at.
+        assistant.setChannelContext(nil)
+      }
+      assistant.refreshContext()
+    }
+    .onChange(of: inlinePlayer.currentURL) { _, url in
+      if inlinePlayer.isActive, let url, selectedItem?.url != url {
+        selectedItem = libraryItem(for: url)
+      }
+      assistant.refreshContext()
     }
     .sheet(item: $channelEditor) { mode in
       ChannelEditorSheet(store: channels, mode: mode) { channel in
@@ -314,14 +439,24 @@ struct LibraryRootView: View {
     if let selectedItem {
       DetailView(
         item: model.allItems.first(where: { $0.id == selectedItem.id }) ?? selectedItem,
+        inlinePlayer: inlinePlayer,
+        host: chrome.inlineHost,
         play: { open(selectedItem.url) },
-        back: { self.selectedItem = nil })
+        openInNewWindow: {
+          inlinePlayer.onOpenInNewWindow?()
+        },
+        back: { self.selectedItem = nil },
+        immersive: chrome.isImmersive)
     } else {
       switch selection ?? .section(.home) {
       case .section(.home):
         HomeView(
           model: model,
           select: { selectedItem = $0 },
+          play: { item in
+            selectedItem = item
+            open(item.url)
+          },
           seeAll: { selection = .section($0) })
       case .section(.search):
         SearchView(model: model, select: { selectedItem = $0 })
@@ -349,7 +484,16 @@ struct LibraryRootView: View {
           emptyMessage: L("Open a video to start your library."))
       case .channel(let id):
         if let channel = channels.channel(id: id) {
-          ChannelDetailView(browser: browser, channel: channel)
+          ChannelDetailView(browser: browser, channel: channel) { context in
+            // The button's task can finish after the user navigated away.
+            guard case .channel(let currentID) = selection, currentID == channel.id else {
+              return
+            }
+            assistant.setChannelContext(context)
+            if !chrome.inspectorPresented {
+              chrome.toggleInspector?()
+            }
+          }
         } else {
           EmptyStateView(
             symbol: "globe",
@@ -360,6 +504,26 @@ struct LibraryRootView: View {
         }
       }
     }
+  }
+
+  /// A detail item for a URL the library has not indexed yet (a drop, or a URL
+  /// opened from the toolbar). The metadata parser works on the file name.
+  private func libraryItem(for url: URL) -> LibraryItem {
+    if let existing = model.allItems.first(where: { $0.url == url }) {
+      return existing
+    }
+    let fileName = url.isFileURL ? url.lastPathComponent : (url.host ?? url.absoluteString)
+    return LibraryItem(
+      url: url,
+      title: (fileName as NSString).deletingPathExtension,
+      subtitle: url.isFileURL
+        ? url.deletingLastPathComponent().lastPathComponent
+        : (url.host ?? ""),
+      metadata: .parse(fileName: fileName),
+      duration: 0,
+      progress: 0,
+      added: Date(),
+      isNetwork: !url.isFileURL)
   }
 
   private var versionText: String {
@@ -373,6 +537,7 @@ struct LibraryRootView: View {
 private struct HomeView: View {
   @ObservedObject var model: LibraryModel
   let select: (LibraryItem) -> Void
+  let play: (LibraryItem) -> Void
   let seeAll: (LibrarySection) -> Void
 
   var body: some View {
@@ -380,7 +545,7 @@ private struct HomeView: View {
       VStack(alignment: .leading, spacing: Tokens.Space.sectionGap) {
         if let hero = model.hero {
           HeroView(item: hero) {
-            model.open(hero)
+            play(hero)
           }
         }
 
@@ -701,11 +866,11 @@ private struct LibraryCard: View {
             RoundedRectangle(cornerRadius: Tokens.Radius.card, style: .continuous)
               .stroke(
                 Tokens.Palette.white.color.opacity(borderOpacity),
-                lineWidth: contrast == .increased ? 2 : 1)
+                lineWidth: contrast == .increased ? Tokens.Stroke.strong : Tokens.Stroke.hairline)
           }
           .overlay {
             RoundedRectangle(cornerRadius: Tokens.Radius.card, style: .continuous)
-              .stroke(Tokens.Palette.accent.color, lineWidth: focused ? 3 : 0)
+              .stroke(Tokens.Palette.accent.color, lineWidth: focused ? Tokens.Stroke.focus : Tokens.Stroke.none)
               .padding(-Tokens.Space.n3)
           }
           .shadow(color: hovering ? Tokens.Shadow.card.color.color : Tokens.Palette.clear.color, radius: Tokens.Shadow.card.radius, x: Tokens.Shadow.card.offset.width, y: Tokens.Shadow.card.offset.height)
@@ -803,12 +968,44 @@ private struct SearchView: View {
 
 private struct DetailView: View {
   let item: LibraryItem
+  @ObservedObject var inlinePlayer: InlinePlayerModel
+  let host: InlinePlayerSurfaceHost
   let play: () -> Void
+  let openInNewWindow: () -> Void
   let back: () -> Void
+  /// Fullscreen or Focus mode: the surface fills the window and the page
+  /// chrome, metadata and actions step out of the way.
+  let immersive: Bool
 
   @Environment(\.colorSchemeContrast) private var contrast
 
+  /// The live surface appears only when this detail's item is the file the
+  /// inline player currently presents.
+  private var isPlayingHere: Bool {
+    guard inlinePlayer.isActive, let current = inlinePlayer.currentURL else { return false }
+    return current == item.url
+  }
+
   var body: some View {
+    Group {
+      if immersive && isPlayingHere {
+        immersiveSurface
+      } else {
+        page
+      }
+    }
+    // Lifecycle sits outside the branch: switching between the page and the
+    // immersive layout must not pause and resume playback.
+    .onAppear {
+      inlinePlayer.refresh()
+      inlinePlayer.resumeIfPausedForNavigation(for: item.url)
+    }
+    .onDisappear {
+      inlinePlayer.pauseForNavigation()
+    }
+  }
+
+  private var page: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: Tokens.Space.n24) {
         Button(action: back) {
@@ -819,46 +1016,31 @@ private struct DetailView: View {
         .foregroundStyle(Tokens.Palette.textSecondary.color)
         .keyboardShortcut(.cancelAction)
 
-        Tokens.Palette.clear.color
-          .aspectRatio(Tokens.Aspect.video, contentMode: .fit)
-          .overlay {
-            ZStack(alignment: .bottomLeading) {
-              PosterImage(url: item.url)
-              LinearGradient(
-                colors: [Tokens.Palette.clear.color, Tokens.Palette.detailGradientMid.color, Tokens.Palette.detailGradientEnd.color],
-                startPoint: .top,
-                endPoint: .bottom)
-              VStack(alignment: .leading, spacing: Tokens.Library.cardSpacing) {
-                Text(item.title)
-                  .font(Tokens.Typography.heroTitle.font)
-                  .lineLimit(2)
-                if !item.metadata.detailLine.isEmpty {
-                  Text(item.metadata.detailLine)
-                    .font(Tokens.Typography.heroBody.font)
-                    .foregroundStyle(Tokens.Palette.onMediaSecondary.color)
-                }
-              }
-              .foregroundStyle(Tokens.Palette.onMedia.color)
-              .padding(Tokens.Space.n28)
-            }
-          }
-          .clipShape(RoundedRectangle(cornerRadius: Tokens.Radius.hero, style: .continuous))
-          .overlay {
-            RoundedRectangle(cornerRadius: Tokens.Radius.hero, style: .continuous)
-              .stroke(
-                contrast == .increased ? Tokens.Palette.mediaBorderIncreased.color : Tokens.Palette.mediaBorder.color,
-                lineWidth: contrast == .increased ? Tokens.Stroke.strong : Tokens.Stroke.hairline)
-          }
+        if isPlayingHere {
+          liveSurface
+        } else {
+          poster
+        }
 
         HStack(alignment: .center, spacing: Tokens.Space.n16) {
-          Button(action: play) {
-            Label(item.isResumable ? L("Resume") : L("Play"), systemImage: "play.fill")
-              .font(Tokens.Typography.button.font)
-              .padding(.horizontal, Tokens.Space.n20)
-              .padding(.vertical, Tokens.Space.n10)
+          if !isPlayingHere {
+            Button(action: play) {
+              Label(item.isResumable ? L("Resume") : L("Play"), systemImage: "play.fill")
+                .font(Tokens.Typography.button.font)
+                .padding(.horizontal, Tokens.Space.n20)
+                .padding(.vertical, Tokens.Space.n10)
+            }
+            .buttonStyle(.borderedProminent)
+            .keyboardShortcut(.defaultAction)
+          } else {
+            Button(action: openInNewWindow) {
+              Label(L("Open in New Window"), systemImage: "macwindow.on.rectangle")
+                .font(Tokens.Typography.button.font)
+                .padding(.horizontal, Tokens.Space.n20)
+                .padding(.vertical, Tokens.Space.n10)
+            }
+            .buttonStyle(.bordered)
           }
-          .buttonStyle(.borderedProminent)
-          .keyboardShortcut(.defaultAction)
 
           if item.isResumable {
             VStack(alignment: .leading, spacing: Tokens.Space.n5) {
@@ -916,6 +1098,68 @@ private struct DetailView: View {
       .padding(.bottom, Tokens.Space.pageBottom)
     }
     .background(Tokens.Palette.canvas.color)
+  }
+
+  /// Fullscreen and Focus mode: only the live surface, filling the window.
+  private var immersiveSurface: some View {
+    ZStack {
+      Tokens.Palette.black.color
+      InlinePlayerView(host: host)
+      InlinePlayerChrome(model: inlinePlayer)
+    }
+    .background(Tokens.Palette.black.color)
+    .ignoresSafeArea()
+  }
+
+  private var liveSurface: some View {
+    Tokens.Palette.black.color
+      .aspectRatio(Tokens.Aspect.video, contentMode: .fit)
+      .overlay {
+        ZStack {
+          InlinePlayerView(host: host)
+          InlinePlayerChrome(model: inlinePlayer)
+        }
+      }
+      .clipShape(RoundedRectangle(cornerRadius: Tokens.Radius.hero, style: .continuous))
+      .overlay {
+        RoundedRectangle(cornerRadius: Tokens.Radius.hero, style: .continuous)
+          .stroke(
+            contrast == .increased ? Tokens.Palette.mediaBorderIncreased.color : Tokens.Palette.mediaBorder.color,
+            lineWidth: contrast == .increased ? Tokens.Stroke.strong : Tokens.Stroke.hairline)
+      }
+  }
+
+  private var poster: some View {
+    Tokens.Palette.clear.color
+      .aspectRatio(Tokens.Aspect.video, contentMode: .fit)
+      .overlay {
+        ZStack(alignment: .bottomLeading) {
+          PosterImage(url: item.url)
+          LinearGradient(
+            colors: [Tokens.Palette.clear.color, Tokens.Palette.detailGradientMid.color, Tokens.Palette.detailGradientEnd.color],
+            startPoint: .top,
+            endPoint: .bottom)
+          VStack(alignment: .leading, spacing: Tokens.Library.cardSpacing) {
+            Text(item.title)
+              .font(Tokens.Typography.heroTitle.font)
+              .lineLimit(2)
+            if !item.metadata.detailLine.isEmpty {
+              Text(item.metadata.detailLine)
+                .font(Tokens.Typography.heroBody.font)
+                .foregroundStyle(Tokens.Palette.onMediaSecondary.color)
+            }
+          }
+          .foregroundStyle(Tokens.Palette.onMedia.color)
+          .padding(Tokens.Space.n28)
+        }
+      }
+      .clipShape(RoundedRectangle(cornerRadius: Tokens.Radius.hero, style: .continuous))
+      .overlay {
+        RoundedRectangle(cornerRadius: Tokens.Radius.hero, style: .continuous)
+          .stroke(
+            contrast == .increased ? Tokens.Palette.mediaBorderIncreased.color : Tokens.Palette.mediaBorder.color,
+            lineWidth: contrast == .increased ? Tokens.Stroke.strong : Tokens.Stroke.hairline)
+      }
   }
 
   private var fileSize: String? {

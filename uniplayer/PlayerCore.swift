@@ -8,6 +8,49 @@
 
 import Cocoa
 
+/// Which host currently presents the player surface: the player window, the
+/// mini player, or the library detail. Window-specific work (OSC, HUD, window
+/// resizing, `fsState`) is gated on this value.
+enum PlayerPresentation: String, Equatable {
+  case window
+  case miniPlayer
+  case inline
+}
+
+/// A view that can borrow the player surface. The host owns the container; the
+/// player owns the surface itself.
+protocol PlayerSurfaceHosting: AnyObject {
+  var surfaceContainer: NSView { get }
+  /// Events the borrowed surface consumed but the host must interpret.
+  func handleSurfaceEvent(_ event: NSEvent)
+}
+
+/// The allowed presentation transitions, separate from AppKit so they can be
+/// unit tested. Inline and mini player never hand the surface straight to each
+/// other: the surface returns to the player window first, which keeps one
+/// restore path.
+struct PlayerPresentationState {
+  enum TransitionError: Error, Equatable {
+    case directInlineToMiniPlayer
+    case directMiniPlayerToInline
+  }
+
+  private(set) var current: PlayerPresentation = .window
+
+  /// - Returns: `true` when the state changed.
+  @discardableResult
+  mutating func transition(to next: PlayerPresentation) throws -> Bool {
+    guard next != current else { return false }
+    switch (current, next) {
+    case (.inline, .miniPlayer): throw TransitionError.directInlineToMiniPlayer
+    case (.miniPlayer, .inline): throw TransitionError.directMiniPlayerToInline
+    default:
+      current = next
+      return true
+    }
+  }
+}
+
 class PlayerCore: NSObject {
 
   /// Minimum value to set a mpv loop point to.
@@ -203,19 +246,36 @@ class PlayerCore: NSObject {
     case ticketExpired
   }
 
-  private var backgroundTaskInUse = false
+  /// Background tasks run on a serial queue but a newer task can be queued
+  /// behind one still running. Counting them keeps an older completion from
+  /// clearing the flag while a newer task still uses mpv.
+  private var activeBackgroundTasks = 0
+  private var backgroundTaskInUse: Bool { activeBackgroundTasks > 0 }
 
   var initialWindow: LibraryWindowController!
 
   var mainWindow: MainWindowController!
   var miniPlayer: MiniPlayerWindowController!
 
+  /// Reparents the owned video surface between hosts. Created on first use so
+  /// that a `PlayerCore` does not force the player window to load at launch.
+  private var _surfaceMover: PlayerSurfaceMover?
+  private var surfaceMover: PlayerSurfaceMover {
+    if let _surfaceMover { return _surfaceMover }
+    let mover = PlayerSurfaceMover(surface: mainWindow.videoView)
+    _surfaceMover = mover
+    return mover
+  }
+
   var currentController: PlayerWindowController {
     return isInMiniPlayer ? miniPlayer : mainWindow
   }
 
   var currentWindow: NSWindow? {
-    currentController.window
+    if isInline {
+      return initialWindow.window ?? currentController.window
+    }
+    return currentController.window
   }
 
   var mpv: MPVController!
@@ -238,7 +298,47 @@ class PlayerCore: NSObject {
 
   var displayOSD: Bool = true
 
-  var isInMiniPlayer = false
+  private var presentationState = PlayerPresentationState()
+
+  /// The current presentation host. Kept as a derived value so existing
+  /// mini-player code reads the same truth as the inline path.
+  var presentation: PlayerPresentation { presentationState.current }
+
+  var isInMiniPlayer: Bool {
+    get { presentation == .miniPlayer }
+    set {
+      guard newValue != isInMiniPlayer else { return }
+      do {
+        try presentationState.transition(to: newValue ? .miniPlayer : .window)
+        inlineRefreshHandler?()
+      } catch {
+        log("Illegal presentation transition to \(newValue ? "mini player" : "window") from \(presentation)",
+            level: .error)
+      }
+    }
+  }
+
+  var isInline: Bool { presentation == .inline }
+
+  /// The library surface currently borrowing the video view, held weakly so a
+  /// closed library window does not keep the player alive.
+  weak var inlineHost: PlayerSurfaceHosting?
+
+  /// A host waiting for Picture in Picture to finish dismissing.
+  weak var pendingInlineHost: PlayerSurfaceHosting?
+
+  /// Distinguishes inline sessions so a delayed cleanup from a stop cannot
+  /// end a newer inline file.
+  private var inlineSessionID = 0
+
+  /// Receives OSD messages while inline instead of the floating HUD.
+  var inlineOSDHandler: ((OSDMessage) -> Void)?
+
+  /// Refreshes the inline controls when playback state changes.
+  var inlineRefreshHandler: (() -> Void)?
+
+  /// Dismisses a transient inline message.
+  var inlineHideOSDHandler: (() -> Void)?
   /// Set this to `true` if user changes "music mode" status manually. This disables `autoSwitchToMusicMode`
   /// functionality for the duration of this player even if the preference is `true`. But if they manually change the
   /// "music mode" status again, change this to `false` so that the preference is honored again.
@@ -414,10 +514,11 @@ class PlayerCore: NSObject {
       return
     }
     let isNetwork = !url.isFileURL || url.pathExtension.starts(with: "m3u")
-    if isNetwork, info.state != .idle, let currentWindow {
+    if isNetwork, info.state != .idle, let currentWindow, !isInline {
       // Replace the player window with the loading window. Closing the player window will result in
       // an asynchronous stop command being sent to mpv. As described above, delay sending the
-      // loadfile command until the stop command finishes.
+      // loadfile command until the stop command finishes. Inline playback replaces the file in the
+      // same surface instead, so mpv receives the loadfile directly.
       log("Closing window before opening: \(url.absoluteString)")
       pendingAutoLoad = shouldAutoLoad
       pendingUrl = url
@@ -524,6 +625,10 @@ class PlayerCore: NSObject {
   ///   - isNetwork: Whether the media must be streamed over the network.
   private func openMainWindow(path: String, url: URL, isNetwork: Bool) {
     log("Opening \(path) in main window")
+    if isInline {
+      // A new file in the same surface is a new inline session.
+      inlineSessionID += 1
+    }
     info.currentURL = url
     info.mpvMd5 = Utility.mpvWatchLaterMd5(url, ignorePathInWatchLaterConfig)
     info.isNetworkResource = isNetwork
@@ -539,14 +644,21 @@ class PlayerCore: NSObject {
     info.videoPosition = nil
     info.videoTracks = []
     info.videoWidth = nil
-    if isNetwork {
+    if isNetwork && !isInline {
       AppDelegate.shared.openURLWindow.showLoadingScreen(playerCore: self)
     }
 
     let _ = mainWindow.window
-    mainWindow.pendingShow = true
-    miniPlayer.pendingShow = true
-    initialWindow.close()
+    if isInline {
+      // The library is the visible window; the player window stays hidden and
+      // must not be scheduled to appear when the video size arrives.
+      mainWindow.pendingShow = false
+      miniPlayer.pendingShow = false
+    } else {
+      mainWindow.pendingShow = true
+      miniPlayer.pendingShow = true
+      initialWindow.close()
+    }
 
     if !mpv.getFlag(MPVOption.PlaybackControl.pause) {
       log("Pausing playback before running load command")
@@ -763,6 +875,12 @@ class PlayerCore: NSObject {
   ///
   func switchToMiniPlayer(automatically: Bool = false, showMiniPlayer: Bool = true) {
     log("Switch to mini player, automatically=\(automatically)")
+    guard !isInMiniPlayer else { return }
+    if isInline {
+      // The mini player is another window; inline ends first so the surface
+      // travels through its one restore path rather than inline → mini.
+      endInlinePresentation(showWindow: false)
+    }
     if !automatically {
       // Toggle manual override
       overrideAutoSwitchToMusicMode = !overrideAutoSwitchToMusicMode
@@ -786,7 +904,6 @@ class PlayerCore: NSObject {
     let playlistView = mainWindow.sidebars.playlistView
     // force initialize the view
     let _ = playlistView.view
-    let videoView = mainWindow.videoView
     // reset down shift for playlistView
     mainWindow.sidebars.playlistView.downShift = 0
     // hide sidebar
@@ -800,9 +917,8 @@ class PlayerCore: NSObject {
     playlistView.view.padding(.all)
     // move video view
     mainWindow.liveText.clearAnalysis()
-    videoView.removeFromSuperview()
-    miniPlayer.videoWrapperView.addSubview(videoView, positioned: .below, relativeTo: nil)
-    Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": videoView])
+    surfaceMover.attach(to: miniPlayer.videoWrapperView,
+                        positioned: .below, relativeTo: nil)
 
     miniPlayer.refreshArtworkVisibility()
     let (width, height) = miniPlayer.videoSizeForDisplayInMusicMode()
@@ -856,6 +972,7 @@ class PlayerCore: NSObject {
   ///
   func switchBackFromMiniPlayer(automatically: Bool = false, showMainWindow: Bool = true) {
     log("Switch to normal window from mini player, automatically=\(automatically)")
+    guard isInMiniPlayer else { return }
     if !automatically {
       overrideAutoSwitchToMusicMode = !overrideAutoSwitchToMusicMode
       Logger.log("Changed overrideAutoSwitchToMusicMode to \(overrideAutoSwitchToMusicMode)",
@@ -886,10 +1003,208 @@ class PlayerCore: NSObject {
     events.emit(.musicModeChanged, data: false)
   }
 
+  // MARK: - Inline presentation
+
+  /// Starts presenting playback in the library detail.
+  ///
+  /// The player window is loaded but never shown: the video view is moved out
+  /// of it so mpv keeps one rendering surface. Calling this while already
+  /// inline is a no-op, which is what a second Play on the same host needs.
+  func presentInline(in host: PlayerSurfaceHosting) {
+    // Already attached to this host is the only true no-op. While PiP is
+    // still dismissing the presentation may be inline without the surface
+    // being in the host yet.
+    if isInline, inlineHost === host, mainWindow.loaded,
+       mainWindow.videoView.superview === host.surfaceContainer {
+      return
+    }
+    if isInline, inlineHost !== host {
+      endInlinePresentation(showWindow: false)
+    }
+    if isInMiniPlayer {
+      switchBackFromMiniPlayer(automatically: true, showMainWindow: false)
+    }
+
+    // PiP owns the video view until its dismissal completes; reparenting now
+    // would be undone by `doneExitingPIP`. Switch presentation immediately so
+    // the caller's openMainWindow does not close the library, then wait for
+    // the dismissal callback to attach the surface.
+    if mainWindow.pipStatus != .notInPIP {
+      pendingInlineHost = host
+      if !isInline {
+        do {
+          try presentationState.transition(to: .inline)
+        } catch {
+          log("Cannot present inline from \(presentation)", level: .error)
+          return
+        }
+        inlineHost = host
+        mainWindow.pendingShow = false
+        refreshSyncUITimer()
+      }
+      if mainWindow.pipStatus == .inPIP {
+        mainWindow.exitPIP()
+      }
+      return
+    }
+    // Interactive modes draw their own controls in the player window.
+    if mainWindow.interactiveMode.isActive {
+      mainWindow.interactiveMode.exit()
+    }
+
+    // Loading the window creates the one VideoView and runs its normal setup;
+    // it is ordered out immediately afterwards.
+    let _ = mainWindow.window
+    mainWindow.pendingShow = false
+    if mainWindow.fsState.isFullscreen {
+      mainWindow.toggleWindowFullScreen()
+    }
+
+    do {
+      try presentationState.transition(to: .inline)
+    } catch {
+      log("Cannot present inline from \(presentation)", level: .error)
+      return
+    }
+    inlineSessionID += 1
+    inlineHost = host
+    surfaceMover.attach(to: host.surfaceContainer)
+    mainWindow.window?.orderOut(nil)
+    refreshSyncUITimer()
+    inlineRefreshHandler?()
+  }
+
+  /// Ends the inline presentation and returns the video view to the player
+  /// window. The window is shown only when the caller asks for it, so stopping
+  /// playback or closing the library does not open a second window.
+  func endInlinePresentation(showWindow: Bool) {
+    guard isInline else { return }
+    inlineSessionID += 1
+    inlineHost = nil
+    do {
+      try presentationState.transition(to: .window)
+    } catch {
+      log("Cannot end inline presentation from \(presentation)", level: .error)
+      return
+    }
+    mainWindow.addVideoViewToWindow()
+    // The library may be on another display; rebind the display link and
+    // colour configuration to the host window's screen.
+    mainWindow.videoView.updateDisplayLink()
+    mainWindow.videoView.refreshEdrMode()
+    refreshSyncUITimer()
+    inlineRefreshHandler?()
+    if showWindow {
+      mainWindow.pendingShow = true
+      notifyWindowVideoSizeChanged()
+    }
+  }
+
+  // MARK: - Key bindings
+
+  /// Executes one key binding against this player.
+  ///
+  /// - Returns: `true` when the binding was handled.
+  func handleKeyBinding(_ keyBinding: KeyMapping) -> Bool {
+    if keyBinding.isUniPlayerCommand {
+      guard let command = UniPlayerCommand(rawValue: keyBinding.rawAction) else {
+        log("Unknown iina command \(keyBinding.rawAction)", level: .error)
+        return false
+      }
+      return handleUniPlayerCommand(command)
+    }
+
+    // Inline fullscreen belongs to the library window; sending the command to
+    // mpv would fullscreen the hidden player window instead.
+    if isInline, keyBinding.rawAction.contains("fullscreen") {
+      switch Self.fullscreenRequest(for: keyBinding.rawAction) {
+      case .toggle:
+        initialWindow.toggleWindowFullScreen()
+        return true
+      case .set(let target):
+        if target != initialWindow.isWindowFullScreen {
+          initialWindow.toggleWindowFullScreen()
+        }
+        return true
+      case .unsupported:
+        return false
+      }
+    }
+
+    let returnValue: Int32
+    switch keyBinding.action.first! {
+    case MPVCommand.abLoop.rawValue:
+      abLoop()
+      returnValue = 0
+    case MPVCommand.quit.rawValue:
+      // Initiate application termination from the main run loop, as the player
+      // window path does.
+      RunLoop.main.perform(inModes: [.common]) {
+        NSApp.terminate(nil)
+      }
+      returnValue = 0
+    case MPVCommand.screenshot.rawValue:
+      return screenshot(fromKeyBinding: keyBinding)
+    default:
+      returnValue = mpv.command(rawString: keyBinding.rawAction)
+    }
+
+    if returnValue == 0 {
+      return true
+    }
+    log("Return value \(returnValue) when executing key command \(keyBinding.rawAction)", level: .error)
+    return false
+  }
+
+  /// Commands that make sense regardless of which window presents the surface.
+  /// Unsupported commands return `false` instead of silently succeeding.
+  private func handleUniPlayerCommand(_ command: UniPlayerCommand) -> Bool {
+    switch command {
+    case .openFile:
+      AppDelegate.shared.openFile(self)
+    case .openURL:
+      AppDelegate.shared.openURL(self)
+    case .toggleMusicMode:
+      switchToMiniPlayer()
+    case .deleteCurrentFile:
+      guard let url = info.currentURL, !info.isNetworkResource else { return true }
+      let index = mpv.getInt(MPVProperty.playlistPos)
+      playlistRemove(index)
+      do {
+        try FileManager.default.trashItem(at: url, resultingItemURL: nil)
+      } catch {
+        log("Cannot trash \(url.lastPathComponent): \(error.localizedDescription)", level: .error)
+      }
+    default:
+      return false
+    }
+    return true
+  }
+
+  private enum FullscreenRequest {
+    case toggle
+    case set(Bool)
+    case unsupported
+  }
+
+  /// The state a fullscreen key binding asks for.
+  private static func fullscreenRequest(for rawAction: String) -> FullscreenRequest {
+    if rawAction.hasPrefix("cycle fullscreen") || rawAction.hasPrefix("toggle fullscreen") {
+      return .toggle
+    }
+    if rawAction.hasPrefix("set fullscreen yes") { return .set(true) }
+    if rawAction.hasPrefix("set fullscreen no") { return .set(false) }
+    return .unsupported
+  }
+
   // MARK: - MPV commands
 
   func togglePause(_ set: Bool? = nil) {
-    info.state == .paused ? resume() : pause()
+    if let set {
+      set ? pause() : resume()
+    } else {
+      info.state == .paused ? resume() : pause()
+    }
   }
 
   /// Pause playback.
@@ -1629,7 +1944,7 @@ class PlayerCore: NSObject {
   func playChapter(_ pos: Int) -> MPVChapter? {
     log("Seeking to chapter \(pos)", level: .verbose)
     let chapters = info.chapters
-    guard pos < chapters.count else {
+    guard pos >= 0, pos < chapters.count else {
       return nil
     }
     let chapter = chapters[pos]
@@ -2106,7 +2421,7 @@ class PlayerCore: NSObject {
     $backgroundQueueTicket.withLock { $0 += 1 }
     let shouldAutoLoadFiles = info.shouldAutoLoadFiles
     let currentTicket = backgroundQueueTicket
-    backgroundTaskInUse = true
+    activeBackgroundTasks += 1
     backgroundQueue.async { [self] in
       do {
         // add files in same folder
@@ -2137,7 +2452,11 @@ class PlayerCore: NSObject {
       }
       // This code must be queued to the main thread to avoid thread data races.
       DispatchQueue.main.async { [self] in
-        backgroundTaskInUse = false
+        activeBackgroundTasks = max(0, activeBackgroundTasks - 1)
+        guard activeBackgroundTasks == 0 else {
+          log("Background task has stopped; another is still in use")
+          return
+        }
         log("Background task has stopped")
         // If the player is stopping then that process has been waiting for this background task to
         // finish. Call stop again to continue with the process of stopping this player. Stop must
@@ -2328,6 +2647,14 @@ class PlayerCore: NSObject {
   func fullscreenChanged() {
     guard mainWindow.loaded, info.state.active else { return }
     let fs = mpv.getFlag(MPVOption.Window.fullscreen)
+    if isInline {
+      // Inline fullscreen belongs to the library window. Keep mpv's own
+      // fullscreen flag off so it cannot resize the hidden player window.
+      if fs {
+        mpv.setFlag(MPVOption.Window.fullscreen, false, level: .verbose)
+      }
+      return
+    }
     if fs != mainWindow.fsState.isFullscreen {
       mainWindow.toggleWindowFullScreen()
     }
@@ -2336,7 +2663,11 @@ class PlayerCore: NSObject {
   func idleActiveChanged() {
     if receivedEndFileWhileLoading && info.state == .starting {
       DispatchQueue.main.async { [unowned self] in
-        currentController.close()
+        if isInline {
+          endInlinePresentation(showWindow: false)
+        } else {
+          currentController.close()
+        }
         if AppDelegate.shared.openURLWindow.window?.isVisible == true {
           AppDelegate.shared.openURLWindow.failedToLoadURL()
         } else {
@@ -2350,8 +2681,17 @@ class PlayerCore: NSObject {
     // close the window if stopped
     if info.state.loaded ||  // stopped by mpv
         (info.state == .stopping && (currentWindow?.isVisible ?? false)) {  // user sent stop command
+      let session = inlineSessionID
       DispatchQueue.main.async {
-        self.currentController.close()
+        if self.isInline {
+          // A pending open starts a new session before this cleanup runs; it
+          // must not tear down the file that replaced the stopped one.
+          if self.inlineSessionID == session {
+            self.endInlinePresentation(showWindow: false)
+          }
+        } else {
+          self.currentController.close()
+        }
       }
     }
     if info.state != .loading {
@@ -2500,6 +2840,11 @@ class PlayerCore: NSObject {
     guard info.state.active else { return }
     info.playSpeed = speed
     sendOSD(.speed(speed))
+    if isInline {
+      // The sync timer is stopped while paused, so the overlay would keep the
+      // old speed label until playback resumes.
+      inlineRefreshHandler?()
+    }
     mainWindow.updateSpeedLabel(speed: speed)
     postNotification(.iinaSpeedChanged)
     NowPlayingInfoManager.shared.updateInfo()
@@ -2546,7 +2891,7 @@ class PlayerCore: NSObject {
     if Preference.bool(for: .autoSwitchToMusicMode) {
       if overrideAutoSwitchToMusicMode {
         log("Skipping music mode auto-switch because overrideAutoSwitchToMusicMode is true", level: .verbose)
-      } else if audioStatus == .isAudio && !isInMiniPlayer && !mainWindow.fsState.isFullscreen {
+      } else if audioStatus == .isAudio && !isInMiniPlayer && !isInline && !mainWindow.fsState.isFullscreen {
         log("Current media is audio: auto-switching to mini player")
         switchToMiniPlayer(automatically: true, showMiniPlayer: false)
       } else if audioStatus == .notAudio && isInMiniPlayer {
@@ -2645,7 +2990,11 @@ class PlayerCore: NSObject {
     guard mainWindow.loaded else { return }
 
     let fs = mpv.getFlag(MPVOption.Window.fullscreen)
-    if fs != mainWindow.fsState.isFullscreen {
+    if isInline {
+      if fs {
+        mpv.setFlag(MPVOption.Window.fullscreen, false, level: .verbose)
+      }
+    } else if fs != mainWindow.fsState.isFullscreen {
       DispatchQueue.main.async {
         self.mainWindow.toggleWindowFullScreen()
       }
@@ -2678,9 +3027,9 @@ class PlayerCore: NSObject {
     } else if info.state == .paused {
       // Ensure UniPlayer is absolutely idle when the video is paused.
       useTimer = false
-    } else if needsTouchBar && TouchBarSettings.shared.showAppControls || isInMiniPlayer {
-      // The timer can't be stopped if the mini player is being used as it always displays the OSC
-      // or if the timer is updating the information being displayed in the Touch Bar.
+    } else if needsTouchBar && TouchBarSettings.shared.showAppControls || isInMiniPlayer || isInline {
+      // The timer can't be stopped if the mini player or inline chrome is
+      // displaying the OSC, or if the Touch Bar is being updated.
       useTimer = true
     } else if info.isNetworkResource {
       // May need to show, hide, or update buffering indicator at any time.
@@ -2740,27 +3089,40 @@ class PlayerCore: NSObject {
   }
 
   func notifyWindowVideoSizeChanged() {
+    if isInline {
+      // The hidden player window must not resize, show, or take focus. The
+      // library surface is already laid out by SwiftUI.
+      inlineRefreshHandler?()
+      finishLoadingIfNeeded()
+      return
+    }
     currentController.handleVideoSizeChange()
     if currentController.pendingShow {
       currentController.pendingShow = false
       currentController.showWindow(self)
       AppDelegate.shared.openURLWindow.close()
     }
-    if info.state == .loaded {
-      // If the media was loaded manually then playback was paused to avoid audio starting to play
-      // before video is ready to be displayed. Now that the video is ready playback can be resumed
-      // unless the UniPlayer "Pause" setting is enabled under "When media is opened".
-      let paused = mpv.getFlag(MPVOption.PlaybackControl.pause)
-      if paused, !Preference.bool(for: .pauseWhenOpen)  {
-        log("Resuming playback now that file has been loaded")
-        mainWindow.videoView.displayActive()
-        mpv.setFlag(MPVOption.PlaybackControl.pause, false, level: .verbose)
-      }
-      info.state = Preference.bool(for: .pauseWhenOpen) ? .paused : .playing
-      syncUI(.playButton)
-      if Preference.bool(for: .fullScreenWhenOpen) && !mainWindow.fsState.isFullscreen && !isInMiniPlayer {
-        mainWindow.toggleWindowFullScreen()
-      }
+    finishLoadingIfNeeded()
+  }
+
+  /// Resumes playback once the loaded file is ready to be displayed, unless
+  /// the user asked to start paused.
+  private func finishLoadingIfNeeded() {
+    guard info.state == .loaded else { return }
+    // If the media was loaded manually then playback was paused to avoid audio starting to play
+    // before video is ready to be displayed. Now that the video is ready playback can be resumed
+    // unless the UniPlayer "Pause" setting is enabled under "When media is opened".
+    let paused = mpv.getFlag(MPVOption.PlaybackControl.pause)
+    if paused, !Preference.bool(for: .pauseWhenOpen)  {
+      log("Resuming playback now that file has been loaded")
+      mainWindow.videoView.displayActive()
+      mpv.setFlag(MPVOption.PlaybackControl.pause, false, level: .verbose)
+    }
+    info.state = Preference.bool(for: .pauseWhenOpen) ? .paused : .playing
+    syncUI(.playButton)
+    if Preference.bool(for: .fullScreenWhenOpen) && !mainWindow.fsState.isFullscreen
+        && !isInMiniPlayer && !isInline {
+      mainWindow.toggleWindowFullScreen()
     }
   }
 
@@ -2838,6 +3200,9 @@ class PlayerCore: NSObject {
         info.bufferingState = mpv.getInt(MPVProperty.cacheBufferingState)
       }
       DispatchQueue.main.async { [self] in
+        if isInline {
+          inlineRefreshHandler?()
+        }
         currentController.updatePlayTime(withDuration: isNetworkStream, andProgressBar: true)
         if !self.isInMiniPlayer && mainWindow.fsState.isFullscreen && mainWindow.displayTimeAndBatteryInFullScreen && !mainWindow.additionalInfoView.isHidden {
           self.mainWindow.additionalInfoView.update()
@@ -2849,26 +3214,41 @@ class PlayerCore: NSObject {
 
     case .playButton:
       DispatchQueue.main.async { [self] in
+        if isInline {
+          inlineRefreshHandler?()
+        }
         currentController.updatePlayButtonState(paused: info.state == .paused)
         touchBarSupport.updateTouchBarPlayBtn()
       }
 
     case .volume:
       DispatchQueue.main.async {
+        if self.isInline {
+          self.inlineRefreshHandler?()
+        }
         self.currentController.updateVolume()
       }
     }
   }
 
   func sendOSD(_ osd: OSDMessage, autoHide: Bool = true, forcedTimeout: Float? = nil, accessoryView: NSView? = nil, context: Any? = nil, external: Bool = false) {
-    // querying `mainWindow.isWindowLoaded` will initialize mainWindow unexpectedly
-    guard !isInMiniPlayer, mainWindow.loaded, info.state.active,
+    // Message eligibility is the same in every presentation.
+    guard info.state.active,
           Preference.bool(for: .enableOSD) || osd.alwaysEnabled, !osd.isDisabled else { return }
     if info.disableOSDForFileLoading && !external {
       guard case .fileStart = osd else {
         return
       }
     }
+    if isInline {
+      // No floating HUD while inline: the message belongs in the window.
+      DispatchQueue.main.async {
+        self.inlineOSDHandler?(osd)
+      }
+      return
+    }
+    // querying `mainWindow.isWindowLoaded` will initialize mainWindow unexpectedly
+    guard !isInMiniPlayer, mainWindow.loaded else { return }
     DispatchQueue.main.async {
       self.mainWindow.displayOSD(osd,
                                  autoHide: autoHide,
@@ -2879,6 +3259,12 @@ class PlayerCore: NSObject {
   }
 
   func hideOSD() {
+    if isInline {
+      DispatchQueue.main.async {
+        self.inlineHideOSDHandler?()
+      }
+      return
+    }
     DispatchQueue.main.async {
       self.mainWindow.hideOSD()
     }

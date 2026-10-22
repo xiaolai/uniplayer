@@ -27,6 +27,22 @@ pull requests in this repository instead.
    ```
 3. Open one pull request per logical change.
 
+## Presentation model
+
+`PlayerCore` owns the one `VideoView`. `PlayerPresentation` records where that
+surface is shown: the player window (`.window`), the mini player (`.miniPlayer`),
+or the library detail (`.inline`). `PlayerSurfaceMover` is the only code that
+reparents the surface: `attach` for mini and inline hosts, `restore` for the
+player window. A new host conforms to `PlayerSurfaceHosting`, owns a container
+view, and calls `PlayerCore.presentInline(in:)`; it never constructs a second
+player.
+
+Window-only work — the OSC, the HUD, window resizing and `fsState` — is gated on
+the presentation. While inline, the player window is loaded but hidden, OSD
+messages go to the inline chrome instead of floating panels, and fullscreen
+belongs to the library window. Inline and mini player never hand the surface
+directly to each other; the surface returns to the player window first.
+
 ## License
 
 By submitting a contribution you agree that it is licensed under GPL-3.0-or-later,

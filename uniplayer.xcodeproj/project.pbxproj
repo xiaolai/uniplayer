@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		A10000000000000000000005 /* UniPlayerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000004 /* UniPlayerTests.swift */; };
+		BB9000000000000000000002 /* InlinePlayerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB9000000000000000000001 /* InlinePlayerTests.swift */; };
 		1326717E20852D0D000FA7E2 /* SubChooseViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = 1326718020852D0D000FA7E2 /* SubChooseViewController.xib */; };
 		3412DB8E2C2FC64C00BBC142 /* Equalizations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3412DB8D2C2FC64800BBC142 /* Equalizations.swift */; };
 		3415BC8A2FC82FD9003B3FBD /* TimePreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3415BC892FC82FD5003B3FBD /* TimePreviewView.swift */; };
@@ -216,6 +217,14 @@
 		AA4000000000000000000002 /* LibraryWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA4000000000000000000001 /* LibraryWindowController.swift */; };
 		AA5000000000000000000002 /* LibraryMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA5000000000000000000001 /* LibraryMetadata.swift */; };
 		AA6000000000000000000002 /* PlayerHUDView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA6000000000000000000001 /* PlayerHUDView.swift */; };
+		BB1000000000000000000002 /* PlayerSurfaceMover.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB1000000000000000000001 /* PlayerSurfaceMover.swift */; };
+		BB2000000000000000000002 /* InlinePlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB2000000000000000000001 /* InlinePlayerView.swift */; };
+		BB3000000000000000000002 /* InlinePlayerChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB3000000000000000000001 /* InlinePlayerChrome.swift */; };
+		BB4000000000000000000002 /* PlaybackContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB4000000000000000000001 /* PlaybackContext.swift */; };
+		BB5000000000000000000002 /* AssistantService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB5000000000000000000001 /* AssistantService.swift */; };
+		BB6000000000000000000002 /* AIInspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB6000000000000000000001 /* AIInspectorView.swift */; };
+		BB7000000000000000000002 /* AssistantTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB7000000000000000000001 /* AssistantTools.swift */; };
+		BB8000000000000000000002 /* SettingsPageAssistant.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB8000000000000000000001 /* SettingsPageAssistant.swift */; };
 		84A09A0E1F2DF596000FF343 /* MiniPlayerWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84A09A0C1F2DF596000FF343 /* MiniPlayerWindowController.swift */; };
 		84A0BA951D2F9E9600BC8DA1 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 84A0BA931D2F9E9600BC8DA1 /* MainMenu.xib */; };
 		84A0BA971D2FA1CE00BC8DA1 /* PlayerCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84A0BA961D2FA1CE00BC8DA1 /* PlayerCore.swift */; };
@@ -551,6 +560,7 @@
 /* Begin PBXFileReference section */
 		A10000000000000000000002 /* UniPlayerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = UniPlayerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A10000000000000000000004 /* UniPlayerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UniPlayerTests.swift; sourceTree = "<group>"; };
+		BB9000000000000000000001 /* InlinePlayerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InlinePlayerTests.swift; sourceTree = "<group>"; };
 		0507C25E2B5617650043AD05 /* he */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = he; path = he.lproj/MainMenu.strings; sourceTree = "<group>"; };
 		0507C25F2B5617660043AD05 /* he */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = he; path = he.lproj/MainWindowController.strings; sourceTree = "<group>"; };
 		0507C2622B5617660043AD05 /* he */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = he; path = he.lproj/InspectorWindowController.strings; sourceTree = "<group>"; };
@@ -1312,6 +1322,14 @@
 		AA4000000000000000000001 /* LibraryWindowController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LibraryWindowController.swift; sourceTree = "<group>"; };
 		AA5000000000000000000001 /* LibraryMetadata.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LibraryMetadata.swift; sourceTree = "<group>"; };
 		AA6000000000000000000001 /* PlayerHUDView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PlayerHUDView.swift; sourceTree = "<group>"; };
+		BB1000000000000000000001 /* PlayerSurfaceMover.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PlayerSurfaceMover.swift; sourceTree = "<group>"; };
+		BB2000000000000000000001 /* InlinePlayerView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = InlinePlayerView.swift; sourceTree = "<group>"; };
+		BB3000000000000000000001 /* InlinePlayerChrome.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = InlinePlayerChrome.swift; sourceTree = "<group>"; };
+		BB4000000000000000000001 /* PlaybackContext.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PlaybackContext.swift; sourceTree = "<group>"; };
+		BB5000000000000000000001 /* AssistantService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AssistantService.swift; sourceTree = "<group>"; };
+		BB6000000000000000000001 /* AIInspectorView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AIInspectorView.swift; sourceTree = "<group>"; };
+		BB7000000000000000000001 /* AssistantTools.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AssistantTools.swift; sourceTree = "<group>"; };
+		BB8000000000000000000001 /* SettingsPageAssistant.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsPageAssistant.swift; sourceTree = "<group>"; };
 		8497A4831D2FF573005F504F /* uniplayer-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "uniplayer-Bridging-Header.h"; sourceTree = "<group>"; };
 		84A09A0C1F2DF596000FF343 /* MiniPlayerWindowController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MiniPlayerWindowController.swift; sourceTree = "<group>"; };
 		84A0BA941D2F9E9600BC8DA1 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
@@ -1912,6 +1930,7 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000004 /* UniPlayerTests.swift */,
+				BB9000000000000000000001 /* InlinePlayerTests.swift */,
 			);
 			path = uniplayerTests;
 			sourceTree = "<group>";
@@ -2157,6 +2176,14 @@
 				AA4000000000000000000001 /* LibraryWindowController.swift */,
 				AA5000000000000000000001 /* LibraryMetadata.swift */,
 				AA6000000000000000000001 /* PlayerHUDView.swift */,
+				BB1000000000000000000001 /* PlayerSurfaceMover.swift */,
+				BB2000000000000000000001 /* InlinePlayerView.swift */,
+				BB3000000000000000000001 /* InlinePlayerChrome.swift */,
+				BB4000000000000000000001 /* PlaybackContext.swift */,
+				BB5000000000000000000001 /* AssistantService.swift */,
+				BB6000000000000000000001 /* AIInspectorView.swift */,
+				BB7000000000000000000001 /* AssistantTools.swift */,
+				BB8000000000000000000001 /* SettingsPageAssistant.swift */,
 				84A09A0C1F2DF596000FF343 /* MiniPlayerWindowController.swift */,
 				8F49C370213EFB7E0076C4F9 /* MiniPlayerWindowController.xib */,
 				E36E8D7A24F6052F00B8C097 /* GuideWindowController.swift */,
@@ -2943,6 +2970,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000005 /* UniPlayerTests.swift in Sources */,
+				BB9000000000000000000002 /* InlinePlayerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2968,6 +2996,14 @@
 				AA4000000000000000000002 /* LibraryWindowController.swift in Sources */,
 				AA5000000000000000000002 /* LibraryMetadata.swift in Sources */,
 				AA6000000000000000000002 /* PlayerHUDView.swift in Sources */,
+				BB1000000000000000000002 /* PlayerSurfaceMover.swift in Sources */,
+				BB2000000000000000000002 /* InlinePlayerView.swift in Sources */,
+				BB3000000000000000000002 /* InlinePlayerChrome.swift in Sources */,
+				BB4000000000000000000002 /* PlaybackContext.swift in Sources */,
+				BB5000000000000000000002 /* AssistantService.swift in Sources */,
+				BB6000000000000000000002 /* AIInspectorView.swift in Sources */,
+				BB7000000000000000000002 /* AssistantTools.swift in Sources */,
+				BB8000000000000000000002 /* SettingsPageAssistant.swift in Sources */,
 				8461C52E1D45FFF6006E91FF /* PlaySliderCell.swift in Sources */,
 				84F5D4A21E4796F50060A838 /* KeyBindingTranslator.swift in Sources */,
 				E3DBD23E218EF4F100B3AFBF /* AboutWindowContributorAvatarItem.swift in Sources */,

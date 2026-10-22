@@ -1331,6 +1331,18 @@ enum Tokens {
     static let cardHoverScale: CGFloat = 1.015
   }
 
+  // MARK: Inspector
+
+  /// The AI inspector's column widths.
+  enum Inspector {
+    /// The narrowest useful transcript column.
+    static let minimumWidth: CGFloat = Size.n260
+    /// The default column width beside a 16:9 surface.
+    static let idealWidth: CGFloat = Size.n360
+    /// The widest the column may grow before the video shrinks too far.
+    static let maximumWidth: CGFloat = Size.n420
+  }
+
   // MARK: Player HUD
 
   /// Player HUD geometry. These values come from the ledger's 1220×610 player

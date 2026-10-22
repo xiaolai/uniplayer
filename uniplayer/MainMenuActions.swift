@@ -74,6 +74,14 @@ class MainMenuActionHandler: NSResponder, NSMenuItemValidation {
     }
   }
 
+  /// Returns playback from the detached player window to the library detail.
+  @objc func menuReturnToInline(_ sender: NSMenuItem) {
+    guard !player.isInline, player.initialWindow.loaded,
+          player.initialWindow.window != nil else { return }
+    player.presentInline(in: player.initialWindow.inlineHost)
+    player.initialWindow.window?.makeKeyAndOrderFront(nil)
+  }
+
 }
 
 // MARK: - Control
@@ -214,6 +222,11 @@ extension MainMenuActionHandler {
   @objc func menuChangeCrop(_ sender: NSMenuItem) {
     if let cropStr = sender.representedObject as? String {
       if cropStr == "Custom" {
+        if player.isInline {
+          // The crop controls live in the player window; bring it back first
+          // instead of entering an interactive mode whose controls are hidden.
+          player.endInlinePresentation(showWindow: true)
+        }
         player.mainWindow.sidebars.hideAllSideBars {
           self.player.mainWindow.interactiveMode
             .enter(mode: .crop, selectWholeVideoByDefault: true)
@@ -473,6 +486,9 @@ extension MainMenuActionHandler {
     switch menuItem.action {
     case #selector(menuDeleteCurrentFile(_:)), #selector(menuShowCurrentFileInFinder(_:)):
       return player.info.currentURL != nil && !player.info.isNetworkResource
+    case #selector(menuReturnToInline(_:)):
+      return !player.isInline && player.initialWindow.loaded
+        && player.initialWindow.window != nil && player.info.state.active
     default:
       break
     }

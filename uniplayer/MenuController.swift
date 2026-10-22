@@ -428,6 +428,19 @@ class MenuController: NSObject, NSMenuDelegate {
     inspector.action = #selector(MainMenuActionHandler.menuShowInspector(_:))
     miniPlayer.action = #selector(MainWindowController.menuSwitchToMiniPlayer(_:))
 
+    // Present the playing file in the library detail again. Kept next to the
+    // music mode item because both change where the surface lives.
+    let openInLibrary = NSMenuItem(
+      title: NSLocalizedString("Open in Library", comment: "Menu item"),
+      action: #selector(MainMenuActionHandler.menuReturnToInline(_:)),
+      keyEquivalent: "l")
+    openInLibrary.keyEquivalentModifierMask = [.command, .shift]
+    if let index = miniPlayer.menu?.index(of: miniPlayer) {
+      miniPlayer.menu?.insertItem(openInLibrary, at: index + 1)
+    } else {
+      miniPlayer.menu?.addItem(openInLibrary)
+    }
+
     // Help
     
     helpMenu.delegate = self

@@ -48,6 +48,11 @@ struct Preference {
     /** Material for OSC and title bar (Theme(int)) */
     static let themeMaterial = Key("themeMaterial")
 
+    /** The AI inspector's provider, endpoint and model. The key lives in the Keychain. */
+    static let assistantProvider = Key("assistantProvider")
+    static let assistantEndpoint = Key("assistantEndpoint")
+    static let assistantModel = Key("assistantModel")
+
     static let useLiquidGlassOSD = Key("useLiquidGlassOSD")
     static let useLiquidGlassOSC = Key("useLiquidGlassOSC")
     static let useLiquidGlassSidebar = Key("useLiquidGlassSidebar")
@@ -1072,6 +1077,9 @@ struct Preference {
     .trailingSidebarWidth: 360,
     .prefetchPlaylistVideoDuration: true,
     .themeMaterial: Theme.dark.rawValue,
+    .assistantProvider: AssistantProviderKind.openAICompatible.rawValue,
+    .assistantEndpoint: AssistantProviderKind.openAICompatible.defaultEndpoint,
+    .assistantModel: AssistantProviderKind.openAICompatible.defaultModel,
     .useLiquidGlassOSD: true,
     .useLiquidGlassOSC: true,
     .useLiquidGlassSidebar: true,

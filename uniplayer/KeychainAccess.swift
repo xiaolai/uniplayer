@@ -30,6 +30,7 @@ class KeychainAccess {
 
     static let openSubAccount = ServiceName(rawValue: "UniPlayer OpenSubtitles Account")
     static let httpAuth = ServiceName(rawValue: "UniPlayer Saved HTTP Password")
+    static let assistantAPIKey = ServiceName(rawValue: "UniPlayer Assistant API Key")
   }
 
   static func identityQuery(username: String?, service: ServiceName, server: String?, port: Int?) -> [String: Any] {
@@ -49,26 +50,38 @@ class KeychainAccess {
     let identity = identityQuery(username: username, service: serviceName, server: server, port: port)
     var status: OSStatus
 
-    if (try? read(username: username, forService: serviceName, server: server, port: port)) != nil {
-      // Update the exact credential found by the shared identity query.
-      status = SecItemUpdate(
-        identity as CFDictionary,
-        [kSecValueData as String: passwordData] as CFDictionary)
-      if status == errSecItemNotFound {
-        var addQuery = identity
-        addQuery[kSecAttrLabel as String] = serviceName.rawValue
-        addQuery[kSecValueData as String] = passwordData
-        status = SecItemAdd(addQuery as CFDictionary, nil)
+    // Try to replace the value directly. This also overwrites an item whose
+    // data cannot be decoded, which the old read-first flow could not do.
+    status = SecItemUpdate(
+      identity as CFDictionary,
+      [kSecValueData as String: passwordData] as CFDictionary)
+    if status == errSecItemNotFound {
+      var addQuery = identity
+      addQuery[kSecAttrLabel as String] = serviceName.rawValue
+      addQuery[kSecValueData as String] = passwordData
+      status = SecItemAdd(addQuery as CFDictionary, nil)
+      if status == errSecDuplicateItem {
+        // Another writer inserted the item between update and add.
+        status = SecItemUpdate(
+          identity as CFDictionary,
+          [kSecValueData as String: passwordData] as CFDictionary)
       }
-    } else {
-      var query = identity
-      query[kSecAttrLabel as String] = serviceName.rawValue
-      query[kSecValueData as String] = passwordData
-      status = SecItemAdd(query as CFDictionary, nil)
     }
 
     guard status != errSecItemNotFound else { throw KeychainError.noResult }
     guard status == errSecSuccess else {
+      let message = (SecCopyErrorMessageString(status, nil) as String?) ?? ""
+      throw KeychainError.unhandledError(message: message)
+    }
+  }
+
+  /// Removes the credential. A missing credential is the requested end state,
+  /// not an error.
+  static func remove(username: String?, forService serviceName: ServiceName,
+                     server: String? = nil, port: Int? = nil) throws {
+    let query = identityQuery(username: username, service: serviceName, server: server, port: port)
+    let status = SecItemDelete(query as CFDictionary)
+    guard status == errSecSuccess || status == errSecItemNotFound else {
       let message = (SecCopyErrorMessageString(status, nil) as String?) ?? ""
       throw KeychainError.unhandledError(message: message)
     }

@@ -885,13 +885,11 @@ class MainWindowController: PlayerWindowController {
     }
   }
 
-  func addVideoViewToWindow() {
-    if videoView.superview != nil {
-      videoView.removeFromSuperview()
-    }
-    videoViewContainer.addSubview(videoView)
-    videoView.translatesAutoresizingMaskIntoConstraints = false
+  /// The one mover for the player surface. Created on first use so that
+  /// constructing `MainWindowController` does not force its window to load.
+  private lazy var surfaceMover = PlayerSurfaceMover(surface: videoView)
 
+  func addVideoViewToWindow() {
     for constraint in videoViewConstraints.values {
       constraint.isActive = false
     }
@@ -901,7 +899,9 @@ class MainWindowController: PlayerWindowController {
       .top: videoView.topAnchor.constraint(equalTo: videoViewContainer.topAnchor),
       .bottom: videoViewContainer.bottomAnchor.constraint(equalTo: videoView.bottomAnchor)
     ]
-    layoutSides.forEach { videoViewConstraints[$0]?.isActive = true }
+    surfaceMover.restore(
+      to: videoViewContainer,
+      constraints: layoutSides.compactMap { videoViewConstraints[$0] })
   }
 
   func updateVideoViewConstraints(_ constraints: [NSLayoutConstraint.Attribute: CGFloat]) {
@@ -1618,6 +1618,8 @@ class MainWindowController: PlayerWindowController {
       } else if recognizer.state == .ended {
         updateWindowParametersForMPV()
         videoView.videoLayer.inLiveResize = false
+      } else if recognizer.state == .cancelled || recognizer.state == .failed {
+        videoView.videoLayer.inLiveResize = false
       }
     }
   }
@@ -1635,6 +1637,12 @@ class MainWindowController: PlayerWindowController {
   /// - Parameter sender: The control sending the message; can be `nil`.
   override func showWindow(_ sender: Any?) {
     guard let window else { return }
+    guard !player.isInline else {
+      // Inline owns the surface and the user's window; showing the player
+      // window here would create the second window this mode removes.
+      log("Refusing to show the player window while presenting inline", level: .verbose)
+      return
+    }
     log("Showing window at \(window.frame)")
     super.showWindow(sender)
     resetCollectionBehavior()
@@ -2015,7 +2023,7 @@ class MainWindowController: PlayerWindowController {
 
     switch fsState {
     case .windowed:
-      guard !player.isInMiniPlayer else { return }
+      guard !player.isInMiniPlayer, !player.isInline else { return }
       if Preference.bool(for: .useLegacyFullScreen) {
         log("Will enter legacy full screen mode")
         self.legacyAnimateToFullscreen()
@@ -2472,6 +2480,7 @@ class MainWindowController: PlayerWindowController {
     }
 
     osdView.updateViews(fromMessage: message, player: player)
+    osdLastMessage = message
 
     osdView.alphaValue = 1
     osdView.isHidden = false
@@ -2530,6 +2539,7 @@ class MainWindowController: PlayerWindowController {
     }
     isShowingPersistentOSD = false
     osdContext = nil
+    osdLastMessage = nil
     player.refreshSyncUITimer()
   }
 
@@ -3504,6 +3514,13 @@ extension MainWindowController: PIPViewControllerDelegate {
     liveText.requestAnalysis()
     player.events.emit(.pipChanged, data: false)
     NotificationCenter.default.post(name: .iinaPIPStatusChanged, object: self, userInfo: ["enable": false])
+
+    // An inline presentation requested during PiP waited for this point, when
+    // the video view belongs to the player window again.
+    if let host = player.pendingInlineHost {
+      player.pendingInlineHost = nil
+      player.presentInline(in: host)
+    }
   }
 
   func prepareForPIPClosure(_ pip: PIPViewController) {

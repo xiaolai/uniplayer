@@ -40,7 +40,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   // Cached user defaults values
   internal lazy var followGlobalSeekTypeWhenAdjustSlider: Bool = Preference.bool(for: .followGlobalSeekTypeWhenAdjustSlider)
   internal lazy var useExactSeek: Preference.SeekOption = Preference.enum(for: .useExactSeek)
-  internal lazy var relativeSeekAmount: Int = Preference.integer(for: .relativeSeekAmount)
+  internal lazy var relativeSeekAmount: Int = Preference.integer(for: .relativeSeekAmount).clamped(to: 0...4)
   internal lazy var volumeScrollAmount: Int = Preference.integer(for: .volumeScrollAmount)
   internal lazy var playbackSpeedScrollAmount: Int = Preference.integer(for: .playbackSpeedScrollAmount)
   internal lazy var singleClickAction: Preference.MouseClickAction = Preference.enum(for: .singleClickAction)
@@ -114,7 +114,8 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
       }
     case PK.relativeSeekAmount.rawValue:
       if let newValue = change[.newKey] as? Int {
-        relativeSeekAmount = newValue.clamped(to: 1...5)
+        // Both seek maps have five entries, indexed 0...4.
+        relativeSeekAmount = newValue.clamped(to: 0...4)
       }
     case PK.volumeScrollAmount.rawValue:
       if let newValue = change[.newKey] as? Int {
@@ -297,42 +298,12 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
         log("Unknown iina command \(keyBinding.rawAction)", level: .error)
         return false
       }
-    } else {
-      // - mpv command
-      let returnValue: Int32
-      // execute the command
-      switch keyBinding.action.first! {
-
-      case MPVCommand.abLoop.rawValue:
-        abLoop()
-        returnValue = 0
-
-      case MPVCommand.quit.rawValue:
-        // Initiate application termination. AppKit requires this be done from the main thread,
-        // however the main dispatch queue must not be used to avoid blocking the queue as per
-        // instructions from Apple. UniPlayer must support quitting being initiated by mpv as the user
-        // could use mpv's IPC interface to send the quit command directly to mpv. However the
-        // shutdown sequence is cleaner when initiated by UniPlayer, so we do not send the quit command
-        // to mpv and instead trigger the normal app termination sequence.
-        RunLoop.main.perform(inModes: [.common]) {
-          NSApp.terminate(nil)
-        }
-        returnValue = 0
-
-      case MPVCommand.screenshot.rawValue:
-        return player.screenshot(fromKeyBinding: keyBinding)
-
-      default:
-        returnValue = player.mpv.command(rawString: keyBinding.rawAction)
-      }
-
-      if returnValue == 0 {
-        return true
-      } else {
-        log("Return value \(returnValue) when executing key command \(keyBinding.rawAction)", level: .error)
-        return false
-      }
     }
+    let handled = player.handleKeyBinding(keyBinding)
+    if handled, keyBinding.action.first == MPVCommand.abLoop.rawValue {
+      syncSlider()
+    }
+    return handled
   }
 
   func abLoop() {
@@ -480,7 +451,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
   override func scrollWheel(with event: NSEvent) {
     let isMouse = event.phase.isEmpty
     let isTrackpadBegan = event.phase.contains(.began)
-    let isTrackpadEnd = event.phase.contains(.ended)
+    let isTrackpadEnd = event.phase.contains(.ended) || event.phase.contains(.cancelled)
 
     // determine direction
 

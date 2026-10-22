@@ -31,6 +31,7 @@ class SettingsWindow: CommonWindow {
     SettingsPageKeyBindings(),
     SettingsPageAdvanced(),
     SettingsPagePlugin(),
+    SettingsPageAssistant(),
     SettingsPageUtilities(),
   ])
 

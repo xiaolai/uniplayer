@@ -63,6 +63,37 @@ final class ChannelBrowserModel: NSObject, ObservableObject {
     errorMessage = nil
     webView.reload()
   }
+
+  /// Reads the page title, URL and the user's current selection. This runs
+  /// only when the user asks for it; the page is never scraped in the
+  /// background.
+  func contextSnapshot() async -> ChannelPageContext? {
+    guard let requestedURL = webView.url, let requestedChannel = channel?.id else { return nil }
+    // One evaluation, so title, URL and selection describe the same document.
+    let script = """
+      (function () {
+        return {
+          title: document.title,
+          href: location.href,
+          selection: window.getSelection().toString()
+        };
+      })()
+      """
+    guard let raw = try? await webView.evaluateJavaScript(script) as? [String: Any] else {
+      return nil
+    }
+    // Navigation during the evaluation makes the snapshot ambiguous.
+    guard webView.url == requestedURL, channel?.id == requestedChannel else { return nil }
+    let href = (raw["href"] as? String).flatMap(URL.init(string:))
+    let title = (raw["title"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
+    let selection = (raw["selection"] as? String)?
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    let url = href ?? requestedURL
+    return ChannelPageContext(
+      title: (title?.isEmpty == false ? title! : (url.host ?? channel?.name ?? "Channel")),
+      url: url,
+      selection: selection?.isEmpty == false ? selection : nil)
+  }
 }
 
 extension ChannelBrowserModel: WKNavigationDelegate {
@@ -204,6 +235,7 @@ private struct ChannelWebView: NSViewRepresentable {
 struct ChannelDetailView: View {
   @ObservedObject var browser: ChannelBrowserModel
   let channel: Channel
+  let onUseContext: (ChannelPageContext) -> Void
 
   var body: some View {
     ZStack(alignment: .topTrailing) {
@@ -216,6 +248,24 @@ struct ChannelDetailView: View {
       if let errorMessage = browser.errorMessage {
         errorView(errorMessage)
       }
+      Button {
+        Task {
+          if let context = await browser.contextSnapshot() {
+            onUseContext(context)
+          }
+        }
+      } label: {
+        Image(systemName: "sparkles")
+          .font(Tokens.Typography.titlebarIcon.font)
+          .frame(width: Tokens.Size.n30, height: Tokens.Size.n30)
+          .contentShape(Circle())
+      }
+      .buttonStyle(.plain)
+      .foregroundStyle(Tokens.Palette.textPrimary.color)
+      .glassEffect(.regular.interactive(), in: .circle)
+      .padding(Tokens.Space.n12)
+      .help(channelL("Use Page as Context"))
+      .accessibilityLabel(channelL("Use Page as Context"))
     }
     .background(Tokens.Palette.canvas.color)
     .onAppear { browser.open(channel) }
