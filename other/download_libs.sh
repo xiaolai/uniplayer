@@ -9,7 +9,9 @@ SKIP_PLUGINS=false
 WRITE_LOCK=false
 
 DYLIBS_DOWNLOAD_PATH="https://iina.io/dylibs/${ARCH}"
-YT_DLP_DOWNLOAD_PATH="https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos"
+# Pinned so the lock identifies an immutable upstream artifact.
+YT_DLP_GITHUB_VERSION="2026.10.21"
+YT_DLP_DOWNLOAD_PATH="https://github.com/yt-dlp/yt-dlp/releases/download/${YT_DLP_GITHUB_VERSION}/yt-dlp_macos"
 
 # Colors for output
 RED='\033[0;31m'
@@ -135,7 +137,7 @@ fi
 
 case $YT_DLP_SOURCE in
 github)
-  YT_DLP_DOWNLOAD_PATH="https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos"
+  YT_DLP_DOWNLOAD_PATH="https://github.com/yt-dlp/yt-dlp/releases/download/${YT_DLP_GITHUB_VERSION}/yt-dlp_macos"
   ;;
 iina)
   YT_DLP_DOWNLOAD_PATH="https://iina.io/dylibs/youtube-dl"

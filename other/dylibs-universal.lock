@@ -1,6 +1,6 @@
 # UniPlayer dependency lock — universal
 # Generated from deps/ on 2026-10-22. Regenerate with: other/download_libs.sh --write-lock
-# Source: https://iina.io/dylibs/universal and https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos
+# Source: https://iina.io/dylibs/universal and https://github.com/yt-dlp/yt-dlp/releases/download/2026.10.21/yt-dlp_macos
 # The upstream URLs are mutable; these digests pin the exact artifacts.
 # <sha256>  <path>
 98dd6860fb8537082fff9d2821ff6dafe8882ee2b1d849ad468922cf5938190b  libarchive.13.dylib
@@ -47,5 +47,5 @@ e0b7e8b0e8678cb5c2575feeea89f0964a8a4584be4afc470f82695004d11891  libswscale.10.
 19932677d8dd9f2d7bfd79db0771b3779aac42f33877ae98cb8469a6b7e6de01  libwebpmux.3.dylib
 fa214d54d2851a934f131e19940061cb849ff76e3679c876ee449f2cf7bb5158  libzimg.2.dylib
 5947ee456759d8731af51074da6138b1e69b89655d4d3b7d6bdcde88a8e14ec7  libzstd.1.dylib
-0f192b7ec147ab6288885d6351d9ab67367640029b4377576ef46dd79cf7b202  executable/youtube-dl-github
+7a6fe71d7d680f1fb0ac18d4949873d77db2859e90017c0f44bd94b23be4ee40  executable/youtube-dl-github
 b8b744228d13b191604673ce42cf98f3d6ddfd2e522ef251bfacdf7b26285b5f  executable/youtube-dl-iina
