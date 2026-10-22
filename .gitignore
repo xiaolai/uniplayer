@@ -124,3 +124,6 @@ deps/plugins
 .codex/
 CLAUDE.md
 
+
+# Python bytecode caches from repository scripts.
+__pycache__/
