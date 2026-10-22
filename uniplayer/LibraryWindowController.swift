@@ -46,7 +46,7 @@ final class LibraryWindowController: NSWindowController {
     window.titlebarSeparatorStyle = .none
     window.toolbarStyle = .unified
     window.minSize = Tokens.Window.minimumSize
-    window.isMovableByWindowBackground = false
+    window.isMovableByWindowBackground = true
     window.backgroundColor = Tokens.Palette.canvas.nsColor
     window.appearance = NSAppearance(uniplayerTheme: Preference.enum(for: .themeMaterial))
 

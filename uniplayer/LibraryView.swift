@@ -64,6 +64,7 @@ struct LibraryRootView: View {
   @ObservedObject private var channels = ChannelStore.shared
   @StateObject private var browser = ChannelBrowserModel()
   @State private var selection: LibrarySidebarItem? = .section(.home)
+  @State private var columnVisibility: NavigationSplitViewVisibility = .all
   @State private var selectedItem: LibraryItem?
   @State private var dropTargeted = false
   @State private var channelEditor: ChannelEditorSheet.Mode?
@@ -88,34 +89,21 @@ struct LibraryRootView: View {
   }
 
   var body: some View {
-    NavigationSplitView {
-      sidebar
-    } detail: {
-      detail
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Tokens.Palette.canvas.color)
+    VStack(spacing: 0) {
+      header
+      NavigationSplitView(columnVisibility: $columnVisibility) {
+        sidebar
+          .toolbar(removing: .sidebarToggle)
+      } detail: {
+        detail
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+          .background(Tokens.Palette.canvas.color)
+      }
+      .navigationSplitViewStyle(.balanced)
     }
-    .navigationSplitViewStyle(.balanced)
     .tint(Tokens.Palette.accent.color)
     .background(Tokens.Palette.canvas.color)
-    .toolbar {
-      ToolbarItem(placement: .primaryAction) {
-        Button {
-          model.openFilePanel()
-        } label: {
-          Label(L("Open File…"), systemImage: "folder")
-        }
-        .help(L("Open File…"))
-      }
-      ToolbarItem(placement: .primaryAction) {
-        Button {
-          AppDelegate.shared.openURL(NSApp)
-        } label: {
-          Label(L("Open URL…"), systemImage: "link")
-        }
-        .help(L("Open URL…"))
-      }
-    }
+    .ignoresSafeArea(.container, edges: .top)
     .overlay {
       if dropTargeted {
         DropOverlay()
@@ -178,6 +166,39 @@ struct LibraryRootView: View {
     }
     channels.remove(id: channel.id)
     channelPendingDeletion = nil
+  }
+
+  private var header: some View {
+    HStack(spacing: Tokens.Space.n4) {
+      Button {
+        model.openFilePanel()
+      } label: {
+        Image(systemName: "folder")
+      }
+      .help(L("Open File…"))
+
+      Button {
+        AppDelegate.shared.openURL(NSApp)
+      } label: {
+        Image(systemName: "link")
+      }
+      .help(L("Open URL…"))
+
+      Button {
+        columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
+      } label: {
+        Image(systemName: "sidebar.squares.leading")
+      }
+      .help(columnVisibility == .detailOnly ? L("Show Sidebar") : L("Hide Sidebar"))
+
+      Spacer()
+    }
+    .buttonStyle(.borderless)
+    .imageScale(.medium)
+    .padding(.leading, Tokens.Space.n80)
+    .padding(.trailing, Tokens.Space.n12)
+    .frame(height: Tokens.Size.n48)
+    .background(Tokens.Palette.canvas.color)
   }
 
   private var sidebar: some View {

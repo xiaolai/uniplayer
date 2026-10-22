@@ -1104,3 +1104,5 @@
 "Try Again" = "Try Again";
 "The web content process stopped. Reload the channel to continue." = "The web content process stopped. Reload the channel to continue.";
 "general.save" = "Save";
+"Show Sidebar" = "Show Sidebar";
+"Hide Sidebar" = "Hide Sidebar";
