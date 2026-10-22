@@ -426,6 +426,14 @@ enum Tokens {
     static let logDebug = ColorToken(nsColor: .gray)
     /// A log entry at the information level.
     static let logInfo = ColorToken(nsColor: .systemBlue)
+    /// A log string value.
+    static let logString = ColorToken(nsColor: .systemBrown)
+    /// A log boolean value.
+    static let logBoolean = ColorToken(nsColor: .systemPurple)
+    /// A neutral indicator glyph.
+    static let indicatorNeutral = ColorToken(nsColor: NSColor(calibratedWhite: 0.5, alpha: 1))
+    /// The thumbnail preview's border.
+    static let thumbnailBorder = ColorToken(nsColor: NSColor(calibratedWhite: 0.6, alpha: 0.5))
     /// A log entry at the success level.
     static let logSuccess = ColorToken(nsColor: .systemGreen)
   }
@@ -494,6 +502,11 @@ enum Tokens {
     /// A font chosen by the user, at a tokenised size.
     static func namedFont(name: String, size: CGFloat) -> NSFont {
       NSFont(name: name, size: size) ?? systemFont(size: size)
+    }
+
+    /// A font built from a descriptor at a tokenised size.
+    static func descriptorFont(_ descriptor: NSFontDescriptor, size: CGFloat) -> NSFont {
+      NSFont(descriptor: descriptor, size: size) ?? systemFont(size: size)
     }
     /// The smallest supporting line.
     static let caption = FontToken(size: NSFont.smallSystemFontSize, weight: .regular)
@@ -622,8 +635,12 @@ enum Tokens {
     static let n15: CGFloat = 15
     /// 16 pt.
     static let n16: CGFloat = 16
+    /// 17 pt.
+    static let n17: CGFloat = 17
     /// 18 pt.
     static let n18: CGFloat = 18
+    /// 19 pt.
+    static let n19: CGFloat = 19
     /// 20 pt.
     static let n20: CGFloat = 20
     /// 24 pt.
@@ -642,6 +659,8 @@ enum Tokens {
     static let n36: CGFloat = 36
     /// 45 pt.
     static let n45: CGFloat = 45
+    /// 46 pt.
+    static let n46: CGFloat = 46
     /// 40 pt.
     static let n40: CGFloat = 40
     /// 48 pt.
@@ -733,12 +752,7 @@ enum Tokens {
     /// The HUD timeline's corner.
     static let timeline = n14
     /// A settings card's corner, which follows the platform's control shape.
-    static let settingsCard: CGFloat = {
-      if #available(macOS 26, *) {
-        return n12
-      }
-      return n4
-    }()
+    static let settingsCard = n12
     /// A small control's corner.
     static let control = n4
     /// A sidebar container's corner.
@@ -783,6 +797,14 @@ enum Tokens {
     static let n8: CGFloat = 8
     /// 10 pt.
     static let n10: CGFloat = 10
+    /// 12 pt.
+    static let n12: CGFloat = 12
+    /// 13 pt.
+    static let n13: CGFloat = 13
+    /// 14 pt.
+    static let n14: CGFloat = 14
+    /// 24 pt.
+    static let n24: CGFloat = 24
   }
 
   // MARK: Opacity
@@ -884,6 +906,8 @@ enum Tokens {
     static let n11: CGFloat = 11
     /// 12 pt.
     static let n12: CGFloat = 12
+    /// 13 pt.
+    static let n13: CGFloat = 13
     /// 14 pt.
     static let n14: CGFloat = 14
     /// 24 pt.
@@ -964,6 +988,8 @@ enum Tokens {
     static let n360: CGFloat = 360
     /// 420 pt.
     static let n420: CGFloat = 420
+    /// 430 pt.
+    static let n430: CGFloat = 430
 
     /// 2 pt.
     static let n2: CGFloat = 2
@@ -975,8 +1001,12 @@ enum Tokens {
     static let n15: CGFloat = 15
     /// 16 pt.
     static let n16: CGFloat = 16
+    /// 17 pt.
+    static let n17: CGFloat = 17
     /// 18 pt.
     static let n18: CGFloat = 18
+    /// 19 pt.
+    static let n19: CGFloat = 19
     /// 20 pt.
     static let n20: CGFloat = 20
     /// 22 pt.
@@ -985,6 +1015,8 @@ enum Tokens {
     static let n32: CGFloat = 32
     /// 45 pt.
     static let n45: CGFloat = 45
+    /// 46 pt.
+    static let n46: CGFloat = 46
     /// 40 pt.
     static let n40: CGFloat = 40
     /// 70 pt.
@@ -1012,6 +1044,10 @@ enum Tokens {
     static let n54: CGFloat = 54
     /// 82 pt.
     static let n82: CGFloat = 82
+    /// 90 pt.
+    static let n90: CGFloat = 90
+    /// 98 pt.
+    static let n98: CGFloat = 98
     /// 68 pt.
     static let n68: CGFloat = 68
 
@@ -1023,13 +1059,8 @@ enum Tokens {
     static let minimumWindow = NSSize(width: 900, height: 560)
     /// The library sidebar's ideal width.
     static let sidebarWidth: CGFloat = 220
-    /// The titlebar's height: 32 pt on macOS 26 and later, 28 pt before.
-    static let titlebarHeight: CGFloat = {
-      if #available(macOS 26, *) {
-        return 32
-      }
-      return 28
-    }()
+    /// The titlebar's height.
+    static let titlebarHeight: CGFloat = 32
     /// The settings sidebar's width.
     static let settingsSidebarWidth: CGFloat = 180
     /// The settings content's width.
@@ -1078,6 +1109,8 @@ enum Tokens {
     static let n11: CGFloat = 11
     /// 12 pt.
     static let n12: CGFloat = 12
+    /// 13 pt.
+    static let n13: CGFloat = 13
     /// 13.5 pt.
     static let n13_5: CGFloat = 13.5
     /// 14 pt.
@@ -1086,8 +1119,12 @@ enum Tokens {
     static let n15: CGFloat = 15
     /// 16 pt.
     static let n16: CGFloat = 16
+    /// 17 pt.
+    static let n17: CGFloat = 17
     /// 18 pt.
     static let n18: CGFloat = 18
+    /// 19 pt.
+    static let n19: CGFloat = 19
     /// 20 pt.
     static let n20: CGFloat = 20
     /// 24 pt.
@@ -1137,6 +1174,15 @@ enum Tokens {
 
     /// The standard window-resize animation.
     static let window = n25
+    /// The SwiftUI animation for a token, honouring both Reduce Motion and the
+    /// app's own animation preference.
+    static func swiftUI(_ token: MotionToken, reduceMotion: Bool) -> Animation? {
+      if reduceMotion || Preference.bool(for: .disableAnimations) {
+        return nil
+      }
+      return token.animation
+    }
+
     /// The standard HUD fade.
     static let hud = n25
     /// The standard sidebar transition.
@@ -1188,17 +1234,17 @@ enum Tokens {
   /// Shadows.
   enum Shadow {
     /// A card's resting shadow.
-    static let card = ShadowToken(color: Palette.black.alpha(Opacity.n22), radius: Size.n12, offset: CGSize(width: 0, height: 5))
+    static let card = ShadowToken(color: Palette.black.alpha(Opacity.n22), radius: Blur.n12, offset: CGSize(width: 0, height: 5))
     /// A card's hover shadow.
-    static let cardHover = ShadowToken(color: Palette.black.alpha(Opacity.n28), radius: Size.n14, offset: CGSize(width: 0, height: 6))
+    static let cardHover = ShadowToken(color: Palette.black.alpha(Opacity.n28), radius: Blur.n14, offset: CGSize(width: 0, height: 6))
     /// A hero's shadow.
-    static let hero = ShadowToken(color: Palette.black.alpha(Opacity.n35), radius: Size.n24, offset: CGSize(width: 0, height: 12))
+    static let hero = ShadowToken(color: Palette.black.alpha(Opacity.n35), radius: Blur.n24, offset: CGSize(width: 0, height: 12))
     /// A small icon shadow.
-    static let icon = ShadowToken(color: Palette.black.alpha(Opacity.n50), radius: Radius.n2, offset: CGSize(width: 0, height: 1))
+    static let icon = ShadowToken(color: Palette.black.alpha(Opacity.n50), radius: Blur.n2, offset: CGSize(width: 0, height: 1))
     /// A floating panel's shadow.
-    static let panel = ShadowToken(color: Palette.black.alpha(Opacity.n50), radius: Radius.n4, offset: CGSize(width: 0, height: 0))
+    static let panel = ShadowToken(color: Palette.black.alpha(Opacity.n50), radius: Blur.n4, offset: CGSize(width: 0, height: 0))
     /// The titlebar text's shadow.
-    static let titlebarText = ShadowToken(color: Palette.black, radius: Radius.n2, offset: .zero)
+    static let titlebarText = ShadowToken(color: Palette.black, radius: Blur.n2, offset: .zero)
   }
 
   // MARK: Library
@@ -1228,9 +1274,9 @@ enum Tokens {
     /// The grid's row gap.
     static let gridRowGap: CGFloat = Space.n24
     /// The sidebar's minimum width.
-    static let sidebarMinimum: CGFloat = Space.n200
+    static let sidebarMinimum: CGFloat = Size.n200
     /// The sidebar's maximum width.
-    static let sidebarMaximum: CGFloat = Space.n260
+    static let sidebarMaximum: CGFloat = Size.n260
     /// The sidebar version label's inset.
     static let sidebarVersionInset: CGFloat = Space.n16
     /// The sidebar version label's bottom inset.
@@ -1277,6 +1323,10 @@ enum Tokens {
     static let placeholderSaturationBottom: CGFloat = 0.50
     /// The placeholder art's bottom brightness.
     static let placeholderBrightnessBottom: CGFloat = 0.18
+    /// The Continue Watching card's hover scale.
+    static let hoverScale: CGFloat = 1.02
+    /// The library card's hover scale.
+    static let cardHoverScale: CGFloat = 1.015
   }
 
   // MARK: Player HUD
@@ -1326,12 +1376,20 @@ enum Tokens {
     static let playDisc: CGFloat = Size.n96
     /// The skip disc's diameter.
     static let skipDisc: CGFloat = Size.n64
-    /// The play glyph's point size.
-    static let playGlyph: CGFloat = Size.n37
-    /// The pause glyph's point size.
-    static let pauseGlyph: CGFloat = Size.n31
-    /// The skip glyph's point size.
-    static let skipGlyph: CGFloat = Size.n30
+    /// The play/pause symbol's point size.
+    static let playPauseSymbol: CGFloat = Size.n48
+    /// The skip symbol's point size.
+    static let skipSymbol: CGFloat = Size.n30
+    /// The transport's size when the OSC is docked.
+    static let dockedTransport: CGFloat = Size.n24
+    /// The gap inside a utility capsule.
+    static let capsuleSpacing: CGFloat = Space.n10
+    /// The gap inside the volume capsule.
+    static let volumeCapsuleSpacing: CGFloat = Space.n6
+    /// The gap between transport controls in the HUD.
+    static let transportSpacingHUD: CGFloat = Space.n28
+    /// The gap between transport controls in the docked bar.
+    static let transportSpacingLegacy: CGFloat = Space.n16
     /// A utility glyph's point size.
     static let utilityGlyph = Icon.n16
     /// The volume glyph's point size.
@@ -1360,6 +1418,14 @@ enum Tokens {
     static let sidebarWidth = Size.settingsSidebarWidth
     /// The settings window's width.
     static let windowWidth = Size.settingsWindowWidth
+    /// The settings sidebar's maximum width.
+    static let sidebarMaximum = Size.n220
+    /// The settings content's minimum width.
+    static let contentMinimum = Size.n430
+    /// The settings preview's minimum height.
+    static let previewMinimumHeight = Size.n120
+    /// The settings preview's maximum height.
+    static let previewMaximumHeight = Size.n400
   }
 
   // MARK: Aspect
@@ -1378,18 +1444,6 @@ enum Tokens {
     static let defaultSize = Size.window
     /// The library window's minimum size.
     static let minimumSize = Size.minimumWindow
-    /// The initial window's recent-files row height.
-    static let recentRowHeight: CGFloat = Size.n28
-    /// The initial window's content inset.
-    static let contentInset: CGFloat = Space.n24
-    /// The initial window's header gap.
-    static let headerGap: CGFloat = Space.n12
-    /// The initial window's action gap.
-    static let actionGap: CGFloat = Space.n12
-    /// The initial window's recent-file row gap.
-    static let recentRowGap: CGFloat = Space.n6
-    /// The initial window's recent-row corner.
-    static let recentRowCorner = Radius.n8
   }
 }
 

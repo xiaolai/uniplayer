@@ -15,8 +15,16 @@ pull requests in this repository instead.
 
 1. Build with the instructions in [README.md](README.md#building).
 2. Make the change, then run the checks that cover it. At minimum the app must
-   build; for player or interop changes, exercise the affected behaviour in a real
-   session rather than only compiling it.
+   build and the test suite must pass; for player or interop changes, exercise
+   the affected behaviour in a real session rather than only compiling it.
+
+   ```sh
+   python3 scripts/check-design-tokens.py --ledger
+   python3 -m unittest scripts/test_check_design_tokens.py
+   python3 scripts/validate-browser-extensions.py
+   xcodebuild -project uniplayer.xcodeproj -scheme uniplayer \
+     -configuration Debug CODE_SIGNING_ALLOWED=NO test
+   ```
 3. Open one pull request per logical change.
 
 ## License
