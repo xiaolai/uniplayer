@@ -1038,10 +1038,6 @@
 "It may have been removed." = "It may have been removed.";
 "This channel could not be loaded." = "This channel could not be loaded.";
 "Try Again" = "Try Again";
-"AirPlay availability depends on the site." = "AirPlay availability depends on the site.";
-"Open in Safari" = "Open in Safari";
 "The web content process stopped. Reload the channel to continue." = "The web content process stopped. Reload the channel to continue.";
 "Back" = "Back";
-"Forward" = "Forward";
-"Reload" = "Reload";
 "general.save" = "Save";

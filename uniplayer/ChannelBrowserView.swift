@@ -2,8 +2,8 @@
 //  ChannelBrowserView.swift
 //  uniplayer
 //
-//  The WebKit side of a channel: persistent cookies, navigation controls and
-//  AirPlay permission for sites whose media player exposes it.
+//  The WebKit side of a channel: persistent cookies and AirPlay permission for
+//  sites whose media player exposes it.
 //
 
 import AppKit
@@ -17,9 +17,6 @@ private func channelL(_ key: String) -> String {
 
 @MainActor
 final class ChannelBrowserModel: NSObject, ObservableObject {
-  @Published private(set) var title = ""
-  @Published private(set) var canGoBack = false
-  @Published private(set) var canGoForward = false
   @Published private(set) var isLoading = false
   @Published private(set) var errorMessage: String?
 
@@ -52,7 +49,6 @@ final class ChannelBrowserModel: NSObject, ObservableObject {
     }
     self.channel = channel
     errorMessage = nil
-    title = channel.name
     webView.load(URLRequest(url: channel.url))
   }
 
@@ -63,33 +59,9 @@ final class ChannelBrowserModel: NSObject, ObservableObject {
     webView.stopLoading()
   }
 
-  func goBack() {
-    if webView.canGoBack { webView.goBack() }
-  }
-
-  func goForward() {
-    if webView.canGoForward { webView.goForward() }
-  }
-
   func reload() {
     errorMessage = nil
     webView.reload()
-  }
-
-  func openInSafari() {
-    if let url = webView.url ?? channel?.url {
-      NSWorkspace.shared.open(url)
-    }
-  }
-
-  private func updateNavigationState() {
-    canGoBack = webView.canGoBack
-    canGoForward = webView.canGoForward
-    if let pageTitle = webView.title, !pageTitle.isEmpty {
-      title = pageTitle
-    } else if let channel {
-      title = channel.name
-    }
   }
 }
 
@@ -112,16 +84,10 @@ extension ChannelBrowserModel: WKNavigationDelegate {
   func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
     isLoading = true
     errorMessage = nil
-    updateNavigationState()
-  }
-
-  func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
-    updateNavigationState()
   }
 
   func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
     isLoading = false
-    updateNavigationState()
   }
 
   func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
@@ -145,7 +111,6 @@ extension ChannelBrowserModel: WKNavigationDelegate {
       return
     }
     errorMessage = error.localizedDescription
-    updateNavigationState()
   }
 }
 
@@ -208,21 +173,15 @@ struct ChannelDetailView: View {
   let channel: Channel
 
   var body: some View {
-    VStack(spacing: 0) {
-      toolbar
-      Rectangle()
-        .fill(Tokens.Palette.separator.color)
-        .frame(height: Tokens.Stroke.hairline)
-      ZStack(alignment: .topTrailing) {
-        ChannelWebView(webView: browser.webView)
-        if browser.isLoading {
-          ProgressView()
-            .controlSize(.small)
-            .padding(Tokens.Space.n12)
-        }
-        if let errorMessage = browser.errorMessage {
-          errorView(errorMessage)
-        }
+    ZStack(alignment: .topTrailing) {
+      ChannelWebView(webView: browser.webView)
+      if browser.isLoading {
+        ProgressView()
+          .controlSize(.small)
+          .padding(Tokens.Space.n12)
+      }
+      if let errorMessage = browser.errorMessage {
+        errorView(errorMessage)
       }
     }
     .background(Tokens.Palette.canvas.color)
@@ -230,55 +189,6 @@ struct ChannelDetailView: View {
     .onChange(of: channel.id) { _, _ in browser.open(channel) }
     .onChange(of: channel.url) { _, _ in browser.open(channel) }
     .onDisappear { browser.stop() }
-  }
-
-  private var toolbar: some View {
-    HStack(spacing: Tokens.Space.n8) {
-      Button {
-        browser.goBack()
-      } label: {
-        Image(systemName: "chevron.backward")
-      }
-      .disabled(!browser.canGoBack)
-      .help(channelL("Back"))
-
-      Button {
-        browser.goForward()
-      } label: {
-        Image(systemName: "chevron.forward")
-      }
-      .disabled(!browser.canGoForward)
-      .help(channelL("Forward"))
-
-      Button {
-        browser.reload()
-      } label: {
-        Image(systemName: "arrow.clockwise")
-      }
-      .help(channelL("Reload"))
-
-      Text(browser.title.isEmpty ? channel.name : browser.title)
-        .font(Tokens.Typography.caption.font)
-        .foregroundStyle(Tokens.Palette.textSecondary.color)
-        .lineLimit(1)
-        .truncationMode(.middle)
-
-      Spacer(minLength: Tokens.Space.n8)
-
-      Image(systemName: "airplayvideo")
-        .foregroundStyle(Tokens.Palette.textTertiary.color)
-        .help(channelL("AirPlay availability depends on the site."))
-
-      Button {
-        browser.openInSafari()
-      } label: {
-        Image(systemName: "safari")
-      }
-      .help(channelL("Open in Safari"))
-    }
-    .buttonStyle(.borderless)
-    .padding(.horizontal, Tokens.Space.n12)
-    .padding(.vertical, Tokens.Space.n8)
   }
 
   private func errorView(_ message: String) -> some View {
