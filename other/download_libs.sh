@@ -6,6 +6,7 @@ ARCH="universal"
 YT_DLP_SOURCE="github"
 PARALLEL_DOWNLOADS=5
 SKIP_PLUGINS=false
+WRITE_LOCK=false
 
 DYLIBS_DOWNLOAD_PATH="https://iina.io/dylibs/${ARCH}"
 YT_DLP_DOWNLOAD_PATH="https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos"
@@ -25,6 +26,7 @@ printUsageHelp() {
   echo -e "    ${GREEN}$0 [--yt-dlp-src] <SRC>:${NC}  Source to download youtube-dl from: github | iina"
   echo -e "    ${GREEN}$0 [--parallel] <N>:${NC}      Number of parallel downloads (default: 5)"
   echo -e "    ${GREEN}$0 [--skip-plugins]:${NC}      Skip downloading official plugins"
+  echo -e "    ${GREEN}$0 [--write-lock]:${NC}         Write the dependency lock for the selected architecture"
   echo
 }
 
@@ -105,6 +107,10 @@ while [[ $# -gt 0 ]]; do
     SKIP_PLUGINS=true
     shift
     ;;
+  --write-lock)
+    WRITE_LOCK=true
+    shift
+    ;;
   --)
     shift
     break
@@ -169,34 +175,114 @@ EXEC_PATH="$DEPS_PATH/executable"
 PLUGIN_PATH="$DEPS_PATH/plugins"
 YT_DLP_PATH="$EXEC_PATH/youtube-dl"
 
-IFS=$'\n' read -r -d '' -a files < <(curl -s "${DYLIBS_DOWNLOAD_PATH}/filelist.txt" && printf '\0')
+LOCK_PATH="$ROOT_PATH/other/dylibs-${ARCH}.lock"
+
+if [[ "$WRITE_LOCK" == true ]]; then
+  if [[ ! -d "$LIB_PATH" ]]; then
+    echo -e "${RED}No deps/lib directory to lock.${NC}" >&2
+    exit 1
+  fi
+  {
+    echo "# UniPlayer dependency lock — ${ARCH}"
+    echo "# Generated from deps/ on $(date -u +%Y-%m-%d). Regenerate with: other/download_libs.sh --write-lock --arch ${ARCH}"
+    echo "# Source: ${DYLIBS_DOWNLOAD_PATH} and ${YT_DLP_DOWNLOAD_PATH}"
+    echo "# The upstream URLs are mutable; these digests pin the exact artifacts."
+    echo "# <sha256>  <path>"
+    for file in "$LIB_PATH"/*; do
+      [[ -f "$file" ]] || continue
+      printf "%s  %s\n" "$(shasum -a 256 "$file" | awk '{print $1}')" "$(basename "$file")"
+    done
+    if [[ -f "$YT_DLP_PATH" ]]; then
+      printf "%s  executable/youtube-dl-github\n" "$(shasum -a 256 "$YT_DLP_PATH" | awk '{print $1}')"
+    fi
+  } > "$LOCK_PATH"
+  echo -e "${GREEN}Wrote ${LOCK_PATH}${NC}"
+  exit 0
+fi
+
+if [[ ! -f "$LOCK_PATH" ]]; then
+  echo -e "${RED}No dependency lock for ${ARCH}: ${LOCK_PATH}${NC}" >&2
+  echo -e "${RED}Review the dependencies, then run: $0 --write-lock --arch ${ARCH}${NC}" >&2
+  exit 1
+fi
 
 mkdir -p "$LIB_PATH"
 
-echo -e "${BLUE}Starting downloads in parallel...${NC}"
-
-# Function to download a single file
-download_file() {
-  local file="$1"
+download_verified_file() {
+  local expected="$1"
+  local file="$2"
+  local tmp="${LIB_PATH}/${file}.download"
   echo -e "${YELLOW}Downloading ${file}...${NC}"
-  curl -s "${DYLIBS_DOWNLOAD_PATH}/${file}" -o "${LIB_PATH}/${file}" && echo -e "${GREEN}Downloaded ${file}${NC}"
+  if ! curl -fsSL "${DYLIBS_DOWNLOAD_PATH}/${file}" -o "$tmp"; then
+    echo -e "${RED}Failed to download ${file}.${NC}" >&2
+    rm -f "$tmp"
+    return 1
+  fi
+  local actual
+  actual=$(shasum -a 256 "$tmp" | awk '{print $1}')
+  if [[ "$actual" != "$expected" ]]; then
+    echo -e "${RED}Checksum mismatch for ${file}: expected ${expected}, got ${actual}.${NC}" >&2
+    rm -f "$tmp"
+    return 1
+  fi
+  mv "$tmp" "${LIB_PATH}/${file}"
+  echo -e "${GREEN}Verified ${file}${NC}"
 }
 
-# Export the function so it can be used by xargs
-export -f download_file
+export -f download_verified_file
 export DYLIBS_DOWNLOAD_PATH
 export LIB_PATH
 export YELLOW
 export GREEN
+export RED
 export NC
 
-# Process files in smaller batches using xargs
-printf "%s\n" "${files[@]}" | xargs -n 1 -P "$PARALLEL_DOWNLOADS" bash -c 'download_file "$@"' _
+entries=()
+while IFS= read -r line; do
+  [[ -z "$line" || "$line" == \#* ]] && continue
+  file=${line#*  }
+  hash=${line%%  *}
+  [[ "$file" == "executable/"* ]] && continue
+  entries+=("$hash $file")
+done < "$LOCK_PATH"
+
+if [[ ${#entries[@]} -eq 0 ]]; then
+  echo -e "${RED}The dependency lock lists no libraries.${NC}" >&2
+  exit 1
+fi
+
+echo -e "${BLUE}Starting verified downloads in parallel...${NC}"
+if ! printf "%s\n" "${entries[@]}" | xargs -n 2 -P "$PARALLEL_DOWNLOADS" bash -c 'download_verified_file "$@"' _; then
+  echo -e "${RED}One or more dependency downloads failed.${NC}" >&2
+  exit 1
+fi
 
 mkdir -p "$EXEC_PATH"
 echo -e "${YELLOW}Downloading yt-dlp...${NC}"
-curl -s -L "$YT_DLP_DOWNLOAD_PATH" -o "$YT_DLP_PATH" && echo -e "${GREEN}yt-dlp downloaded${NC}"
-chmod +x "$YT_DLP_PATH"
+
+YT_DLP_LOCK_KEY="executable/youtube-dl-${YT_DLP_SOURCE}"
+ytdl_hash=$(awk -v key="$YT_DLP_LOCK_KEY" '$2 == key {print $1}' "$LOCK_PATH")
+if [[ -z "$ytdl_hash" ]]; then
+  echo -e "${RED}No lock entry for ${YT_DLP_LOCK_KEY}.${NC}" >&2
+  echo -e "${RED}Only the pinned source is accepted; update the lock deliberately.${NC}" >&2
+  exit 1
+fi
+
+ytdl_tmp="${YT_DLP_PATH}.download"
+if ! curl -fsSL "$YT_DLP_DOWNLOAD_PATH" -o "$ytdl_tmp"; then
+  echo -e "${RED}Failed to download yt-dlp.${NC}" >&2
+  rm -f "$ytdl_tmp"
+  exit 1
+fi
+ytdl_actual=$(shasum -a 256 "$ytdl_tmp" | awk '{print $1}')
+if [[ "$ytdl_actual" != "$ytdl_hash" ]]; then
+  echo -e "${RED}Checksum mismatch for yt-dlp: expected ${ytdl_hash}, got ${ytdl_actual}.${NC}" >&2
+  rm -f "$ytdl_tmp"
+  exit 1
+fi
+chmod +x "$ytdl_tmp"
+mv "$ytdl_tmp" "$YT_DLP_PATH"
+echo -e "${GREEN}Verified yt-dlp${NC}"
 
 mkdir -p "$PLUGIN_PATH"
 
@@ -308,8 +394,8 @@ download_plugin() {
   echo -e "${GREEN}Downloaded ${asset_name}${NC}"
 }
 
-download_plugin "uniplayer/plugin-online-media" "uniplayer-plugin-ytdl" || exit 1
-download_plugin "uniplayer/plugin-userscript" "uniplayer-plugin-userscript" || exit 1
-download_plugin "uniplayer/plugin-opensub" "uniplayer-plugin-opensub" || exit 1
+download_plugin "iina/plugin-online-media" "uniplayer-plugin-ytdl" || exit 1
+download_plugin "iina/plugin-userscript" "uniplayer-plugin-userscript" || exit 1
+download_plugin "iina/plugin-opensub" "uniplayer-plugin-opensub" || exit 1
 
 echo -e "${GREEN}All downloads completed.${NC}"

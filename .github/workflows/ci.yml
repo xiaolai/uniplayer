@@ -11,17 +11,20 @@ on:
 
 jobs:
   build:
-    strategy:
-      matrix:
-        include:
-          - xcode: "27.1"
-            deployment_target: ""
-    runs-on:  macos-27
+    # The product targets macOS 27; GitHub's published Xcode 27 image is
+    # `xcode-27` (arm64). There is no `macos-27` hosted label.
+    runs-on: xcode-27
     steps:
       - uses: actions/checkout@v7
 
       - name: Check design tokens
         run: python3 scripts/check-design-tokens.py --ledger
+
+      - name: Test the design-token checker
+        run: python3 -m unittest scripts/test_check_design_tokens.py
+
+      - name: Validate browser extensions
+        run: python3 scripts/validate-browser-extensions.py
 
       - name: Install dependencies
         run: ./other/download_libs.sh $DOWNLOAD_LIBS_ARGS
@@ -29,10 +32,11 @@ jobs:
           DOWNLOAD_LIBS_ARGS: ${{ github.event_name == 'pull_request' && '--skip-plugins' || '' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Test
+        run: xcodebuild -project uniplayer.xcodeproj -scheme uniplayer -derivedDataPath . -configuration Debug CODE_SIGNING_ALLOWED=NO test
+
       - name: Build
-        run: xcodebuild -project uniplayer.xcodeproj ONLY_ACTIVE_ARCH=NO -scheme uniplayer -derivedDataPath . -configuration Nightly ${{ matrix.deployment_target }}
-        env:
-          DEVELOPER_DIR: /Applications/Xcode_${{ matrix.xcode }}.app/Contents/Developer
+        run: xcodebuild -project uniplayer.xcodeproj ONLY_ACTIVE_ARCH=NO -scheme uniplayer -derivedDataPath . -configuration Nightly
 
       - name: Create DMG
         run: hdiutil create -volname "UniPlayer Nightly" -srcfolder Build/Products/Nightly/UniPlayer.app -ov -format UDZO UniPlayer.dmg

@@ -56,18 +56,17 @@ jobs:
             const body = [
               "**This issue has been closed as completed.**",
               "",
-              "The changes that address it have been merged into the **`develop`** branch, which holds the sources for the development version of UniPlayer. They might **not yet in a stable release**. To try them now you can:",
+              "The changes that address it have been merged into the **`main`** branch, which holds the sources for the current version of UniPlayer. They might **not yet be included in a published release**. To try them now you can:",
               "",
-              "- Download an [UniPlayer Nightly build][nightly] (see [What is an UniPlayer Nightly build?][nightly-faq]), or",
-              "- [Build UniPlayer yourself][build] from the `develop` branch.",
+              "- Download the latest [UniPlayer release][releases], or",
+              "- [Build UniPlayer yourself][build] from the `main` branch.",
               "",
               "These changes will be included in a future release of UniPlayer. Further tweaks related to this issue are still expected.",
               "",
               "Thanks for helping improve UniPlayer! 🎉",
               "",
-              "[nightly]: https://iina.io/nightly",
-              "[nightly-faq]: https://github.com/iina/iina/wiki/FAQ#what-is-an-iina-nightly-build",
-              "[build]: https://github.com/iina/iina/wiki/FAQ",
+              "[releases]: https://github.com/xiaolai/uniplayer/releases",
+              "[build]: https://github.com/xiaolai/uniplayer#building",
             ].join("\n");
 
             await github.rest.issues.createComment({
