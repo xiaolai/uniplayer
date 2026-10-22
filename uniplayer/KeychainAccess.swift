@@ -32,39 +32,41 @@ class KeychainAccess {
     static let httpAuth = ServiceName(rawValue: "UniPlayer Saved HTTP Password")
   }
 
+  static func identityQuery(username: String?, service: ServiceName, server: String?, port: Int?) -> [String: Any] {
+    var query: [String: Any] = [kSecAttrService as String: service.rawValue]
+    if let username { query[kSecAttrAccount as String] = username }
+    if let server { query[kSecAttrServer as String] = server }
+    if let port { query[kSecAttrPort as String] = port }
+    query[kSecClass as String] = server == nil && port == nil ? kSecClassGenericPassword : kSecClassInternetPassword
+    return query
+  }
+
   static func write(username: String, password: String, forService serviceName: ServiceName, server: String? = nil, port: Int? = nil) throws {
-    let status: OSStatus
+    guard let passwordData = password.data(using: .utf8) else {
+      throw KeychainError.unexpectedData
+    }
 
-    if let _ = try? read(username: username, forService: serviceName, server: nil, port: nil) {
+    let identity = identityQuery(username: username, service: serviceName, server: server, port: port)
+    var status: OSStatus
 
-      // if password exists, try to update the password
-      var query: [String: Any] = [kSecAttrService as String: serviceName.rawValue]
-      if let server { query[kSecAttrServer as String] = server }
-      if let port { query[kSecAttrPort as String] = port }
-      query[kSecClass as String] = server == nil && port == nil ? kSecClassGenericPassword : kSecClassInternetPassword
-
-      // create attributes for updating
-      let passwordData = password.data(using: String.Encoding.utf8)!
-      let attributes: [String: Any] = [kSecAttrAccount as String: username,
-                                       kSecValueData as String: passwordData]
-      // update
-      status = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
-
+    if (try? read(username: username, forService: serviceName, server: server, port: port)) != nil {
+      // Update the exact credential found by the shared identity query.
+      status = SecItemUpdate(
+        identity as CFDictionary,
+        [kSecValueData as String: passwordData] as CFDictionary)
+      if status == errSecItemNotFound {
+        var addQuery = identity
+        addQuery[kSecAttrLabel as String] = serviceName.rawValue
+        addQuery[kSecValueData as String] = passwordData
+        status = SecItemAdd(addQuery as CFDictionary, nil)
+      }
     } else {
-
-      // try to write the password
-      var query: [String: Any] = [kSecAttrService as String: serviceName.rawValue,
-                                  kSecAttrLabel as String: serviceName.rawValue,
-                                  kSecAttrAccount as String: username,
-                                  kSecValueData as String: password]
-      if let server { query[kSecAttrServer as String] = server }
-      if let port { query[kSecAttrPort as String] = port }
-      query[kSecClass as String] = server == nil && port == nil ? kSecClassGenericPassword : kSecClassInternetPassword
-
+      var query = identity
+      query[kSecAttrLabel as String] = serviceName.rawValue
+      query[kSecValueData as String] = passwordData
       status = SecItemAdd(query as CFDictionary, nil)
     }
 
-    // check result
     guard status != errSecItemNotFound else { throw KeychainError.noResult }
     guard status == errSecSuccess else {
       let message = (SecCopyErrorMessageString(status, nil) as String?) ?? ""
@@ -73,15 +75,10 @@ class KeychainAccess {
   }
 
   static func read(username: String?, forService serviceName: ServiceName, server: String? = nil, port: Int? = nil) throws -> (username: String, password: String) {
-    var query: [String: Any] = [kSecAttrService as String: serviceName.rawValue,
-                                kSecMatchLimit as String: kSecMatchLimitOne,
-                                kSecReturnAttributes as String: true,
-                                kSecReturnData as String: true]
-    if let username { query[kSecAttrAccount as String] = username }
-    if let server { query[kSecAttrServer as String] = server }
-    if let port { query[kSecAttrPort as String] = port }
-
-    query[kSecClass as String] = server == nil && port == nil ? kSecClassGenericPassword : kSecClassInternetPassword
+    var query = identityQuery(username: username, service: serviceName, server: server, port: port)
+    query[kSecMatchLimit as String] = kSecMatchLimitOne
+    query[kSecReturnAttributes as String] = true
+    query[kSecReturnData as String] = true
 
     // initiate the search
     var item: CFTypeRef?
