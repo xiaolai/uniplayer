@@ -96,11 +96,11 @@ struct LibraryRootView: View {
       detail
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Tokens.Palette.canvas.color)
+        .ignoresSafeArea(.container, edges: .top)
     }
     .navigationSplitViewStyle(.balanced)
     .tint(Tokens.Palette.accent.color)
     .background(Tokens.Palette.canvas.color)
-    .ignoresSafeArea(.container, edges: .top)
     .overlay {
       if dropTargeted {
         DropOverlay()
@@ -212,9 +212,9 @@ struct LibraryRootView: View {
       ideal: Tokens.Size.sidebarWidth,
       max: Tokens.Library.sidebarMaximum)
     .safeAreaInset(edge: .top, spacing: 0) {
-      Tokens.Palette.clear.color.frame(height: Tokens.Size.n28)
+      Tokens.Palette.clear.color.frame(height: Tokens.Size.n40)
     }
-    .overlay(alignment: .topLeading) {
+    .overlay(alignment: .topTrailing) {
       sidebarControls
     }
     .safeAreaInset(edge: .bottom) {
@@ -281,31 +281,34 @@ struct LibraryRootView: View {
   }
 
   private var sidebarControls: some View {
-    HStack(spacing: Tokens.Space.n4) {
-      Button {
-        model.openFilePanel()
-      } label: {
-        Image(systemName: "folder")
-      }
-      .help(L("Open File…"))
+    GlassEffectContainer(spacing: Tokens.Space.n4) {
+      HStack(spacing: Tokens.Space.n4) {
+        Button {
+          model.openFilePanel()
+        } label: {
+          Image(systemName: "folder")
+        }
+        .help(L("Open File…"))
 
-      Button {
-        AppDelegate.shared.openURL(NSApp)
-      } label: {
-        Image(systemName: "link")
-      }
-      .help(L("Open URL…"))
+        Button {
+          AppDelegate.shared.openURL(NSApp)
+        } label: {
+          Image(systemName: "link")
+        }
+        .help(L("Open URL…"))
 
-      Button {
-        columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
-      } label: {
-        Image(systemName: "sidebar.squares.leading")
+        Button {
+          columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
+        } label: {
+          Image(systemName: "sidebar.squares.leading")
+        }
+        .help(columnVisibility == .detailOnly ? L("Show Sidebar") : L("Hide Sidebar"))
       }
-      .help(columnVisibility == .detailOnly ? L("Show Sidebar") : L("Hide Sidebar"))
+      .buttonStyle(.glass(.regular))
+      .tint(Tokens.Palette.hudGlassTint.color)
+      .imageScale(.medium)
     }
-    .buttonStyle(.borderless)
-    .imageScale(.medium)
-    .padding(.leading, Tokens.Space.n80)
+    .padding(.trailing, Tokens.Space.n8)
     .padding(.top, Tokens.Space.n8)
   }
 
