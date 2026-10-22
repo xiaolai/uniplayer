@@ -116,3 +116,11 @@ browser/Firefox_Open_In_IINA/*
 deps/executable/youtube-dl
 deps/plugins
 
+# AI tooling: machine-local, written wherever the tools run, never project
+# source. Bare names, not rules anchored to this directory, so a copy written
+# in a subdirectory is covered too.
+.cc-suite/
+.cc-suite.md
+.codex/
+CLAUDE.md
+
