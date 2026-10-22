@@ -40,9 +40,12 @@ class PlayerCore: NSObject {
   static var active: PlayerCore {
     if let wc = NSApp.mainWindow?.windowController as? PlayerWindowController {
       return wc.player
-    } else {
-      return first
     }
+    if let wc = NSApp.mainWindow?.windowController as? LibraryWindowController,
+       let player = wc.player {
+      return player
+    }
+    return first
   }
 
   static var newPlayerCore: PlayerCore {
@@ -497,24 +500,9 @@ class PlayerCore: NSObject {
     if str.first == "/" {
       openURL(URL(fileURLWithPath: str))
     } else {
-      // For apps built with Xcode 15 or later the behavior of the URL initializer has changed when
-      // running under macOS Sonoma or later. The behavior now matches URLComponents and will
-      // automatically percent encode characters. Must not apply percent encoding to the string
-      // passed to the URL initializer if the new new behavior is active.
-      var performPercentEncoding = true
-#if compiler(>=5.9)
-      if #available(macOS 14, *) {
-        performPercentEncoding = false
-      }
-#endif
-      var pstr = str
-      if performPercentEncoding {
-        guard let encoded = str.addingPercentEncoding(withAllowedCharacters: .urlAllowed) else {
-          log("Cannot add percent encoding for \(str)", level: .error)
-          return
-        }
-        pstr = encoded
-      }
+      // URL(string:) percent-encodes characters itself under the deployment
+      // target, so pre-encoding would double-encode them.
+      let pstr = str
       guard let url = URL(string: pstr) else {
         log("Cannot parse url for \(pstr)", level: .error)
         return
@@ -591,11 +579,11 @@ class PlayerCore: NSObject {
 
   static func loadKeyBindings() {
     Logger.log("Loading key bindings")
-    let userConfigs = PrefKeyBindingViewController.userConfigs
-    let uniplayerDefaultConfPath = PrefKeyBindingViewController.defaultConfigs["UniPlayer Default"]!
+    let uniplayerDefaultConfPath = KeyBindingConfigStore.defaultConfigs["UniPlayer Default"]!
     var inputConfPath = uniplayerDefaultConfPath
     if let confFromUd = Preference.string(for: .currentInputConfigName) {
-      if let currentConfigFilePath = Utility.getFilePath(Configs: userConfigs, forConfig: confFromUd, showAlert: false) {
+      if let currentConfigFilePath = KeyBindingConfigStore.filePath(
+        forConfig: confFromUd, window: nil, showAlert: false) {
         inputConfPath = currentConfigFilePath
       }
     }
@@ -2014,6 +2002,12 @@ class PlayerCore: NSObject {
     if let position = info.videoPosition?.second {
       Preference.set(position, for: .iinaLastPlayedFilePosition)
     }
+    if let url = info.currentURL, let position = info.videoPosition {
+      HistoryController.shared.updateProgress(
+        for: url,
+        progress: position,
+        duration: info.videoDuration ?? .zero)
+    }
   }
 
   func getGeometry() -> GeometryDef? {
@@ -2993,17 +2987,15 @@ class PlayerCore: NSObject {
   }
 
   func getPlaylist() {
-    info.$playlist.withLock { playlist in
-      playlist.removeAll()
-      let playlistCount = mpv.getInt(MPVProperty.playlistCount)
-      for index in 0..<playlistCount {
-        let playlistItem = MPVPlaylistItem(filename: mpv.getString(MPVProperty.playlistNFilename(index))!,
-                                           isCurrent: mpv.getFlag(MPVProperty.playlistNCurrent(index)),
-                                           isPlaying: mpv.getFlag(MPVProperty.playlistNPlaying(index)),
-                                           title: mpv.getString(MPVProperty.playlistNTitle(index)))
-        playlist.append(playlistItem)
-      }
+    guard let entries = mpv.getNode(MPVProperty.playlist) as? [[String: Any?]] else { return }
+    let items: [MPVPlaylistItem] = entries.compactMap { entry in
+      guard let filename = entry["filename"] as? String else { return nil }
+      return MPVPlaylistItem(filename: filename,
+                             isCurrent: (entry["current"] as? Bool) ?? false,
+                             isPlaying: (entry["playing"] as? Bool) ?? false,
+                             title: entry["title"] as? String)
     }
+    info.$playlist.withLock { $0 = items }
   }
 
   func getChapters() {

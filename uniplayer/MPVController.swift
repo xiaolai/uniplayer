@@ -613,10 +613,10 @@ class MPVController: NSObject {
     // Load external scripts
 
     // Load keybindings. This is still required for mpv to handle media keys or apple remote.
-    let userConfigs = PrefKeyBindingViewController.userConfigs
-    var inputConfPath =  PrefKeyBindingViewController.defaultConfigs["UniPlayer Default"]
+    var inputConfPath = KeyBindingConfigStore.defaultConfigs["UniPlayer Default"]
     if let confFromUd = Preference.string(for: .currentInputConfigName) {
-      if let currentConfigFilePath = Utility.getFilePath(Configs: userConfigs, forConfig: confFromUd, showAlert: false) {
+      if let currentConfigFilePath = KeyBindingConfigStore.filePath(
+        forConfig: confFromUd, window: nil, showAlert: false) {
         inputConfPath = currentConfigFilePath
       }
     }
@@ -1024,12 +1024,13 @@ class MPVController: NSObject {
     }
   }
 
+  /// Read a property as one `mpv_node` snapshot. The caller receives owned
+  /// Swift values; the node's storage is released before returning.
   func getNode(_ name: String) -> Any? {
     var node = mpv_node()
-    mpv_get_property(mpv, name, MPV_FORMAT_NODE, &node)
-    let parsed = try? MPVNode.parse(node)
-    mpv_free_node_contents(&node)
-    return parsed
+    guard mpv_get_property(mpv, name, MPV_FORMAT_NODE, &node) >= 0 else { return nil }
+    defer { mpv_free_node_contents(&node) }
+    return try? MPVNode.parse(node)
   }
 
   func setNode(_ name: String, _ value: Any) {
@@ -1249,6 +1250,52 @@ class MPVController: NSObject {
 
   // MARK: - Property listeners
 
+  /// Copies a property value out of memory owned by mpv.
+  ///
+  /// `mpv_event_property.data` is only valid until the next call to
+  /// `mpv_wait_event`. Every value that outlives the current event — in
+  /// particular anything crossing to another queue — must be decoded and
+  /// copied here, while the mpv event queue is still blocked.
+  private func copiedPropertyValue(_ property: mpv_event_property) -> Any? {
+    let format: MPVEventValue.Format
+    switch property.format {
+    case MPV_FORMAT_FLAG: format = .flag
+    case MPV_FORMAT_INT64: format = .int64
+    case MPV_FORMAT_DOUBLE: format = .double
+    case MPV_FORMAT_STRING: format = .string
+    case MPV_FORMAT_NODE: format = .node
+    default: return nil
+    }
+    return MPVEventValue.copy(
+      format: format,
+      data: property.data,
+      name: String(cString: property.name))
+  }
+
+  private func propertyFlag(_ property: mpv_event_property) -> Bool? {
+    guard property.format == MPV_FORMAT_FLAG, let data = property.data else { return nil }
+    // MPV_FORMAT_FLAG is a C int, not a Swift Bool.
+    return data.assumingMemoryBound(to: Int32.self).pointee != 0
+  }
+
+  private func propertyDouble(_ property: mpv_event_property) -> Double? {
+    guard property.format == MPV_FORMAT_DOUBLE, let data = property.data else { return nil }
+    return data.assumingMemoryBound(to: Double.self).pointee
+  }
+
+  private func propertyInt64(_ property: mpv_event_property) -> Int64? {
+    guard property.format == MPV_FORMAT_INT64, let data = property.data else { return nil }
+    return data.assumingMemoryBound(to: Int64.self).pointee
+  }
+
+  private func propertyString(_ property: mpv_event_property) -> String? {
+    guard property.format == MPV_FORMAT_STRING, let data = property.data else { return nil }
+    guard let string = data.assumingMemoryBound(to: UnsafePointer<CChar>?.self).pointee else {
+      return nil
+    }
+    return String(cString: string)
+  }
+
   private func handlePropertyChange(_ name: String, _ property: mpv_event_property) {
 
     switch name {
@@ -1285,7 +1332,7 @@ class MPVController: NSObject {
       DispatchQueue.main.async { self.player.secondarySidChanged() }
 
     case MPVOption.PlaybackControl.pause:
-      guard let paused = UnsafePointer<Bool>(OpaquePointer(property.data))?.pointee else {
+      guard let paused = propertyFlag(property) else {
         logPropertyValueError(MPVOption.PlaybackControl.pause, property.format)
         break
       }
@@ -1316,7 +1363,7 @@ class MPVController: NSObject {
       }
 
     case MPVOption.Video.deinterlace:
-      guard let data = UnsafePointer<Bool>(OpaquePointer(property.data))?.pointee else {
+      guard let data = propertyFlag(property) else {
         logPropertyValueError(MPVOption.Video.deinterlace, property.format)
         break
       }
@@ -1330,7 +1377,10 @@ class MPVController: NSObject {
       }
 
     case MPVOption.Video.hwdec:
-      let data = String(cString: property.data.assumingMemoryBound(to: UnsafePointer<UInt8>.self).pointee)
+      guard let data = propertyString(property) else {
+        logPropertyValueError(MPVOption.Video.hwdec, property.format)
+        break
+      }
       DispatchQueue.main.async { [self] in
         if player.info.hwdec != data {
           player.info.hwdec = data
@@ -1348,7 +1398,7 @@ class MPVController: NSObject {
       DispatchQueue.main.async { self.player.info.rotation = intData }
 
     case MPVOption.Audio.mute:
-      guard let data = UnsafePointer<Bool>(OpaquePointer(property.data))?.pointee else {
+      guard let data = propertyFlag(property) else {
         logPropertyValueError(MPVOption.Audio.mute, property.format)
         break
       }
@@ -1381,14 +1431,14 @@ class MPVController: NSObject {
       }
 
     case MPVOption.Subtitles.subVisibility:
-      if let visible = UnsafePointer<Bool>(OpaquePointer(property.data))?.pointee {
+      if let visible = propertyFlag(property) {
         DispatchQueue.main.async {
           self.player.subVisibilityChanged(visible)
         }
       }
 
     case MPVOption.Subtitles.secondarySubVisibility:
-      if let visible = UnsafePointer<Bool>(OpaquePointer(property.data))?.pointee {
+      if let visible = propertyFlag(property) {
         DispatchQueue.main.async {
           self.player.secondSubVisibilityChanged(visible)
         }
@@ -1516,7 +1566,7 @@ class MPVController: NSObject {
       DispatchQueue.main.async { self.player.mediaTitleChanged() }
 
     case MPVProperty.idleActive:
-      guard let idleActive = UnsafePointer<Bool>(OpaquePointer(property.data))?.pointee else {
+      guard let idleActive = propertyFlag(property) else {
         logPropertyValueError(MPVProperty.idleActive, property.format)
         break
       }
@@ -1531,6 +1581,11 @@ class MPVController: NSObject {
       break
     }
 
+    // Copy the value while the event queue is still blocked: `property.data`
+    // is invalidated by the next `mpv_wait_event`, which can run before the
+    // main-queue closure below is executed.
+    let eventValue = copiedPropertyValue(property)
+
     // This code is running in the com.lixiaolai.uniplayer.controller dispatch queue. We must not run
     // plugins from a task in this queue. Accessing EventController data from a thread in this queue
     // results in data races that can cause a crash. See issue 3986.
@@ -1538,20 +1593,7 @@ class MPVController: NSObject {
       let eventName = EventController.Name("mpv.\(name).changed")
       if player.events.hasListener(for: eventName) {
         // FIXME: better convert to JSValue before passing to call()
-        let data: Any
-        switch property.format {
-        case MPV_FORMAT_FLAG:
-          data = property.data.bindMemory(to: Bool.self, capacity: 1).pointee
-        case MPV_FORMAT_INT64:
-          data = property.data.bindMemory(to: Int64.self, capacity: 1).pointee
-        case MPV_FORMAT_DOUBLE:
-          data = property.data.bindMemory(to: Double.self, capacity: 1).pointee
-        case MPV_FORMAT_STRING:
-          data = property.data.bindMemory(to: String.self, capacity: 1).pointee
-        default:
-          data = 0
-        }
-        player.events.emit(eventName, data: data)
+        player.events.emit(eventName, data: eventValue ?? 0)
       }
     }
   }

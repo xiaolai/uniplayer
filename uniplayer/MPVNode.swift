@@ -104,11 +104,19 @@ class MPVNode {
       let objArray = obj as! [Any?]
       // create node ptr
       let nodePtr = UnsafeMutablePointer<mpv_node>.allocate(capacity: objArray.count)
-      var nodeiPtr = nodePtr
-      // assign each node ptr
-      try objArray.forEach { element in
-        try nodeiPtr.pointee = create(element)
-        nodeiPtr = nodeiPtr.successor()
+      var initialized = 0
+      do {
+        for element in objArray {
+          nodePtr.advanced(by: initialized).pointee = try create(element)
+          initialized += 1
+        }
+      } catch {
+        for i in 0..<initialized {
+          free(nodePtr.advanced(by: i).pointee)
+        }
+        nodePtr.deinitialize(count: initialized)
+        nodePtr.deallocate()
+        throw error
       }
       // create list
       var list = mpv_node_list()
@@ -128,14 +136,25 @@ class MPVNode {
       // create key and value ptr
       let valuePtr = UnsafeMutablePointer<mpv_node>.allocate(capacity: objDic.count)
       let keyPtr = UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>.allocate(capacity: objDic.count)
-      var valueiPtr = valuePtr
-      var keyiPtr = keyPtr
-      // assign each key and value ptr
-      try objDic.forEach { (k, v) in
-        try valueiPtr.pointee = create(v)
-        keyiPtr.pointee = allocString(k)
-        valueiPtr = valueiPtr.successor()
-        keyiPtr = keyiPtr.successor()
+      var initialized = 0
+      do {
+        for (key, value) in objDic {
+          valuePtr.advanced(by: initialized).pointee = try create(value)
+          keyPtr.advanced(by: initialized).pointee = allocString(key)
+          initialized += 1
+        }
+      } catch {
+        for i in 0..<initialized {
+          free(valuePtr.advanced(by: i).pointee)
+          if let key = keyPtr.advanced(by: i).pointee {
+            deallocString(key)
+          }
+        }
+        valuePtr.deinitialize(count: initialized)
+        valuePtr.deallocate()
+        keyPtr.deinitialize(count: initialized)
+        keyPtr.deallocate()
+        throw error
       }
       // create list
       var list = mpv_node_list()
