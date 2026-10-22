@@ -101,6 +101,9 @@ class MainWindowController: PlayerWindowController {
   private var hudUtilityCapsule: HUDCapsuleView!
   private var hudVolumeCapsule: HUDCapsuleView!
   private var hudAuxiliaryCapsule: HUDCapsuleView!
+  private var hudVolumeSlider: VolumeSlider!
+  private var hudMuteButton: NSButton!
+  private var hudTransportDiscs: [NSView] = []
   private var sharingPicker: NSSharingServicePicker?
 
   var osdView: OSDView!
@@ -530,7 +533,7 @@ class MainWindowController: PlayerWindowController {
 
     hudUtilityCapsule = makeHUDUtilityCapsule()
     hudView.topLeading.addView(hudUtilityCapsule, in: .leading)
-    hudVolumeCapsule = HUDCapsuleView(content: nil)
+    hudVolumeCapsule = makeHUDVolumeCapsule()
     hudView.topTrailing.addView(hudVolumeCapsule, in: .trailing)
     hudAuxiliaryCapsule = makeHUDAuxiliaryCapsule()
     hudView.bottomTrailing.addView(hudAuxiliaryCapsule, in: .trailing)
@@ -687,6 +690,7 @@ class MainWindowController: PlayerWindowController {
     let buttons = (Preference.array(for: .controlBarToolbarButtons) as? [Int] ?? []).compactMap(Preference.ToolBarButton.init(rawValue:))
     updateArrowButtons()
     setupOSCToolbarButtons(buttons)
+    installHUDTransportGlass()
 
     // fade-able views
 
@@ -1031,6 +1035,73 @@ class MainWindowController: PlayerWindowController {
     return HUDCapsuleView(content: stack)
   }
 
+  private func makeHUDVolumeCapsule() -> HUDCapsuleView {
+    let slider = VolumeSlider(frame: .zero)
+    slider.translatesAutoresizingMaskIntoConstraints = false
+    slider.appearance = NSAppearance(named: .darkAqua)
+    slider.controlSize = .mini
+    slider.minValue = 0
+    slider.maxValue = Double(Preference.integer(for: .maxVolume))
+    slider.doubleValue = player.info.volume
+    slider.target = self
+    slider.action = #selector(hudVolumeChanged(_:))
+    slider.setAccessibilityLabel(NSLocalizedString("Volume", comment: ""))
+    slider.size(width: 80)
+    hudVolumeSlider = slider
+
+    let mute = NSButton()
+    mute.translatesAutoresizingMaskIntoConstraints = false
+    mute.isBordered = false
+    mute.bezelStyle = .smallSquare
+    mute.image = hudSymbol("speaker.wave.2.fill", size: 14)
+    mute.contentTintColor = .white
+    mute.target = self
+    mute.action = #selector(hudMuteAction(_:))
+    mute.setAccessibilityLabel(NSLocalizedString("Mute", comment: ""))
+    mute.toolTip = NSLocalizedString("Mute", comment: "")
+    mute.size(width: 20, height: 20)
+    hudMuteButton = mute
+
+    let stack = NSStackView(views: [slider, mute])
+    stack.translatesAutoresizingMaskIntoConstraints = false
+    stack.orientation = .horizontal
+    stack.alignment = .centerY
+    stack.spacing = 6
+    return HUDCapsuleView(content: stack)
+  }
+
+  private func installHUDTransportGlass() {
+    guard hudTransportDiscs.isEmpty else { return }
+    let specs: [(NSButton, CGFloat)] = [
+      (leftArrowButton, 32), (playButton, 48), (rightArrowButton, 32)
+    ]
+    for (button, radius) in specs {
+      let disc = NSView()
+      disc.translatesAutoresizingMaskIntoConstraints = false
+      disc.wantsLayer = true
+      disc.layer?.backgroundColor = NSColor(white: 0.13, alpha: 0.90).cgColor
+      disc.layer?.cornerRadius = radius
+      disc.isHidden = true
+      hudView.addSubview(disc, positioned: .below, relativeTo: hudView.center)
+
+      let glass = NSGlassEffectView()
+      glass.translatesAutoresizingMaskIntoConstraints = false
+      glass.style = .clear
+      glass.cornerRadius = radius
+      disc.addSubview(glass)
+      glass.padding(.all)
+
+      NSLayoutConstraint.activate([
+        disc.centerXAnchor.constraint(equalTo: button.centerXAnchor),
+        disc.centerYAnchor.constraint(equalTo: button.centerYAnchor),
+        disc.widthAnchor.constraint(equalTo: button.widthAnchor),
+        disc.heightAnchor.constraint(equalTo: button.heightAnchor)
+      ])
+      hudTransportDiscs.append(disc)
+    }
+    updateTransportSizes()
+  }
+
   private func makeHUDIconButton(_ image: NSImage?, action: Selector,
                                  tag: Int? = nil, label: String) -> NSButton {
     let button = NSButton()
@@ -1067,6 +1138,14 @@ class MainWindowController: PlayerWindowController {
 
   @objc private func hudSpeedAction(_ sender: NSButton) {
     showSpeedChooseMenu(forView: sender)
+  }
+
+  @objc private func hudVolumeChanged(_ sender: NSSlider) {
+    player.setVolume(sender.doubleValue)
+  }
+
+  @objc private func hudMuteAction(_ sender: NSButton) {
+    player.toggleMute()
   }
 
   @objc private func shareCurrentFile(_ sender: NSButton) {
@@ -1175,7 +1254,6 @@ class MainWindowController: PlayerWindowController {
         stackView!.removeView($0)
       }
     }
-    hudVolumeCapsule?.setContent(nil)
     [oscSliderView, oscPlayControlView, oscToolbarView, oscVolumeView].forEach {
         $0!.removeFromSuperview()
     }
@@ -1193,6 +1271,11 @@ class MainWindowController: PlayerWindowController {
     rightLabel.mode = newPosition == .floating
       ? .remaining
       : (Preference.bool(for: .showRemainingTime) ? .remaining : .duration)
+    let timeLabelColor: NSColor = newPosition == .floating
+      ? NSColor.white.withAlphaComponent(0.8)
+      : .secondaryLabelColor
+    leftLabel.textColor = timeLabelColor
+    rightLabel.textColor = timeLabelColor
 
     // add fragment views
     switch oscPosition {
@@ -1201,7 +1284,6 @@ class MainWindowController: PlayerWindowController {
       hudView.isHidden = false
       oscPlayControlView.setVisibilityPriority(.notVisible, for: oscSpeedLabelLeftContainer)
       oscPlayControlView.setVisibilityPriority(.notVisible, for: oscSpeedLabelRightContainer)
-      hudVolumeCapsule.setContent(oscVolumeView)
       hudView.center.addView(oscPlayControlView, in: .center)
       hudView.timeline.addSubview(oscSliderView)
       Utility.quickConstraints(["H:|-(10)-[v]-(10)-|", "V:|[v]|"], ["v": oscSliderView])
@@ -3039,26 +3121,20 @@ class MainWindowController: PlayerWindowController {
     oscPlayControlMiddleView.spacing = hud ? 28 : 16
 
     playButton.wantsLayer = true
-    if hud {
-      playButton.layer?.backgroundColor = NSColor(white: 0.16, alpha: 0.92).cgColor
-      playButton.layer?.cornerRadius = playSize / 2
-      playButton.contentTintColor = .white
-    } else {
-      playButton.layer?.backgroundColor = NSColor.clear.cgColor
-      playButton.layer?.cornerRadius = 0
-      playButton.contentTintColor = nil
-    }
+    playButton.layer?.backgroundColor = NSColor.clear.cgColor
+    playButton.layer?.cornerRadius = 0
+    playButton.contentTintColor = hud ? .white : nil
+    playButton.alternateImage = hud ? nil : .pause
 
     for button in [leftArrowButton, rightArrowButton] {
       guard let button else { continue }
       button.wantsLayer = true
-      button.layer?.backgroundColor = hud
-        ? NSColor(white: 0.16, alpha: 0.92).cgColor
-        : NSColor.clear.cgColor
-      button.layer?.cornerRadius = hud ? arrowSize / 2 : 0
+      button.layer?.backgroundColor = NSColor.clear.cgColor
+      button.layer?.cornerRadius = 0
       button.contentTintColor = hud ? .white : nil
       button.layer?.shadowOpacity = 0
     }
+    hudTransportDiscs.forEach { $0.isHidden = !hud }
 
     let arrowLabels = arrowAccessibilityLabels
     leftArrowButton.setAccessibilityLabel(arrowLabels.0)
@@ -3133,6 +3209,10 @@ class MainWindowController: PlayerWindowController {
   override func updateVolume() {
     guard loaded else { return }
     super.updateVolume()
+    hudVolumeSlider?.doubleValue = player.info.volume
+    let muted = player.info.isMuted || player.info.volume <= 0
+    hudMuteButton?.image = hudSymbol(muted ? "speaker.slash.fill" : "speaker.wave.2.fill", size: 14)
+    hudMuteButton?.contentTintColor = .white
   }
 
   // MARK: - IBActions

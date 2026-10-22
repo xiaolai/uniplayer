@@ -9,60 +9,20 @@
 
 import Cocoa
 
-/// A dark translucent capsule that groups related HUD controls, the way the
+/// A clear Liquid Glass capsule that groups related HUD controls, the way the
 /// system player groups its utility controls.
-final class HUDCapsuleView: NSView {
-  private var content: NSView?
-  private var contentConstraints: [NSLayoutConstraint] = []
-  private let horizontalPadding: CGFloat
-  private let verticalPadding: CGFloat
-
-  init(content: NSView?, horizontalPadding: CGFloat = 10, verticalPadding: CGFloat = 5) {
-    self.horizontalPadding = horizontalPadding
-    self.verticalPadding = verticalPadding
-    super.init(frame: .zero)
-    translatesAutoresizingMaskIntoConstraints = false
-    wantsLayer = true
-    updateAppearance()
-    if let content {
-      setContent(content)
-    }
+final class HUDCapsuleView: TranslucentView {
+  init(content: NSView, horizontalPadding: CGFloat = 10, verticalPadding: CGFloat = 5) {
+    super.init(liquidGlassCornerRadius: 15, vevCornerRadius: 15,
+               padding: (horizontalPadding, verticalPadding))
+    glassStyle = .clear
+    glassTintColor = NSColor.black.withAlphaComponent(0.45)
+    glassIsInteractive = true
+    setContent(content)
   }
 
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
-  }
-
-  func setContent(_ view: NSView?) {
-    contentConstraints.forEach { $0.isActive = false }
-    contentConstraints = []
-    content?.removeFromSuperview()
-    content = view
-
-    guard let view else { return }
-    view.translatesAutoresizingMaskIntoConstraints = false
-    addSubview(view)
-    contentConstraints = [
-      view.leadingAnchor.constraint(equalTo: leadingAnchor, constant: horizontalPadding),
-      view.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -horizontalPadding),
-      view.topAnchor.constraint(equalTo: topAnchor, constant: verticalPadding),
-      view.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -verticalPadding)
-    ]
-    NSLayoutConstraint.activate(contentConstraints)
-  }
-
-  override func viewDidChangeEffectiveAppearance() {
-    super.viewDidChangeEffectiveAppearance()
-    updateAppearance()
-  }
-
-  private func updateAppearance() {
-    let reduce = NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency
-    let increase = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
-    layer?.backgroundColor = NSColor.black.withAlphaComponent(reduce ? 0.82 : 0.48).cgColor
-    layer?.cornerRadius = 15
-    layer?.borderWidth = 1
-    layer?.borderColor = NSColor.white.withAlphaComponent(increase ? 0.35 : 0.08).cgColor
   }
 }
 
@@ -79,6 +39,7 @@ final class PlayerHUDView: NSView {
 
   private let titleLabel = NSTextField(labelWithString: "")
   private let subtitleLabel = NSTextField(labelWithString: "")
+  private let timelineGlass = NSGlassEffectView()
   private let dimLayer = CALayer()
   private let topShade = CAGradientLayer()
   private let bottomShade = CAGradientLayer()
@@ -134,12 +95,13 @@ final class PlayerHUDView: NSView {
     }
     bottomLeading.addArrangedSubview(metadata)
 
+    timelineGlass.translatesAutoresizingMaskIntoConstraints = false
+    timelineGlass.style = .clear
+    timelineGlass.tintColor = NSColor.black.withAlphaComponent(0.45)
+    timelineGlass.cornerRadius = 14
+    addSubview(timelineGlass)
+
     timeline.translatesAutoresizingMaskIntoConstraints = false
-    timeline.wantsLayer = true
-    timeline.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.48).cgColor
-    timeline.layer?.cornerRadius = 14
-    timeline.layer?.borderWidth = 1
-    timeline.layer?.borderColor = NSColor.white.withAlphaComponent(0.08).cgColor
     addSubview(timeline)
 
     topLeadingConstraint = topLeading.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 84)
@@ -162,7 +124,11 @@ final class PlayerHUDView: NSView {
       timeline.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 40),
       timeline.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -40),
       timeline.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -28),
-      timeline.heightAnchor.constraint(equalToConstant: 28)
+      timeline.heightAnchor.constraint(equalToConstant: 28),
+      timelineGlass.leadingAnchor.constraint(equalTo: timeline.leadingAnchor),
+      timelineGlass.trailingAnchor.constraint(equalTo: timeline.trailingAnchor),
+      timelineGlass.topAnchor.constraint(equalTo: timeline.topAnchor),
+      timelineGlass.bottomAnchor.constraint(equalTo: timeline.bottomAnchor)
     ])
   }
 

@@ -20,6 +20,11 @@ class TranslucentView: NSView {
   var style: Style
   private var appliedStyle: Style?
 
+  /// Optional Liquid Glass configuration, applied when the glass view is built.
+  var glassStyle: NSGlassEffectView.Style = .regular
+  var glassTintColor: NSColor?
+  var glassIsInteractive = false
+
   init(liquidGlassCornerRadius: CGFloat = 16, vevCornerRadius: CGFloat = 8, padding: (CGFloat, CGFloat)) {
     self.liquidGlassCornerRadius = liquidGlassCornerRadius
     self.vevCornerRadius = vevCornerRadius
@@ -72,6 +77,11 @@ class TranslucentView: NSView {
       if #available(macOS 26.0, *) {
         let view = NSGlassEffectView()
         view.cornerRadius = liquidGlassCornerRadius
+        view.style = glassStyle
+        view.tintColor = glassTintColor
+        if #available(macOS 27.0, *) {
+          view.effectIsInteractive = glassIsInteractive
+        }
         view.translatesAutoresizingMaskIntoConstraints = false
         view.contentView = wrapper
         container = view
