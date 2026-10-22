@@ -1091,3 +1091,13 @@
 "Slower" = "Медленнее";
 "Faster" = "Быстрее";
 "Mute" = "Без звука";
+
+// Player HUD groups
+
+"Picture in Picture" = "Картинка в картинке";
+"Share" = "Поделиться";
+"AirPlay" = "AirPlay";
+"Subtitles" = "Субтитры";
+"Audio" = "Звук";
+"Playback Speed" = "Скорость воспроизведения";
+"No audio tracks" = "Нет звуковых дорожек";

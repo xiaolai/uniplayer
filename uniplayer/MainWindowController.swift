@@ -6,6 +6,7 @@
 //  Copyright © 2016 lhc. All rights reserved.
 //
 
+import AVKit
 import Cocoa
 import Mustache
 import WebKit
@@ -96,6 +97,11 @@ class MainWindowController: PlayerWindowController {
   var oscVolumeView: NSView!
   var oscToolbarView: NSStackView!
   var oscSliderView: NSView!
+
+  private var hudUtilityCapsule: HUDCapsuleView!
+  private var hudVolumeCapsule: HUDCapsuleView!
+  private var hudAuxiliaryCapsule: HUDCapsuleView!
+  private var sharingPicker: NSSharingServicePicker?
 
   var osdView: OSDView!
   var additionalInfoView: AdditionalInfoView!
@@ -392,14 +398,19 @@ class MainWindowController: PlayerWindowController {
   private func registerWindowButtonsAsFadeable() {
     fadeableWindowButtons.forEach { fadeableViews.remove($0) }
     fadeableWindowButtons = standardWindowButtons
-    fadeableWindowButtons.forEach {
-      fadeableViews.add($0) { [unowned self] in
+    fadeableWindowButtons.forEach { button in
+      fadeableViews.add(button) { [unowned self] in
+        if button == window?.standardWindowButton(.documentIconButton),
+           oscPosition == .floating {
+          return .alwaysHidden
+        }
         if sidebars.leadingSidebar.status != .hidden {
           return .alwaysShown
         }
         return fsState == .windowed && !Preference.isDocked ? .auto : .alwaysShown
       }
     }
+    window?.standardWindowButton(.documentIconButton)?.toolTip = nil
   }
 
   /** Get the `NSTextField` of widow's title. */
@@ -516,6 +527,14 @@ class MainWindowController: PlayerWindowController {
     cv.addSubview(hudView)
     hudView.padding(.all)
     hudView.isHidden = true
+
+    hudUtilityCapsule = makeHUDUtilityCapsule()
+    hudView.topLeading.addView(hudUtilityCapsule, in: .leading)
+    hudVolumeCapsule = HUDCapsuleView(content: nil)
+    hudView.topTrailing.addView(hudVolumeCapsule, in: .trailing)
+    hudAuxiliaryCapsule = makeHUDAuxiliaryCapsule()
+    hudView.bottomTrailing.addView(hudAuxiliaryCapsule, in: .trailing)
+
     osdView = OSDView(mainWindow: self)
     cv.addSubview(osdView)
     additionalInfoView = AdditionalInfoView(mainWindow: self)
@@ -962,6 +981,158 @@ class MainWindowController: PlayerWindowController {
 //    oscToolbarView.addView(menuButton, in: .trailing)
   }
 
+  // MARK: - Player HUD groups
+
+  private func makeHUDUtilityCapsule() -> HUDCapsuleView {
+    let pip = makeHUDIconButton(
+      Preference.ToolBarButton.pip.image(),
+      action: #selector(toolBarButtonAction(_:)),
+      tag: Preference.ToolBarButton.pip.rawValue,
+      label: "Picture in Picture")
+
+    let airplay = AVRoutePickerView()
+    airplay.translatesAutoresizingMaskIntoConstraints = false
+    airplay.isRoutePickerButtonBordered = false
+    airplay.setAccessibilityLabel(NSLocalizedString("AirPlay", comment: ""))
+    airplay.size(width: 20, height: 20)
+
+    let share = makeHUDIconButton(
+      hudSymbol("square.and.arrow.up", size: 16),
+      action: #selector(shareCurrentFile(_:)),
+      label: "Share")
+
+    let stack = NSStackView(views: [pip, airplay, share])
+    stack.translatesAutoresizingMaskIntoConstraints = false
+    stack.orientation = .horizontal
+    stack.alignment = .centerY
+    stack.spacing = 10
+    return HUDCapsuleView(content: stack)
+  }
+
+  private func makeHUDAuxiliaryCapsule() -> HUDCapsuleView {
+    let subtitles = makeHUDIconButton(
+      hudSymbol("captions.bubble.fill", size: 16),
+      action: #selector(hudSubAction(_:)),
+      label: "Subtitles")
+    let audio = makeHUDIconButton(
+      hudSymbol("waveform", size: 16),
+      action: #selector(hudAudioAction(_:)),
+      label: "Audio")
+    let speed = makeHUDIconButton(
+      hudSymbol("speedometer", size: 16),
+      action: #selector(hudSpeedAction(_:)),
+      label: "Playback Speed")
+
+    let stack = NSStackView(views: [subtitles, audio, speed])
+    stack.translatesAutoresizingMaskIntoConstraints = false
+    stack.orientation = .horizontal
+    stack.alignment = .centerY
+    stack.spacing = 10
+    return HUDCapsuleView(content: stack)
+  }
+
+  private func makeHUDIconButton(_ image: NSImage?, action: Selector,
+                                 tag: Int? = nil, label: String) -> NSButton {
+    let button = NSButton()
+    button.translatesAutoresizingMaskIntoConstraints = false
+    button.isBordered = false
+    button.bezelStyle = .smallSquare
+    button.imageScaling = .scaleProportionallyDown
+    button.image = image
+    button.contentTintColor = .white
+    button.target = self
+    button.action = action
+    if let tag {
+      button.tag = tag
+    }
+    let localized = NSLocalizedString(label, comment: "")
+    button.setAccessibilityLabel(localized)
+    button.toolTip = localized
+    button.size(width: 24, height: 24)
+    return button
+  }
+
+  private func hudSymbol(_ name: String, size: CGFloat) -> NSImage? {
+    NSImage(systemSymbolName: name, accessibilityDescription: nil)?
+      .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: size, weight: .medium))
+  }
+
+  @objc private func hudSubAction(_ sender: NSButton) {
+    showSubChooseMenu(forView: sender, showLoadedSubs: true, fromHUD: true)
+  }
+
+  @objc private func hudAudioAction(_ sender: NSButton) {
+    showAudioChooseMenu(forView: sender)
+  }
+
+  @objc private func hudSpeedAction(_ sender: NSButton) {
+    showSpeedChooseMenu(forView: sender)
+  }
+
+  @objc private func shareCurrentFile(_ sender: NSButton) {
+    guard let url = player.info.currentURL else { return }
+    let picker = NSSharingServicePicker(items: [url])
+    sharingPicker = picker
+    picker.show(relativeTo: sender.bounds, of: sender, preferredEdge: .minY)
+  }
+
+  private func showAudioChooseMenu(forView view: NSView) {
+    let menu = NSMenu()
+    menu.autoenablesItems = false
+    let tracks = player.info.trackList(.audio)
+    menu.addItem(withTitle: NSLocalizedString("track.none", comment: ""),
+                 action: #selector(chosenAudioFromMenu(_:)), target: self,
+                 stateOn: (player.info.aid ?? 0) == 0)
+    for track in tracks {
+      menu.addItem(withTitle: track.readableTitle,
+                   action: #selector(chosenAudioFromMenu(_:)), target: self,
+                   obj: track, stateOn: track.id == player.info.aid)
+    }
+    if tracks.isEmpty {
+      menu.addItem(withTitle: NSLocalizedString("No audio tracks", comment: ""),
+                   enabled: false)
+    }
+    popUpHUDMenu(menu, from: view)
+  }
+
+  @objc private func chosenAudioFromMenu(_ sender: NSMenuItem) {
+    if let track = sender.representedObject as? MPVTrack {
+      player.setTrack(track.id, forType: .audio)
+    } else {
+      player.setTrack(0, forType: .audio)
+    }
+  }
+
+  private func showSpeedChooseMenu(forView view: NSView) {
+    let menu = NSMenu()
+    menu.autoenablesItems = false
+    let current = AppData.availableSpeedValues.indices.contains(speedValueIndex)
+      ? AppData.availableSpeedValues[speedValueIndex] : 1
+    for (index, speed) in AppData.availableSpeedValues.enumerated() {
+      menu.addItem(withTitle: String(format: "%.2fx", speed),
+                   action: #selector(chosenSpeedFromMenu(_:)), target: self,
+                   tag: index, stateOn: abs(speed - current) < 0.001)
+    }
+    popUpHUDMenu(menu, from: view)
+  }
+
+  /// Menus hang above the bottom-right capsule and align to its trailing edge,
+  /// rather than opening off the window at the pointer.
+  private func popUpHUDMenu(_ menu: NSMenu, from view: NSView) {
+    let width = max(menu.size.width, 120)
+    let height = menu.size.height
+    let x = view.bounds.width - width + 10
+    menu.popUp(positioning: nil,
+               at: NSPoint(x: x, y: view.bounds.height - height + 6), in: view)
+  }
+
+  @objc private func chosenSpeedFromMenu(_ sender: NSMenuItem) {
+    guard sender.tag >= 0,
+          AppData.availableSpeedValues.indices.contains(sender.tag) else { return }
+    speedValueIndex = sender.tag
+    player.setSpeed(AppData.availableSpeedValues[sender.tag])
+  }
+
   @objc
   private func updateOSCToolbarButtons(_ notification: Notification) {
     func highlight(_ button: Preference.ToolBarButton, _ isHighlighted: Bool) {
@@ -1004,6 +1175,7 @@ class MainWindowController: PlayerWindowController {
         stackView!.removeView($0)
       }
     }
+    hudVolumeCapsule?.setContent(nil)
     [oscSliderView, oscPlayControlView, oscToolbarView, oscVolumeView].forEach {
         $0!.removeFromSuperview()
     }
@@ -1018,6 +1190,9 @@ class MainWindowController: PlayerWindowController {
     oscBottomView.updateVerticalConstraint(isDisplaying: newPosition == .bottom)
 
     oscPosition = newPosition
+    rightLabel.mode = newPosition == .floating
+      ? .remaining
+      : (Preference.bool(for: .showRemainingTime) ? .remaining : .duration)
 
     // add fragment views
     switch oscPosition {
@@ -1026,11 +1201,10 @@ class MainWindowController: PlayerWindowController {
       hudView.isHidden = false
       oscPlayControlView.setVisibilityPriority(.notVisible, for: oscSpeedLabelLeftContainer)
       oscPlayControlView.setVisibilityPriority(.notVisible, for: oscSpeedLabelRightContainer)
-      hudView.topTrailing.addView(oscVolumeView, in: .trailing)
-      hudView.bottomTrailing.addView(oscToolbarView, in: .trailing)
+      hudVolumeCapsule.setContent(oscVolumeView)
       hudView.center.addView(oscPlayControlView, in: .center)
       hudView.timeline.addSubview(oscSliderView)
-      Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": oscSliderView])
+      Utility.quickConstraints(["H:|-(10)-[v]-(10)-|", "V:|[v]|"], ["v": oscSliderView])
     case .top:
       let oscTopMainView = titleBarView.oscView!
       currentControlBar = nil
@@ -2723,7 +2897,7 @@ class MainWindowController: PlayerWindowController {
     standardWindowButtons.forEach { $0.isEnabled = true }
   }
 
-  func showSubChooseMenu(forView view: NSView, showLoadedSubs: Bool = false) {
+  func showSubChooseMenu(forView view: NSView, showLoadedSubs: Bool = false, fromHUD: Bool = false) {
     let activeSubs = player.info.trackList(.sub) + player.info.trackList(.secondSub)
     let menu = NSMenu()
     menu.autoenablesItems = false
@@ -2769,7 +2943,11 @@ class MainWindowController: PlayerWindowController {
         return f1.filename.localizedStandardCompare(f2.filename) == .orderedAscending
       }.forEach(addMenuItem)
     }
-    NSMenu.popUpContextMenu(menu, with: NSApp.currentEvent!, for: view)
+    if fromHUD {
+      popUpHUDMenu(menu, from: view)
+    } else {
+      NSMenu.popUpContextMenu(menu, with: NSApp.currentEvent!, for: view)
+    }
   }
 
   @objc func chosenSubFromMenu(_ sender: NSMenuItem) {
@@ -2862,9 +3040,9 @@ class MainWindowController: PlayerWindowController {
 
     playButton.wantsLayer = true
     if hud {
-      playButton.layer?.backgroundColor = NSColor.white.withAlphaComponent(0.92).cgColor
+      playButton.layer?.backgroundColor = NSColor(white: 0.16, alpha: 0.92).cgColor
       playButton.layer?.cornerRadius = playSize / 2
-      playButton.contentTintColor = .black
+      playButton.contentTintColor = .white
     } else {
       playButton.layer?.backgroundColor = NSColor.clear.cgColor
       playButton.layer?.cornerRadius = 0
@@ -2875,15 +3053,21 @@ class MainWindowController: PlayerWindowController {
       guard let button else { continue }
       button.wantsLayer = true
       button.layer?.backgroundColor = hud
-        ? NSColor.black.withAlphaComponent(0.34).cgColor
+        ? NSColor(white: 0.16, alpha: 0.92).cgColor
         : NSColor.clear.cgColor
       button.layer?.cornerRadius = hud ? arrowSize / 2 : 0
+      button.contentTintColor = hud ? .white : nil
+      button.layer?.shadowOpacity = 0
     }
 
     let arrowLabels = arrowAccessibilityLabels
     leftArrowButton.setAccessibilityLabel(arrowLabels.0)
     rightArrowButton.setAccessibilityLabel(arrowLabels.1)
 
+    (playSlider.cell as? PlaySliderCell)?.hudStyle = hud
+    playSlider.needsDisplay = true
+
+    updateArrowButtons()
     updatePlayButtonState(paused: player.info.state == .paused)
   }
 
@@ -2909,7 +3093,24 @@ class MainWindowController: PlayerWindowController {
   /// [multiLevelAccelerator](https://developer.apple.com/documentation/appkit/nsbutton/buttontype/multilevelaccelerator)
   /// button. This allows the user to control the speed using pressure when using devices that support pressure sensitivity.
   func updateArrowButtons() {
-    if arrowBtnFunction == .playlist {
+    if oscPosition == .floating {
+      let configuration = NSImage.SymbolConfiguration(pointSize: 26, weight: .medium)
+      func symbol(_ name: String) -> NSImage? {
+        NSImage(systemSymbolName: name, accessibilityDescription: nil)?
+          .withSymbolConfiguration(configuration)
+      }
+      switch arrowBtnFunction {
+      case .seek:
+        leftArrowButton.image = symbol("gobackward.15")
+        rightArrowButton.image = symbol("goforward.15")
+      case .playlist:
+        leftArrowButton.image = symbol("backward.end.fill")
+        rightArrowButton.image = symbol("forward.end.fill")
+      case .speed:
+        leftArrowButton.image = symbol("gobackward")
+        rightArrowButton.image = symbol("goforward")
+      }
+    } else if arrowBtnFunction == .playlist {
       leftArrowButton.image = #imageLiteral(resourceName: "nextl")
       rightArrowButton.image = #imageLiteral(resourceName: "nextr")
     } else {
@@ -3056,7 +3257,7 @@ class MainWindowController: PlayerWindowController {
       player.navigateInPlaylist(nextMedia: !left)
 
     case .seek:
-      player.seek(relativeSecond: left ? -10 : 10, option: .relative)
+      player.seek(relativeSecond: left ? -15 : 15, option: .relative)
 
     }
   }

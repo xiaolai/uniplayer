@@ -402,7 +402,7 @@ struct Preference {
     case playlist = 1
     case seek = 2
 
-    static var defaultValue = ArrowButtonAction.speed
+    static var defaultValue = ArrowButtonAction.seek
 
     init?(key: Key) {
       self.init(rawValue: Preference.integer(for: key))
@@ -1069,7 +1069,7 @@ struct Preference {
     .controlBarStickToCenter: true,
     .controlBarAutoHideTimeout: Float(2.5),
     .enableControlBarAutoHide: true,
-    .controlBarToolbarButtons: [ToolBarButton.plugins.rawValue, ToolBarButton.pip.rawValue, ToolBarButton.playlist.rawValue, ToolBarButton.settings.rawValue],
+    .controlBarToolbarButtons: [ToolBarButton.subTrack.rawValue, ToolBarButton.pip.rawValue, ToolBarButton.playlist.rawValue, ToolBarButton.settings.rawValue],
     .oscPosition: OSCPosition.floating.rawValue,
     .disablePlaySliderScrolling: false,
     .disableVolumeSliderScrolling: false,
@@ -1088,7 +1088,7 @@ struct Preference {
     .osdAutoHideTimeout: Float(1),
     .osdTextSize: Float(20),
     .softVolume: 100,
-    .arrowButtonAction: ArrowButtonAction.speed.rawValue,
+    .arrowButtonAction: ArrowButtonAction.seek.rawValue,
     .pauseWhenOpen: false,
     .fullScreenWhenOpen: false,
     .useLegacyFullScreen: false,

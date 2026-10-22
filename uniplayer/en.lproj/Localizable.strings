@@ -1091,3 +1091,13 @@
 "Slower" = "Slower";
 "Faster" = "Faster";
 "Mute" = "Mute";
+
+// Player HUD groups
+
+"Picture in Picture" = "Picture in Picture";
+"Share" = "Share";
+"AirPlay" = "AirPlay";
+"Subtitles" = "Subtitles";
+"Audio" = "Audio";
+"Playback Speed" = "Playback Speed";
+"No audio tracks" = "No audio tracks";

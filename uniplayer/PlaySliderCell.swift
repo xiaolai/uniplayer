@@ -37,6 +37,10 @@ class PlaySliderCell: NSSliderCell {
 
   var isPausedBeforeSeeking = false
 
+  /// The HUD uses a thicker capsule track with a round knob; the docked bars
+  /// keep the compact line.
+  var hudStyle = false
+
   override func awakeFromNib() {
     minValue = 0
     maxValue = 100
@@ -45,6 +49,14 @@ class PlaySliderCell: NSSliderCell {
   // MARK:- Displaying the Cell
 
   override func drawKnob(_ knobRect: NSRect) {
+    if hudStyle {
+      let size: CGFloat = 12
+      let rect = NSRect(x: knobRect.midX - size / 2, y: knobRect.midY - size / 2,
+                        width: size, height: size)
+      NSColor.white.setFill()
+      NSBezierPath(ovalIn: rect).fill()
+      return
+    }
     let isLightTheme = !controlView!.window!.effectiveAppearance.isDark
     if isLightTheme {
       drawKnobWithShadow(knobRect: knobRect)
@@ -100,6 +112,10 @@ class PlaySliderCell: NSSliderCell {
   }
 
   override func drawBar(inside rect: NSRect, flipped: Bool) {
+    if hudStyle {
+      drawHUDBar(inside: rect, flipped: flipped)
+      return
+    }
     let info = playerCore.info
 
     let slider = self.controlView as! NSSlider
@@ -168,6 +184,22 @@ class PlaySliderCell: NSSliderCell {
     barColorRight.setFill()
     path.fill()
     NSGraphicsContext.restoreGraphicsState()
+  }
+
+  private func drawHUDBar(inside rect: NSRect, flipped: Bool) {
+    let height: CGFloat = 8
+    let bar = NSRect(x: rect.minX, y: rect.midY - height / 2,
+                     width: rect.width, height: height)
+    NSColor.white.withAlphaComponent(0.22).setFill()
+    NSBezierPath(roundedRect: bar, xRadius: height / 2, yRadius: height / 2).fill()
+
+    let knob = knobRect(flipped: flipped)
+    let progress = min(max(knob.midX - bar.minX, 0), bar.width)
+    if progress > 0 {
+      let left = NSRect(x: bar.minX, y: bar.minY, width: progress, height: bar.height)
+      NSColor.white.withAlphaComponent(0.92).setFill()
+      NSBezierPath(roundedRect: left, xRadius: height / 2, yRadius: height / 2).fill()
+    }
   }
 
   // MARK:- Tracking the Mouse
