@@ -523,3 +523,85 @@ final class AssistantStreamingTests: XCTestCase {
   }
 }
 
+
+final class LibraryRemediationTests: XCTestCase {
+  private func item(_ name: String, progress: Double = 0, missing: Bool = false) -> UniPlayer.LibraryItem {
+    UniPlayer.LibraryItem(url: URL(fileURLWithPath: "/tmp/\(name).mp4"), title: name,
+                subtitle: "Fixtures", metadata: .parse(fileName: name), duration: 100,
+                progress: progress, added: Date(), isNetwork: false, isMissing: missing)
+  }
+
+  func testVideoHeightStaysInsideShortAndWideViewports() {
+    XCTAssertLessThanOrEqual(LibraryLayout.videoHeight(width: 1400, viewportHeight: 560), 320)
+    XCTAssertLessThanOrEqual(LibraryLayout.videoHeight(width: 300, viewportHeight: 560), 169)
+    XCTAssertGreaterThan(LibraryLayout.videoHeight(width: 900, viewportHeight: 720), 200)
+  }
+
+  func testInspectorPolicyKeepsUsefulDetailWidth() {
+    XCTAssertTrue(LibraryLayout.shouldCollapseSidebar(width: 900, inspector: true))
+    XCTAssertFalse(LibraryLayout.shouldCollapseSidebar(width: 1220, inspector: true))
+    XCTAssertFalse(LibraryLayout.shouldCollapseSidebar(width: 900, inspector: false))
+  }
+
+  func testLibrarySortAndFiltersPreserveMissingItems() {
+    let items = [item("Zulu", progress: 0.5), item("Alpha", missing: true), item("Beta", progress: 1)]
+    XCTAssertEqual(LibraryQuery.apply(items, query: "", sort: .title, filter: .all).map(\.title),
+                   ["Alpha", "Beta", "Zulu"])
+    XCTAssertEqual(LibraryQuery.apply(items, query: "", sort: .title, filter: .missing).map(\.title), ["Alpha"])
+    XCTAssertEqual(LibraryQuery.apply(items, query: "", sort: .title, filter: .unfinished).map(\.title), ["Alpha", "Zulu"])
+    XCTAssertEqual(LibraryQuery.apply(items, query: "fix", sort: .title, filter: .all).count, 3)
+  }
+
+  func testSnapshotRetainsMissingAndAppliesHiddenWatchedOverrides() {
+    let url = URL(fileURLWithPath: "/uniplayer-missing-fixture/film.mp4")
+    let entry = PlaybackHistory(url: url, duration: 100, title: "Film", mpvMd5: "fixture")
+    let snapshot = LibraryModel.snapshot(history: [entry], recent: [], lastPlayed: url,
+      hidden: [], watched: [url.standardizedFileURL.path: true])
+    XCTAssertEqual(snapshot.allItems.count, 1)
+    XCTAssertTrue(snapshot.allItems[0].isMissing)
+    XCTAssertTrue(snapshot.allItems[0].isFinished)
+    XCTAssertNil(snapshot.hero)
+    let hidden = LibraryModel.snapshot(history: [entry], recent: [], lastPlayed: url,
+      hidden: [url.standardizedFileURL.path], watched: [:])
+    XCTAssertTrue(hidden.allItems.isEmpty)
+  }
+
+  func testNativeSliderCommitsNonMouseChanges() {
+    var value = 0.0
+    let view = InlineSlider(value: .init(get: { value }, set: { value = $0 }),
+                            range: 0...100, label: "Position")
+    let coordinator = view.makeCoordinator()
+    let slider = NSSlider(value: 42, minValue: 0, maxValue: 100, target: nil, action: nil)
+    coordinator.valueChanged(slider)
+    XCTAssertEqual(value, 42)
+  }
+}
+
+@MainActor
+final class AssistantRemediationTests: XCTestCase {
+  private final class EmptyExecutor: AssistantToolExecuting {
+    func seek(to seconds: Double) -> Bool { false }
+    func currentSubtitle() -> String? { nil }
+    func relatedItems(matching query: String) -> [String] { [] }
+    func rangeDescription(start: Double, end: Double) -> String { "" }
+  }
+  func testSuggestionsDoNotPromiseUnseenVideoSummary() {
+    let model = AssistantViewModel(toolExecutor: EmptyExecutor())
+    XCTAssertFalse(model.suggestedPrompts.contains { $0.contains("Summarize this video") })
+    XCTAssertFalse(model.suggestedPrompts.contains { $0.contains("Translate") })
+    model.setChannelContext(ChannelPageContext(title: "A page", url: URL(string: "https://example.com")!, selection: nil))
+    XCTAssertFalse(model.suggestedPrompts.contains { $0.contains("selected text") })
+  }
+}
+
+@MainActor
+final class LibraryMenuRoutingTests: XCTestCase {
+  func testLibraryWindowDispatchesMenuCommandsThroughItsResponderChain() throws {
+    let controller = LibraryWindowController(playerCore: PlayerCore.first)
+    controller.showWindow(nil)
+    defer { controller.close() }
+    let window = try XCTUnwrap(controller.window)
+    XCTAssertTrue(window.tryToPerform(#selector(MainMenuActionHandler.menuSearchLibrary(_:)), with: nil))
+    XCTAssertTrue(window.nextResponder?.responds(to: #selector(MainMenuActionHandler.menuTogglePause(_:))) == true)
+  }
+}

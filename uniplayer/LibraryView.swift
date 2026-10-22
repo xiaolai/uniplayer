@@ -11,6 +11,14 @@ import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
+private struct LibraryTextScaleKey: EnvironmentKey { static let defaultValue = 1.0 }
+extension EnvironmentValues {
+  var libraryTextScale: Double {
+    get { self[LibraryTextScaleKey.self] }
+    set { self[LibraryTextScaleKey.self] = newValue }
+  }
+}
+
 private func L(_ key: String) -> String {
   NSLocalizedString(key, comment: "")
 }
@@ -38,7 +46,7 @@ enum LibrarySection: String, CaseIterable, Identifiable {
     case .home: return L("Home")
     case .search: return L("Search")
     case .continueWatching: return L("Continue Watching")
-    case .recent: return L("Recently Added")
+    case .recent: return L("Recently Played")
     case .all: return L("All Videos")
     }
   }
@@ -67,6 +75,7 @@ final class LibraryChrome: ObservableObject {
   let inlineHost = InlinePlayerSurfaceHost()
   var openFile: (() -> Void)?
   var openURL: (() -> Void)?
+  var searchLibrary: (() -> Void)?
   var toggleFullscreen: (() -> Void)?
   var openInNewWindow: (() -> Void)?
   var toggleInspector: (() -> Void)?
@@ -80,97 +89,10 @@ final class LibraryChrome: ObservableObject {
   }
 }
 
-/// The titlebar controls: Open File and Open URL grouped in one glass capsule
-/// at the sidepane's trailing edge, plus a circular sidebar toggle. While the
-/// sidebar is collapsed, only the hover-revealed toggle remains.
-struct LibraryTitlebarControls: View {
-  @ObservedObject var chrome: LibraryChrome
-  @State private var hovering = false
-
-  private var isCollapsed: Bool {
-    chrome.columnVisibility == .detailOnly
-  }
-
-  var body: some View {
-    HStack(spacing: Tokens.Space.n8) {
-      if isCollapsed {
-        sidebarToggle
-          .opacity(hovering ? 1 : 0)
-        Spacer(minLength: 0)
-      } else {
-        Spacer(minLength: 0)
-        openGroup
-        sidebarToggle
-      }
-    }
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .onHover { hovering = $0 }
-  }
-
-  /// The reference app groups related icon buttons in one capsule.
-  private var openGroup: some View {
-    HStack(spacing: 0) {
-      iconButton("folder", help: L("Open File…")) { chrome.openFile?() }
-      iconButton("link", help: L("Open URL…")) { chrome.openURL?() }
-    }
-    .glassEffect(.regular.interactive(), in: .capsule)
-  }
-
-  private var sidebarToggle: some View {
-    Button {
-      chrome.toggleSidebar()
-    } label: {
-      Image(systemName: "sidebar.squares.leading")
-        .font(Tokens.Typography.titlebarIcon.font)
-        .frame(width: Tokens.Size.n30, height: Tokens.Size.n30)
-        .contentShape(Circle())
-    }
-    .buttonStyle(.plain)
-    .foregroundStyle(Tokens.Palette.textPrimary.color)
-    .glassEffect(.regular.interactive(), in: .circle)
-    .help(isCollapsed ? L("Show Sidebar") : L("Hide Sidebar"))
-  }
-
-  private func iconButton(_ symbol: String, help: String,
-                          action: @escaping () -> Void) -> some View {
-    Button(action: action) {
-      Image(systemName: symbol)
-        .font(Tokens.Typography.titlebarIcon.font)
-        .frame(width: Tokens.Size.n36, height: Tokens.Size.n30)
-        .contentShape(Rectangle())
-    }
-    .buttonStyle(.plain)
-    .foregroundStyle(Tokens.Palette.textPrimary.color)
-    .help(help)
-  }
-}
-
-/// The trailing titlebar control that opens the AI inspector.
-struct InspectorTitlebarControls: View {
-  @ObservedObject var chrome: LibraryChrome
-
-  var body: some View {
-    Button {
-      // Routed through the window controller so the fullscreen guard applies.
-      chrome.toggleInspector?()
-    } label: {
-      Image(systemName: "sidebar.trailing")
-        .font(Tokens.Typography.titlebarIcon.font)
-        .frame(width: Tokens.Size.n30, height: Tokens.Size.n30)
-        .contentShape(Circle())
-    }
-    .buttonStyle(.plain)
-    .foregroundStyle(Tokens.Palette.textPrimary.color)
-    .glassEffect(.regular.interactive(), in: .circle)
-    .help(L("Show or Hide AI Inspector"))
-    .accessibilityLabel(L("Show or Hide AI Inspector"))
-    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
-  }
-}
-
 // MARK: - Root
 
 struct LibraryRootView: View {
+  @Environment(\.libraryTextScale) private var textScale
   private let open: (URL) -> Void
   private let openMany: ([URL]) -> Void
   /// Unowned: the window that hosts this view is owned by `PlayerCore`.
@@ -183,6 +105,8 @@ struct LibraryRootView: View {
   @ObservedObject private var channels = ChannelStore.shared
   @StateObject private var browser = ChannelBrowserModel()
   @State private var selection: LibrarySidebarItem? = .section(.home)
+  @AppStorage("interface.textScale.v1") private var preferredTextScale = 1.0
+  @State private var searchID = UUID()
   @State private var selectedItem: LibraryItem?
   @State private var dropTargeted = false
   @State private var channelEditor: ChannelEditorSheet.Mode?
@@ -226,7 +150,9 @@ struct LibraryRootView: View {
   var body: some View {
     NavigationSplitView(columnVisibility: $chrome.columnVisibility) {
       sidebar
-        .frame(width: Tokens.Size.sidebarWidth)
+        .frame(minWidth: Tokens.Size.sidebarWidth * preferredTextScale,
+               idealWidth: Tokens.Size.sidebarWidth * preferredTextScale,
+               maxWidth: Tokens.Library.sidebarMaximum * preferredTextScale)
         .toolbar(removing: .sidebarToggle)
     } detail: {
       detail
@@ -242,6 +168,8 @@ struct LibraryRootView: View {
         .ignoresSafeArea(.container, edges: .top)
     }
     .navigationSplitViewStyle(.balanced)
+    .environmentObject(model)
+    .environment(\.libraryTextScale, preferredTextScale)
     .tint(Tokens.Palette.accent.color)
     .background(Tokens.Palette.canvas.color)
     .overlay {
@@ -281,6 +209,8 @@ struct LibraryRootView: View {
     .onAppear {
       model.reload()
       configureCallbacks()
+      inlinePlayer.refresh()
+      handleInlineActiveChange(inlinePlayer.isActive)
     }
     .onChange(of: selection) { _, _ in
       handleSelectionChange()
@@ -317,6 +247,14 @@ struct LibraryRootView: View {
     }
     inlinePlayer.onOpenInNewWindow = { [weak chrome] in
       chrome?.openInNewWindow?()
+    }
+    let detailSelection = $selectedItem
+    let sidebarSelection = $selection
+    let searchIdentity = $searchID
+    chrome.searchLibrary = {
+      detailSelection.wrappedValue = nil
+      sidebarSelection.wrappedValue = .section(.search)
+      searchIdentity.wrappedValue = UUID()
     }
     chrome.registerInlineActivity = { [weak inlinePlayer] in
       inlinePlayer?.registerActivity()
@@ -355,7 +293,7 @@ struct LibraryRootView: View {
 
   private func handleSelectionChange() {
     // Navigating away pauses the inline player and keeps its position; the
-    // detail resumes it when the same item is opened again.
+    // detail keeps it paused until the user explicitly resumes.
     inlinePlayer.pauseForNavigation()
     selectedItem = nil
     assistant.setChannelContext(nil)
@@ -400,22 +338,24 @@ struct LibraryRootView: View {
   private var sidebar: some View {
     List(selection: $selection) {
       Section {
-        Label(LibrarySection.home.title, systemImage: LibrarySection.home.symbol)
+        sidebarLabel(LibrarySection.home.title, symbol: LibrarySection.home.symbol)
           .tag(LibrarySidebarItem.section(.home))
-        Label(LibrarySection.search.title, systemImage: LibrarySection.search.symbol)
+        sidebarLabel(LibrarySection.search.title, symbol: LibrarySection.search.symbol)
           .tag(LibrarySidebarItem.section(.search))
       }
       Section {
-        Label(LibrarySection.recent.title, systemImage: LibrarySection.recent.symbol)
+        sidebarLabel(LibrarySection.continueWatching.title, symbol: LibrarySection.continueWatching.symbol)
+          .tag(LibrarySidebarItem.section(.continueWatching))
+        sidebarLabel(LibrarySection.recent.title, symbol: LibrarySection.recent.symbol)
           .tag(LibrarySidebarItem.section(.recent))
-        Label(LibrarySection.all.title, systemImage: LibrarySection.all.symbol)
+        sidebarLabel(LibrarySection.all.title, symbol: LibrarySection.all.symbol)
           .tag(LibrarySidebarItem.section(.all))
       } header: {
-        Text(L("Library"))
+        Text(L("Library")).font(Tokens.Typography.captionStrong.scaledFont(preferredTextScale))
       }
       Section {
         ForEach(channels.channels) { channel in
-          Label(channel.name, systemImage: channel.symbol)
+          sidebarLabel(channel.name, symbol: channel.symbol)
             .tag(LibrarySidebarItem.channel(channel.id))
             .contextMenu {
               Button(L("Edit Channel…")) {
@@ -429,28 +369,36 @@ struct LibraryRootView: View {
         Button {
           channelEditor = .add
         } label: {
-          Label(L("Add Channel…"), systemImage: "plus")
+          sidebarLabel(L("Add Channel…"), symbol: "plus")
         }
         .buttonStyle(.plain)
       } header: {
-        Text(L("Channels"))
+        Text(L("Channels")).font(Tokens.Typography.captionStrong.scaledFont(preferredTextScale))
       }
     }
     .listStyle(.sidebar)
+    .environment(\.defaultMinListRowHeight, Tokens.Size.n30 * preferredTextScale)
+    .font(Tokens.Typography.body.scaledFont(preferredTextScale))
     .scrollContentBackground(.hidden)
     .background(Tokens.Palette.sidebar.color)
     .navigationSplitViewColumnWidth(
-      min: Tokens.Library.sidebarMinimum,
-      ideal: Tokens.Size.sidebarWidth,
-      max: Tokens.Library.sidebarMaximum)
-    .safeAreaInset(edge: .bottom) {
-      Text(versionText)
-        .font(Tokens.Typography.caption.font)
-        .foregroundStyle(Tokens.Palette.textTertiary.color)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, Tokens.Library.sidebarVersionInset)
-        .padding(.bottom, Tokens.Library.sidebarVersionBottom)
+      min: Tokens.Library.sidebarMinimum * preferredTextScale,
+      ideal: Tokens.Size.sidebarWidth * preferredTextScale,
+      max: Tokens.Library.sidebarMaximum * preferredTextScale)
+
+  }
+
+  private func sidebarLabel(_ title: String, symbol: String) -> some View {
+    HStack(spacing: Tokens.Space.n8) {
+      Image(systemName: symbol)
+        .accessibilityHidden(true)
+        .font(Tokens.Typography.body.scaledFont(preferredTextScale))
+      Text(title)
+        .font(Tokens.Typography.body.scaledFont(preferredTextScale))
+        .lineLimit(1)
     }
+    .frame(minHeight: Tokens.Size.n30 * preferredTextScale)
+    .help(title)
   }
 
   @ViewBuilder
@@ -460,7 +408,7 @@ struct LibraryRootView: View {
         item: model.allItems.first(where: { $0.id == selectedItem.id }) ?? selectedItem,
         inlinePlayer: inlinePlayer,
         host: chrome.inlineHost,
-        play: { open(selectedItem.url) },
+        play: { model.open(selectedItem) },
         openInNewWindow: {
           inlinePlayer.onOpenInNewWindow?()
         },
@@ -478,7 +426,7 @@ struct LibraryRootView: View {
           },
           seeAll: { selection = .section($0) })
       case .section(.search):
-        SearchView(model: model, select: { selectedItem = $0 })
+        SearchView(model: model, select: { selectedItem = $0 }).id(searchID)
       case .section(.continueWatching):
         LibraryGridView(
           title: LibrarySection.continueWatching.title,
@@ -493,14 +441,14 @@ struct LibraryRootView: View {
           items: model.recentlyAdded,
           model: model,
           select: { selectedItem = $0 },
-          emptyMessage: L("Open a video to start your library."))
+          emptyMessage: L("Videos you open appear here. Files stay in their original folders."))
       case .section(.all):
         LibraryGridView(
           title: LibrarySection.all.title,
           items: model.allItems,
           model: model,
           select: { selectedItem = $0 },
-          emptyMessage: L("Open a video to start your library."))
+          emptyMessage: L("Videos you open appear here. Files stay in their original folders."))
       case .channel(let id):
         if let channel = channels.channel(id: id) {
           ChannelDetailView(browser: browser, channel: channel) { context in
@@ -545,15 +493,13 @@ struct LibraryRootView: View {
       isNetwork: !url.isFileURL)
   }
 
-  private var versionText: String {
-    let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
-    return version.isEmpty ? "UniPlayer" : "UniPlayer \(version)"
-  }
+
 }
 
 // MARK: - Home
 
 private struct HomeView: View {
+  @Environment(\.libraryTextScale) private var textScale
   @ObservedObject var model: LibraryModel
   let select: (LibraryItem) -> Void
   let play: (LibraryItem) -> Void
@@ -561,7 +507,18 @@ private struct HomeView: View {
 
   var body: some View {
     ScrollView {
-      VStack(alignment: .leading, spacing: Tokens.Space.sectionGap) {
+      VStack(alignment: .leading, spacing: Tokens.Space.n24) {
+        HStack {
+          Text(L("Home")).font(Tokens.Typography.pageTitle.scaledFont(textScale))
+          Spacer()
+        }
+        Text(L("Your playback history, ready to resume."))
+          .font(Tokens.Typography.body.scaledFont(textScale))
+          .foregroundStyle(Tokens.Palette.textSecondary.color)
+        if !model.hasLoaded {
+          ProgressView(L("Loading videos…"))
+            .frame(maxWidth: .infinity, minHeight: Tokens.Size.n70)
+        }
         if let hero = model.hero {
           HeroView(item: hero) {
             play(hero)
@@ -586,7 +543,7 @@ private struct HomeView: View {
           EmptyStateView(
             symbol: "play.rectangle.on.rectangle",
             title: L("No videos yet"),
-            message: L("Open a video to start your library."),
+            message: L("Videos you open appear here. Files stay in their original folders."),
             actionTitle: L("Open File…")) {
               model.openFilePanel()
             }
@@ -602,6 +559,7 @@ private struct HomeView: View {
 }
 
 private struct HeroView: View {
+  @Environment(\.libraryTextScale) private var textScale
   let item: LibraryItem
   let play: () -> Void
 
@@ -609,7 +567,7 @@ private struct HeroView: View {
 
   var body: some View {
     Tokens.Palette.clear.color
-      .aspectRatio(Tokens.Aspect.video, contentMode: .fit)
+      .frame(height: Tokens.Library.heroMaximumHeight * textScale)
       .overlay {
         ZStack(alignment: .bottomLeading) {
           PosterImage(url: item.url)
@@ -621,7 +579,7 @@ private struct HeroView: View {
 
           VStack(alignment: .leading, spacing: Tokens.Library.heroSpacing) {
             Text(item.title)
-              .font(Tokens.Typography.heroTitle.font)
+              .font(Tokens.Typography.heroTitle.scaledFont(textScale))
               .lineLimit(2)
 
             HStack(spacing: Tokens.Space.n8) {
@@ -634,14 +592,14 @@ private struct HeroView: View {
                 Text(item.durationText)
               }
             }
-            .font(Tokens.Typography.heroBody.font)
+            .font(Tokens.Typography.heroBody.scaledFont(textScale))
             .foregroundStyle(Tokens.Palette.onMediaSecondary.color)
 
             Button(action: play) {
               Label(
                 item.isResumable ? L("Resume") : L("Play"),
                 systemImage: "play.fill")
-                .font(Tokens.Typography.button.font)
+                .font(Tokens.Typography.button.scaledFont(textScale))
                 .padding(.horizontal, Tokens.Library.heroButtonHorizontal)
                 .padding(.vertical, Tokens.Library.heroButtonVertical)
                 .background(Tokens.Palette.white.color, in: Capsule())
@@ -669,6 +627,7 @@ private struct HeroView: View {
 }
 
 private struct ContinueWatchingShelf: View {
+  @Environment(\.libraryTextScale) private var textScale
   let items: [LibraryItem]
   let select: (LibraryItem) -> Void
   let seeAll: () -> Void
@@ -677,12 +636,13 @@ private struct ContinueWatchingShelf: View {
     VStack(alignment: .leading, spacing: Tokens.Library.shelfHeaderSpacing) {
       HStack(alignment: .firstTextBaseline) {
         Text(L("Continue Watching"))
-          .font(Tokens.Typography.sectionTitle.font)
+          .font(Tokens.Typography.sectionTitle.scaledFont(textScale))
           .foregroundStyle(Tokens.Palette.textPrimary.color)
         Spacer()
         Button(L("See All"), action: seeAll)
+          .frame(minHeight: Tokens.Size.n30)
           .buttonStyle(.plain)
-          .font(Tokens.Typography.caption.font)
+          .font(Tokens.Typography.caption.scaledFont(textScale))
           .foregroundStyle(Tokens.Palette.textSecondary.color)
       }
 
@@ -701,6 +661,7 @@ private struct ContinueWatchingShelf: View {
 }
 
 private struct ContinueWatchingCard: View {
+  @Environment(\.libraryTextScale) private var textScale
   let item: LibraryItem
   let play: () -> Void
 
@@ -726,10 +687,10 @@ private struct ContinueWatchingCard: View {
 
         VStack(alignment: .leading, spacing: Tokens.Space.n6) {
           Text(item.title)
-            .font(Tokens.Typography.cardTitle.font)
+            .font(Tokens.Typography.cardTitle.scaledFont(textScale))
             .lineLimit(2)
           Text(item.progressText)
-            .font(Tokens.Typography.caption.font)
+            .font(Tokens.Typography.caption.scaledFont(textScale))
             .foregroundStyle(Tokens.Palette.onMediaTertiary.color)
           ProgressBar(value: item.progress)
         }
@@ -758,11 +719,14 @@ private struct ContinueWatchingCard: View {
     .focused($focused)
     .onHover { hovering = $0 }
     .accessibilityLabel(item.title)
+    .help(item.title + "\n" + item.subtitle)
+    .contextMenu { LibraryItemActions(item: item) }
     .accessibilityHint(L("Open details"))
   }
 }
 
 private struct RecentlyAddedShelf: View {
+  @Environment(\.libraryTextScale) private var textScale
   let items: [LibraryItem]
   let select: (LibraryItem) -> Void
   let seeAll: () -> Void
@@ -770,13 +734,14 @@ private struct RecentlyAddedShelf: View {
   var body: some View {
     VStack(alignment: .leading, spacing: Tokens.Space.n14) {
       HStack(alignment: .firstTextBaseline) {
-        Text(L("Recently Added"))
-          .font(Tokens.Typography.sectionTitle.font)
+        Text(L("Recently Played"))
+          .font(Tokens.Typography.sectionTitle.scaledFont(textScale))
           .foregroundStyle(Tokens.Palette.textPrimary.color)
         Spacer()
         Button(L("See All"), action: seeAll)
+          .frame(minHeight: Tokens.Size.n30)
           .buttonStyle(.plain)
-          .font(Tokens.Typography.caption.font)
+          .font(Tokens.Typography.caption.scaledFont(textScale))
           .foregroundStyle(Tokens.Palette.textSecondary.color)
       }
 
@@ -788,6 +753,7 @@ private struct RecentlyAddedShelf: View {
 // MARK: - Grid
 
 private struct LibraryGridView: View {
+  @Environment(\.libraryTextScale) private var textScale
   let title: String
   let items: [LibraryItem]
   @ObservedObject var model: LibraryModel
@@ -802,22 +768,25 @@ private struct LibraryGridView: View {
           if let onBack {
             Button(action: onBack) {
               Image(systemName: "chevron.left")
-                .font(Tokens.Typography.sectionTitle.font)
+                .font(Tokens.Typography.body.scaledFont(textScale))
+              .frame(width: Tokens.Size.n30, height: Tokens.Size.n30)
             }
             .buttonStyle(.plain)
             .foregroundStyle(Tokens.Palette.textSecondary.color)
             .accessibilityLabel(L("Back"))
           }
           Text(title)
-            .font(Tokens.Typography.pageTitle.font)
+            .font(Tokens.Typography.pageTitle.scaledFont(textScale))
             .foregroundStyle(Tokens.Palette.textPrimary.color)
           Spacer()
           Text("\(items.count)")
-            .font(Tokens.Typography.caption.font)
+            .font(Tokens.Typography.caption.scaledFont(textScale))
             .foregroundStyle(Tokens.Palette.textSecondary.color)
         }
 
-        if items.isEmpty {
+        if !model.hasLoaded {
+          ProgressView(L("Loading videos…"))
+        } else if items.isEmpty {
           EmptyStateView(
             symbol: "play.rectangle.on.rectangle",
             title: L("No videos yet"),
@@ -827,7 +796,7 @@ private struct LibraryGridView: View {
             }
           .frame(minHeight: Tokens.Library.gridEmptyStateMinimum)
         } else {
-          LibraryCardGrid(items: items, select: select)
+          LibraryCollectionView(items: items, select: select)
         }
       }
       .padding(.horizontal, Tokens.Space.pageMargin)
@@ -839,6 +808,7 @@ private struct LibraryGridView: View {
 
 /// The one adaptive card grid used by shelves, sections and search.
 private struct LibraryCardGrid: View {
+  @Environment(\.libraryTextScale) private var textScale
   let items: [LibraryItem]
   let select: (LibraryItem) -> Void
 
@@ -859,6 +829,7 @@ private struct LibraryCardGrid: View {
 }
 
 private struct LibraryCard: View {
+  @Environment(\.libraryTextScale) private var textScale
   let item: LibraryItem
   let play: () -> Void
 
@@ -895,12 +866,12 @@ private struct LibraryCard: View {
           .shadow(color: hovering ? Tokens.Shadow.card.color.color : Tokens.Palette.clear.color, radius: Tokens.Shadow.card.radius, x: Tokens.Shadow.card.offset.width, y: Tokens.Shadow.card.offset.height)
 
         Text(item.title)
-          .font(Tokens.Typography.cardTitle.font)
+          .font(Tokens.Typography.cardTitle.scaledFont(textScale))
           .foregroundStyle(Tokens.Palette.textPrimary.color)
           .lineLimit(1)
 
-        Text(item.subtitle)
-          .font(Tokens.Typography.caption.font)
+        Text(item.isMissing ? L("File missing") : item.subtitle)
+          .font(Tokens.Typography.caption.scaledFont(textScale))
           .foregroundStyle(Tokens.Palette.textSecondary.color)
           .lineLimit(1)
       }
@@ -913,6 +884,8 @@ private struct LibraryCard: View {
     .focused($focused)
     .onHover { hovering = $0 }
     .accessibilityLabel(item.title)
+    .help(item.title + "\n" + item.subtitle)
+    .contextMenu { LibraryItemActions(item: item) }
     .accessibilityHint(L("Open details"))
   }
 }
@@ -920,31 +893,22 @@ private struct LibraryCard: View {
 // MARK: - Search
 
 private struct SearchView: View {
+  @Environment(\.libraryTextScale) private var textScale
   @ObservedObject var model: LibraryModel
   let select: (LibraryItem) -> Void
   @FocusState private var focused: Bool
 
   var body: some View {
     VStack(spacing: Tokens.Space.n28) {
-      HStack(spacing: Tokens.Space.n10) {
-        Image(systemName: "magnifyingglass")
-          .foregroundStyle(Tokens.Palette.textSecondary.color)
-        TextField(L("Search"), text: $model.query)
-          .textFieldStyle(.plain)
-          .font(Tokens.Typography.searchField.font)
-          .focused($focused)
-      }
-      .padding(.horizontal, Tokens.Library.searchHorizontal)
-      .padding(.vertical, Tokens.Library.searchVertical)
-      .background(Tokens.Palette.surface.color, in: RoundedRectangle(cornerRadius: Tokens.Library.searchCorner, style: .continuous))
-      .overlay {
-        RoundedRectangle(cornerRadius: Tokens.Library.searchCorner, style: .continuous)
-          .stroke(Tokens.Palette.separator.color, lineWidth: Tokens.Stroke.hairline)
-      }
-      .frame(width: Tokens.Size.searchFieldWidth)
-      .padding(.top, Tokens.Library.searchTop)
+      NativeLibrarySearchField(query: $model.query)
+        .frame(maxWidth: Tokens.Size.searchFieldWidth)
+        .frame(height: Tokens.Size.n30)
+        .padding(.horizontal, Tokens.Space.n16)
+        .padding(.top, Tokens.Library.searchTop)
 
-      if model.query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+      if !model.hasLoaded {
+        ProgressView(L("Loading videos…"))
+      } else if model.query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
         EmptyStateView(
           symbol: "magnifyingglass",
           title: L("Search"),
@@ -958,7 +922,7 @@ private struct SearchView: View {
           .frame(maxHeight: .infinity)
       } else {
         ScrollView {
-          LibraryCardGrid(items: model.searchResults, select: select)
+          LibraryCollectionView(items: model.searchResults, select: select)
             .padding(.horizontal, Tokens.Space.pageMargin)
             .padding(.bottom, Tokens.Space.pageBottom)
         }
@@ -975,6 +939,7 @@ private struct SearchView: View {
 // MARK: - Detail
 
 private struct DetailView: View {
+  @Environment(\.libraryTextScale) private var textScale
   let item: LibraryItem
   @ObservedObject var inlinePlayer: InlinePlayerModel
   let host: InlinePlayerSurfaceHost
@@ -986,6 +951,7 @@ private struct DetailView: View {
   let immersive: Bool
 
   @Environment(\.colorSchemeContrast) private var contrast
+  @EnvironmentObject private var library: LibraryModel
 
   /// The live surface appears only when this detail's item is the file the
   /// inline player currently presents.
@@ -1004,39 +970,73 @@ private struct DetailView: View {
     }
     // Lifecycle sits outside the branch: switching between the page and the
     // immersive layout must not pause and resume playback.
-    .onAppear {
-      inlinePlayer.refresh()
-      inlinePlayer.resumeIfPausedForNavigation(for: item.url)
-    }
+    .onAppear { inlinePlayer.refresh() }
     .onDisappear {
       inlinePlayer.pauseForNavigation()
     }
   }
 
   private var page: some View {
+    GeometryReader { geometry in
     ScrollView {
       VStack(alignment: .leading, spacing: Tokens.Space.n24) {
         Button(action: back) {
           Label(L("Back"), systemImage: "chevron.left")
-            .font(Tokens.Typography.body.font)
+            .font(Tokens.Typography.body.scaledFont(textScale))
         }
         .buttonStyle(.plain)
         .foregroundStyle(Tokens.Palette.textSecondary.color)
         .keyboardShortcut(.cancelAction)
         .accessibilityLabel(L("Back"))
         .help(L("Back"))
+        .frame(minHeight: Tokens.Size.n30)
 
-        if isPlayingHere {
-          liveSurface
-        } else {
-          poster
+        Group {
+          if isPlayingHere { liveSurface } else { poster }
+        }
+        .frame(height: LibraryLayout.videoHeight(
+          width: max(Tokens.Space.n0, geometry.size.width - Tokens.Space.pageMargin * 2),
+          viewportHeight: geometry.size.height))
+
+        ViewThatFits(in: .horizontal) {
+          actionRow
+          VStack(alignment: .leading, spacing: Tokens.Space.n12) { primaryAction; secondaryActions }
         }
 
-        HStack(alignment: .center, spacing: Tokens.Space.n16) {
+        if item.isMissing {
+          Label(L("File missing. Reconnect its drive or locate the video."), systemImage: "exclamationmark.triangle")
+            .font(Tokens.Typography.body.scaledFont(textScale))
+            .foregroundStyle(Tokens.Palette.textSecondary.color)
+        }
+        metadata
+      }
+      .padding(.horizontal, Tokens.Space.pageMargin)
+      .padding(.top, Tokens.Space.pageTop)
+      .padding(.bottom, Tokens.Space.pageBottom)
+    }
+    .background(Tokens.Palette.canvas.color)
+    }
+  }
+
+  private var actionRow: some View {
+    HStack(alignment: .center, spacing: Tokens.Space.n16) {
+      primaryAction.fixedSize()
+      Spacer(minLength: Tokens.Space.n8)
+      secondaryActions
+    }
+  }
+
+  @ViewBuilder
+  private var primaryAction: some View {
+    if item.isMissing {
+      Button(L("Locate File…")) { library.locate(item) }
+        .buttonStyle(.borderedProminent)
+    } else {
+
           if !isPlayingHere {
             Button(action: play) {
               Label(item.isResumable ? L("Resume") : L("Play"), systemImage: "play.fill")
-                .font(Tokens.Typography.button.font)
+                .font(Tokens.Typography.button.scaledFont(textScale))
                 .padding(.horizontal, Tokens.Space.n20)
                 .padding(.vertical, Tokens.Space.n10)
             }
@@ -1047,7 +1047,7 @@ private struct DetailView: View {
           } else {
             Button(action: openInNewWindow) {
               Label(L("Open in New Window"), systemImage: "macwindow.on.rectangle")
-                .font(Tokens.Typography.button.font)
+                .font(Tokens.Typography.button.scaledFont(textScale))
                 .padding(.horizontal, Tokens.Space.n20)
                 .padding(.vertical, Tokens.Space.n10)
             }
@@ -1056,32 +1056,24 @@ private struct DetailView: View {
             .help(L("Open in New Window"))
           }
 
-          if item.isResumable {
-            VStack(alignment: .leading, spacing: Tokens.Space.n5) {
-              Text(item.progressText)
-                .font(Tokens.Typography.caption.font)
-                .foregroundStyle(Tokens.Palette.textSecondary.color)
-              ProgressView(value: item.progress)
-                .tint(Tokens.Palette.accent.color)
-                .frame(width: Tokens.Size.progressWidth)
-            }
-          }
+    }
+  }
 
-          Spacer()
+  private var secondaryActions: some View {
+    HStack(spacing: Tokens.Space.n12) {
+      if item.url.isFileURL && !item.isMissing {
+        Button(L("Show in Finder")) { NSWorkspace.shared.activateFileViewerSelecting([item.url]) }
+          .buttonStyle(.bordered)
+          .fixedSize()
+      }
+      LibraryItemMenu(item: item)
+    }
+  }
 
-          if item.url.isFileURL {
-            Button(L("Show in Finder")) {
-              NSWorkspace.shared.activateFileViewerSelecting([item.url])
-            }
-            .buttonStyle(.bordered)
-            .accessibilityLabel(L("Show in Finder"))
-            .help(L("Show in Finder"))
-          }
-        }
-
+  private var metadata: some View {
         VStack(alignment: .leading, spacing: Tokens.Space.n12) {
           Text(L("Details"))
-            .font(Tokens.Typography.sectionTitle.font)
+            .font(Tokens.Typography.sectionTitle.scaledFont(textScale))
             .foregroundStyle(Tokens.Palette.textPrimary.color)
 
           Grid(alignment: .leading, horizontalSpacing: Tokens.Space.n24, verticalSpacing: Tokens.Space.n8) {
@@ -1108,12 +1100,6 @@ private struct DetailView: View {
             detailRow(L("Location"), item.url.deletingLastPathComponent().path)
           }
         }
-      }
-      .padding(.horizontal, Tokens.Space.pageMargin)
-      .padding(.top, Tokens.Space.pageTop)
-      .padding(.bottom, Tokens.Space.pageBottom)
-    }
-    .background(Tokens.Palette.canvas.color)
   }
 
   /// Fullscreen and Focus mode: only the live surface, filling the window.
@@ -1129,7 +1115,6 @@ private struct DetailView: View {
 
   private var liveSurface: some View {
     Tokens.Palette.black.color
-      .aspectRatio(Tokens.Aspect.video, contentMode: .fit)
       .overlay {
         ZStack {
           InlinePlayerView(host: host)
@@ -1147,7 +1132,6 @@ private struct DetailView: View {
 
   private var poster: some View {
     Tokens.Palette.clear.color
-      .aspectRatio(Tokens.Aspect.video, contentMode: .fit)
       .overlay {
         ZStack(alignment: .bottomLeading) {
           PosterImage(url: item.url)
@@ -1157,11 +1141,11 @@ private struct DetailView: View {
             endPoint: .bottom)
           VStack(alignment: .leading, spacing: Tokens.Library.cardSpacing) {
             Text(item.title)
-              .font(Tokens.Typography.heroTitle.font)
+              .font(Tokens.Typography.heroTitle.scaledFont(textScale))
               .lineLimit(2)
             if !item.metadata.detailLine.isEmpty {
               Text(item.metadata.detailLine)
-                .font(Tokens.Typography.heroBody.font)
+                .font(Tokens.Typography.heroBody.scaledFont(textScale))
                 .foregroundStyle(Tokens.Palette.onMediaSecondary.color)
             }
           }
@@ -1194,11 +1178,11 @@ private struct DetailView: View {
   private func detailRow(_ label: String, _ value: String) -> some View {
     GridRow {
       Text(label)
-        .font(Tokens.Typography.caption.font)
+        .font(Tokens.Typography.caption.scaledFont(textScale))
         .foregroundStyle(Tokens.Palette.textSecondary.color)
         .gridColumnAlignment(.trailing)
       Text(value)
-        .font(Tokens.Typography.body.font)
+        .font(Tokens.Typography.body.scaledFont(textScale))
         .foregroundStyle(Tokens.Palette.textPrimary.color)
         .lineLimit(1)
         .truncationMode(.middle)
@@ -1210,6 +1194,7 @@ private struct DetailView: View {
 // MARK: - Shared pieces
 
 private struct ProgressBar: View {
+  @Environment(\.libraryTextScale) private var textScale
   let value: Double
 
   var body: some View {
@@ -1226,6 +1211,7 @@ private struct ProgressBar: View {
 }
 
 private struct PosterImage: View {
+  @Environment(\.libraryTextScale) private var textScale
   let url: URL
 
   @State private var image: NSImage?
@@ -1255,6 +1241,7 @@ private struct PosterImage: View {
 }
 
 private struct PlaceholderArt: View {
+  @Environment(\.libraryTextScale) private var textScale
   let title: String
 
   private var hue: Double {
@@ -1282,6 +1269,7 @@ private struct PlaceholderArt: View {
 }
 
 private struct EmptyStateView: View {
+  @Environment(\.libraryTextScale) private var textScale
   let symbol: String
   let title: String
   let message: String
@@ -1294,10 +1282,10 @@ private struct EmptyStateView: View {
         .font(.system(size: Tokens.Library.emptyStateGlyph, weight: .light))
         .foregroundStyle(Tokens.Palette.textSecondary.color)
       Text(title)
-        .font(Tokens.Typography.sectionTitle.font)
+        .font(Tokens.Typography.sectionTitle.scaledFont(textScale))
         .foregroundStyle(Tokens.Palette.textPrimary.color)
       Text(message)
-        .font(Tokens.Typography.body.font)
+        .font(Tokens.Typography.body.scaledFont(textScale))
         .foregroundStyle(Tokens.Palette.textSecondary.color)
         .multilineTextAlignment(.center)
         .frame(maxWidth: Tokens.Size.emptyStateWidth)
@@ -1313,6 +1301,7 @@ private struct EmptyStateView: View {
 }
 
 private struct DropOverlay: View {
+  @Environment(\.libraryTextScale) private var textScale
   var body: some View {
     ZStack {
       RoundedRectangle(cornerRadius: Tokens.Library.dropCorner, style: .continuous)
@@ -1325,11 +1314,152 @@ private struct DropOverlay: View {
         Image(systemName: "arrow.down.doc")
           .font(.system(size: Tokens.Library.dropGlyph, weight: .regular))
         Text(L("Drop to open"))
-          .font(Tokens.Typography.sectionTitle.font)
+          .font(Tokens.Typography.sectionTitle.scaledFont(textScale))
       }
       .foregroundStyle(Tokens.Palette.accent.color)
     }
     .padding(Tokens.Library.dropPadding)
     .allowsHitTesting(false)
+  }
+}
+
+// MARK: - Shared collection controls
+
+private struct LibraryCollectionView: View {
+  @EnvironmentObject private var model: LibraryModel
+  @Environment(\.libraryTextScale) private var textScale
+  let items: [LibraryItem]
+  let select: (LibraryItem) -> Void
+  @AppStorage("library.view.v1") private var listView = false
+  @AppStorage("library.sort.v1") private var sort: LibrarySort = .title
+  @AppStorage("library.filter.v1") private var filter: LibraryFilter = .all
+
+  private var visible: [LibraryItem] {
+    LibraryQuery.apply(items, query: "", sort: sort, filter: filter)
+  }
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: Tokens.Space.n16) {
+      HStack(spacing: Tokens.Space.n12) {
+        Picker(L("Sort"), selection: $sort) {
+          Text(L("Title")).tag(LibrarySort.title)
+          Text(L("Recently Played")).tag(LibrarySort.recent)
+          Text(L("Progress")).tag(LibrarySort.progress)
+        }
+        .fixedSize()
+        Picker(L("Filter"), selection: $filter) {
+          Text(L("All")).tag(LibraryFilter.all)
+          Text(L("Unfinished")).tag(LibraryFilter.unfinished)
+          Text(L("Watched")).tag(LibraryFilter.watched)
+          Text(L("Missing Files")).tag(LibraryFilter.missing)
+        }
+        .fixedSize()
+        Spacer(minLength: Tokens.Space.n0)
+        Toggle(isOn: $listView) { Image(systemName: "list.bullet") }
+          .toggleStyle(.button)
+          .help(L("List View"))
+          .accessibilityLabel(L("List View"))
+      }
+      if model.hiddenCount > 0 {
+        Button(L("Restore Hidden Videos")) { model.restoreHiddenItems() }
+          .buttonStyle(.borderless)
+      }
+      if visible.isEmpty {
+        Text(L("No videos match this filter."))
+          .foregroundStyle(Tokens.Palette.textSecondary.color)
+      } else if listView {
+        LazyVStack(spacing: Tokens.Space.n8) {
+          ForEach(visible) { item in
+            HStack(spacing: Tokens.Space.n12) {
+              Button { select(item) } label: {
+                HStack(spacing: Tokens.Space.n12) {
+                  PosterImage(url: item.url)
+                    .frame(width: Tokens.Library.listThumbnailWidth, height: Tokens.Library.listThumbnailHeight)
+                    .clipped()
+                  VStack(alignment: .leading, spacing: Tokens.Space.n4) {
+                    Text(item.title).font(Tokens.Typography.bodyStrong.scaledFont(textScale))
+                    Text(item.isMissing ? L("File missing") : item.subtitle)
+                      .font(Tokens.Typography.caption.scaledFont(textScale))
+                      .foregroundStyle(Tokens.Palette.textSecondary.color)
+                  }
+                  Spacer(minLength: Tokens.Space.n8)
+                  Text(item.progressText).font(Tokens.Typography.numeric.scaledFont(textScale))
+                }
+                .contentShape(Rectangle())
+              }
+              .buttonStyle(.plain)
+              .help(item.title + "\n" + item.subtitle)
+              .contextMenu { LibraryItemActions(item: item) }
+              LibraryItemMenu(item: item)
+            }
+            .padding(Tokens.Space.n8)
+            .background(Tokens.Palette.surface.color, in: RoundedRectangle(cornerRadius: Tokens.Radius.n8))
+          }
+        }
+      } else {
+        LibraryCardGrid(items: visible, select: select)
+      }
+    }
+  }
+}
+
+private struct LibraryItemMenu: View {
+  @Environment(\.libraryTextScale) private var textScale
+  let item: LibraryItem
+  var body: some View {
+    Menu { LibraryItemActions(item: item) } label: {
+      Image(systemName: "ellipsis")
+        .frame(width: Tokens.Size.n30, height: Tokens.Size.n30)
+    }
+    .menuStyle(.borderlessButton)
+    .menuIndicator(.hidden)
+    .fixedSize()
+    .help(L("Video Actions"))
+    .accessibilityLabel(L("Video Actions"))
+  }
+}
+
+private struct LibraryItemActions: View {
+  @Environment(\.libraryTextScale) private var textScale
+  let item: LibraryItem
+  @EnvironmentObject private var model: LibraryModel
+  var body: some View {
+    if item.isMissing {
+      Button(L("Locate File…")) { model.locate(item) }
+    } else {
+      Button(item.isResumable ? L("Resume") : L("Play")) { model.open(item) }
+      if item.url.isFileURL {
+        Button(L("Show in Finder")) { NSWorkspace.shared.activateFileViewerSelecting([item.url]) }
+      }
+    }
+    Button(item.isFinished ? L("Mark Unwatched") : L("Mark Watched")) { model.markWatched(item) }
+    Divider()
+    Button(L("Remove from Library")) { model.remove(item) }
+      .help(L("Hides this entry. The video file is kept."))
+  }
+}
+
+private struct NativeLibrarySearchField: NSViewRepresentable {
+  @Binding var query: String
+  func makeCoordinator() -> Coordinator { Coordinator(self) }
+  func makeNSView(context: Context) -> NSSearchField {
+    let field = NSSearchField()
+    field.placeholderString = L("Search titles and folders")
+    field.setAccessibilityLabel(L("Search Library"))
+    field.sendsSearchStringImmediately = true
+    field.delegate = context.coordinator
+    DispatchQueue.main.async { field.window?.makeFirstResponder(field) }
+    return field
+  }
+  func updateNSView(_ view: NSSearchField, context: Context) {
+    context.coordinator.parent = self
+    if view.stringValue != query { view.stringValue = query }
+  }
+  final class Coordinator: NSObject, NSSearchFieldDelegate {
+    var parent: NativeLibrarySearchField
+    init(_ parent: NativeLibrarySearchField) { self.parent = parent }
+    func controlTextDidChange(_ obj: Notification) {
+      if let field = obj.object as? NSSearchField { parent.query = field.stringValue }
+    }
   }
 }

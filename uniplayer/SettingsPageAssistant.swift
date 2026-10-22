@@ -26,7 +26,9 @@ final class SettingsPageAssistant: SettingsPage {
   private let endpointField = NSTextField()
   private let modelField = NSTextField()
   private let keyField = NSSecureTextField()
-  private let keyStatus = NSTextField(labelWithString: "")
+  private let keyStatus = NSTextField(wrappingLabelWithString: "")
+  private let connectionService = AssistantService()
+  private let testButton = NSButton()
   private let privacyNote = NSTextField(wrappingLabelWithString: "")
 
   override func content() -> [SettingsSection] {
@@ -40,10 +42,11 @@ final class SettingsPageAssistant: SettingsPage {
                                          control: endpointField))
           SettingsItem.Custom().view(row(title: SettingsLocalization.Key("assistant.model.label"),
                                          control: modelField))
-          SettingsItem.Custom().view(keyRow)
+          SettingsItem.Custom().view(inset(keyRow))
+          SettingsItem.Custom().view(inset(connectionTestRow))
         }
         SettingsList {
-          SettingsItem.Custom().view(privacyNote)
+          SettingsItem.Custom().view(inset(privacyNote))
         }
       }
     }
@@ -75,7 +78,8 @@ final class SettingsPageAssistant: SettingsPage {
     keyField.translatesAutoresizingMaskIntoConstraints = false
     keyField.bezelStyle = .roundedBezel
     keyField.placeholderString = "sk-…"
-    keyField.widthAnchor.constraint(equalToConstant: Tokens.Size.n260).isActive = true
+    keyField.widthAnchor.constraint(greaterThanOrEqualToConstant: Tokens.Size.n200).isActive = true
+    keyField.setContentHuggingPriority(.defaultLow, for: .horizontal)
     keyField.target = self
     keyField.action = #selector(saveKey)
     keyField.setAccessibilityLabel(NSLocalizedString("Assistant API Key", comment: "Settings"))
@@ -93,23 +97,33 @@ final class SettingsPageAssistant: SettingsPage {
   private func configureField(_ field: NSTextField) {
     field.translatesAutoresizingMaskIntoConstraints = false
     field.bezelStyle = .roundedBezel
-    field.widthAnchor.constraint(equalToConstant: Tokens.Size.n360).isActive = true
+    field.widthAnchor.constraint(greaterThanOrEqualToConstant: Tokens.Size.n200).isActive = true
+    field.setContentHuggingPriority(.defaultLow, for: .horizontal)
   }
 
   private func row(title: SettingsLocalization.Key, control: NSView) -> NSView {
     let label = NSTextField(labelWithString: NSLocalizedString(title.rawValue, comment: title.rawValue))
-    label.font = Tokens.Typography.settingsRowTitle.nsFont
+    label.font = Tokens.Typography.bodyStrong.nsFont
     label.textColor = Tokens.Palette.textPrimary.nsColor
     let stack = NSStackView(views: [label, control])
     stack.orientation = .vertical
     stack.alignment = .leading
-    stack.spacing = Tokens.Space.n4
-    return stack
+    stack.spacing = Tokens.Space.n8
+    return inset(stack)
+  }
+
+  private func inset(_ content: NSView) -> NSView {
+    let wrapper = NSView()
+    wrapper.translatesAutoresizingMaskIntoConstraints = false
+    content.translatesAutoresizingMaskIntoConstraints = false
+    wrapper.addSubview(content)
+    content.padding(.horizontal(Tokens.Space.n12), .vertical(Tokens.Space.n10))
+    return wrapper
   }
 
   private var keyRow: NSView {
     let label = NSTextField(labelWithString: NSLocalizedString("API Key", comment: "Settings"))
-    label.font = Tokens.Typography.settingsRowTitle.nsFont
+    label.font = Tokens.Typography.bodyStrong.nsFont
     label.textColor = Tokens.Palette.textPrimary.nsColor
 
     let save = NSButton(title: NSLocalizedString("Save Key", comment: "Settings"),
@@ -119,8 +133,12 @@ final class SettingsPageAssistant: SettingsPage {
                           target: self, action: #selector(removeKey))
     remove.bezelStyle = .rounded
 
-    let inputRow = NSStackView(views: [keyField, save, remove])
-    inputRow.orientation = .horizontal
+    let buttons = NSStackView(views: [save, remove])
+    buttons.orientation = .horizontal
+    buttons.spacing = Tokens.Space.n8
+    let inputRow = NSStackView(views: [keyField, buttons])
+    inputRow.orientation = .vertical
+    inputRow.alignment = .leading
     inputRow.spacing = Tokens.Space.n8
 
     let stack = NSStackView(views: [label, inputRow, keyStatus])
@@ -129,6 +147,47 @@ final class SettingsPageAssistant: SettingsPage {
     stack.spacing = Tokens.Space.n4
     return stack
   }
+
+  private var connectionTestRow: NSView {
+    testButton.title = NSLocalizedString("Test Connection", comment: "Assistant")
+    testButton.bezelStyle = .rounded
+    testButton.target = self
+    testButton.action = #selector(testConnection)
+    let note = NSTextField(wrappingLabelWithString: NSLocalizedString(
+      "Sends a short test message to your selected provider.", comment: "Assistant"))
+    note.font = Tokens.Typography.caption.nsFont
+    note.textColor = Tokens.Palette.textSecondary.nsColor
+    let stack = NSStackView(views: [testButton, note])
+    stack.orientation = .vertical
+    stack.alignment = .leading
+    stack.spacing = Tokens.Space.n4
+    return stack
+  }
+
+  @objc private func testConnection() {
+    windowForControls?.makeFirstResponder(nil)
+    let configuration = AssistantConfiguration.load()
+    guard configuration.isConfigured else {
+      keyStatus.stringValue = NSLocalizedString("Enter a valid endpoint, model and any required API key.", comment: "Assistant")
+      return
+    }
+    testButton.isEnabled = false
+    keyStatus.stringValue = NSLocalizedString("Testing connection…", comment: "Assistant")
+    connectionService.stream(configuration: configuration,
+      request: AssistantRequest(messages: [AssistantProviderMessage(role: .user, content: "Reply with OK.")], tools: []),
+      onEvent: { _ in },
+      onError: { [weak self] error in
+        self?.keyStatus.stringValue = error.localizedDescription
+        self?.testButton.isEnabled = true
+      },
+      onFinish: { [weak self] in
+        guard self?.testButton.isEnabled == false else { return }
+        self?.keyStatus.stringValue = NSLocalizedString("Connection succeeded.", comment: "Assistant")
+        self?.testButton.isEnabled = true
+      })
+  }
+
+  private var windowForControls: NSWindow? { endpointField.window }
 
   private func refreshKeyStatus() {
     do {

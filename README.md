@@ -9,7 +9,7 @@ for its author's own machines; there is no support commitment, no roadmap, and
 no promise that a change will suit anyone else's setup. Issues and pull
 requests may go unanswered.
 
-The current version is 0.1.4 (build 5). Builds are ad hoc signed unless a
+The current version is 0.1.5 (build 6). Builds are ad hoc signed unless a
 development team is configured.
 
 ## Relationship to IINA

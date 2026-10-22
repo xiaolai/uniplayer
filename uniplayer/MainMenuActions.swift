@@ -22,6 +22,16 @@ class MainMenuActionHandler: NSResponder, NSMenuItemValidation {
     fatalError("init(coder:) has not been implemented")
   }
 
+  @objc func menuToggleAssistant(_ sender: Any?) {
+    player.initialWindow.showWindow(nil)
+    DispatchQueue.main.async { self.player.initialWindow.menuToggleInspector(sender) }
+  }
+  @objc func menuSearchLibrary(_ sender: Any?) {
+    player.initialWindow.showWindow(nil)
+    DispatchQueue.main.async { self.player.initialWindow.menuSearchLibrary(sender) }
+  }
+  @objc func menuToggleLibraryFocus(_ sender: Any?) { player.initialWindow.menuToggleFocusMode(sender) }
+
   @objc func menuShowInspector(_ sender: AnyObject) {
     let inspector = AppDelegate.shared.inspector
     inspector.showWindow(self)
@@ -78,10 +88,12 @@ class MainMenuActionHandler: NSResponder, NSMenuItemValidation {
 
   /// Returns playback from the detached player window to the library detail.
   @objc func menuReturnToInline(_ sender: NSMenuItem) {
-    guard !player.isInline, player.initialWindow.loaded,
-          player.initialWindow.window != nil else { return }
-    player.presentInline(in: player.initialWindow.inlineHost)
-    player.initialWindow.window?.makeKeyAndOrderFront(nil)
+    guard !player.isInline, player.info.state.active else { return }
+    player.initialWindow.showWindow(nil)
+    DispatchQueue.main.async {
+      self.player.presentInline(in: self.player.initialWindow.inlineHost)
+      self.player.initialWindow.window?.makeKeyAndOrderFront(nil)
+    }
   }
 
 }
@@ -498,8 +510,10 @@ extension MainMenuActionHandler {
     case #selector(menuDeleteCurrentFile(_:)), #selector(menuShowCurrentFileInFinder(_:)):
       return player.info.currentURL != nil && !player.info.isNetworkResource
     case #selector(menuReturnToInline(_:)):
-      return !player.isInline && player.initialWindow.loaded
-        && player.initialWindow.window != nil && player.info.state.active
+      return !player.isInline && player.info.state.active
+    case #selector(menuToggleLibraryFocus(_:)):
+      menuItem.state = player.initialWindow.isFocusMode ? .on : .off
+      return player.isInline
     default:
       break
     }

@@ -47,6 +47,7 @@ final class PlayerHUDView: NSView {
 
   private var topLeadingConstraint: NSLayoutConstraint!
   private var isFullScreen = false
+  private var accessibilityObserver: NSObjectProtocol?
 
   init(mainWindow: MainWindowController) {
     self.mainWindow = mainWindow
@@ -73,6 +74,9 @@ final class PlayerHUDView: NSView {
     layer?.addSublayer(bottomShade)
 
     updateDim()
+    accessibilityObserver = NSWorkspace.shared.notificationCenter.addObserver(
+      forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification,
+      object: nil, queue: .main) { [weak self] _ in self?.updateDim() }
 
     titleLabel.font = Tokens.HUD.titleFont.nsFont
     titleLabel.textColor = Tokens.Palette.onMedia.nsColor
@@ -135,6 +139,10 @@ final class PlayerHUDView: NSView {
 
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
+  }
+
+  deinit {
+    if let accessibilityObserver { NSWorkspace.shared.notificationCenter.removeObserver(accessibilityObserver) }
   }
 
   override func layout() {

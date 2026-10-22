@@ -68,9 +68,7 @@ class SettingsWindow: CommonWindow {
     var rows: [SidebarRow] = []
     for i in pages.indices {
       rows.append(.page(i))
-      if i == currentPageIndex, pages[i].showSubSections {
-        rows.append(.indicator)
-      }
+
     }
     return rows
   }
@@ -90,11 +88,15 @@ class SettingsWindow: CommonWindow {
     self.highlightView = HighlightView()
 
     super.init(contentRect: NSRect(x: 0, y: 0, width: Tokens.Settings.windowWidth, height: Tokens.Size.n520),
-               styleMask: [.closable, .miniaturizable, .resizable, .titled, .fullSizeContentView],
+               styleMask: [.closable, .resizable, .titled, .fullSizeContentView],
                backing: .buffered, defer: false, usesUnifiedToolbar: true)
     self.minSize = NSSize(width: Tokens.Settings.windowWidth, height: Tokens.Size.n480)
 
     buildInterface()
+    standardWindowButton(.miniaturizeButton)?.isEnabled = false
+    standardWindowButton(.zoomButton)?.isEnabled = false
+    collectionBehavior.insert(.fullScreenNone)
+    if !setFrameUsingName("UniPlayerPreferenceWindowV2") { center() }
   }
 
   /// Builds the split view, sidebar, content area, toolbar and first page.
@@ -186,12 +188,14 @@ class SettingsWindow: CommonWindow {
     pages.forEach { $0.registerSearchEntries() }
     SettingsSearch.makeTries()
 
-    loadPage(at: 0)
-    currentPageIndex = 0
+    let savedPage = UserDefaults.standard.string(forKey: "settings.lastPane.v1")
+    let initialPage = pages.firstIndex(where: { $0.identifier == savedPage }) ?? 0
+    loadPage(at: initialPage)
+    currentPageIndex = initialPage
     sidebarRows = makeSidebarRows()
     sidebarList.addTableColumn(col)
     sidebarScrollView.documentView = sidebarList
-    sidebarList.selectRowIndexes(IndexSet(integer: 0), byExtendingSelection: false)
+    sidebarList.selectRowIndexes(IndexSet(integer: initialPage), byExtendingSelection: false)
   }
 
   func loadPage(at index: Int) {
@@ -214,6 +218,7 @@ class SettingsWindow: CommonWindow {
     }
 
     self.title = page.title
+    UserDefaults.standard.set(page.identifier, forKey: "settings.lastPane.v1")
     if let toolbar {
       for _ in 0..<toolbar.items.count {
         toolbar.removeItem(at: 0)

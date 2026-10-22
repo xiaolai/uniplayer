@@ -64,6 +64,11 @@ struct FontToken {
   let weight: NSFont.Weight
   var family: Family = .system
 
+  /// A SwiftUI font scaled by the user's interface text-size preference.
+  func scaledFont(_ scale: Double) -> Font {
+    FontToken(size: size * min(2, max(1, scale)), weight: weight, family: family).font
+  }
+
   var nsFont: NSFont {
     switch family {
     case .system:
@@ -474,7 +479,7 @@ enum Tokens {
     /// An 18 pt bold monospaced title.
     static let monoTitle = FontToken(size: 18, weight: .bold, family: .monospaced)
     /// The small developer badge, which is slightly smaller than a caption.
-    static let devBadge = FontToken(size: NSFont.smallSystemFontSize * 0.8, weight: .bold)
+    static let devBadge = FontToken(size: 10, weight: .bold)
     /// The URL field in the Open URL sheet.
     static let urlField = FontToken(size: 20, weight: .regular)
     /// The loading label in the Open URL sheet.
@@ -536,9 +541,9 @@ enum Tokens {
     /// A small sidebar label.
     static let sidebarCaption = FontToken(size: 10, weight: .regular)
     /// A tag or badge.
-    static let badge = FontToken(size: 9, weight: .regular)
+    static let badge = FontToken(size: 10, weight: .regular)
     /// A small badge.
-    static let badgeStrong = FontToken(size: 9, weight: .bold)
+    static let badgeStrong = FontToken(size: 10, weight: .bold)
 
     // MARK: Typography: Numeric and monospaced
 
@@ -567,7 +572,7 @@ enum Tokens {
     // MARK: Typography: Raw ramp
 
     /// 9 pt, for the smallest labels that predate the role ramp.
-    static let size9 = FontToken(size: 9, weight: .regular)
+    static let size9 = FontToken(size: 10, weight: .regular)
     /// 10 pt supporting text.
     static let size10 = FontToken(size: 10, weight: .regular)
     /// 11 pt system text.
@@ -1253,6 +1258,25 @@ enum Tokens {
 
   /// Library-specific geometry that is not part of the global scale.
   enum Library {
+    /// Diameter of the inline player's primary transport control.
+    static let playControlSize: CGFloat = 44
+    /// Maximum height of the Home overview artwork.
+    static let heroMaximumHeight: CGFloat = 280
+    /// The space reserved around a viewport-bounded player.
+    static let playerReservedHeight: CGFloat = 240
+    /// Minimum useful inline media height.
+    static let playerMinimumHeight: CGFloat = 150
+    /// Minimum detail width before hiding the sidebar beside an inspector.
+    static let detailMinimumWidth: CGFloat = 520
+    /// Width at which the inspector needs the sidebar space.
+    static let inspectorCollapseWidth: CGFloat = 1160
+    /// Height of the compact list thumbnail.
+    static let listThumbnailHeight: CGFloat = 48
+    /// Width of the compact list thumbnail.
+    static let listThumbnailWidth: CGFloat = 84
+    /// Opaque media control backing for stable contrast.
+    static let transportBacking = ColorToken(nsColor: NSColor(white: 0.10, alpha: 1))
+
     /// The vertical gap inside a card.
     static let cardSpacing: CGFloat = Space.n8
     /// The padding inside a card.
@@ -1335,6 +1359,8 @@ enum Tokens {
 
   /// The AI inspector's column widths.
   enum Inspector {
+    /// Height reserved for the scrollable attachment preview.
+    static let contextPreviewHeight: CGFloat = 180
     /// The narrowest useful transcript column.
     static let minimumWidth: CGFloat = Size.n260
     /// The default column width beside a 16:9 surface.

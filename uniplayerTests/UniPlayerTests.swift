@@ -121,6 +121,17 @@ final class UniPlayerTests: XCTestCase {
 
   // MARK: - Channels
 
+  func testDirectMediaHandoffDoesNotBecomeAChannelFailure() {
+    XCTAssertTrue(ChannelNavigationFailure.isExpectedHandoff(
+      NSError(domain: "WebKitErrorDomain", code: 204)))
+    XCTAssertTrue(ChannelNavigationFailure.isExpectedHandoff(
+      NSError(domain: NSURLErrorDomain, code: NSURLErrorCancelled)))
+    XCTAssertFalse(ChannelNavigationFailure.isExpectedHandoff(
+      NSError(domain: NSURLErrorDomain, code: NSURLErrorNotConnectedToInternet)))
+    XCTAssertFalse(ChannelNavigationFailure.isExpectedHandoff(
+      NSError(domain: "OtherDomain", code: 204)))
+  }
+
   func testChannelURLValidation() {
     XCTAssertEqual(
       Channel.validatedURL("example.com")?.absoluteString,

@@ -122,6 +122,21 @@ class HistoryController: NSObject {
     }
   }
 
+  /// Updates the remembered location without deleting a file or losing its progress.
+  func relocate(from oldURL: URL, to newURL: URL) {
+    $history.withLock { history in
+      if let entry = history.first(where: { $0.url == oldURL }) {
+        entry.url = newURL
+        entry.name = newURL.lastPathComponent
+        entry.mpvMd5 = Utility.mpvWatchLaterMd5(newURL, false)
+      } else {
+        history.insert(PlaybackHistory(url: newURL, duration: 0, title: nil,
+                                      mpvMd5: Utility.mpvWatchLaterMd5(newURL, false)), at: 0)
+      }
+    }
+    save()
+  }
+
   func remove(_ entries: [PlaybackHistory]) {
     $history.withLock { history in
       log("Removing \(entries.count) playback history entries")

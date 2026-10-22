@@ -55,6 +55,10 @@ final class AssistantViewModel: ObservableObject {
   /// exactly what Allow will run.
   private(set) var queuedToolCalls: [AssistantTypedToolCall] = []
   @Published var includeFilePath = false
+  @Published private(set) var isConfigured = false
+
+  func refreshConfiguration() { isConfigured = configurationProvider().isConfigured }
+
 
   /// Called when the user clicks a timestamp chip.
   var onSeek: ((Double) -> Void)?
@@ -98,6 +102,7 @@ final class AssistantViewModel: ObservableObject {
     self.toolExecutor = toolExecutor
     self.service = service
     self.configurationProvider = configurationProvider
+    self.isConfigured = configurationProvider().isConfigured
   }
 
   var isStreaming: Bool {
@@ -483,17 +488,16 @@ final class AssistantViewModel: ObservableObject {
   // MARK: Suggested prompts
 
   var suggestedPrompts: [String] {
-    if channelContext != nil {
-      return [
-        aiL("Summarize this page."),
-        aiL("Explain the selected text."),
-      ]
+    if let channelContext {
+      return channelContext.selection == nil
+        ? [aiL("What can you tell me from this page title?")]
+        : [aiL("Explain the selected text."), aiL("Summarize the selected text.")]
     }
-    return [
-      aiL("Summarize this video."),
-      aiL("Translate the current subtitle."),
-      aiL("What should I know before watching?"),
-    ]
+    if playerContext?.subtitleLine != nil {
+      return [aiL("Translate the current subtitle."), aiL("Explain the current subtitle.")]
+    }
+    return playerContext == nil ? [aiL("What context can I share with you?")]
+      : [aiL("Explain the playback information."), aiL("What context can I share with you?")]
   }
 
   func sendSuggestedPrompt(_ prompt: String) {
@@ -504,9 +508,12 @@ final class AssistantViewModel: ObservableObject {
 // MARK: - Inspector
 
 struct AIInspectorView: View {
+  @Environment(\.libraryTextScale) private var textScale
   @ObservedObject var model: AssistantViewModel
   @FocusState private var inputFocused: Bool
   @State private var disclosureExpanded = false
+  @State private var followingLatest = true
+  @State private var userScrolling = false
   private let contextTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
   var body: some View {
@@ -529,9 +536,20 @@ struct AIInspectorView: View {
     .background(Tokens.Palette.surface.color)
     .onAppear {
       model.refreshContext()
+      model.refreshConfiguration()
+    }
+    .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { _ in
+      model.refreshConfiguration()
     }
     .onChange(of: model.includeFilePath) { _, _ in
       model.refreshContext()
+    }
+    .onChange(of: model.isStreaming) { wasStreaming, streaming in
+      if wasStreaming && !streaming {
+        NSAccessibility.post(element: NSApp as Any, notification: .announcementRequested,
+          userInfo: [.announcement: aiL("Assistant response ready."),
+                     .priority: NSAccessibilityPriorityLevel.medium.rawValue])
+      }
     }
     .onReceive(contextTimer) { _ in
       // Keep the preview honest: what is shown is what Send will attach.
@@ -544,14 +562,15 @@ struct AIInspectorView: View {
   private var header: some View {
     HStack(spacing: Tokens.Space.n8) {
       Text(aiL("AI Assistant"))
-        .font(Tokens.Typography.sectionTitle.font)
+        .font(Tokens.Typography.sectionTitle.scaledFont(textScale))
         .foregroundStyle(Tokens.Palette.textPrimary.color)
       Spacer()
       Button {
         model.clear()
       } label: {
         Image(systemName: "trash")
-          .font(Tokens.Typography.caption.font)
+          .font(Tokens.Typography.body.scaledFont(textScale))
+          .frame(width: Tokens.Size.n30, height: Tokens.Size.n30)
       }
       .buttonStyle(.plain)
       .foregroundStyle(Tokens.Palette.textSecondary.color)
@@ -580,11 +599,37 @@ struct AIInspectorView: View {
             Tokens.Palette.clear.color
               .frame(height: Tokens.Space.n1)
               .id("bottom")
+
           }
           .padding(Tokens.Space.n16)
         }
+
+        .onScrollPhaseChange { _, phase, context in
+          userScrolling = phase == .interacting || phase == .decelerating
+          if userScrolling {
+            let geometry = context.geometry
+            followingLatest = geometry.contentOffset.y + geometry.containerSize.height
+              >= geometry.contentSize.height - Tokens.Space.n32
+          }
+        }
+        .onScrollGeometryChange(for: Bool.self) { geometry in
+          geometry.contentOffset.y + geometry.containerSize.height
+            >= geometry.contentSize.height - Tokens.Space.n32
+        } action: { _, atBottom in
+          if userScrolling { followingLatest = atBottom }
+        }
         .onChange(of: model.transcript.last?.text) { _, _ in
-          proxy.scrollTo("bottom", anchor: .bottom)
+          if followingLatest { proxy.scrollTo("bottom", anchor: .bottom) }
+        }
+        .safeAreaInset(edge: .bottom) {
+          if !followingLatest {
+            Button(aiL("Jump to Latest")) {
+              followingLatest = true
+              proxy.scrollTo("bottom", anchor: .bottom)
+            }
+            .buttonStyle(.bordered)
+            .padding(Tokens.Space.n8)
+          }
         }
       }
     }
@@ -595,15 +640,22 @@ struct AIInspectorView: View {
       Image(systemName: "sparkles")
         .font(.system(size: Tokens.Icon.n28, weight: .light))
         .foregroundStyle(Tokens.Palette.textSecondary.color)
-      Text(aiL("Ask about what you are watching"))
-        .font(Tokens.Typography.bodyStrong.font)
+      Text(model.isConfigured ? aiL("Ask about your context") : aiL("Set up your assistant"))
+        .font(Tokens.Typography.bodyStrong.scaledFont(textScale))
         .foregroundStyle(Tokens.Palette.textPrimary.color)
-      Text(aiL("Only the text shown under “What will be sent” leaves this Mac. Video frames and files are never sent."))
-        .font(Tokens.Typography.caption.font)
+      Text(aiL("Messages, attached context, conversation history and approved tool results go to your configured provider. Video frames and files are never uploaded."))
+        .font(Tokens.Typography.caption.scaledFont(textScale))
         .foregroundStyle(Tokens.Palette.textSecondary.color)
         .multilineTextAlignment(.center)
         .fixedSize(horizontal: false, vertical: true)
 
+      if !model.isConfigured {
+        Button(aiL("Configure Assistant…")) {
+          SettingsWindow.default.show()
+          SettingsWindow.default.navigateTo(page: "assistant")
+        }
+        .buttonStyle(.borderedProminent)
+      } else {
       VStack(spacing: Tokens.Space.n8) {
         ForEach(model.suggestedPrompts, id: \.self) { prompt in
           Button(prompt) {
@@ -616,6 +668,7 @@ struct AIInspectorView: View {
         }
       }
       .padding(.top, Tokens.Space.n4)
+      }
     }
     .padding(Tokens.Space.n24)
   }
@@ -624,22 +677,35 @@ struct AIInspectorView: View {
   private func bubble(_ item: AssistantViewModel.TranscriptItem) -> some View {
     switch item.kind {
     case .user:
+      VStack(alignment: .leading, spacing: Tokens.Space.n4) {
+      Text(aiL("You")).font(Tokens.Typography.captionStrong.scaledFont(textScale))
       Text(item.text)
-        .font(Tokens.Typography.body.font)
+        .font(Tokens.Typography.body.scaledFont(textScale))
         .foregroundStyle(Tokens.Palette.textPrimary.color)
         .padding(Tokens.Space.n10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Tokens.Palette.controlBackground.color,
                     in: RoundedRectangle(cornerRadius: Tokens.Radius.n10, style: .continuous))
         .textSelection(.enabled)
+      }
+      .accessibilityElement(children: .combine)
     case .assistant:
       VStack(alignment: .leading, spacing: Tokens.Space.n4) {
+        HStack {
+          Text(aiL("Assistant")).font(Tokens.Typography.captionStrong.scaledFont(textScale))
+          Spacer()
+          Button(aiL("Copy")) {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(item.text, forType: .string)
+          }
+          .buttonStyle(.borderless)
+        }
         AssistantMessageText(text: item.text, onSeek: { seconds in
           model.onSeek?(seconds)
         })
         if item.isPartial, !model.isStreaming {
           Text(aiL("Stopped — partial answer"))
-            .font(Tokens.Typography.caption.font)
+            .font(Tokens.Typography.caption.scaledFont(textScale))
             .foregroundStyle(Tokens.Palette.textTertiary.color)
         }
       }
@@ -647,7 +713,7 @@ struct AIInspectorView: View {
       .textSelection(.enabled)
     case .notice:
       Text(item.text)
-        .font(Tokens.Typography.caption.font)
+        .font(Tokens.Typography.caption.scaledFont(textScale))
         .foregroundStyle(Tokens.Palette.textSecondary.color)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -658,7 +724,7 @@ struct AIInspectorView: View {
     if model.pendingTool != nil {
       VStack(alignment: .leading, spacing: Tokens.Space.n8) {
         Text(pendingConfirmationText)
-          .font(Tokens.Typography.caption.font)
+          .font(Tokens.Typography.caption.scaledFont(textScale))
           .foregroundStyle(Tokens.Palette.textPrimary.color)
         HStack(spacing: Tokens.Space.n8) {
           Button(aiL("Allow")) {
@@ -711,7 +777,7 @@ struct AIInspectorView: View {
           .foregroundStyle(Tokens.Palette.systemOrange.color)
         VStack(alignment: .leading, spacing: Tokens.Space.n4) {
           Text(error)
-            .font(Tokens.Typography.caption.font)
+            .font(Tokens.Typography.caption.scaledFont(textScale))
             .foregroundStyle(Tokens.Palette.textPrimary.color)
           if case .failed(.notConfigured) = model.state {
             Button(aiL("Open Settings")) {
@@ -735,63 +801,36 @@ struct AIInspectorView: View {
     VStack(alignment: .leading, spacing: Tokens.Space.n8) {
       if model.hasContext {
         contextChips
-        // An explicit button, not DisclosureGroup: the inspector's inset is
-        // not a form, and this keeps the label's whole row clickable.
-        Button {
-          disclosureExpanded.toggle()
-        } label: {
-          HStack(spacing: Tokens.Space.n4) {
-            Image(systemName: disclosureExpanded ? "chevron.down" : "chevron.right")
-              .font(Tokens.Typography.caption.font)
-            Text(aiL("What will be sent"))
-              .font(Tokens.Typography.caption.font)
-          }
-          .foregroundStyle(Tokens.Palette.textSecondary.color)
-          .frame(maxWidth: .infinity, alignment: .leading)
-          .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(aiL("What will be sent"))
-        .help(aiL("What will be sent"))
-
-        if disclosureExpanded {
+        DisclosureGroup(aiL("Attached Context"), isExpanded: $disclosureExpanded) {
+          ScrollView {
+          VStack(alignment: .leading, spacing: Tokens.Space.n8) {
           Text(model.contextDisclosure ?? "")
-            .font(Tokens.Typography.codeSample.font)
+            .font(Tokens.Typography.codeSample.scaledFont(textScale))
             .foregroundStyle(Tokens.Palette.textSecondary.color)
             .textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading)
-          Text(aiL("Tool results from this context (subtitle, selection, library matches) are also sent and are shown in the transcript."))
-            .font(Tokens.Typography.caption.font)
+          Text(aiL("This context is attached along with your messages and conversation history. Approved tool results are also sent and appear in the transcript."))
+            .font(Tokens.Typography.caption.scaledFont(textScale))
             .foregroundStyle(Tokens.Palette.textTertiary.color)
             .fixedSize(horizontal: false, vertical: true)
           if model.playerContext != nil {
-            Button {
-              if model.includeFilePath {
-                model.revokeFilePathConsent()
-              } else {
-                model.includeFilePath = true
-                model.refreshContext()
-              }
-            } label: {
-              HStack(spacing: Tokens.Space.n4) {
-                Image(systemName: model.includeFilePath
-                      ? "checkmark.square.fill" : "square")
-                  .font(Tokens.Typography.caption.font)
-                Text(aiL("Include full file path"))
-                  .font(Tokens.Typography.caption.font)
-              }
-              .foregroundStyle(Tokens.Palette.textSecondary.color)
-              .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(aiL("Include full file path"))
-            .accessibilityValue(model.includeFilePath ? aiL("On") : aiL("Off"))
-            .help(aiL("Include full file path"))
+            Toggle(aiL("Include full file path"), isOn: Binding(
+              get: { model.includeFilePath },
+              set: { enabled in
+                if enabled { model.includeFilePath = true; model.refreshContext() }
+                else { model.revokeFilePathConsent() }
+              }))
+              .toggleStyle(.checkbox)
+              .font(Tokens.Typography.caption.scaledFont(textScale))
           }
+          }
+          .frame(maxWidth: .infinity, alignment: .leading)
+          }
+          .frame(height: Tokens.Inspector.contextPreviewHeight)
         }
       } else {
         Text(aiL("No context yet. Open a video or a channel to add context."))
-          .font(Tokens.Typography.caption.font)
+          .font(Tokens.Typography.caption.scaledFont(textScale))
           .foregroundStyle(Tokens.Palette.textTertiary.color)
       }
     }
@@ -838,10 +877,10 @@ struct AIInspectorView: View {
     HStack(spacing: Tokens.Space.n4) {
       if let symbol {
         Image(systemName: symbol)
-          .font(Tokens.Typography.caption.font)
+          .font(Tokens.Typography.caption.scaledFont(textScale))
       }
       Text(text)
-        .font(Tokens.Typography.caption.font)
+        .font(Tokens.Typography.caption.scaledFont(textScale))
         .lineLimit(1)
     }
     .padding(.horizontal, Tokens.Space.n8)
@@ -854,12 +893,13 @@ struct AIInspectorView: View {
 
   private var inputBar: some View {
     HStack(alignment: .bottom, spacing: Tokens.Space.n8) {
-      TextField(aiL("Ask about this video…"), text: $model.draft, axis: .vertical)
+      TextField(aiL("Message your assistant…"), text: $model.draft, axis: .vertical)
         .textFieldStyle(.plain)
-        .font(Tokens.Typography.body.font)
+        .font(Tokens.Typography.body.scaledFont(textScale))
         .lineLimit(1...4)
         .focused($inputFocused)
-        .onSubmit { model.send() }
+        .onSubmit { if model.isConfigured { model.send() } }
+        .disabled(!model.isConfigured)
         .padding(Tokens.Space.n8)
         .background(Tokens.Palette.controlBackground.color,
                     in: RoundedRectangle(cornerRadius: Tokens.Radius.n8, style: .continuous))
@@ -870,7 +910,7 @@ struct AIInspectorView: View {
           model.stop()
         } label: {
           Image(systemName: "stop.fill")
-            .font(Tokens.Typography.body.font)
+            .font(Tokens.Typography.body.scaledFont(textScale))
             .frame(width: Tokens.Size.n30, height: Tokens.Size.n30)
         }
         .buttonStyle(.plain)
@@ -889,7 +929,7 @@ struct AIInspectorView: View {
         .foregroundStyle(model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                          ? Tokens.Palette.textTertiary.color
                          : Tokens.Palette.textPrimary.color)
-        .disabled(model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        .disabled(!model.isConfigured || model.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                   || model.pendingTool != nil)
         .accessibilityLabel(aiL("Send"))
         .help(aiL("Send"))
@@ -904,12 +944,13 @@ struct AIInspectorView: View {
 /// Renders assistant text with clickable timestamps. Parsing is done directly
 /// into `AttributedString`, so the text does not reflow between deltas.
 private struct AssistantMessageText: View {
+  @Environment(\.libraryTextScale) private var textScale
   let text: String
   let onSeek: (Double) -> Void
 
   var body: some View {
     Text(attributed)
-      .font(Tokens.Typography.body.font)
+      .font(Tokens.Typography.body.scaledFont(textScale))
       .foregroundStyle(Tokens.Palette.textPrimary.color)
       .fixedSize(horizontal: false, vertical: true)
       .environment(\.openURL, OpenURLAction { url in
@@ -921,14 +962,16 @@ private struct AssistantMessageText: View {
   }
 
   private var attributed: AttributedString {
-    var result = AttributedString(text)
+    var result = (try? AttributedString(markdown: text,
+      options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(text)
+    let rendered = String(result.characters)
     guard let regex = try? NSRegularExpression(pattern: #"\b(\d{1,2}):(\d{2})(?::(\d{2}))?\b"#) else {
       return result
     }
-    let source = text as NSString
+    let source = rendered as NSString
     let matches = regex.matches(in: text, range: NSRange(location: 0, length: source.length))
     for match in matches {
-      guard let whole = Range(match.range, in: text) else { continue }
+      guard let whole = Range(match.range, in: rendered) else { continue }
       let first = Int(source.substring(with: match.range(at: 1))) ?? 0
       let second = Int(source.substring(with: match.range(at: 2))) ?? 0
       let hasHours = match.range(at: 3).location != NSNotFound

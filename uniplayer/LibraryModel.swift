@@ -24,6 +24,7 @@ struct LibraryItem: Identifiable, Hashable {
   let progress: Double
   let added: Date
   let isNetwork: Bool
+  var isMissing = false
 
   var id: String {
     url.isFileURL ? url.standardizedFileURL.path : url.absoluteString
@@ -52,9 +53,53 @@ struct LibraryItem: Identifiable, Hashable {
   }
 }
 
+/// Pure layout rules shared by window policy, views and regression tests.
+enum LibraryLayout {
+  static func videoHeight(width: CGFloat, viewportHeight: CGFloat) -> CGFloat {
+    min(width / Tokens.Aspect.video,
+        max(Tokens.Library.playerMinimumHeight, viewportHeight - Tokens.Library.playerReservedHeight))
+  }
+
+  static func shouldCollapseSidebar(width: CGFloat, inspector: Bool) -> Bool {
+    inspector && width < Tokens.Library.inspectorCollapseWidth
+  }
+}
+
+enum LibrarySort: String, CaseIterable {
+  case title, recent, progress
+}
+
+enum LibraryFilter: String, CaseIterable {
+  case all, unfinished, watched, missing
+}
+
+enum LibraryQuery {
+  static func apply(_ items: [LibraryItem], query: String, sort: LibrarySort,
+                    filter: LibraryFilter) -> [LibraryItem] {
+    let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
+    let filtered = items.filter { item in
+      let matches = term.isEmpty || item.title.localizedCaseInsensitiveContains(term)
+        || item.subtitle.localizedCaseInsensitiveContains(term)
+      switch filter {
+      case .all: return matches
+      case .unfinished: return matches && !item.isFinished
+      case .watched: return matches && item.isFinished
+      case .missing: return matches && item.isMissing
+      }
+    }
+    return filtered.sorted {
+      switch sort {
+      case .title: return $0.title.localizedStandardCompare($1.title) == .orderedAscending
+      case .recent: return $0.added > $1.added
+      case .progress: return $0.progress > $1.progress
+      }
+    }
+  }
+}
+
 // MARK: - Model
 
-private struct LibrarySnapshot {
+struct LibrarySnapshot {
   let continueWatching: [LibraryItem]
   let recentlyAdded: [LibraryItem]
   let allItems: [LibraryItem]
@@ -70,8 +115,13 @@ final class LibraryModel: ObservableObject {
   @Published private(set) var hero: LibraryItem?
   @Published private(set) var hasLoaded = false
   @Published var query = ""
+  @Published private(set) var hiddenCount = 0
 
   private let openHandler: (URL) -> Void
+  private let defaults = UserDefaults.standard
+  private static let hiddenKey = "library.hidden.v1"
+  private static let watchedKey = "library.watched.v1"
+
   private var observers: [NSObjectProtocol] = []
   private var reloadTask: Task<Void, Never>?
 
@@ -97,7 +147,41 @@ final class LibraryModel: ObservableObject {
   }
 
   func open(_ item: LibraryItem) {
+    guard !item.isMissing else { locate(item); return }
     openHandler(item.url)
+  }
+
+  func remove(_ item: LibraryItem) {
+    var hidden = Set(defaults.stringArray(forKey: Self.hiddenKey) ?? [])
+    hidden.insert(item.id)
+    defaults.set(Array(hidden), forKey: Self.hiddenKey)
+    NotificationCenter.default.post(name: .libraryShouldReload, object: nil)
+  }
+
+  func restoreHiddenItems() {
+    defaults.removeObject(forKey: Self.hiddenKey)
+    NotificationCenter.default.post(name: .libraryShouldReload, object: nil)
+  }
+
+  func markWatched(_ item: LibraryItem) {
+    var watched = defaults.dictionary(forKey: Self.watchedKey) as? [String: Bool] ?? [:]
+    watched[item.id] = !item.isFinished
+    defaults.set(watched, forKey: Self.watchedKey)
+    NotificationCenter.default.post(name: .libraryShouldReload, object: nil)
+  }
+
+  func locate(_ item: LibraryItem) {
+    let panel = NSOpenPanel()
+    panel.canChooseDirectories = false
+    panel.allowsMultipleSelection = false
+    panel.message = NSLocalizedString("Locate the missing video. The original file will not be deleted.", comment: "Locate")
+    let finish: (NSApplication.ModalResponse) -> Void = { [weak self] response in
+      guard response == .OK, let url = panel.url else { return }
+      HistoryController.shared.relocate(from: item.url, to: url)
+      self?.reload()
+    }
+    if let window = NSApp.keyWindow { panel.beginSheetModal(for: window, completionHandler: finish) }
+    else { panel.begin(completionHandler: finish) }
   }
 
   func openFilePanel() {
@@ -107,10 +191,7 @@ final class LibraryModel: ObservableObject {
   var searchResults: [LibraryItem] {
     let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !term.isEmpty else { return [] }
-    return allItems.filter {
-      $0.title.localizedCaseInsensitiveContains(term) ||
-      $0.subtitle.localizedCaseInsensitiveContains(term)
-    }
+    return LibraryQuery.apply(allItems, query: term, sort: .title, filter: .all)
   }
 
   func reload() {
@@ -119,10 +200,13 @@ final class LibraryModel: ObservableObject {
     let history = HistoryController.shared.history
     let recent = NSDocumentController.shared.recentDocumentURLs
     let lastPlayed = Preference.url(for: .iinaLastPlayedFilePath)
+    let hidden = Set(defaults.stringArray(forKey: Self.hiddenKey) ?? [])
+    let watched = defaults.dictionary(forKey: Self.watchedKey) as? [String: Bool] ?? [:]
+    hiddenCount = hidden.count
 
     reloadTask?.cancel()
     reloadTask = Task.detached(priority: .utility) { [weak self] in
-      let snapshot = Self.snapshot(history: history, recent: recent, lastPlayed: lastPlayed)
+      let snapshot = Self.snapshot(history: history, recent: recent, lastPlayed: lastPlayed, hidden: hidden, watched: watched)
       guard !Task.isCancelled else { return }
       await MainActor.run { [weak self] in
         self?.apply(snapshot)
@@ -130,14 +214,15 @@ final class LibraryModel: ObservableObject {
     }
   }
 
-  private nonisolated static func snapshot(
+  nonisolated static func snapshot(
     history: [PlaybackHistory],
     recent: [URL],
-    lastPlayed: URL?
+    lastPlayed: URL?, hidden: Set<String>, watched: [String: Bool]
   ) -> LibrarySnapshot {
     var items: [String: LibraryItem] = [:]
 
     func insert(_ item: LibraryItem) {
+      guard !hidden.contains(item.id) else { return }
       if let existing = items[item.id] {
         // A history entry knows the progress a recent-document entry does not.
         if existing.progress == 0 && item.progress > 0 {
@@ -149,12 +234,11 @@ final class LibraryModel: ObservableObject {
     }
 
     for entry in history {
-      guard entry.url.isFileURL == false || FileManager.default.fileExists(atPath: entry.url.path) else {
-        continue
-      }
       let duration = entry.duration.second
       let played = entry.mpvProgress?.second ?? 0
-      let progress = duration > 0 ? min(max(played / duration, 0), 1) : 0
+      let id = entry.url.isFileURL ? entry.url.standardizedFileURL.path : entry.url.absoluteString
+      let progress = watched[id].map { $0 ? 1.0 : 0.0 }
+        ?? (duration > 0 ? min(max(played / duration, 0), 1) : 0)
       let metadata = LibraryMetadata.parse(fileName: entry.name)
       insert(LibraryItem(
         url: entry.url,
@@ -164,16 +248,15 @@ final class LibraryModel: ObservableObject {
         duration: duration,
         progress: progress,
         added: entry.addedDate,
-        isNetwork: !entry.url.isFileURL))
+        isNetwork: !entry.url.isFileURL,
+        isMissing: entry.url.isFileURL && !FileManager.default.fileExists(atPath: entry.url.path)))
     }
 
     for url in recent {
       if url.isFileURL {
-        guard FileManager.default.fileExists(atPath: url.path) else { continue }
         let values = try? url.resourceValues(forKeys: [.isDirectoryKey])
         if values?.isDirectory == true { continue }
       }
-      let date = (try? url.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate
       let metadata = LibraryMetadata.parse(fileName: url.lastPathComponent)
       insert(LibraryItem(
         url: url,
@@ -182,8 +265,9 @@ final class LibraryModel: ObservableObject {
         metadata: metadata,
         duration: 0,
         progress: 0,
-        added: date ?? .distantPast,
-        isNetwork: !url.isFileURL))
+        added: .distantPast,
+        isNetwork: !url.isFileURL,
+        isMissing: url.isFileURL && !FileManager.default.fileExists(atPath: url.path)))
     }
 
     let byDate = items.values.sorted { $0.added > $1.added }
@@ -196,7 +280,7 @@ final class LibraryModel: ObservableObject {
       let id = lastPlayed.isFileURL ? lastPlayed.standardizedFileURL.path : lastPlayed.absoluteString
       hero = items[id]
     }
-    hero = hero ?? continueWatching.first ?? byDate.first
+    hero = [hero, continueWatching.first, byDate.first].compactMap { $0 }.first { !$0.isMissing }
 
     return LibrarySnapshot(
       continueWatching: continueWatching,

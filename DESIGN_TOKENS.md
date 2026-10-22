@@ -216,7 +216,7 @@ motion that honours Reduce Motion and the app's own animation setting.
 | `size12Strong` | `static let size12Strong = FontToken(size: 12, weight: .bold)` | A bold 12 pt label. |
 | `menuNumeric` | `static let menuNumeric = FontToken(size: 0, weight: .regular, family: .monospacedDigit)` | The menu's numeric font, sized by the system. |
 | `monoTitle` | `static let monoTitle = FontToken(size: 18, weight: .bold, family: .monospaced)` | An 18 pt bold monospaced title. |
-| `devBadge` | `static let devBadge = FontToken(size: NSFont.smallSystemFontSize * 0.8, weight: .bold)` | The small developer badge, which is slightly smaller than a caption. |
+| `devBadge` | `static let devBadge = FontToken(size: 10, weight: .bold)` | The small developer badge, which is slightly smaller than a caption. |
 | `urlField` | `static let urlField = FontToken(size: 20, weight: .regular)` | The URL field in the Open URL sheet. |
 | `loading` | `static let loading = FontToken(size: 16, weight: .regular)` | The loading label in the Open URL sheet. |
 | `keyRecord` | `static let keyRecord = FontToken(size: 22, weight: .regular, family: .monospaced)` | The recorded-key display. |
@@ -243,8 +243,8 @@ motion that honours Reduce Motion and the app's own animation setting.
 | `sidebarSection` | `static let sidebarSection = FontToken(size: 12, weight: .bold)` | A sidebar section title. |
 | `sidebarItem` | `static let sidebarItem = FontToken(size: 11, weight: .regular)` | A sidebar item label. |
 | `sidebarCaption` | `static let sidebarCaption = FontToken(size: 10, weight: .regular)` | A small sidebar label. |
-| `badge` | `static let badge = FontToken(size: 9, weight: .regular)` | A tag or badge. |
-| `badgeStrong` | `static let badgeStrong = FontToken(size: 9, weight: .bold)` | A small badge. |
+| `badge` | `static let badge = FontToken(size: 10, weight: .regular)` | A tag or badge. |
+| `badgeStrong` | `static let badgeStrong = FontToken(size: 10, weight: .bold)` | A small badge. |
 
 ## Typography · Numeric and monospaced
 
@@ -269,7 +269,7 @@ motion that honours Reduce Motion and the app's own animation setting.
 
 | Token | Declaration | Purpose |
 |---|---|---|
-| `size9` | `static let size9 = FontToken(size: 9, weight: .regular)` | 9 pt, for the smallest labels that predate the role ramp. |
+| `size9` | `static let size9 = FontToken(size: 10, weight: .regular)` | 9 pt, for the smallest labels that predate the role ramp. |
 | `size10` | `static let size10 = FontToken(size: 10, weight: .regular)` | 10 pt supporting text. |
 | `size11` | `static let size11 = FontToken(size: NSFont.smallSystemFontSize, weight: .regular)` | 11 pt system text. |
 | `size12` | `static let size12 = FontToken(size: 12, weight: .regular)` | 12 pt text. |
@@ -631,6 +631,15 @@ motion that honours Reduce Motion and the app's own animation setting.
 
 | Token | Declaration | Purpose |
 |---|---|---|
+| `playControlSize` | `static let playControlSize: CGFloat = 44` | Diameter of the inline player's primary transport control. |
+| `heroMaximumHeight` | `static let heroMaximumHeight: CGFloat = 280` | Maximum height of the Home overview artwork. |
+| `playerReservedHeight` | `static let playerReservedHeight: CGFloat = 240` | The space reserved around a viewport-bounded player. |
+| `playerMinimumHeight` | `static let playerMinimumHeight: CGFloat = 150` | Minimum useful inline media height. |
+| `detailMinimumWidth` | `static let detailMinimumWidth: CGFloat = 520` | Minimum detail width before hiding the sidebar beside an inspector. |
+| `inspectorCollapseWidth` | `static let inspectorCollapseWidth: CGFloat = 1160` | Width at which the inspector needs the sidebar space. |
+| `listThumbnailHeight` | `static let listThumbnailHeight: CGFloat = 48` | Height of the compact list thumbnail. |
+| `listThumbnailWidth` | `static let listThumbnailWidth: CGFloat = 84` | Width of the compact list thumbnail. |
+| `transportBacking` | `static let transportBacking = ColorToken(nsColor: NSColor(white: 0.10, alpha: 1))` | Opaque media control backing for stable contrast. |
 | `cardSpacing` | `static let cardSpacing: CGFloat = Space.n8` | The vertical gap inside a card. |
 | `cardPadding` | `static let cardPadding: CGFloat = Space.n12` | The padding inside a card. |
 | `cardGap` | `static let cardGap: CGFloat = Space.n20` | The gap between cards. |
@@ -672,6 +681,7 @@ motion that honours Reduce Motion and the app's own animation setting.
 
 | Token | Declaration | Purpose |
 |---|---|---|
+| `contextPreviewHeight` | `static let contextPreviewHeight: CGFloat = 180` | Height reserved for the scrollable attachment preview. |
 | `minimumWidth` | `static let minimumWidth: CGFloat = Size.n260` | The narrowest useful transcript column. |
 | `idealWidth` | `static let idealWidth: CGFloat = Size.n360` | The default column width beside a 16:9 surface. |
 | `maximumWidth` | `static let maximumWidth: CGFloat = Size.n420` | The widest the column may grow before the video shrinks too far. |

@@ -11,77 +11,7 @@ import AppKit
 import SwiftUI
 import WebKit
 
-/// Shared hosting view for the library's titlebar accessories. Subclasses
-/// decide their intrinsic size and how the hosted content fills it.
-private class LibraryTitlebarHosting<Content: View>: NSView {
-  let hosting: NSHostingView<Content>
-
-  init(rootView: Content) {
-    hosting = NSHostingView(rootView: rootView)
-    super.init(frame: .zero)
-    hosting.autoresizingMask = []
-    addSubview(hosting)
-  }
-
-  required init?(coder: NSCoder) {
-    fatalError("init(coder:) has not been implemented")
-  }
-
-  override func hitTest(_ point: NSPoint) -> NSView? {
-    let hit = super.hitTest(point)
-    return hit === self ? nil : hit
-  }
-}
-
-/// Hosts the leading controls at the sidepane's trailing edge.
-///
-/// A titlebar accessory's leading position is up to AppKit; the hosting view
-/// is sized from that position so the controls end just inside the fixed
-/// sidepane, and start beside the traffic lights when the sidepane is hidden.
-private final class LibraryTitlebarHost: LibraryTitlebarHosting<LibraryTitlebarControls> {
-  init(chrome: LibraryChrome) {
-    super.init(rootView: LibraryTitlebarControls(chrome: chrome))
-  }
-
-  required init?(coder: NSCoder) {
-    fatalError("init(coder:) has not been implemented")
-  }
-
-  override var intrinsicContentSize: NSSize {
-    NSSize(width: Tokens.Size.sidebarWidth, height: Tokens.Size.n52)
-  }
-
-  override func layout() {
-    super.layout()
-    let leadingInset = convert(NSPoint.zero, to: nil).x
-    let width = max(0, Tokens.Size.sidebarWidth - leadingInset - Tokens.Space.n8)
-    hosting.frame = NSRect(x: 0, y: 0, width: width, height: bounds.height)
-  }
-}
-
-/// Hosts the trailing inspector button. The accessory gets the standard
-/// titlebar height, so the button centers inside it.
-private final class LibraryInspectorTitlebarHost:
-  LibraryTitlebarHosting<InspectorTitlebarControls> {
-  init(chrome: LibraryChrome) {
-    super.init(rootView: InspectorTitlebarControls(chrome: chrome))
-  }
-
-  required init?(coder: NSCoder) {
-    fatalError("init(coder:) has not been implemented")
-  }
-
-  override var intrinsicContentSize: NSSize {
-    NSSize(width: Tokens.Size.n52, height: Tokens.Size.n52)
-  }
-
-  override func layout() {
-    super.layout()
-    hosting.frame = bounds
-  }
-}
-
-final class LibraryWindowController: NSWindowController, NSWindowDelegate {
+final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToolbarDelegate {
 
   /// macOS virtual key code for Escape.
   private static let escapeKeyCode: UInt16 = 53
@@ -92,8 +22,7 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate {
   private var sidebarShortcutMonitor: Any?
   private var inlineKeyMonitor: Any?
   private var menuActionHandler: MainMenuActionHandler?
-  private var titlebarAccessory: NSTitlebarAccessoryViewController?
-  private var inspectorAccessory: NSTitlebarAccessoryViewController?
+  private var sidebarHiddenForInspector = false
   private let chrome: LibraryChrome
 
   private var savedColumnVisibility: NavigationSplitViewVisibility?
@@ -131,13 +60,18 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate {
 
   private func createWindow() {
     let window = makeWindow()
-    window.contentView = NSHostingView(rootView: LibraryRootView(player: player, chrome: chrome))
+    let hosting = NSHostingView(rootView: LibraryRootView(player: player, chrome: chrome))
+    // The window owns its minimum size; expanding inspector content must
+    // scroll rather than propagate an unbounded minimum to the window.
+    hosting.sizingOptions = []
+    window.contentView = hosting
     installToolbar(in: window)
-    installTitlebarAccessories(in: window)
     window.delegate = self
+    // Assigning the controller sets NSWindow's responder chain. Insert our
+    // playback/menu responder afterwards so AppKit doesn't replace it.
+    self.window = window
     installMenuHandler(in: window)
 
-    self.window = window
     self.loaded = true
     installInputMonitors(in: window)
     wireChromeActions(window: window)
@@ -151,8 +85,8 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate {
       defer: false,
       usesUnifiedToolbar: true)
     window.title = "UniPlayer"
-    window.titleVisibility = .hidden
-    window.titlebarAppearsTransparent = true
+    window.titleVisibility = .visible
+    window.titlebarAppearsTransparent = false
     window.titlebarSeparatorStyle = .none
     window.toolbarStyle = .unified
     window.minSize = Tokens.Window.minimumSize
@@ -167,36 +101,46 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate {
   }
 
   private func installToolbar(in window: NSWindow) {
-    // An empty unified toolbar gives the window the current titlebar metrics:
-    // the traffic lights and the accessory share one centered row.
-    let toolbar = NSToolbar(identifier: "UniPlayerLibraryChrome")
+    let toolbar = NSToolbar(identifier: "UniPlayerLibraryToolbar")
+    toolbar.delegate = self
     toolbar.displayMode = .iconOnly
-    toolbar.allowsUserCustomization = false
-    toolbar.autosavesConfiguration = false
-    toolbar.showsBaselineSeparator = false
+    toolbar.allowsUserCustomization = true
+    toolbar.autosavesConfiguration = true
     window.toolbar = toolbar
   }
 
-  private func installTitlebarAccessories(in window: NSWindow) {
-    let controls = LibraryTitlebarHost(chrome: chrome)
-    controls.frame = NSRect(origin: .zero,
-                            size: NSSize(width: Tokens.Size.sidebarWidth, height: Tokens.Size.n52))
-    let accessory = NSTitlebarAccessoryViewController()
-    accessory.view = controls
-    accessory.layoutAttribute = .left
-    window.addTitlebarAccessoryViewController(accessory)
-    titlebarAccessory = accessory
-
-    let inspectorControls = LibraryInspectorTitlebarHost(chrome: chrome)
-    inspectorControls.frame = NSRect(
-      origin: .zero,
-      size: NSSize(width: Tokens.Size.n52, height: Tokens.Size.n52))
-    let inspectorAccessory = NSTitlebarAccessoryViewController()
-    inspectorAccessory.view = inspectorControls
-    inspectorAccessory.layoutAttribute = .right
-    window.addTitlebarAccessoryViewController(inspectorAccessory)
-    self.inspectorAccessory = inspectorAccessory
+  func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+    toolbarDefaultItemIdentifiers(toolbar)
   }
+
+  func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+    [.init("library.sidebar"), .init("library.file"), .init("library.url"),
+     .flexibleSpace, .init("library.search"), .init("library.inspector")]
+  }
+
+  func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier id: NSToolbarItem.Identifier,
+               willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
+    let definitions: [String: (String, String, Selector)] = [
+      "library.sidebar": ("Show or Hide Sidebar", "sidebar.left", #selector(toggleSidebar(_:))),
+      "library.file": ("Open File…", "folder", #selector(toolbarOpenFile(_:))),
+      "library.url": ("Open URL…", "link", #selector(toolbarOpenURL(_:))),
+      "library.search": ("Search Library", "magnifyingglass", #selector(menuSearchLibrary(_:))),
+      "library.inspector": ("AI Assistant", "sidebar.right", #selector(menuToggleInspector(_:))),
+    ]
+    guard let (label, symbol, action) = definitions[id.rawValue] else { return nil }
+    let item = NSToolbarItem(itemIdentifier: id)
+    item.label = NSLocalizedString(label, comment: "Library toolbar")
+    item.paletteLabel = item.label
+    item.toolTip = item.label
+    item.image = NSImage(systemSymbolName: symbol, accessibilityDescription: item.label)
+    item.target = self
+    item.action = action
+    return item
+  }
+
+  @objc private func toolbarOpenFile(_ sender: Any?) { chrome.openFile?() }
+  @objc private func toolbarOpenURL(_ sender: Any?) { chrome.openURL?() }
+  @objc func menuSearchLibrary(_ sender: Any?) { chrome.searchLibrary?() }
 
   private func installMenuHandler(in window: NSWindow) {
     // Playback menu items are dispatched through the key window's responder
@@ -217,14 +161,14 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate {
         return event
       }
       if modifiers == [.command, .control], character == "s" {
-        self.chrome.toggleSidebar()
+        self.toggleSidebar(nil)
         return nil
       }
       if modifiers == [.command, .option], character == "i" {
         self.toggleInspector()
         return nil
       }
-      if modifiers == [.command, .shift], character == "f" {
+      if modifiers == [.command, .shift], character == "f", self.player.isInline {
         self.toggleFocusMode()
         return nil
       }
@@ -264,6 +208,11 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate {
   }
 
   @IBAction func toggleSidebar(_ sender: Any?) {
+    if chrome.columnVisibility == .detailOnly, chrome.inspectorPresented,
+       LibraryLayout.shouldCollapseSidebar(width: window?.frame.width ?? 0, inspector: true) {
+      chrome.inspectorPresented = false
+    }
+    sidebarHiddenForInspector = false
     chrome.toggleSidebar()
   }
 
@@ -324,7 +273,16 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate {
     // The inspector is hidden in fullscreen; a titlebar click on the accessory
     // must not bring it back over the video.
     if window?.styleMask.contains(.fullScreen) == true { return }
+    if !chrome.inspectorPresented, let window,
+       LibraryLayout.shouldCollapseSidebar(width: window.frame.width, inspector: true) {
+      sidebarHiddenForInspector = chrome.columnVisibility != .detailOnly
+      chrome.columnVisibility = .detailOnly
+    }
     chrome.inspectorPresented.toggle()
+    if !chrome.inspectorPresented, sidebarHiddenForInspector {
+      chrome.columnVisibility = .all
+      sidebarHiddenForInspector = false
+    }
   }
 
   @objc func menuToggleInspector(_ sender: Any?) {
@@ -432,6 +390,13 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate {
     if !isFocusMode {
       restorePanes()
     }
+  }
+
+  func windowDidResize(_ notification: Notification) {
+    guard let window, chrome.inspectorPresented,
+          LibraryLayout.shouldCollapseSidebar(width: window.frame.width, inspector: true) else { return }
+    sidebarHiddenForInspector = chrome.columnVisibility != .detailOnly || sidebarHiddenForInspector
+    chrome.columnVisibility = .detailOnly
   }
 
   func windowDidChangeScreen(_ notification: Notification) {

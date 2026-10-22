@@ -15,10 +15,23 @@ private func channelL(_ key: String) -> String {
   NSLocalizedString(key, comment: "")
 }
 
+/// WebKit's legacy direct-media handoff is not a navigation failure.
+enum ChannelNavigationFailure {
+  static func isExpectedHandoff(_ error: NSError) -> Bool {
+    if error.domain == NSURLErrorDomain && error.code == NSURLErrorCancelled { return true }
+    return (error.domain == "WebKitErrorDomain" || error.domain == WKError.errorDomain)
+      && error.code == 204
+  }
+}
+
 @MainActor
 final class ChannelBrowserModel: NSObject, ObservableObject {
   @Published private(set) var isLoading = false
   @Published private(set) var errorMessage: String?
+  @Published private(set) var canGoBack = false
+  @Published private(set) var canGoForward = false
+  @Published private(set) var pageURL: URL?
+  private var observations: [NSKeyValueObservation] = []
 
   private(set) var channel: Channel?
   let webView: WKWebView
@@ -41,6 +54,11 @@ final class ChannelBrowserModel: NSObject, ObservableObject {
     webView.uiDelegate = self
     webView.allowsBackForwardNavigationGestures = true
     webView.setValue(false, forKey: "drawsBackground")
+    observations = [
+      webView.observe(\.canGoBack, options: [.initial, .new]) { [weak self] view, _ in self?.canGoBack = view.canGoBack },
+      webView.observe(\.canGoForward, options: [.initial, .new]) { [weak self] view, _ in self?.canGoForward = view.canGoForward },
+      webView.observe(\.url, options: [.initial, .new]) { [weak self] view, _ in self?.pageURL = view.url },
+    ]
   }
 
   func open(_ channel: Channel) {
@@ -50,6 +68,17 @@ final class ChannelBrowserModel: NSObject, ObservableObject {
     self.channel = channel
     errorMessage = nil
     webView.load(URLRequest(url: channel.url))
+  }
+
+  func goBack() { webView.goBack() }
+  func goForward() { webView.goForward() }
+  func goHome() {
+    guard let channel else { return }
+    webView.load(URLRequest(url: channel.url))
+  }
+  func openInBrowser() {
+    guard let url = webView.url ?? channel?.url else { return }
+    NSWorkspace.shared.open(url)
   }
 
   func stop() {
@@ -139,14 +168,7 @@ extension ChannelBrowserModel: WKNavigationDelegate {
 
   private func record(_ error: Error) {
     let nsError = error as NSError
-    if nsError.code == NSURLErrorCancelled {
-      return
-    }
-    // WebKit reports direct media documents as "Plug-in handled load" after
-    // it hands them to the media element; the page itself loaded correctly.
-    if nsError.domain == WKError.errorDomain, nsError.code == 204 {
-      return
-    }
+    guard !ChannelNavigationFailure.isExpectedHandoff(nsError) else { return }
     errorMessage = error.localizedDescription
   }
 }
@@ -168,8 +190,7 @@ extension ChannelBrowserModel: WKUIDelegate {
     let alert = NSAlert()
     alert.messageText = message
     alert.addButton(withTitle: NSLocalizedString("general.ok", comment: "OK"))
-    alert.runModal()
-    completionHandler()
+    present(alert, in: webView, frame: frame) { _ in completionHandler() }
   }
 
   func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String,
@@ -178,7 +199,7 @@ extension ChannelBrowserModel: WKUIDelegate {
     alert.messageText = message
     alert.addButton(withTitle: NSLocalizedString("general.ok", comment: "OK"))
     alert.addButton(withTitle: NSLocalizedString("general.cancel", comment: "Cancel"))
-    completionHandler(alert.runModal() == .alertFirstButtonReturn)
+    present(alert, in: webView, frame: frame) { completionHandler($0 == .alertFirstButtonReturn) }
   }
 
   func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String,
@@ -191,8 +212,18 @@ extension ChannelBrowserModel: WKUIDelegate {
     let input = NSTextField(string: defaultText ?? "")
     input.frame = NSRect(x: 0, y: 0, width: Tokens.Size.n260, height: Tokens.Size.n24)
     alert.accessoryView = input
-    completionHandler(alert.runModal() == .alertFirstButtonReturn ? input.stringValue : nil)
+    alert.window.initialFirstResponder = input
+    present(alert, in: webView, frame: frame) {
+      completionHandler($0 == .alertFirstButtonReturn ? input.stringValue : nil)
+    }
   }
+  private func present(_ alert: NSAlert, in webView: WKWebView, frame: WKFrameInfo,
+                       completion: @escaping (NSApplication.ModalResponse) -> Void) {
+    alert.informativeText = String(format: channelL("Message from %@"), frame.securityOrigin.host)
+    guard let window = webView.window else { completion(.cancel); return }
+    alert.beginSheetModal(for: window, completionHandler: completion)
+  }
+
 }
 
 /// Hosts the web view with an explicit frame and autoresizing.
@@ -237,41 +268,77 @@ struct ChannelDetailView: View {
   let channel: Channel
   let onUseContext: (ChannelPageContext) -> Void
 
+  @State private var capturing = false
+  @State private var contextStatus: String?
+
   var body: some View {
-    ZStack(alignment: .topTrailing) {
-      ChannelWebView(webView: browser.webView)
-      if browser.isLoading {
-        ProgressView()
-          .controlSize(.small)
-          .padding(Tokens.Space.n12)
-      }
-      if let errorMessage = browser.errorMessage {
-        errorView(errorMessage)
-      }
-      Button {
-        Task {
-          if let context = await browser.contextSnapshot() {
-            onUseContext(context)
+    VStack(spacing: Tokens.Space.n0) {
+      HStack(spacing: Tokens.Space.n8) {
+        navigationButton("chevron.left", title: "Back", action: browser.goBack).disabled(!browser.canGoBack)
+        navigationButton("chevron.right", title: "Forward", action: browser.goForward).disabled(!browser.canGoForward)
+        navigationButton("arrow.clockwise", title: "Reload", action: browser.reload)
+        navigationButton("house", title: "Channel Home", action: browser.goHome)
+        Text(browser.pageURL?.host ?? channel.name)
+          .font(Tokens.Typography.body.font)
+          .foregroundStyle(Tokens.Palette.textSecondary.color)
+          .lineLimit(1)
+          .truncationMode(.middle)
+          .frame(maxWidth: .infinity, alignment: .leading)
+        navigationButton("safari", title: "Open in Browser", action: browser.openInBrowser)
+        Button {
+          capturing = true
+          contextStatus = nil
+          Task {
+            if let context = await browser.contextSnapshot() {
+              onUseContext(context)
+              contextStatus = channelL("Context attached. Review it in AI Assistant before sending.")
+            } else {
+              contextStatus = channelL("Could not read this page. Reload it and try again.")
+            }
+            capturing = false
           }
+        } label: {
+          Label(channelL("Attach Context"), systemImage: "sparkles")
         }
-      } label: {
-        Image(systemName: "sparkles")
-          .font(Tokens.Typography.titlebarIcon.font)
-          .frame(width: Tokens.Size.n30, height: Tokens.Size.n30)
-          .contentShape(Circle())
+        .disabled(capturing || browser.isLoading)
+        .help(channelL("Attach the page title and selected text to AI Assistant"))
       }
-      .buttonStyle(.plain)
-      .foregroundStyle(Tokens.Palette.textPrimary.color)
-      .glassEffect(.regular.interactive(), in: .circle)
-      .padding(Tokens.Space.n12)
-      .help(channelL("Use Page as Context"))
-      .accessibilityLabel(channelL("Use Page as Context"))
+      .padding(Tokens.Space.n8)
+      .background(Tokens.Palette.surface.color)
+      Divider()
+      if browser.isLoading {
+        ProgressView(channelL("Loading channel…"))
+          .controlSize(.small)
+          .padding(Tokens.Space.n8)
+      }
+      if let contextStatus {
+        HStack {
+          Text(contextStatus).font(Tokens.Typography.caption.font)
+          Spacer()
+          Button(channelL("Dismiss")) { self.contextStatus = nil }
+        }
+        .padding(Tokens.Space.n8)
+        .background(Tokens.Palette.controlBackground.color)
+        .accessibilityElement(children: .combine)
+      }
+      if let errorMessage = browser.errorMessage { errorView(errorMessage) }
+      ChannelWebView(webView: browser.webView)
     }
     .background(Tokens.Palette.canvas.color)
     .onAppear { browser.open(channel) }
-    .onChange(of: channel.id) { _, _ in browser.open(channel) }
-    .onChange(of: channel.url) { _, _ in browser.open(channel) }
+    .onChange(of: channel.id) { _, _ in contextStatus = nil; browser.open(channel) }
+    .onChange(of: channel.url) { _, _ in contextStatus = nil; browser.open(channel) }
     .onDisappear { browser.stop() }
+  }
+
+  private func navigationButton(_ symbol: String, title: String,
+                                action: @escaping () -> Void) -> some View {
+    Button(action: action) {
+      Image(systemName: symbol).frame(width: Tokens.Size.n30, height: Tokens.Size.n30)
+    }
+    .buttonStyle(.borderless)
+    .help(channelL(title))
+    .accessibilityLabel(channelL(title))
   }
 
   private func errorView(_ message: String) -> some View {
@@ -314,6 +381,8 @@ struct ChannelEditorSheet: View {
   @State private var name: String
   @State private var urlString: String
   @State private var errorMessage: String?
+  private enum Field { case name, url }
+  @FocusState private var focusedField: Field?
 
   init(store: ChannelStore, mode: Mode, onSaved: @escaping (Channel) -> Void) {
     self.store = store
@@ -322,7 +391,7 @@ struct ChannelEditorSheet: View {
     switch mode {
     case .add:
       _name = State(initialValue: "")
-      _urlString = State(initialValue: "https://")
+      _urlString = State(initialValue: "")
     case .edit(let channel):
       _name = State(initialValue: channel.name)
       _urlString = State(initialValue: channel.url.absoluteString)
@@ -340,6 +409,8 @@ struct ChannelEditorSheet: View {
           .foregroundStyle(Tokens.Palette.textSecondary.color)
         TextField(channelL("Channel Name"), text: $name)
           .textFieldStyle(.roundedBorder)
+          .accessibilityLabel(channelL("Channel Name"))
+          .focused($focusedField, equals: .name)
       }
 
       VStack(alignment: .leading, spacing: Tokens.Space.n4) {
@@ -348,6 +419,11 @@ struct ChannelEditorSheet: View {
           .foregroundStyle(Tokens.Palette.textSecondary.color)
         TextField("https://example.com", text: $urlString)
           .textFieldStyle(.roundedBorder)
+          .accessibilityLabel(channelL("Channel URL"))
+          .focused($focusedField, equals: .url)
+          .onChange(of: urlString) { _, _ in
+            if Channel.validatedURL(urlString) != nil { errorMessage = nil }
+          }
       }
 
       if let errorMessage {
@@ -370,6 +446,7 @@ struct ChannelEditorSheet: View {
     }
     .padding(Tokens.Space.n20)
     .frame(width: Tokens.Size.n420)
+    .onAppear { focusedField = .name }
   }
 
   private var title: String {
@@ -382,6 +459,7 @@ struct ChannelEditorSheet: View {
   private func save() {
     guard let url = Channel.validatedURL(urlString) else {
       errorMessage = channelL("Enter a valid HTTP or HTTPS URL.")
+      focusedField = .url
       return
     }
 

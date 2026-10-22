@@ -56,6 +56,8 @@ class SettingsPageUI: SettingsPage {
   private func sectionAppearance() -> SettingsSection {
     return section {
       SettingsList(title: .text_Appearance) {
+        SettingsItem.Custom().view(textSizeControl())
+
         SettingsItem.PopupButton()
           .image(name: "moonphase.first.quarter")
           .bindTo(.themeMaterial, ofType: Preference.Theme.self)
@@ -74,6 +76,31 @@ class SettingsPageUI: SettingsPage {
           .bindTo(.compactUI)
       }
     }
+  }
+
+  private func textSizeControl() -> NSView {
+    let label = NSTextField(labelWithString: NSLocalizedString("Library and Assistant Text Size", comment: "Interface"))
+    label.font = Tokens.Typography.settingsRowTitle.nsFont
+    let popup = NSPopUpButton()
+    popup.addItems(withTitles: ["100%", "125%", "150%", "200%"])
+    let scale = UserDefaults.standard.double(forKey: "interface.textScale.v1")
+    popup.selectItem(at: [1.0, 1.25, 1.5, 2.0].firstIndex(of: scale) ?? 0)
+    popup.target = self
+    popup.action = #selector(changeTextSize(_:))
+    popup.setAccessibilityLabel(label.stringValue)
+    let stack = NSStackView(views: [label, popup])
+    stack.orientation = .vertical
+    stack.alignment = .leading
+    stack.spacing = Tokens.Space.n8
+    stack.edgeInsets = NSEdgeInsets(top: Tokens.Space.n10, left: Tokens.Space.n12,
+                                  bottom: Tokens.Space.n10, right: Tokens.Space.n12)
+    return stack
+  }
+
+  @objc private func changeTextSize(_ sender: NSPopUpButton) {
+    let values = [1.0, 1.25, 1.5, 2.0]
+    guard values.indices.contains(sender.indexOfSelectedItem) else { return }
+    UserDefaults.standard.set(values[sender.indexOfSelectedItem], forKey: "interface.textScale.v1")
   }
 
   private func sectionWindow() -> SettingsSection {
@@ -119,9 +146,23 @@ class SettingsPageUI: SettingsPage {
     }
   }
 
+  private func playerControlsNote() -> NSView {
+    let note = NSTextField(wrappingLabelWithString: NSLocalizedString(
+      "These options customize the separate player window. Library playback uses compact inline controls.", comment: "Interface"))
+    note.font = Tokens.Typography.caption.nsFont
+    note.textColor = Tokens.Palette.textSecondary.nsColor
+    let wrapper = NSView()
+    wrapper.translatesAutoresizingMaskIntoConstraints = false
+    note.translatesAutoresizingMaskIntoConstraints = false
+    wrapper.addSubview(note)
+    note.padding(.horizontal(Tokens.Space.n12), .vertical(Tokens.Space.n10))
+    return wrapper
+  }
+
   private func sectionOSC() -> SettingsSection {
     return section {
       SettingsList(title: .text_OnScreenController) {
+        SettingsItem.Custom().view(playerControlsNote())
         SettingsItem.General(title: .text_Layout)
           .image(name: "menubar.dock.rectangle")
           .withDetailView(oscLayoutView)

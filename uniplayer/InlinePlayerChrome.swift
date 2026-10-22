@@ -36,12 +36,6 @@ final class InlinePlayerModel: ObservableObject {
   @Published private(set) var isFullscreen = false
   @Published private(set) var controlsVisible = true
 
-  /// Set when playback was paused because the user navigated off the detail;
-  /// returning to the item resumes it.
-  private(set) var pausedForNavigation = false
-  /// The file that pause belongs to.
-  private var pausedURL: URL?
-
   /// Toggles the library window's fullscreen. Set by the library view.
   var onToggleFullscreen: (() -> Void)?
   /// Opens playback in the detached player window.
@@ -51,6 +45,18 @@ final class InlinePlayerModel: ObservableObject {
   private var hideControlsTask: DispatchWorkItem?
   private var hideMessageTask: DispatchWorkItem?
   private var pointerOverControls = false
+  private var controlsHaveFocus = false
+  private var menuIsOpen = false
+
+  func holdControlsForFocus(_ focused: Bool) {
+    controlsHaveFocus = focused
+    registerActivity()
+  }
+
+  func holdControlsForMenu(_ open: Bool) {
+    menuIsOpen = open
+    registerActivity()
+  }
 
   private var reduceMotion: Bool {
     NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
@@ -96,11 +102,6 @@ final class InlinePlayerModel: ObservableObject {
     subTracks = info.subTracks
     selectedAudioID = info.aid
     selectedSubID = info.sid
-    if let url = info.currentURL, pausedForNavigation, pausedURL != url {
-      // Playback moved to another file; the old pause no longer applies.
-      pausedForNavigation = false
-      pausedURL = nil
-    }
     currentURL = info.currentURL
     if let provider = fullscreenProvider {
       isFullscreen = provider()
@@ -128,11 +129,11 @@ final class InlinePlayerModel: ObservableObject {
   }
 
   private func scheduleHide() {
-    guard !isPaused, !pointerOverControls else { return }
+    guard !isPaused, !pointerOverControls, !controlsHaveFocus, !menuIsOpen else { return }
     cancelHide()
     let timeout = TimeInterval(Preference.float(for: .controlBarAutoHideTimeout))
     let task = DispatchWorkItem { [weak self] in
-      guard let self, !self.isPaused, !self.pointerOverControls else { return }
+      guard let self, !self.isPaused, !self.pointerOverControls, !self.controlsHaveFocus, !self.menuIsOpen else { return }
       withAnimation(Tokens.Motion.swiftUI(Tokens.Motion.hud, reduceMotion: self.reduceMotion)) {
         self.controlsVisible = false
       }
@@ -218,34 +219,15 @@ final class InlinePlayerModel: ObservableObject {
 
   // MARK: Navigation lifecycle
 
-  /// Pauses because the detail is leaving the screen. Returns `true` when the
-  /// pause was ours to resume.
+  /// Browsing away pauses playback; returning never starts audio implicitly.
   @discardableResult
   func pauseForNavigation() -> Bool {
     guard isActive, !isPaused else { return false }
     player.pause()
-    pausedForNavigation = true
-    pausedURL = currentURL ?? player.info.currentURL
     refresh()
     return true
   }
 
-  /// Resumes playback that `pauseForNavigation` stopped, but only when the
-  /// detail the user returned to holds the same file.
-  func resumeIfPausedForNavigation(for url: URL?) {
-    guard pausedForNavigation else { return }
-    guard let expected = pausedURL, let url, expected == url else {
-      pausedForNavigation = false
-      pausedURL = nil
-      return
-    }
-    pausedForNavigation = false
-    pausedURL = nil
-    guard isActive else { return }
-    player.resume()
-    refresh()
-    registerActivity()
-  }
 }
 
 // MARK: - Overlay
@@ -254,6 +236,8 @@ struct InlinePlayerChrome: View {
   @ObservedObject var model: InlinePlayerModel
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+  @FocusState private var focusedControl: Bool
+  @AccessibilityFocusState private var accessibleControl: Bool
   @State private var scrubbing = false
   @State private var scrubValue: Double = 0
 
@@ -281,6 +265,14 @@ struct InlinePlayerChrome: View {
     .animation(Tokens.Motion.swiftUI(Tokens.Motion.hud, reduceMotion: reduceMotion),
                value: model.controlsVisible)
     .accessibilityElement(children: .contain)
+    .onReceive(NotificationCenter.default.publisher(for: NSMenu.didBeginTrackingNotification)) { _ in
+      model.holdControlsForMenu(true)
+    }
+    .onReceive(NotificationCenter.default.publisher(for: NSMenu.didEndTrackingNotification)) { _ in
+      model.holdControlsForMenu(false)
+    }
+    .onChange(of: focusedControl) { _, focused in model.holdControlsForFocus(focused || accessibleControl) }
+    .onChange(of: accessibleControl) { _, focused in model.holdControlsForFocus(focused || focusedControl) }
   }
 
   private var backdrop: some View {
@@ -302,7 +294,7 @@ struct InlinePlayerChrome: View {
     .padding(.bottom, Tokens.HUD.timelineBottom)
     .background {
       RoundedRectangle(cornerRadius: Tokens.HUD.timelineCorner, style: .continuous)
-        .fill(Tokens.Palette.hudGlassTint.color.opacity(Tokens.Opacity.n68))
+        .fill(Tokens.Library.transportBacking.color)
     }
     .padding(.horizontal, Tokens.Space.n16)
     // Only the controls themselves hold the pointer; hovering the video must
@@ -322,19 +314,19 @@ struct InlinePlayerChrome: View {
       InlineSlider(
         value: Binding(
           get: { displayedPosition },
-          set: { scrubValue = $0 }),
+          set: { value in
+            if scrubbing { scrubValue = value } else { model.seek(to: value) }
+          }),
         range: 0...max(model.duration, 1),
-        label: inlineL("Playback position")) { editing in
-          if editing {
-            scrubbing = true
-            scrubValue = model.position
-          } else {
-            scrubbing = false
-            model.seek(to: scrubValue)
-          }
-        }
+        label: inlineL("Playback position"), onEditingChanged: { editing in
+          if editing { scrubbing = true; scrubValue = model.position }
+          else { scrubbing = false; model.seek(to: scrubValue) }
+        }, onFocusChanged: { model.holdControlsForFocus($0) })
+        .disabled(model.duration <= 0)
+        .focused($focusedControl)
+        .accessibilityFocused($accessibleControl)
 
-      Text(VideoTime(model.duration).stringRepresentation)
+      Text(model.duration > 0 ? VideoTime(model.duration).stringRepresentation : inlineL("Live"))
         .font(Tokens.Typography.numeric.font)
         .foregroundStyle(Tokens.Palette.onMediaSecondary.color)
         .monospacedDigit()
@@ -345,50 +337,64 @@ struct InlinePlayerChrome: View {
   // MARK: Transport
 
   private var transport: some View {
-    HStack(spacing: Tokens.HUD.transportSpacingLegacy) {
-      controlButton(model.isPaused ? "play.fill" : "pause.fill",
-                    label: model.isPaused ? inlineL("Play") : inlineL("Pause")) {
-        model.togglePlayPause()
+    ViewThatFits(in: .horizontal) {
+      HStack(spacing: Tokens.Space.n12) {
+        playbackButtons
+        Spacer(minLength: Tokens.Space.n8)
+        utilityButtons
+        volumeControl
+        fullscreenButton
       }
-
-      controlButton("gobackward.10", label: inlineL("Back 10 Seconds")) {
-        model.skip(by: -10)
-      }
-
-      controlButton("goforward.10", label: inlineL("Forward 10 Seconds")) {
-        model.skip(by: 10)
-      }
-
-      Spacer(minLength: Tokens.Space.n8)
-
-      audioMenu
-      subtitleMenu
-      speedMenu
-
-      controlButton(model.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill",
-                    label: model.isMuted ? inlineL("Unmute") : inlineL("Mute")) {
-        model.toggleMute()
-      }
-
-      Slider(
-        value: Binding(
-          get: { model.volume },
-          set: { model.setVolume($0) }),
-        in: 0...Double(Preference.integer(for: .maxVolume)))
-      .frame(width: Tokens.Size.n70)
-      .tint(Tokens.Palette.onMedia.color)
-      .accessibilityLabel(Text(inlineL("Volume")))
-      .help(inlineL("Volume"))
-
-      controlButton(model.isFullscreen
-                    ? "arrow.down.right.and.arrow.up.left"
-                    : "arrow.up.left.and.arrow.down.right",
-                    label: model.isFullscreen
-                      ? inlineL("Exit Full Screen") : inlineL("Enter Full Screen")) {
-        model.toggleFullscreen()
+      VStack(spacing: Tokens.Space.n8) {
+        HStack { playbackButtons; Spacer(minLength: Tokens.Space.n8); fullscreenButton }
+        HStack { utilityButtons; Spacer(minLength: Tokens.Space.n8); volumeControl }
       }
     }
-    .padding(.horizontal, Tokens.HUD.timelineHeight)
+    .padding(.horizontal, Tokens.Space.n8)
+  }
+
+  private var playbackButtons: some View {
+    HStack(spacing: Tokens.Space.n8) {
+      controlButton("gobackward.15", label: inlineL("Back 15 Seconds")) { model.skip(by: -15) }
+      Button { model.togglePlayPause() } label: {
+        Image(systemName: model.isPaused ? "play.fill" : "pause.fill")
+          .font(Tokens.Typography.sectionTitle.font)
+          .frame(width: Tokens.Library.playControlSize, height: Tokens.Library.playControlSize)
+      }
+      .buttonStyle(.plain)
+      .foregroundStyle(Tokens.Palette.black.color)
+      .background(Tokens.Palette.white.color, in: Circle())
+      .accessibilityLabel(model.isPaused ? inlineL("Play") : inlineL("Pause"))
+      .help(model.isPaused ? inlineL("Play") : inlineL("Pause"))
+      .focused($focusedControl)
+      .accessibilityFocused($accessibleControl)
+      controlButton("goforward.15", label: inlineL("Forward 15 Seconds")) { model.skip(by: 15) }
+    }
+  }
+
+  private var utilityButtons: some View {
+    HStack(spacing: Tokens.Space.n8) { audioMenu; subtitleMenu; speedMenu }
+      .tint(Tokens.Palette.onMedia.color)
+  }
+
+  private var volumeControl: some View {
+    HStack(spacing: Tokens.Space.n4) {
+      controlButton(model.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill",
+                    label: model.isMuted ? inlineL("Unmute") : inlineL("Mute")) { model.toggleMute() }
+      InlineSlider(value: Binding(get: { model.volume }, set: { model.setVolume($0) }),
+                   range: 0...Double(Preference.integer(for: .maxVolume)), label: inlineL("Volume"),
+                   onFocusChanged: { model.holdControlsForFocus($0) })
+        .frame(width: Tokens.Size.n70)
+        .focused($focusedControl)
+        .accessibilityFocused($accessibleControl)
+    }
+  }
+
+  private var fullscreenButton: some View {
+    controlButton(model.isFullscreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right",
+                  label: model.isFullscreen ? inlineL("Exit Full Screen") : inlineL("Enter Full Screen")) {
+      model.toggleFullscreen()
+    }
   }
 
   private func controlButton(_ symbol: String, label: String,
@@ -403,6 +409,8 @@ struct InlinePlayerChrome: View {
     .foregroundStyle(Tokens.Palette.onMedia.color)
     .accessibilityLabel(label)
     .help(label)
+    .focused($focusedControl)
+    .accessibilityFocused($accessibleControl)
   }
 
   private var audioMenu: some View {
@@ -427,12 +435,19 @@ struct InlinePlayerChrome: View {
     .menuIndicator(.hidden)
     .foregroundStyle(Tokens.Palette.onMedia.color)
     .accessibilityLabel(inlineL("Audio Track"))
+    .disabled(model.audioTracks.isEmpty)
+    .help(model.audioTracks.isEmpty ? inlineL("No Audio Tracks") : inlineL("Audio Track"))
+    .tint(Tokens.Palette.onMedia.color)
+    .focused($focusedControl)
+    .accessibilityFocused($accessibleControl)
   }
 
   private var subtitleMenu: some View {
     Menu {
-      Button(inlineL("Off")) {
-        model.selectSubtitle(MPVTrack.noneSubTrack)
+      Button { model.selectSubtitle(MPVTrack.noneSubTrack) } label: {
+        if model.selectedSubID == nil || model.selectedSubID == 0 {
+          Label(inlineL("Off"), systemImage: "checkmark")
+        } else { Text(inlineL("Off")) }
       }
       ForEach(model.subTracks, id: \.id) { track in
         Button {
@@ -454,6 +469,10 @@ struct InlinePlayerChrome: View {
     .menuIndicator(.hidden)
     .foregroundStyle(Tokens.Palette.onMedia.color)
     .accessibilityLabel(inlineL("Subtitles"))
+    .help(inlineL("Subtitles"))
+    .tint(Tokens.Palette.onMedia.color)
+    .focused($focusedControl)
+    .accessibilityFocused($accessibleControl)
   }
 
   private var speedMenu: some View {
@@ -478,6 +497,10 @@ struct InlinePlayerChrome: View {
     .menuIndicator(.hidden)
     .foregroundStyle(Tokens.Palette.onMedia.color)
     .accessibilityLabel(inlineL("Playback Speed"))
+    .help(inlineL("Playback Speed"))
+    .tint(Tokens.Palette.onMedia.color)
+    .focused($focusedControl)
+    .accessibilityFocused($accessibleControl)
   }
 
   private func speedLabel(_ speed: Double) -> String {
@@ -502,11 +525,12 @@ struct InlinePlayerChrome: View {
 /// A SwiftUI `Slider` does not expose an accessibility name in this embedded
 /// layout, so the inline controls use a real `NSSlider`, which carries both a
 /// role and an explicit label.
-private struct InlineSlider: NSViewRepresentable {
+struct InlineSlider: NSViewRepresentable {
   @Binding var value: Double
   let range: ClosedRange<Double>
   let label: String
   var onEditingChanged: (Bool) -> Void = { _ in }
+  var onFocusChanged: (Bool) -> Void = { _ in }
 
   func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -522,6 +546,9 @@ private struct InlineSlider: NSViewRepresentable {
     slider.onEditingChanged = { [weak coordinator = context.coordinator] editing in
       coordinator?.parent.onEditingChanged(editing)
     }
+    slider.onFocusChanged = { [weak coordinator = context.coordinator] focused in
+      coordinator?.parent.onFocusChanged(focused)
+    }
     context.coordinator.slider = slider
     return slider
   }
@@ -531,7 +558,7 @@ private struct InlineSlider: NSViewRepresentable {
     nsView.minValue = range.lowerBound
     nsView.maxValue = range.upperBound
     nsView.setAccessibilityLabel(label)
-    if !context.coordinator.isDragging {
+    if !nsView.isDragging {
       nsView.doubleValue = value
     }
   }
@@ -539,7 +566,6 @@ private struct InlineSlider: NSViewRepresentable {
   final class Coordinator: NSObject {
     var parent: InlineSlider
     weak var slider: SliderView?
-    var isDragging = false
 
     init(_ parent: InlineSlider) { self.parent = parent }
 
@@ -550,10 +576,26 @@ private struct InlineSlider: NSViewRepresentable {
 
   final class SliderView: NSSlider {
     var onEditingChanged: ((Bool) -> Void)?
+    private(set) var isDragging = false
+    var onFocusChanged: ((Bool) -> Void)?
+
+    override func becomeFirstResponder() -> Bool {
+      let accepted = super.becomeFirstResponder()
+      if accepted { onFocusChanged?(true) }
+      return accepted
+    }
+
+    override func resignFirstResponder() -> Bool {
+      let accepted = super.resignFirstResponder()
+      if accepted { onFocusChanged?(false) }
+      return accepted
+    }
 
     override func mouseDown(with event: NSEvent) {
+      isDragging = true
       onEditingChanged?(true)
       super.mouseDown(with: event)
+      isDragging = false
       onEditingChanged?(false)
     }
   }

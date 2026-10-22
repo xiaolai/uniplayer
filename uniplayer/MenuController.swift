@@ -443,6 +443,21 @@ class MenuController: NSObject, NSMenuDelegate {
     customTouchBar.action = #selector(NSApplication.toggleTouchBarCustomizationPalette(_:))
 
     inspector.action = #selector(MainMenuActionHandler.menuShowInspector(_:))
+    if let viewMenu = NSApp.mainMenu?.items.first(where: {
+      $0.submenu?.items.contains(where: { $0.action == NSSelectorFromString("toggleSidebar:") }) == true
+    })?.submenu {
+      let commands: [(String, String, NSEvent.ModifierFlags, Selector)] = [
+        ("AI Assistant", "i", [.command, .option], #selector(MainMenuActionHandler.menuToggleAssistant(_:))),
+        ("Search Library", "f", NSEvent.ModifierFlags.command, #selector(MainMenuActionHandler.menuSearchLibrary(_:))),
+        ("Focus Mode", "f", [.command, .shift], #selector(MainMenuActionHandler.menuToggleLibraryFocus(_:)))
+      ]
+      for (title, key, modifiers, action) in commands {
+        let item = NSMenuItem(title: NSLocalizedString(title, comment: "View menu"), action: action, keyEquivalent: key)
+        item.keyEquivalentModifierMask = modifiers
+        viewMenu.addItem(item)
+      }
+    }
+
     miniPlayer.action = #selector(MainWindowController.menuSwitchToMiniPlayer(_:))
 
     // Present the playing file in the library detail again. Kept next to the
@@ -452,11 +467,7 @@ class MenuController: NSObject, NSMenuDelegate {
       action: #selector(MainMenuActionHandler.menuReturnToInline(_:)),
       keyEquivalent: "l")
     openInLibrary.keyEquivalentModifierMask = [.command, .shift]
-    if let index = miniPlayer.menu?.index(of: miniPlayer) {
-      miniPlayer.menu?.insertItem(openInLibrary, at: index + 1)
-    } else {
-      miniPlayer.menu?.addItem(openInLibrary)
-    }
+    NSApp.windowsMenu?.addItem(openInLibrary)
   }
 
   private func configureHelpMenu() {
