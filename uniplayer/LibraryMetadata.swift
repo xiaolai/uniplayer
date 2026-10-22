@@ -101,8 +101,17 @@ struct LibraryMetadata: Hashable {
       quality: quality)
   }
 
+  private static let regexCache = NSCache<NSString, NSRegularExpression>()
+
   private static func firstMatch(_ pattern: String, in text: String) -> [String]? {
-    guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
+    let regex: NSRegularExpression
+    if let cached = regexCache.object(forKey: pattern as NSString) {
+      regex = cached
+    } else {
+      guard let compiled = try? NSRegularExpression(pattern: pattern) else { return nil }
+      regexCache.setObject(compiled, forKey: pattern as NSString)
+      regex = compiled
+    }
     let range = NSRange(text.startIndex..<text.endIndex, in: text)
     guard let match = regex.firstMatch(in: text, range: range) else { return nil }
     var groups: [String] = []

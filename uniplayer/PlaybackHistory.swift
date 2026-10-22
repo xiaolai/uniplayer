@@ -88,6 +88,7 @@ class PlaybackHistory: NSObject, NSSecureCoding {
     self.addedDate = Date()
     self.duration = VideoTime(duration)
     self.title = title
+    self.mpvProgress = Utility.playbackProgressFromWatchLater(mpvMd5)
   }
 
   func encode(with aCoder: NSCoder) {

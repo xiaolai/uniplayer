@@ -82,3 +82,51 @@ struct MPVAudioDevice: CustomStringConvertible {
     isMissing = false
   }
 }
+
+extension MPVAudioDevice {
+
+  struct Selection {
+    /// The available devices, including a synthetic missing entry when the
+    /// configured device is not connected.
+    let devices: [MPVAudioDevice]
+    /// The device that should be selected in a device list.
+    let selected: MPVAudioDevice
+  }
+
+  /// Loads the devices for the current audio output driver and resolves the
+  /// configured device against them.
+  ///
+  /// When the configured device belongs to the other output driver, the
+  /// equivalent device for the current driver is found and written back to the
+  /// preferences. When no equivalent exists the configured device is returned
+  /// as a missing entry so the user can see what is still configured.
+  static func currentSelection() -> Selection {
+    var devices = PlayerCore.active.getAudioDevices()
+    let configuredName = Preference.string(for: .audioDevice)!
+    if let match = devices.first(where: { $0.name == configuredName }) {
+      return Selection(devices: devices, selected: match)
+    }
+
+    let description = Preference.string(for: .audioDeviceDesc)!
+    let configured = MPVAudioDevice(desc: description, name: configuredName)
+    let avfoundationEnabled = Preference.bool(for: PK.audioDriverEnableAVFoundation)
+    let invalid = avfoundationEnabled ? "coreaudio" : "avfoundation"
+    if configured.driver == invalid {
+      let driver = avfoundationEnabled ? "avfoundation" : "coreaudio"
+      let replacement = MPVAudioDevice(configured, driver)
+      if let match = devices.first(where: { $0.name == replacement.name }) {
+        Logger.log("""
+            Audio output driver changed to \(driver), changing audio device setting
+              from: \(configuredName)
+              to: \(replacement.name)
+            """)
+        Preference.set(replacement.name, for: .audioDevice)
+        return Selection(devices: devices, selected: match)
+      }
+    }
+
+    let missing = MPVAudioDevice(desc: description, name: configuredName, isMissing: true)
+    devices.append(missing)
+    return Selection(devices: devices, selected: missing)
+  }
+}

@@ -136,6 +136,25 @@ class HistoryController: NSObject {
       history = []
     }
     save()
+    DispatchQueue.main.async {
+      NotificationCenter.default.post(name: .libraryShouldReload, object: nil)
+    }
+  }
+
+  /// Update the in-memory progress for the current session so Continue
+  /// Watching does not have to wait for a restart.
+  func updateProgress(for url: URL, progress: VideoTime, duration: VideoTime) {
+    let mpvMd5 = Utility.mpvWatchLaterMd5(url, false)
+    $history.withLock { history in
+      guard let entry = history.first(where: { $0.url == url || $0.mpvMd5 == mpvMd5 }) else { return }
+      entry.mpvProgress = progress
+      if duration.second > 0 {
+        entry.duration = duration
+      }
+    }
+    DispatchQueue.main.async {
+      NotificationCenter.default.post(name: .libraryShouldReload, object: nil)
+    }
   }
 
   private func log(_ message: @autoclosure () -> String, level: Logger.Level = .debug) {

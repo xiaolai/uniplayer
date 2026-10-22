@@ -54,6 +54,13 @@ struct LibraryItem: Identifiable, Hashable {
 
 // MARK: - Model
 
+private struct LibrarySnapshot {
+  let continueWatching: [LibraryItem]
+  let recentlyAdded: [LibraryItem]
+  let allItems: [LibraryItem]
+  let hero: LibraryItem?
+}
+
 @MainActor
 final class LibraryModel: ObservableObject {
 
@@ -66,6 +73,7 @@ final class LibraryModel: ObservableObject {
 
   private let openHandler: (URL) -> Void
   private var observers: [NSObjectProtocol] = []
+  private var reloadTask: Task<Void, Never>?
 
   init(open: @escaping (URL) -> Void) {
     self.openHandler = open
@@ -73,17 +81,18 @@ final class LibraryModel: ObservableObject {
 
     let center = NotificationCenter.default
     observers.append(center.addObserver(forName: .iinaHistoryUpdated, object: nil, queue: .main) { [weak self] _ in
-      self?.reload()
+      MainActor.assumeIsolated { self?.reload() }
     })
     observers.append(center.addObserver(forName: .libraryShouldReload, object: nil, queue: .main) { [weak self] _ in
-      self?.reload()
+      MainActor.assumeIsolated { self?.reload() }
     })
     observers.append(center.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
-      self?.reload()
+      MainActor.assumeIsolated { self?.reload() }
     })
   }
 
   deinit {
+    reloadTask?.cancel()
     observers.forEach(NotificationCenter.default.removeObserver)
   }
 
@@ -105,7 +114,27 @@ final class LibraryModel: ObservableObject {
   }
 
   func reload() {
+    // Capture AppKit and defaults state on the main actor, then do the
+    // filesystem and parsing work off it.
     let history = HistoryController.shared.history
+    let recent = NSDocumentController.shared.recentDocumentURLs
+    let lastPlayed = Preference.url(for: .iinaLastPlayedFilePath)
+
+    reloadTask?.cancel()
+    reloadTask = Task.detached(priority: .utility) { [weak self] in
+      let snapshot = Self.snapshot(history: history, recent: recent, lastPlayed: lastPlayed)
+      guard !Task.isCancelled else { return }
+      await MainActor.run { [weak self] in
+        self?.apply(snapshot)
+      }
+    }
+  }
+
+  private nonisolated static func snapshot(
+    history: [PlaybackHistory],
+    recent: [URL],
+    lastPlayed: URL?
+  ) -> LibrarySnapshot {
     var items: [String: LibraryItem] = [:]
 
     func insert(_ item: LibraryItem) {
@@ -130,7 +159,7 @@ final class LibraryModel: ObservableObject {
       insert(LibraryItem(
         url: entry.url,
         title: entry.title.flatMap { $0.isEmpty ? nil : $0 } ?? metadata.title,
-        subtitle: Self.subtitle(for: entry.url),
+        subtitle: subtitle(for: entry.url),
         metadata: metadata,
         duration: duration,
         progress: progress,
@@ -138,7 +167,7 @@ final class LibraryModel: ObservableObject {
         isNetwork: !entry.url.isFileURL))
     }
 
-    for url in NSDocumentController.shared.recentDocumentURLs {
+    for url in recent {
       if url.isFileURL {
         guard FileManager.default.fileExists(atPath: url.path) else { continue }
         let values = try? url.resourceValues(forKeys: [.isDirectoryKey])
@@ -149,7 +178,7 @@ final class LibraryModel: ObservableObject {
       insert(LibraryItem(
         url: url,
         title: metadata.title,
-        subtitle: Self.subtitle(for: url),
+        subtitle: subtitle(for: url),
         metadata: metadata,
         duration: 0,
         progress: 0,
@@ -158,23 +187,35 @@ final class LibraryModel: ObservableObject {
     }
 
     let byDate = items.values.sorted { $0.added > $1.added }
-    recentlyAdded = Array(byDate.prefix(12))
-    allItems = byDate.sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
-    continueWatching = byDate.filter { $0.progress >= 0.02 && $0.progress <= 0.97 }
+    let continueWatching = byDate.filter { $0.progress >= 0.02 && $0.progress <= 0.97 }
+    let allItems = byDate.sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
 
-    if let last = Preference.url(for: .iinaLastPlayedFilePath) {
-      let id = last.isFileURL ? last.standardizedFileURL.path : last.absoluteString
+    // Recompute the hero on every reload so a removed item cannot linger.
+    var hero: LibraryItem? = nil
+    if let lastPlayed {
+      let id = lastPlayed.isFileURL ? lastPlayed.standardizedFileURL.path : lastPlayed.absoluteString
       hero = items[id]
     }
-    if hero == nil {
-      hero = continueWatching.first ?? byDate.first
-    }
+    hero = hero ?? continueWatching.first ?? byDate.first
+
+    return LibrarySnapshot(
+      continueWatching: continueWatching,
+      recentlyAdded: byDate,
+      allItems: allItems,
+      hero: hero)
+  }
+
+  private func apply(_ snapshot: LibrarySnapshot) {
+    continueWatching = snapshot.continueWatching
+    recentlyAdded = snapshot.recentlyAdded
+    allItems = snapshot.allItems
+    hero = snapshot.hero
     hasLoaded = true
   }
 
   // MARK: - Names
 
-  private static func subtitle(for url: URL) -> String {
+  private nonisolated static func subtitle(for url: URL) -> String {
     if !url.isFileURL {
       return url.host ?? url.absoluteString
     }
@@ -192,18 +233,49 @@ final class LibraryModel: ObservableObject {
 /// AVFoundation covers the formats it knows, and a drawn placeholder covers
 /// everything else. A failure is not surfaced — a poster is decoration, and the
 /// card remains usable without one.
+private actor AsyncGate {
+  private var available: Int
+  private var waiters: [CheckedContinuation<Void, Never>] = []
+
+  init(limit: Int) {
+    available = limit
+  }
+
+  func wait() async {
+    if available > 0 {
+      available -= 1
+      return
+    }
+    await withCheckedContinuation { waiters.append($0) }
+  }
+
+  func signal() {
+    if waiters.isEmpty {
+      available += 1
+    } else {
+      waiters.removeFirst().resume()
+    }
+  }
+}
+
 @MainActor
 final class PosterStore {
 
   static let shared = PosterStore()
 
   private let cache = NSCache<NSString, NSImage>()
+  private let limiter = AsyncGate(limit: 4)
   private var tasks: [String: Task<NSImage?, Never>] = [:]
+
+  private init() {
+    cache.totalCostLimit = 128 * 1024 * 1024
+    cache.countLimit = 200
+  }
 
   func image(for url: URL) async -> NSImage? {
     guard url.isFileURL else { return nil }
 
-    let key = url.standardizedFileURL.path
+    let key = Self.cacheKey(for: url)
     if let cached = cache.object(forKey: key as NSString) {
       return cached
     }
@@ -211,14 +283,31 @@ final class PosterStore {
       return await running.value
     }
 
-    let task = Task<NSImage?, Never> { await PosterStore.load(url) }
+    let task = Task<NSImage?, Never> { [limiter] in
+      await limiter.wait()
+      let loaded = await PosterStore.load(url)
+      await limiter.signal()
+      return loaded
+    }
     tasks[key] = task
     let image = await task.value
     tasks[key] = nil
+    guard !Task.isCancelled else { return nil }
     if let image {
-      cache.setObject(image, forKey: key as NSString)
+      cache.setObject(image, forKey: key as NSString, cost: Self.cost(of: image))
     }
     return image
+  }
+
+  private static func cacheKey(for url: URL) -> String {
+    let values = try? url.resourceValues(forKeys: [.contentModificationDateKey, .fileSizeKey])
+    let date = values?.contentModificationDate?.timeIntervalSince1970 ?? 0
+    let size = values?.fileSize ?? 0
+    return "\(url.standardizedFileURL.path)|\(date)|\(size)"
+  }
+
+  private static func cost(of image: NSImage) -> Int {
+    Int(max(1, image.size.width * image.size.height * 4))
   }
 
   private static func load(_ url: URL) async -> NSImage? {
@@ -232,9 +321,38 @@ final class PosterStore {
   }
 
   private static func embeddedArtwork(_ url: URL) async -> NSImage? {
-    await Task.detached(priority: .utility) {
+    let artwork = await Task.detached(priority: .utility) {
       FFmpegController.readArtwork(from: url)
     }.value
+    guard let artwork else { return nil }
+    return downsampled(artwork, maxSize: CGSize(width: Tokens.Size.n640, height: Tokens.Size.n360))
+  }
+
+  private static func downsampled(_ image: NSImage, maxSize: CGSize) -> NSImage {
+    guard image.size.width > 0, image.size.height > 0 else { return image }
+    let scale = min(1, min(maxSize.width / image.size.width, maxSize.height / image.size.height))
+    guard scale < 1,
+          let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+      return image
+    }
+    let target = NSSize(width: image.size.width * scale, height: image.size.height * scale)
+    let width = Int(target.width)
+    let height = Int(target.height)
+    guard width > 0, height > 0,
+          let context = CGContext(
+            data: nil,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: width * 4,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
+      return image
+    }
+    context.interpolationQuality = .high
+    context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+    guard let scaled = context.makeImage() else { return image }
+    return NSImage(cgImage: scaled, size: target)
   }
 
   private static func quickLook(_ url: URL) async -> NSImage? {
