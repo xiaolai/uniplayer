@@ -28,16 +28,20 @@ class PluginOverlayView: WKWebView, WKNavigationDelegate {
     let x = point.x
     let y = self.frame.height - point.y
     
-    evaluateJavaScript("window.iina._hitTest(\(x),\(y))") { (result, error) in
-      if let result = result as? Bool {
-        clickable = result
+    callAsyncJavaScript("window.iina._hitTest(x, y)", arguments: ["x": Double(x), "y": Double(y)], in: nil, in: .page) { result in
+      if case .success(let value) = result, let value = value as? Bool {
+        clickable = value
+      } else if case .failure(let error) = result {
+        Logger.log(error.localizedDescription, level: .error, subsystem: self.pluginInstance.subsystem)
       }
       finished = true
     }
 
-    while !finished {
-      RunLoop.current.run(mode: .default, before: NSDate.distantFuture)
+    let deadline = Date().addingTimeInterval(0.5)
+    while !finished && Date() < deadline {
+      RunLoop.current.run(mode: .default, before: Date().addingTimeInterval(0.01))
     }
+    guard finished else { return nil }
     if clickable {
       return super.hitTest(point)
     }
@@ -66,9 +70,7 @@ class PluginOverlayView: WKWebView, WKNavigationDelegate {
       config.userContentController.add(pluginInstance.apis!["overlay"] as! WKScriptMessageHandler, name: "iina")
 
       let webView = PluginOverlayView(frame: .zero, configuration: config)
-      if #available(macOS 13.3, *) {
-        webView.isInspectable = true
-      }
+      webView.isInspectable = true
       webView.pluginInstance = pluginInstance
       webView.navigationDelegate = webView
       webView.translatesAutoresizingMaskIntoConstraints = false
@@ -79,10 +81,10 @@ class PluginOverlayView: WKWebView, WKNavigationDelegate {
   }
 
   func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-    if let url = navigationAction.request.url, pluginInstance.canAccess(url: url) {
-      decisionHandler(.cancel)
-    } else {
+    if let url = navigationAction.request.url, pluginInstance.canNavigate(to: url) {
       decisionHandler(.allow)
+    } else {
+      decisionHandler(.cancel)
     }
   }
 
@@ -122,21 +124,29 @@ class PluginOverlayView: WKWebView, WKNavigationDelegate {
 
   private func _simpleModeSetStyle(_ style: String) {
     Utility.executeOnMainThread {
-      evaluateJavaScript("window.iina._simpleModeSetStyle(`\(style)`)") { (_, error) in
-        if let error {
-          Logger.log(error.localizedDescription, level: .error, subsystem: self.pluginInstance.subsystem)
+      self.callAsyncJavaScript(
+        "window.iina._simpleModeSetStyle(style)",
+        arguments: ["style": style],
+        in: nil,
+        in: .page) { result in
+          if case .failure(let error) = result {
+            Logger.log(error.localizedDescription, level: .error, subsystem: self.pluginInstance.subsystem)
+          }
         }
-      }
     }
   }
 
   private func _simpleModeSetContent(_ content: String) {
     Utility.executeOnMainThread {
-      evaluateJavaScript("window.iina._simpleModeSetContent(`\(content)`)") { (_, error) in
-        if let error {
-          Logger.log(error.localizedDescription, level: .error, subsystem: self.pluginInstance.subsystem)
+      self.callAsyncJavaScript(
+        "window.iina._simpleModeSetContent(content)",
+        arguments: ["content": content],
+        in: nil,
+        in: .page) { result in
+          if case .failure(let error) = result {
+            Logger.log(error.localizedDescription, level: .error, subsystem: self.pluginInstance.subsystem)
+          }
         }
-      }
     }
   }
 }

@@ -46,9 +46,7 @@ class PluginStandaloneWindow: NSWindow, WKNavigationDelegate, WKUIDelegate {
       config.userContentController.add(pluginInstance.apis!["standaloneWindow"] as! WKScriptMessageHandler, name: "iina")
 
       webView = WKWebView(frame: .zero, configuration: config)
-      if #available(macOS 13.3, *) {
-        webView.isInspectable = true
-      }
+      webView.isInspectable = true
       webView.navigationDelegate = self
       webView.uiDelegate = self
       webView.translatesAutoresizingMaskIntoConstraints = false
@@ -75,10 +73,10 @@ class PluginStandaloneWindow: NSWindow, WKNavigationDelegate, WKUIDelegate {
   }
 
   func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
-    if let url = navigationAction.request.url, pluginInstance.canAccess(url: url) {
-      decisionHandler(.cancel)
-    } else {
+    if let url = navigationAction.request.url, pluginInstance.canNavigate(to: url) {
       decisionHandler(.allow)
+    } else {
+      decisionHandler(.cancel)
     }
   }
 
@@ -151,21 +149,29 @@ class PluginStandaloneWindow: NSWindow, WKNavigationDelegate, WKUIDelegate {
 
   private func _simpleModeSetStyle(_ style: String) {
     Utility.executeOnMainThread {
-      webView.evaluateJavaScript("window.iina._simpleModeSetStyle(`\(style)`)") { (_, error) in
-        if let error {
-          Logger.log(error.localizedDescription, level: .error, subsystem: self.pluginInstance.subsystem)
+      webView.callAsyncJavaScript(
+        "window.iina._simpleModeSetStyle(style)",
+        arguments: ["style": style],
+        in: nil,
+        in: .page) { result in
+          if case .failure(let error) = result {
+            Logger.log(error.localizedDescription, level: .error, subsystem: self.pluginInstance.subsystem)
+          }
         }
-      }
     }
   }
 
   private func _simpleModeSetContent(_ content: String) {
     Utility.executeOnMainThread {
-      webView.evaluateJavaScript("window.iina._simpleModeSetContent(`\(content)`)") { (_, error) in
-        if let error {
-          Logger.log(error.localizedDescription, level: .error, subsystem: self.pluginInstance.subsystem)
+      webView.callAsyncJavaScript(
+        "window.iina._simpleModeSetContent(content)",
+        arguments: ["content": content],
+        in: nil,
+        in: .page) { result in
+          if case .failure(let error) = result {
+            Logger.log(error.localizedDescription, level: .error, subsystem: self.pluginInstance.subsystem)
+          }
         }
-      }
     }
   }
 }

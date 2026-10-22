@@ -9,6 +9,16 @@
 import JavaScriptCore
 
 class JavascriptPolyfill {
+  private final class TimerEntry {
+    let callback: JSValue
+    let repeats: Bool
+
+    init(callback: JSValue, repeats: Bool) {
+      self.callback = callback
+      self.repeats = repeats
+    }
+  }
+
   weak var plugin: JavascriptPluginInstance!
   var timers = [String: Timer]()
 
@@ -23,36 +33,44 @@ class JavascriptPolyfill {
   }
 
   func removeAllTimers() {
-    for timer in timers.values {
-      timer.invalidate()
+    let remove = {
+      self.timers.values.forEach { $0.invalidate() }
+      self.timers.removeAll()
     }
-    timers.removeAll()
+    if Thread.isMainThread { remove() } else { DispatchQueue.main.sync(execute: remove) }
   }
 
   func removeTimer(identifier: String) {
-    let timer = self.timers.removeValue(forKey: identifier)
-    timer?.invalidate()
+    let remove = { self.timers.removeValue(forKey: identifier)?.invalidate() }
+    if Thread.isMainThread { remove() } else { DispatchQueue.main.sync(execute: remove) }
   }
 
-  func createTimer(callback: JSValue, ms: Double, repeats : Bool) -> String {
-    let timeInterval  = ms/1000.0
-    let uuid = NSUUID().uuidString
-
-    DispatchQueue.main.async(execute: {
+  func createTimer(callback: JSValue, ms: Double, repeats: Bool) -> String {
+    let timeInterval = ms / 1000.0
+    let uuid = UUID().uuidString
+    let install = {
       let timer = Timer.scheduledTimer(timeInterval: timeInterval,
                                        target: self,
                                        selector: #selector(self.callJSCallback),
-                                       userInfo: callback,
+                                       userInfo: TimerEntry(callback: callback, repeats: repeats),
                                        repeats: repeats)
       self.timers[uuid] = timer
-    })
+    }
+    // Create synchronously so an immediate clearTimeout cannot race the install.
+    if Thread.isMainThread { install() } else { DispatchQueue.main.sync(execute: install) }
     return uuid
   }
 
   @objc func callJSCallback(_ timer: Timer) {
-    guard timer.isValid else { return }
-    let callback = (timer.userInfo as! JSValue)
-    callback.call(withArguments: nil)
+    guard timer.isValid else {
+      timers = timers.filter { $0.value !== timer }
+      return
+    }
+    guard let entry = timer.userInfo as? TimerEntry else { return }
+    entry.callback.call(withArguments: nil)
+    if !entry.repeats {
+      timers = timers.filter { $0.value !== timer }
+    }
   }
 
   func register(inContext context: JSContext) {
@@ -72,17 +90,13 @@ class JavascriptPolyfill {
       self.removeTimer(identifier: identifier)
     }
 
-    let require: @convention(block) (String) -> Any? = { [unowned self] path in
-      let instance = self.plugin!
-      let currentPath = instance.currentFile!.deletingLastPathComponent()
-      let requiredURL = currentPath.appendingPathComponent(path).standardized
-      guard requiredURL.absoluteString.hasPrefix(instance.plugin.root.absoluteString) else {
-        return nil
-      }
-      return [
-        "path": requiredURL.path,
-        "module": instance.evaluateFile(requiredURL, asModule: true)
-      ] as [String: Any?]
+    let require: @convention(block) (String, String) -> Any? = { [unowned self] basePath, path in
+      guard let instance = self.plugin else { return nil }
+      let baseURL = URL(fileURLWithPath: basePath).deletingLastPathComponent()
+      let requiredURL = baseURL.appendingPathComponent(path).standardized
+      guard requiredURL.isContained(in: instance.plugin.root) else { return nil }
+      guard FileManager.default.fileExists(atPath: requiredURL.path) else { return nil }
+      return instance.evaluateFile(requiredURL, asModule: true)
     }
 
     context.setObject(clearInterval, forKeyedSubscript: "clearInterval" as NSString)
@@ -90,23 +104,5 @@ class JavascriptPolyfill {
     context.setObject(setInterval, forKeyedSubscript: "setInterval" as NSString)
     context.setObject(setTimeout, forKeyedSubscript: "setTimeout" as NSString)
     context.setObject(require, forKeyedSubscript: "__require__" as NSString)
-    context.evaluateScript(requirePolyfill)
   }
 }
-
-fileprivate let requirePolyfill = """
-require = (() => {
-  const cache = {};
-  return function (file) {
-    if (cache[file]) {
-      return cache[file];
-    }
-    const result = __require__(file);
-    if (result) {
-      cache[result.path] = result.module;
-      return result.module;
-    }
-    return undefined;
-  };
-})();
-"""

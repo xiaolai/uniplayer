@@ -158,6 +158,7 @@ class JavascriptAPIStandaloneWindow: JavascriptAPI, JavascriptAPIStandaloneWindo
   }
 
   func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+    guard pluginInstance.canAccept(message: message) else { return }
     messageHub.receiveMessageFromUserContentController(message)
   }
 }

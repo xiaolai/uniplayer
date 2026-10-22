@@ -68,6 +68,7 @@ class JavascriptAPISidebarView: JavascriptAPI, JavascriptAPISidebarViewExportabl
   }
 
   func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+    guard pluginInstance.canAccept(message: message) else { return }
     messageHub.receiveMessageFromUserContentController(message)
   }
 }

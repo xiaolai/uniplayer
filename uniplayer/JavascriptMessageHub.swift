@@ -20,28 +20,16 @@ class JavascriptMessageHub {
 
   func postMessage(to webView: WKWebView, name: String, data: JSValue) {
     DispatchQueue.main.async {
-      var arg: String?
-
-      if data.isNumber {
-        arg = "`\(data.toNumber()!)`"
-      } else if data.isString {
-        arg = "`\"\(data.toString()!)\"`"
-      } else if data.isBoolean {
-        arg = data.toBool() ? "`true`" : "`false`"
-      } else {
-        if let object = data.toObject(),
-           JSONSerialization.isValidJSONObject(object),
-           let data = try? JSONSerialization.data(withJSONObject: object),
-           let dataString = String(data: data, encoding: .utf8) {
-          arg = "String.raw`\(dataString)`"
-        }
+      var arguments: [String: Any] = ["name": name]
+      if let object = data.toObject() {
+        arguments["data"] = object
       }
-
-      if let arg {
-        webView.evaluateJavaScript("window.iina._emit(`\(name)`, \(arg))")
-      } else {
-        webView.evaluateJavaScript("window.iina._emit(`\(name)`)")
-      }
+      webView.callAsyncJavaScript(
+        "window.iina._emit(name, data)",
+        arguments: arguments,
+        in: nil,
+        in: .page,
+        completionHandler: nil)
     }
   }
 
@@ -110,7 +98,7 @@ window.iina = {
   _emit(name, data) {
     const callback = this.listeners[name];
     if (typeof callback === "function") {
-      callback.call(null, data ? JSON.parse(data) : undefined);
+      callback.call(null, data);
     }
   },
   _simpleModeSetStyle(string) {

@@ -113,15 +113,11 @@ class PluginViewController: SidebarViewController {
   override func updateTabButtonSize() {
     // on macOS 26, window corner radius will be larger with a regular toolbar.
     // should use the normal (non-compact) height if the sidebar is on the leading side.
-    let largeLeadingHeight = if #available(macOS 26.0, *) { isLeading } else { false }
+    let largeLeadingHeight = isLeading
     let height: CGFloat = (isCompact && !largeLeadingHeight) ? 48 : 52
     tabButtonsHeightConstraint.constant = height
 
-    if #available(macOS 26.0, *), !isCompact {
-      tabButtonsSegmentControl.controlSize = .extraLarge
-    } else {
-      tabButtonsSegmentControl.controlSize = .large
-    }
+    tabButtonsSegmentControl.controlSize = isCompact ? .large : .extraLarge
     tabButtonsSegmentControl.setImage(getPluginIcon(isSmall: isCompact), forSegment: 0)
     tabButtonsSegmentControl.setImage(.sf("chevron.down"), forSegment: 1)
 

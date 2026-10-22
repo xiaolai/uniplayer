@@ -8,6 +8,7 @@
 
 import Foundation
 import JavaScriptCore
+import WebKit
 
 class JavascriptPluginInstance {
   var apis: [String: JavascriptAPI]!
@@ -53,6 +54,7 @@ class JavascriptPluginInstance {
     currentFileStack.last
   }
   private var currentFileStack: [URL] = []
+  private var moduleCache: [String: JSValue] = [:]
 
   init(player: PlayerCore?, plugin: JavascriptPlugin) {
     self.plugin = plugin
@@ -77,11 +79,8 @@ class JavascriptPluginInstance {
     apis.values.forEach { $0.cleanUp(self) }
   }
 
-  func canAccess(url: URL) -> Bool {
-    guard let host = url.host else {
-      return false
-    }
-    guard plugin.domainList.contains(where: { domain -> Bool in
+  private func canAccess(host: String) -> Bool {
+    plugin.domainList.contains { domain in
       if domain == "*" {
         return true
       } else if domain.hasPrefix("*.") {
@@ -89,10 +88,40 @@ class JavascriptPluginInstance {
       } else {
         return domain == host
       }
-    }) else {
+    }
+  }
+
+  func canAccess(url: URL) -> Bool {
+    guard let host = url.host else { return false }
+    return canAccess(host: host)
+  }
+
+  /// Whether the plugin may navigate its own web view to `url`.
+  ///
+  /// Local content is confined to the plugin's directory, data/about pages are
+  /// allowed for simple-mode documents, and network navigation needs both the
+  /// network permission and an allowed host.
+  func canNavigate(to url: URL) -> Bool {
+    switch url.scheme?.lowercased() {
+    case "file":
+      return url.isContained(in: plugin.root)
+    case "about", "data":
+      return true
+    case "http", "https":
+      return plugin.permissions.contains(.networkRequest) && canAccess(url: url)
+    default:
       return false
     }
-    return true
+  }
+
+  /// Reject bridge messages from frames the plugin is not allowed to navigate.
+  func canAccept(message: WKScriptMessage) -> Bool {
+    if message.frameInfo.isMainFrame { return true }
+    let origin = message.frameInfo.securityOrigin
+    if origin.protocol == "file" { return true }
+    let host = origin.host
+    guard !host.isEmpty else { return false }
+    return canAccess(host: host)
   }
 
   @objc func menuItemAction(_ sender: NSMenuItem) {
@@ -111,29 +140,37 @@ class JavascriptPluginInstance {
 
   @discardableResult
   func evaluateFile(_ url: URL, asModule: Bool = false) -> JSValue! {
+    let canonical = url.standardizedFileURL.resolvingSymlinksInPath()
+    if asModule, let cached = moduleCache[canonical.path] {
+      return cached
+    }
+
     currentFileStack.append(url)
-    guard let content = try? String(contentsOf: url) else {
+    defer { currentFileStack.removeLast() }
+
+    guard let content = try? String(contentsOf: canonical) else {
       Logger.log("Cannot read script \(url.path)", level: .error, subsystem: subsystem)
       return JSValue(nullIn: js)
     }
-    let script: String
-    if asModule {
-      script =
-      """
-      (function() {
-      const module = {};
-      \(content)
-      return module.exports;
-      })();
-      """
-    } else {
-      script =
-      """
-      \(content)
-      """
+
+    // The module URL is passed as data, never interpolated into source. The
+    // local `require` captures it, so a deferred callback still resolves
+    // relative to the module that created it.
+    js.setObject(canonical.path, forKeyedSubscript: "__currentModulePath" as NSString)
+    let script =
+    """
+    (function() {
+    const module = { exports: {} };
+    const base = __currentModulePath;
+    const require = (file) => __require__(base, file);
+    \(content)
+    return module.exports;
+    })();
+    """
+    let result = js.evaluateScript(script, withSourceURL: canonical)
+    if asModule, let result {
+      moduleCache[canonical.path] = result
     }
-    let result = js.evaluateScript(script, withSourceURL: url)
-    currentFileStack.removeLast()
     return result
   }
 

@@ -123,8 +123,8 @@ class JavascriptAPI: NSObject {
       }
       return (
         absPath,
-        absPath.hasPrefix(pluginInstance.plugin.dataURL.path) ||
-        absPath.hasPrefix(pluginInstance.plugin.tmpURL.path)
+        URL(fileURLWithPath: absPath).isContained(in: pluginInstance.plugin.dataURL) ||
+        URL(fileURLWithPath: absPath).isContained(in: pluginInstance.plugin.tmpURL)
       )
     } ?? (nil, false)
   }
@@ -149,7 +149,7 @@ class JavascriptAPI: NSObject {
     let remaining = String(path.suffix(from: path.index(path.startIndex, offsetBy: symbol.count + 2)))
     let expanded = url.appendingPathComponent(remaining).standardized
     if validate {
-      guard expanded.path.hasPrefix(url.path) else {
+      guard expanded.isContained(in: url) else {
         throwError(withMessage: "The path does not locate inside the @\(symbol) directory: \"\(path)\"")
         return nil
       }
