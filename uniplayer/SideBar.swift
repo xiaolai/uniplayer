@@ -66,8 +66,8 @@ class SidebarViewController: NSViewController {
   unowned let mainWindow: MainWindowController
   let prefObserver = Preference.Observer()
 
-  let iconConfig = NSImage.SymbolConfiguration(pointSize: 14, weight: .bold)
-  let compactIconConfig = NSImage.SymbolConfiguration(pointSize: 13, weight: .bold)
+  let iconConfig = NSImage.SymbolConfiguration(pointSize: Tokens.Icon.n14, weight: .bold)
+  let compactIconConfig = NSImage.SymbolConfiguration(pointSize: Tokens.Icon.n13, weight: .bold)
 
   var downShift: CGFloat = 0 {
     didSet {
@@ -160,17 +160,8 @@ class SidebarViewController: NSViewController {
     closeSidebarBtn.widthAnchor.constraint(equalTo: closeSidebarBtn.heightAnchor).isActive = true
     closeSidebarBtnSizeConstraint = closeSidebarBtn.widthAnchor.constraint(equalToConstant: Tokens.Size.n28)
     closeSidebarBtnSizeConstraint.isActive = true
-    if #available(macOS 26.0, *) {
-      if #available(macOS 27.0, *) {
-        closeSidebarBtn.bezelStyle = .glass
-        closeSidebarBtn.borderShape = .circle
-      } else {
-        closeSidebarBtn.bezelStyle = .circular
-      }
-    } else {
-      closeSidebarBtn.bezelStyle = .accessoryBar
-      closeSidebarBtn.controlSize = .large
-    }
+    closeSidebarBtn.bezelStyle = .glass
+    closeSidebarBtn.borderShape = .circle
 
     setupTabs()
 
@@ -210,7 +201,7 @@ class SidebarViewController: NSViewController {
       item.bezelStyle = .smallSquare
       item.isBordered = false
       if let image {
-        image.size = .init(width: 26, height: 18)
+        image.size = .init(width: Tokens.Size.n26, height: Tokens.Size.n18)
         item.image = image
         item.imageScaling = .scaleProportionallyUpOrDown
         item.imagePosition = .imageAbove
@@ -297,15 +288,11 @@ class SidebarViewController: NSViewController {
   func updateTabButtonSize() {
     // on macOS 26, window corner radius will be larger with a regular toolbar.
     // should use the normal (non-compact) height if the sidebar is on the leading side.
-    let largeLeadingHeight = if #available(macOS 26.0, *) { isLeading } else { false }
+    let largeLeadingHeight = isLeading
     let height: CGFloat = (isCompact && !largeLeadingHeight) ? 48 : 52
     tabButtonsHeightConstraint.constant = height
 
-    if #available(macOS 26.0, *), !isCompact {
-      tabButtonsSegmentControl.controlSize = .extraLarge
-    } else {
-      tabButtonsSegmentControl.controlSize = .large
-    }
+    tabButtonsSegmentControl.controlSize = isCompact ? .large : .extraLarge
 
     let config = isCompact ? compactIconConfig : iconConfig
     for tab in allTabs {
@@ -382,7 +369,7 @@ extension SidebarViewController {
           let frame = NSInsetRect(cellFrame, Tokens.Space.n0, -Tokens.Space.n4)
           let rect = NSBezierPath(roundedRect: frame, xRadius: Tokens.Radius.n16, yRadius: Tokens.Radius.n16)
 
-          if let gradient = NSGradient(starting: .gray.withAlphaComponent(Tokens.Opacity.n10), ending: .gray.withAlphaComponent(Tokens.Opacity.n20)) {
+          if let gradient = NSGradient(starting: Tokens.Palette.gray.nsColor.withAlphaComponent(Tokens.Opacity.n10), ending: Tokens.Palette.gray.nsColor.withAlphaComponent(Tokens.Opacity.n20)) {
             gradient.draw(in: rect, angle: 90)
           }
 

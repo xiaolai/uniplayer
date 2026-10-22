@@ -24,7 +24,7 @@ class ThumbnailPeekView: NSView {
     layer?.cornerRadius = Tokens.Radius.n4
     layer?.masksToBounds = true
     layer?.borderWidth = Tokens.Stroke.hairline
-    layer?.borderColor = CGColor(gray: 0.6, alpha: 0.5)
+    layer?.borderColor = Tokens.Palette.thumbnailBorder.nsColor.cgColor
 
     let s = NSShadow()
     s.shadowBlurRadius = Tokens.Blur.n2

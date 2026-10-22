@@ -197,12 +197,9 @@ class FontPickerWindowController: NSWindowController, NSTableViewDelegate, NSTab
   // - MARK: Utils
 
   private func updatePreview() {
-    let chosenFont = NSFont(name: chosenFace, size: Tokens.Typography.aboutTitle.size)
-    if let chosenFont {
-      Logger.log("Previewing chosen typeface: \(chosenFont.fontName)")
-    }
-    let font = chosenFont ?? Tokens.Typography.systemFont(size: Tokens.Typography.aboutTitle.size)
-    previewField.font = font
+    let chosenFont = Tokens.Typography.namedFont(name: chosenFace, size: Tokens.Typography.preview.size)
+    Logger.log("Previewing chosen typeface: \(chosenFont.fontName)")
+    previewField.font = chosenFont
   }
 
   private func withAllTableViews (_ block: (NSTableView) -> Void) {

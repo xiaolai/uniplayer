@@ -8,17 +8,13 @@
 
 extension NSImage.SymbolConfiguration {
   static let sidebarIconConfig = {
-    if #available(macOS 26.0, *) {
-      NSImage.SymbolConfiguration(pointSize: 12, weight: .bold)
-    } else {
-      NSImage.SymbolConfiguration(pointSize: 12, weight: .regular)
-    }
+    NSImage.SymbolConfiguration(pointSize: Tokens.Icon.n12, weight: .bold)
   }()
 }
 
 
 class SidebarTabViewController: NSTabViewController {
-  let transitionDuration: TimeInterval = 0.3
+  let transitionDuration: TimeInterval = Tokens.Motion.n30.duration
   private let prefObserver = Preference.Observer()
 
   // -1 for the first tab switch, don't show animation in this case
@@ -65,7 +61,7 @@ class SidebarTabViewController: NSTabViewController {
     let transition = CATransition()
     transition.type = .push
     transition.subtype = goingRight ? .fromRight : .fromLeft
-    transition.duration = transitionDuration
+    transition.duration = AccessibilityPreferences.adjustedDuration(transitionDuration)
     transition.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
 
     containerView.layer?.add(transition, forKey: kCATransition)

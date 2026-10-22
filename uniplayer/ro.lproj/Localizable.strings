@@ -343,8 +343,6 @@
 "alert.clear_watch_later.title" = "Șterge progresul de redare salvat";
 "alert.clear_watch_later.message" = "Sigur dorești să ștergi istoricul de redare salvat (incluzând „urmărește mai târziu”)?";
 
-"alert.restore_alerts.title" = "Restaurează alertele reprimate";
-"alert.restore_alerts.message" = "Sunteţi sigur că doriţi să restauraţi alertele reprimate?";
 
 "alert.cleared" = "Eliminat.";
 "alert.restored" = "Restaurat.";
@@ -373,8 +371,6 @@
 "alert.plugin_update_found.message" = "Ultima versiune este %@. Aveți %@. Doriți să actualizați?";
 "alert.plugin_permission" = "Această extensie necesită următoarele permisiuni. Vă rugăm să le revizuiți înainte de a continua.";
 "alert.plugin_permission_added" = "Această actualizare necesită permisiuni suplimentare. Vă rugăm să le revizuiți înainte de a continua.";
-"alert.install_plugin_macos_11.title" = "Install plugin from GitHub";
-"alert.install_plugin_macos_11.message" = "Use the format user/repo or enter the full GitHub URL. The plugin store is not available on macOS 11. A newer system is recommended for the best experience.";
 
 "playlist.total_length" = "%@ în total";
 "playlist.total_length_with_selected" = "%@ din %@ selectat";
@@ -396,7 +392,6 @@
 "pl_menu.add_file" = "Adaugă Fișier…";
 "pl_menu.add_url" = "Adaugă URL…";
 "pl_menu.clear_playlist" = "Șterge lista de redare";
-"pl_menu.matched_sub" = "%d subtitrări potrivite";
 "pl_menu.add_sub" = "Adaugă subtitrare…";
 "pl_menu.wrong_sub" = "Subtitrare greșită!";
 "pl_menu.browser" = "Deschide în Browser";
@@ -986,9 +981,6 @@
 "settings.$PleaseSelectTheMediaTypes" = "Te rog selectează tipurile de media pentru care vrei ca UniPlayer să fie aplicația implicită.";
 "settings.$Position" = "Poziție";
 "settings.$PreferredLanguage" = "Limbă preferată";
-"settings.$RestoreAlerts" = "Restaurează alertele";
-"settings.$RestoreAllAlertsThat" = "Restore all alerts that have been suppressed using the \"Do not show this message again\" checkbox.";
-"settings.$RestoreSuppressedAlerts" = "Restaurează alertele reprimate";
 "settings.$SPDIFOutput" = "Ieșire S/PDIF";
 "settings.$SPDIFOutputWarning" = "List of codecs for which compressed audio passthrough should be used.\n\nWarning: There is not much reason to use this setting. HDMI supports uncompressed multichannel PCM, and lossless DTS-HD decoding is supported via FFmpeg's DCA decoder. Playback may not start if the output device does not support S/PDIF and this setting is enabled.";
 "settings.$Safari" = "Safari";

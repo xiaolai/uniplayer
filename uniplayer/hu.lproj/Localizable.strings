@@ -343,8 +343,6 @@
 "alert.clear_watch_later.title" = "Mentett lejátszási folyamat törlése";
 "alert.clear_watch_later.message" = "Biztos vagy benne, hogy törlöd az összes mentett lejátszási folyamatot (\"megtekintés később\" adatok)?";
 
-"alert.restore_alerts.title" = "Az elnyomott figyelmeztetések visszaállítása";
-"alert.restore_alerts.message" = "Biztosan vissza szeretné állítani az elnyomott figyelmeztetéseket?";
 
 "alert.cleared" = "Törölve.";
 "alert.restored" = "Helyreállítva.";
@@ -373,8 +371,6 @@
 "alert.plugin_update_found.message" = "A legújabb verzió a(z) %@. Neked a(z) %@ van telepítve. Szeretne frissíteni?";
 "alert.plugin_permission" = "Ehhez a bővítményhez a következő engedélyekre van szükség. Kérjük, tekintse át őket a folytatás előtt.";
 "alert.plugin_permission_added" = "Ez a frissítés további engedélyeket igényel. Kérjük, tekintse át őket a folytatás előtt.";
-"alert.install_plugin_macos_11.title" = "Install plugin from GitHub";
-"alert.install_plugin_macos_11.message" = "Use the format user/repo or enter the full GitHub URL. The plugin store is not available on macOS 11. A newer system is recommended for the best experience.";
 
 "playlist.total_length" = "%@ összesen";
 "playlist.total_length_with_selected" = "%@/%@ kiválasztva";
@@ -396,7 +392,6 @@
 "pl_menu.add_file" = "Fájl hozzáadása…";
 "pl_menu.add_url" = "URL hozzáadása…";
 "pl_menu.clear_playlist" = "Lejátszási lista ürítése";
-"pl_menu.matched_sub" = "Megfelelő %d Felirat(ok)";
 "pl_menu.add_sub" = "Felirat hozzáadása…";
 "pl_menu.wrong_sub" = "Rossz felirat!";
 "pl_menu.browser" = "Megnyitás böngészőben";
@@ -986,9 +981,6 @@
 "settings.$PleaseSelectTheMediaTypes" = "Kérjük, válassza ki azokat a médiatípusokat, amelyekhez az UniPlayer-t szeretné alapértelmezett alkalmazásként megadni.";
 "settings.$Position" = "Pozíció";
 "settings.$PreferredLanguage" = "Előnyben részesített nyelv";
-"settings.$RestoreAlerts" = "Riasztások visszaállítása";
-"settings.$RestoreAllAlertsThat" = "Restore all alerts that have been suppressed using the \"Do not show this message again\" checkbox.";
-"settings.$RestoreSuppressedAlerts" = "Az elnyomott figyelmeztetések visszaállítása";
 "settings.$SPDIFOutput" = "S/PDIF kimenet";
 "settings.$SPDIFOutputWarning" = "List of codecs for which compressed audio passthrough should be used.\n\nWarning: There is not much reason to use this setting. HDMI supports uncompressed multichannel PCM, and lossless DTS-HD decoding is supported via FFmpeg's DCA decoder. Playback may not start if the output device does not support S/PDIF and this setting is enabled.";
 "settings.$Safari" = "Safari";

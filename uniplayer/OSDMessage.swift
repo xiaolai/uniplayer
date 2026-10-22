@@ -169,6 +169,13 @@ enum OSDMessage {
     }
   }
 
+  /// Filenames and other user content are displayed literally; only fixed
+  /// message templates are rendered through Mustache.
+  var isLiteralTitle: Bool {
+    if case .fileStart = self { return true }
+    return false
+  }
+
   func titleAndType() -> (String, OSDType) {
     switch self {
     case .fileStart(let filename):

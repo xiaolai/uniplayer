@@ -344,8 +344,6 @@ Nočné zostavy sa neodporúčajú používať ako denný ovládač. V súčasno
 "alert.clear_watch_later.title" = "Vymazať uložené priebehy prehrávania";
 "alert.clear_watch_later.message" = "Naozaj chcete vymazať všetky uložené priebehy prehrávania (dáta \"pozrieť neskôr\")?";
 
-"alert.restore_alerts.title" = "Obnoviť potlačené upozornenia";
-"alert.restore_alerts.message" = "Naozaj chcete obnoviť potlačené upozornenia?";
 
 "alert.cleared" = "Vyčistené";
 "alert.restored" = "Obnovené.";
@@ -374,8 +372,6 @@ Nočné zostavy sa neodporúčajú používať ako denný ovládač. V súčasno
 "alert.plugin_update_found.message" = "Najnovšia dostupná verzia je %@. Nainštalovaná je %@. Prajete si teraz stiahnuť aktualizáciu?";
 "alert.plugin_permission" = "Tento plug-in vyžaduje nasledujúce oprávnenia. Pred pokračovaním vykonajte ich kontrolu.";
 "alert.plugin_permission_added" = "Táto aktualizácia vyžaduje ďalšie oprávnenia. Pred pokračovaním vykonajte ich kontrolu.";
-"alert.install_plugin_macos_11.title" = "Install plugin from GitHub";
-"alert.install_plugin_macos_11.message" = "Use the format user/repo or enter the full GitHub URL. The plugin store is not available on macOS 11. A newer system is recommended for the best experience.";
 
 "playlist.total_length" = "%@ celkovo";
 "playlist.total_length_with_selected" = "%@ z %@ označených";
@@ -397,7 +393,6 @@ Nočné zostavy sa neodporúčajú používať ako denný ovládač. V súčasno
 "pl_menu.add_file" = "Pridať Súbor…";
 "pl_menu.add_url" = "Pridať URL…";
 "pl_menu.clear_playlist" = "Vyčistiť Playlist";
-"pl_menu.matched_sub" = "Zodpovedajúce %d Titulky";
 "pl_menu.add_sub" = "Pridať Titulky…";
 "pl_menu.wrong_sub" = "Nesprávne Titulky!";
 "pl_menu.browser" = "Otvoriť vo Webovom Prehliadači";
@@ -987,9 +982,6 @@ Nočné zostavy sa neodporúčajú používať ako denný ovládač. V súčasno
 "settings.$PleaseSelectTheMediaTypes" = "Prosím, označte typy médií, pre ktoré chcete nastaviť UniPlayer ako predvolenú aplikáciu.";
 "settings.$Position" = "Pozícia";
 "settings.$PreferredLanguage" = "Preferovaný jazyk";
-"settings.$RestoreAlerts" = "Obnoviť varovania";
-"settings.$RestoreAllAlertsThat" = "Restore all alerts that have been suppressed using the \"Do not show this message again\" checkbox.";
-"settings.$RestoreSuppressedAlerts" = "Obnoviť potlačené upozornenia";
 "settings.$SPDIFOutput" = "S/PDIF výstup";
 "settings.$SPDIFOutputWarning" = "List of codecs for which compressed audio passthrough should be used.\n\nWarning: There is not much reason to use this setting. HDMI supports uncompressed multichannel PCM, and lossless DTS-HD decoding is supported via FFmpeg's DCA decoder. Playback may not start if the output device does not support S/PDIF and this setting is enabled.";
 "settings.$Safari" = "Safari";

@@ -35,9 +35,7 @@ class PrefOSCToolbarSettingsSheetController: NSWindowController, PrefOSCToolbarC
     currentItemsView.initItems(fromItems: PrefUIViewController.oscToolbarButtons)
 
     var allButtonTypes: [Preference.ToolBarButton] = [.settings, .playlist, .pip, .fullScreen, .musicMode, .subTrack, .screenshot, .plugins]
-    if #available(macOS 13, *) {
-      allButtonTypes.append(.liveText)
-    }
+    allButtonTypes.append(.liveText)
     for type in allButtonTypes {
       let itemViewController = PrefOSCToolbarDraggingItemViewController(buttonType: type)
       itemViewController.availableItemsView = availableItemsView

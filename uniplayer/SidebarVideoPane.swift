@@ -94,9 +94,7 @@ class SidebarVideoPane: SidebarScrollView {
     container.translatesAutoresizingMaskIntoConstraints = false
 
     let hdrSwitch = NSSwitch()
-    if #available(macOS 26, *) {
-      hdrSwitch.controlSize = .small
-    }
+    hdrSwitch.controlSize = .small
     hdrSwitch.target = self
     hdrSwitch.action = #selector(hdrAction(_:))
 
@@ -316,7 +314,7 @@ fileprivate class AspectRatioView: HorizontalScrollViewWithIndicator {
     scrollView.documentView = ui.hStack(
       spacing: Tokens.Space.n8, segmentControl, input
     )
-    size(height: 24)
+    size(height: Tokens.Size.n24)
 
     player.observe(.iinaVideoParamsChanged) { [unowned self] _ in
       update()
@@ -370,7 +368,7 @@ fileprivate class CropView: HorizontalScrollViewWithIndicator {
     segmentControl.selectedSegment = 0
 
     scrollView.documentView = segmentControl
-    size(height: 24)
+    size(height: Tokens.Size.n24)
 
     player.observe(.iinaVideoParamsChanged) { [unowned self] _ in
       update()
@@ -467,9 +465,7 @@ fileprivate class HwdecSwitch: NSSwitch {
     self.player = player
     super.init(frame: .zero)
 
-    if #available(macOS 26, *) {
-      controlSize = .small
-    }
+    controlSize = .small
     target = self
     action = #selector(hwdecAction)
 
@@ -528,9 +524,7 @@ fileprivate class SpeedView: SidebarSliderView {
     slider.minValue = 0
     slider.maxValue = 24
     slider.numberOfTickMarks = 25
-    if #available(macOS 26, *) {
-      slider.neutralValue = 8
-    }
+    slider.neutralValue = 8
     input.formatter = speedFormatter
     resetButton.toolTip = ui.localized("quicksetting.reset_speed")
   }
@@ -653,9 +647,7 @@ fileprivate class EqualizerView: NSView {
       slider.setContentHuggingPriority(.init(150), for: .horizontal)
       slider.target = self
       slider.action = #selector(sliderAction)
-      if #available(macOS 26, *) {
-        slider.neutralValue = 0
-      }
+      slider.neutralValue = 0
       self[keyPath: c.keyPath] = slider
 
       let resetButton = NSButton(

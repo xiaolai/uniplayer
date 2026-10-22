@@ -16,7 +16,7 @@ class PreferenceViewController: NSViewController {
     return []
   }
 
-  let symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 18, weight: .bold)
+  let symbolConfiguration = NSImage.SymbolConfiguration(pointSize: Tokens.Icon.n18, weight: .bold)
 
   override func viewDidLoad() {
     super.viewDidLoad()

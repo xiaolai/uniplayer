@@ -45,7 +45,7 @@ class VolumeButton: NSView {
     let res = volumeIcon()
     guard let icon = res.image, res.name != previousIcon else { return }
     let useReplace = (previousIcon?.contains("slash") ?? false) || (res.name.contains("slash"))
-    if #available(macOS 15.0, *), useReplace {
+    if useReplace {
       imageView.setSymbolImage(icon, contentTransition: .replace.offUp)
     } else {
       imageView.image = icon
@@ -68,7 +68,7 @@ class VolumeButton: NSView {
     case 34...66: "speaker.wave.2.fill"
     default: "speaker.wave.3.fill"
     }
-    let configuration = NSImage.SymbolConfiguration(pointSize: 13, weight: .regular)
+    let configuration = NSImage.SymbolConfiguration(pointSize: Tokens.Icon.n13, weight: .regular)
     return (.sf(symbol, withConfiguration: configuration), symbol)
   }
 }

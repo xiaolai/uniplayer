@@ -213,7 +213,7 @@ fileprivate class SButton: NSButton {
   }
 
   private func updateAppearance() {
-    self.image = self.state == .on ? onImage?.tinted(.controlAccentColor) : onImage
+    self.image = self.state == .on ? onImage?.tinted(Tokens.Palette.accent.nsColor) : onImage
   }
 
   override var state: NSControl.StateValue {
@@ -291,7 +291,7 @@ fileprivate class SubtitlesFontView: SettingsAccessory.Base {
     fontButton.target = self
     fontButton.action = #selector(chooseSubFontAction)
     fontButton.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-    let widthConstraint = fontButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 120)
+    let widthConstraint = fontButton.widthAnchor.constraint(greaterThanOrEqualToConstant: Tokens.Size.n120)
     widthConstraint.priority = .defaultLow
     widthConstraint.isActive = true
     fontButton.bind(.title, to: UserDefaults.standard, withKeyPath: Preference.Key.subTextFont.rawValue)

@@ -18,11 +18,7 @@ class RoundedTextFieldCell: NSTextFieldCell {
   }
 
   override func drawingRect(forBounds rect: NSRect) -> NSRect {
-    if #available(macOS 26, *) {
-      return super.drawingRect(forBounds: rect)
-    } else {
-      return rect.insetBy(dx: paddingH, dy: paddingV)
-    }
+    return super.drawingRect(forBounds: rect)
   }
 
 }

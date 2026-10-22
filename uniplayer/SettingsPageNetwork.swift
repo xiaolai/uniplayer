@@ -25,13 +25,25 @@ class SettingsPageNetwork: SettingsPage {
     "SettingsNetworkLocalizable"
   }
 
-  override func pageLoaded() {
-    // refresh ytdl section
-    guard let view = labeledViews["ytdl"] else { return }
+  private var pluginObserver: NSObjectProtocol?
 
-    if JavascriptPlugin.hasYTDL {
-      setControlsEnabled(in: view, enabled: false, skipping: nil)
+  override func pageLoaded() {
+    refreshYTDLState()
+    pluginObserver = NotificationCenter.default.addObserver(
+      forName: .iinaPluginChanged, object: nil, queue: .main) { [weak self] _ in
+        self?.refreshYTDLState()
+      }
+  }
+
+  deinit {
+    if let pluginObserver {
+      NotificationCenter.default.removeObserver(pluginObserver)
     }
+  }
+
+  private func refreshYTDLState() {
+    guard let view = labeledViews["ytdl"] else { return }
+    setControlsEnabled(in: view, enabled: !JavascriptPlugin.hasYTDL, skipping: nil)
   }
 
   override func content() -> [SettingsSection] {

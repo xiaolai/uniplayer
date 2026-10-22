@@ -11,13 +11,6 @@ import Cocoa
 import Mustache
 import WebKit
 
-fileprivate let isMacOS11: Bool = {
-  if #unavailable(macOS 12.0) {
-      return true
-  }
-  return false
-}()
-
 fileprivate let InteractiveModeBottomViewHeight = Tokens.Size.n60
 
 fileprivate let UIAnimationDuration = Tokens.Motion.n25.duration
@@ -41,7 +34,7 @@ class MainWindowController: PlayerWindowController {
   }
 
   /** For Force Touch. */
-  let minimumPressDuration: TimeInterval = 0.5
+  let minimumPressDuration: TimeInterval = Tokens.Motion.n50.duration
 
   // MARK: - Objects, Views
 
@@ -371,7 +364,7 @@ class MainWindowController: PlayerWindowController {
         $0?.setStyle(Preference.liquidGlass(.osd) ? .liquidGlass : .visualEffect)
       }
     case PK.enableLiveText.rawValue:
-      if #available(macOS 13, *), let newValue = change[.newKey] as? Bool {
+      if let newValue = change[.newKey] as? Bool {
         let buttons = oscToolbarView.subviews as! [NSButton]
         if let btn = buttons.first(where: { $0.tag == Preference.ToolBarButton.liveText.rawValue }) {
           btn.image = newValue ? Preference.ToolBarButton.liveText.alternateImage() : Preference.ToolBarButton.liveText.image()
@@ -446,7 +439,7 @@ class MainWindowController: PlayerWindowController {
   private var controlBarAreas: [NSView?] {
     if oscPosition == .floating, hudView != nil {
       return [
-        hudView.topTrailing, hudView.center,
+        hudView.topLeading, hudView.topTrailing, hudView.center,
         hudView.bottomLeading, hudView.bottomTrailing, hudView.timeline
       ]
     }
@@ -497,7 +490,7 @@ class MainWindowController: PlayerWindowController {
     // workaround another bug in Ventura where an external monitor goes black could not be
     // reproduced (issue #4015). The workaround adds a tiny subview with such a low alpha level it
     // is invisible to the human eye. This workaround may not be effective in all cases.
-    if #available(macOS 13, *), Preference.bool(for: .enableHdrWorkaround) {
+    if Preference.bool(for: .enableHdrWorkaround) {
       let view = NSView(frame: NSRect(origin: .zero, size: NSSize(width: 0.1, height: 0.1))) // token-exempt: invisible probe view, not a design value
       view.wantsLayer = true
       view.layer?.backgroundColor = Tokens.Palette.black.nsColor.cgColor
@@ -509,15 +502,9 @@ class MainWindowController: PlayerWindowController {
     videoViewContainer.translatesAutoresizingMaskIntoConstraints = false
 
     DispatchQueue.main.async { [weak self] in
-      if #available(macOS 14, *) {
-        self?.sidebars.quickSettingView.loadViewIfNeeded()
-        self?.sidebars.playlistView.loadViewIfNeeded()
-        self?.sidebars.pluginView.loadViewIfNeeded()
-      } else {
-        _ = self?.sidebars.quickSettingView.view
-        _ = self?.sidebars.playlistView.view
-        _ = self?.sidebars.pluginView.view
-      }
+      self?.sidebars.quickSettingView.loadViewIfNeeded()
+      self?.sidebars.playlistView.loadViewIfNeeded()
+      self?.sidebars.pluginView.loadViewIfNeeded()
     }
 
     // create translucent views
@@ -629,7 +616,7 @@ class MainWindowController: PlayerWindowController {
       label!.textColor = Tokens.Palette.textSecondary.nsColor
       label!.alignment = .center
       label!.font = Tokens.Typography.numeric.nsFont
-      label!.widthAnchor.constraint(greaterThanOrEqualToConstant: 46).isActive = true
+      label!.widthAnchor.constraint(greaterThanOrEqualToConstant: Tokens.Size.n46).isActive = true
     }
     oscSliderView.translatesAutoresizingMaskIntoConstraints = false
     oscSliderView.addSubview(leftLabel)
@@ -974,14 +961,6 @@ class MainWindowController: PlayerWindowController {
       button.action = #selector(self.toolBarButtonAction(_:))
       oscToolbarView.addView(button, in: .trailing)
     }
-
-//    let menuButton = NSButton()
-//    menuButton.bezelStyle = .regularSquare
-//    menuButton.image = .sf("chevron.forward.2")
-//    menuButton.isBordered = false
-//    menuButton.refusesFirstResponder = true
-//    menuButton.size(width: Preference.ToolBarButton.frameSize, height: Preference.ToolBarButton.frameSize)
-//    oscToolbarView.addView(menuButton, in: .trailing)
   }
 
   // MARK: - Player HUD groups
@@ -1000,7 +979,7 @@ class MainWindowController: PlayerWindowController {
     airplay.size(width: Tokens.Size.n20, height: Tokens.Size.n20)
 
     let share = makeHUDIconButton(
-      hudSymbol("square.and.arrow.up", size: Tokens.Icon.n16),
+      hudSymbol("square.and.arrow.up", size: Tokens.HUD.utilityGlyph),
       action: #selector(shareCurrentFile(_:)),
       label: "Share")
 
@@ -1008,21 +987,21 @@ class MainWindowController: PlayerWindowController {
     stack.translatesAutoresizingMaskIntoConstraints = false
     stack.orientation = .horizontal
     stack.alignment = .centerY
-    stack.spacing = 10
+    stack.spacing = Tokens.HUD.capsuleSpacing
     return HUDCapsuleView(content: stack)
   }
 
   private func makeHUDAuxiliaryCapsule() -> HUDCapsuleView {
     let subtitles = makeHUDIconButton(
-      hudSymbol("captions.bubble.fill", size: Tokens.Icon.n16),
+      hudSymbol("captions.bubble.fill", size: Tokens.HUD.utilityGlyph),
       action: #selector(hudSubAction(_:)),
       label: "Subtitles")
     let audio = makeHUDIconButton(
-      hudSymbol("waveform", size: Tokens.Icon.n16),
+      hudSymbol("waveform", size: Tokens.HUD.utilityGlyph),
       action: #selector(hudAudioAction(_:)),
       label: "Audio")
     let speed = makeHUDIconButton(
-      hudSymbol("speedometer", size: Tokens.Icon.n16),
+      hudSymbol("speedometer", size: Tokens.HUD.utilityGlyph),
       action: #selector(hudSpeedAction(_:)),
       label: "Playback Speed")
 
@@ -1030,7 +1009,7 @@ class MainWindowController: PlayerWindowController {
     stack.translatesAutoresizingMaskIntoConstraints = false
     stack.orientation = .horizontal
     stack.alignment = .centerY
-    stack.spacing = 10
+    stack.spacing = Tokens.HUD.capsuleSpacing
     return HUDCapsuleView(content: stack)
   }
 
@@ -1052,7 +1031,7 @@ class MainWindowController: PlayerWindowController {
     mute.translatesAutoresizingMaskIntoConstraints = false
     mute.isBordered = false
     mute.bezelStyle = .smallSquare
-    mute.image = hudSymbol("speaker.wave.2.fill", size: Tokens.Icon.n14)
+    mute.image = hudSymbol("speaker.wave.2.fill", size: Tokens.HUD.volumeGlyph)
     mute.contentTintColor = Tokens.Palette.onMedia.nsColor
     mute.target = self
     mute.action = #selector(hudMuteAction(_:))
@@ -1065,14 +1044,16 @@ class MainWindowController: PlayerWindowController {
     stack.translatesAutoresizingMaskIntoConstraints = false
     stack.orientation = .horizontal
     stack.alignment = .centerY
-    stack.spacing = 6
+    stack.spacing = Tokens.HUD.volumeCapsuleSpacing
     return HUDCapsuleView(content: stack)
   }
 
   private func installHUDTransportGlass() {
     guard hudTransportDiscs.isEmpty else { return }
     let specs: [(NSButton, CGFloat)] = [
-      (leftArrowButton, 32), (playButton, 48), (rightArrowButton, 32)
+      (leftArrowButton, Tokens.HUD.discCorner(for: Tokens.HUD.skipDisc)),
+      (playButton, Tokens.HUD.discCorner(for: Tokens.HUD.playDisc)),
+      (rightArrowButton, Tokens.HUD.discCorner(for: Tokens.HUD.skipDisc))
     ]
     for (button, radius) in specs {
       let disc = NSView()
@@ -1276,7 +1257,7 @@ class MainWindowController: PlayerWindowController {
       : (Preference.bool(for: .showRemainingTime) ? .remaining : .duration)
     let timeLabelColor: NSColor = newPosition == .floating
       ? Tokens.Palette.white.nsColor.withAlphaComponent(Tokens.Opacity.n80)
-      : .secondaryLabelColor
+      : Tokens.Palette.textSecondary.nsColor
     leftLabel.textColor = timeLabelColor
     rightLabel.textColor = timeLabelColor
 
@@ -1649,29 +1630,7 @@ class MainWindowController: PlayerWindowController {
   override func showWindow(_ sender: Any?) {
     guard let window else { return }
     log("Showing window at \(window.frame)")
-    let origin = window.frame.origin
     super.showWindow(sender)
-    if #unavailable(macOS 26), Preference.bool(for: .enableWrongScreenWorkaround),
-       NSScreen.screens.count > 1, window.frame.origin != origin {
-      log("NSWindowController.showWindow changed origin from \(origin) to \(window.frame.origin)")
-      if player.info.state == .loaded, Preference.bool(for: .fullScreenWhenOpen),
-         !fsState.isFullscreen, !player.isInMiniPlayer {
-        // PlayerCore.notifyWindowVideoSizeChanged will be toggling the window into full screen
-        // mode. Merely resetting the origin works when NSWindow.toggleFullScreen is called.
-        log("Resetting window origin to \(origin)")
-        window.setFrameOrigin(origin)
-      } else {
-        // When not immediately toggling into full screen mode resetting the origin will not work
-        // unless it is done in another task.
-        log("Applying workaround for AppKit using the wrong screen")
-        window.alphaValue = 0
-        DispatchQueue.main.async {
-          self.log("Resetting window origin to \(origin)")
-          window.setFrameOrigin(origin)
-          window.alphaValue = 1
-        }
-      }
-    }
     resetCollectionBehavior()
     // update buffer indicator view
     bufferIndicatorView.update()
@@ -2100,16 +2059,8 @@ class MainWindowController: PlayerWindowController {
     // restore window frame and aspect ratio
     let videoSize = player.videoSizeForDisplay
     let aspectRatio = NSSize(width: videoSize.0, height: videoSize.1)
-    let useAnimation = {
-      // Animation causes lagging under the macOS Tahoe beta, so don't allow it for now.
-      guard #unavailable(macOS 26) else { return false }
-      return !Preference.bool(for: .disableAnimations)
-    }()
-    if useAnimation {
-      // firstly resize to a big frame with same aspect ratio for better visual experience
-      let aspectFrame = aspectRatio.shrink(toSize: window.frame.size).centeredRect(in: window.frame)
-      window.setFrame(aspectFrame, display: true, animate: false)
-    }
+    // Animation causes lagging under the macOS Tahoe beta, so don't allow it for now.
+    let useAnimation = false
     // then animate to the original frame
     window.setFrame(framePriorToBeingInFullscreen, display: true, animate: useAnimation)
     setWindowAspectRatio(aspectRatio)
@@ -2134,13 +2085,8 @@ class MainWindowController: PlayerWindowController {
       height: screen.frame.height - unusable,
     )
 
-    let useAnimation = {
-      // Animation causes lagging under the macOS Tahoe beta, so don't allow it for now.
-      guard #unavailable(macOS 26) else { return false }
-      return !Preference.bool(for: .disableAnimations)
-    }()
-
-    window.setFrame(frame, display: true, animate: useAnimation)
+    // Animation causes lagging under the macOS Tahoe beta, so don't allow it for now.
+    window.setFrame(frame, display: true, animate: false)
 
     if unusable > 0 {
       // Force black background in camera housing. Cannot extend the window frame
@@ -2220,36 +2166,6 @@ class MainWindowController: PlayerWindowController {
     // update control bar position
     if oscPosition == .floating {
       oscFloatingView.updatePosition()
-    }
-
-    // Detach the views in oscFloatingTopView manually on macOS 11 only; as it will cause freeze
-    if isMacOS11 && oscPosition == .floating {
-      guard let maxWidth = [oscVolumeView, oscToolbarView].compactMap({ $0?.frame.width }).max() else {
-        return
-      }
-
-      // window - 10 - controlBarFloating
-      // controlBarFloating - 12 - oscFloatingTopView
-      let margin: CGFloat = (10 + 12) * 2
-      let hide = (window.frame.width
-                    - oscPlayControlView.frame.width
-                    - maxWidth*2
-                    - margin) < 0
-
-      let views = oscFloatingView.oscTopView.views
-      if hide {
-        if views.contains(oscVolumeView)
-            && views.contains(oscToolbarView) {
-          oscFloatingView.oscTopView.removeView(oscVolumeView)
-          oscFloatingView.oscTopView.removeView(oscToolbarView)
-        }
-      } else {
-        if !views.contains(oscVolumeView)
-            && !views.contains(oscToolbarView) {
-          oscFloatingView.oscTopView.addView(oscVolumeView, in: .leading)
-          oscFloatingView.oscTopView.addView(oscToolbarView, in: .trailing)
-        }
-      }
     }
 
     player.events.emit(.windowResized, data: window.frame)
@@ -2660,7 +2576,7 @@ class MainWindowController: PlayerWindowController {
     guard let window else { return }
     if Preference.unlockWindowAspectRatio {
       window.aspectRatio = .zero
-      window.resizeIncrements = .init(width: 1, height: 1)
+      window.resizeIncrements = .init(width: Tokens.Size.n1, height: Tokens.Size.n1)
     } else {
       window.aspectRatio = aspectRatio
     }
@@ -3105,7 +3021,7 @@ class MainWindowController: PlayerWindowController {
     playButton.toolTip = label
 
     guard oscPosition == .floating else { return }
-    let configuration = NSImage.SymbolConfiguration(pointSize: 48, weight: .semibold)
+    let configuration = NSImage.SymbolConfiguration(pointSize: Tokens.HUD.playPauseSymbol, weight: .semibold)
     playButton.image = NSImage(
       systemSymbolName: paused ? "play.fill" : "pause.fill",
       accessibilityDescription: nil)?.withSymbolConfiguration(configuration)
@@ -3115,8 +3031,8 @@ class MainWindowController: PlayerWindowController {
   /// bars keep the compact 24-point transport.
   private func updateTransportSizes() {
     let hud = oscPosition == .floating
-    let playSize: CGFloat = hud ? 96 : 24
-    let arrowSize: CGFloat = hud ? 64 : 24
+    let playSize: CGFloat = hud ? Tokens.HUD.playDisc : Tokens.HUD.dockedTransport
+    let arrowSize: CGFloat = hud ? Tokens.HUD.skipDisc : Tokens.HUD.dockedTransport
 
     let buttons: [(NSButton?, CGFloat)] = [
       (playButton, playSize),
@@ -3132,7 +3048,7 @@ class MainWindowController: PlayerWindowController {
       button.imageScaling = hud ? .scaleNone : .scaleProportionallyUpOrDown
     }
 
-    oscPlayControlMiddleView.spacing = hud ? 28 : 16
+    oscPlayControlMiddleView.spacing = hud ? Tokens.HUD.transportSpacingHUD : Tokens.HUD.transportSpacingLegacy
 
     playButton.wantsLayer = true
     playButton.layer?.backgroundColor = Tokens.Palette.clear.nsColor.cgColor
@@ -3184,7 +3100,7 @@ class MainWindowController: PlayerWindowController {
   /// button. This allows the user to control the speed using pressure when using devices that support pressure sensitivity.
   func updateArrowButtons() {
     if oscPosition == .floating {
-      let configuration = NSImage.SymbolConfiguration(pointSize: 30, weight: .medium)
+      let configuration = NSImage.SymbolConfiguration(pointSize: Tokens.HUD.skipSymbol, weight: .medium)
       func symbol(_ name: String) -> NSImage? {
         NSImage(systemSymbolName: name, accessibilityDescription: nil)?
           .withSymbolConfiguration(configuration)
@@ -3225,7 +3141,7 @@ class MainWindowController: PlayerWindowController {
     super.updateVolume()
     hudVolumeSlider?.doubleValue = player.info.volume
     let muted = player.info.isMuted || player.info.volume <= 0
-    hudMuteButton?.image = hudSymbol(muted ? "speaker.slash.fill" : "speaker.wave.2.fill", size: Tokens.Icon.n14)
+    hudMuteButton?.image = hudSymbol(muted ? "speaker.slash.fill" : "speaker.wave.2.fill", size: Tokens.HUD.volumeGlyph)
     hudMuteButton?.contentTintColor = Tokens.Palette.onMedia.nsColor
   }
 

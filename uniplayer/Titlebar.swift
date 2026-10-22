@@ -18,7 +18,7 @@ class Titlebar: NSView {
   /// Default inset for the title container from the leading edge — clears the traffic lights.
   static let docIconLeadingPadding = Tokens.Space.n86
 
-  private let accessoryIconConfig = NSImage.SymbolConfiguration(pointSize: 12, weight: .regular)
+  private let accessoryIconConfig = NSImage.SymbolConfiguration(pointSize: Tokens.Icon.n12, weight: .regular)
 
   let useSystemTitle = false
 
@@ -53,7 +53,6 @@ class Titlebar: NSView {
   private var oscLeadingConstraint: NSLayoutConstraint!
 
   // Only set on macOS 15 and below
-  private var titleCenterConstraint: NSLayoutConstraint?
 
   init(mainWindow: MainWindowController) {
     self.mainWindow = mainWindow
@@ -165,19 +164,8 @@ class Titlebar: NSView {
       titlebarContainer.addSubview(titleTextField)
       titleTextField.spacing(.leading(Tokens.Space.n2), to: docIcon).center(.y)
 
-      if #available(macOS 26.0, *) {
-        self.titleLeadingConstraint = docIcon.leadingAnchor
-          .constraint(equalTo: titlebarContainer.leadingAnchor, constant: Titlebar.docIconLeadingPadding)
-      } else {
-        // on macOS 15 or below, titlebar is centered
-        self.titleLeadingConstraint = docIcon.leadingAnchor
-          .constraint(greaterThanOrEqualTo: titlebarContainer.leadingAnchor, constant: Titlebar.docIconLeadingPadding)
-        let centerConstraint = titleTextField.centerXAnchor.constraint(equalTo: titlebarContainer.centerXAnchor)
-        centerConstraint.priority = .defaultLow
-        centerConstraint.isActive = true
-        titleCenterConstraint = centerConstraint
-        titleTextField.setContentCompressionResistancePriority(.init(300), for: .horizontal)
-      }
+      self.titleLeadingConstraint = docIcon.leadingAnchor
+        .constraint(equalTo: titlebarContainer.leadingAnchor, constant: Titlebar.docIconLeadingPadding)
       titleLeadingConstraint.priority = .defaultHigh
       titleLeadingConstraint.isActive = true
 
@@ -282,12 +270,10 @@ class Titlebar: NSView {
       titleLeadingConstraint.animator().constant = constant == 0 ? 0 : constant + 8
       oscLeadingConstraint.animator().constant = constant + 6
       backgroundLeadingConstraint.animator().constant = constant
-      titleCenterConstraint?.animator().constant = constant / 2
     } else {
       titleLeadingConstraint.constant = constant == 0 ? 0 : constant + 8
       oscLeadingConstraint.constant = constant + 6
       backgroundLeadingConstraint.constant = constant
-      titleCenterConstraint?.constant = constant / 2
     }
   }
 

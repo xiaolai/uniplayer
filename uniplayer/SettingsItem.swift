@@ -538,16 +538,8 @@ struct SettingsItem {
     override func getValueViews() -> [NSView] {
       popupButton = NSPopUpButton()
       popupButton.translatesAutoresizingMaskIntoConstraints = false
-      if #available(macOS 12, *) {
-        popupButton.bezelStyle = .flexiblePush
-      }
-      if #available(macOS 26, *) {
-        popupButton.showsBorderOnlyWhileMouseInside = false
-      } else if #unavailable(macOS 12) {
-        popupButton.showsBorderOnlyWhileMouseInside = false
-      } else {
-        popupButton.showsBorderOnlyWhileMouseInside = true
-      }
+      popupButton.bezelStyle = .flexiblePush
+      popupButton.showsBorderOnlyWhileMouseInside = false
       popupButton.target = self
       popupButton.action = #selector(popupChanged)
       return [popupButton]
@@ -732,16 +724,8 @@ struct SettingsItem {
       nsSwitch.target = self
       popupButton = NSPopUpButton()
       popupButton.translatesAutoresizingMaskIntoConstraints = false
-      if #available(macOS 12, *) {
-        popupButton.bezelStyle = .flexiblePush
-      }
-      if #available(macOS 26, *) {
-        popupButton.showsBorderOnlyWhileMouseInside = false
-      } else if #unavailable(macOS 12) {
-        popupButton.showsBorderOnlyWhileMouseInside = false
-      } else {
-        popupButton.showsBorderOnlyWhileMouseInside = true
-      }
+      popupButton.bezelStyle = .flexiblePush
+      popupButton.showsBorderOnlyWhileMouseInside = false
       return [popupButton, nsSwitch]
     }
 
@@ -1069,7 +1053,7 @@ fileprivate class ClickableView: NSView {
   init() {
     super.init(frame: NSRect())
     wantsLayer = true
-    layer?.cornerRadius = SettingsPage.corderRadius
+    layer?.cornerRadius = Tokens.Settings.cardCorner
   }
 
   private func setRoundCorners() {
@@ -1106,15 +1090,9 @@ fileprivate class ClickableView: NSView {
   }
 
   override func viewDidChangeEffectiveAppearance() {
-    backgroundColor = if #available(macOS 26, *) {
-      if effectiveAppearance.isDark {
-        Tokens.Palette.highlight.nsColor.withAlphaComponent(Tokens.Opacity.n10).cgColor
-      } else {
-        Tokens.Palette.black.nsColor.withAlphaComponent(Tokens.Opacity.n08).cgColor
-      }
-    } else {
-      Tokens.Palette.highlight.nsColor.withAlphaComponent(Tokens.Opacity.n20).cgColor
-    }
+    backgroundColor = effectiveAppearance.isDark
+      ? Tokens.Palette.highlight.nsColor.withAlphaComponent(Tokens.Opacity.n10).cgColor
+      : Tokens.Palette.black.nsColor.withAlphaComponent(Tokens.Opacity.n08).cgColor
   }
 }
 

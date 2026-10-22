@@ -53,7 +53,7 @@ class InteractiveModeController: NSObject {
     return ui.vStack(
       spacing: Tokens.Space.n8,
       cropRectLabel,
-      ui.hStack(predefinedAspectSegment, ui.space(width: 8), cancelButton, doneButton)
+      ui.hStack(predefinedAspectSegment, ui.space(width: Tokens.Size.n8), cancelButton, doneButton)
     )
   }()
 
@@ -90,7 +90,7 @@ class InteractiveModeController: NSObject {
     // horizontal padding 20, top padding 20
     let aspect = NSSize(width: player.videoSizeForDisplay.0, height: player.videoSizeForDisplay.1)
     let containerSize = mainWindow.videoViewContainer.frame.size
-    let maxSize = NSSize(width: containerSize.width - 40, height: containerSize.height - 108)
+    let maxSize = NSSize(width: containerSize.width - Tokens.Size.n40, height: containerSize.height - Tokens.Size.n108)
     let newSize = aspect.shrink(toSize: maxSize)
     let horizontalPadding = (containerSize.width - newSize.width) / 2
     let topPadding = CGFloat(20)
@@ -436,10 +436,10 @@ class CropBoxView: NSView {
     let y = boxRect.origin.y
     let w = boxRect.size.width
     let h = boxRect.size.height
-    rectTop = NSMakeRect(x, y-2, w, 4).standardized
-    rectBottom = NSMakeRect(x, y+h-2, w, 4).standardized
-    rectLeft = NSMakeRect(x-2, y+2, 4, h-4).standardized
-    rectRight = NSMakeRect(x+w-2, y+2, 4, h-4).standardized
+    rectTop = NSMakeRect(x, y-Tokens.Size.n2, w, Tokens.Size.n4).standardized
+    rectBottom = NSMakeRect(x, y+h-Tokens.Size.n2, w, Tokens.Size.n4).standardized
+    rectLeft = NSMakeRect(x-Tokens.Size.n2, y+Tokens.Size.n2, Tokens.Size.n4, h-Tokens.Size.n4).standardized
+    rectRight = NSMakeRect(x+w-Tokens.Size.n2, y+Tokens.Size.n2, Tokens.Size.n4, h-Tokens.Size.n4).standardized
 
     window?.invalidateCursorRects(for: self)
   }

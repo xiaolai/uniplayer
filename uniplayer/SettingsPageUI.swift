@@ -59,18 +59,16 @@ class SettingsPageUI: SettingsPage {
         SettingsItem.PopupButton()
           .image(name: "moonphase.first.quarter")
           .bindTo(.themeMaterial, ofType: Preference.Theme.self)
-        if #available(macOS 26.0, *) { 
-          SettingsItem.General(title: .general("sidebar.liquid_glass"))
-            .image(name: ["capsule.on.rectangle.liquid.glass", "liquid.glass"])
-            .withExpandingDetailView {
-              SettingsItem.Switch(title: .text_OnScreenDisplay)
-                .bindTo(.useLiquidGlassOSD)
-              SettingsItem.Switch(title: .text_OnScreenController)
-                .bindTo(.useLiquidGlassOSC)
-              SettingsItem.Switch(title: .general("sidebar.sidebar"))
-                .bindTo(.useLiquidGlassSidebar)
-            }
-        }
+        SettingsItem.General(title: .general("sidebar.liquid_glass"))
+          .image(name: ["capsule.on.rectangle.liquid.glass", "liquid.glass"])
+          .withExpandingDetailView {
+            SettingsItem.Switch(title: .text_OnScreenDisplay)
+              .bindTo(.useLiquidGlassOSD)
+            SettingsItem.Switch(title: .text_OnScreenController)
+              .bindTo(.useLiquidGlassOSC)
+            SettingsItem.Switch(title: .general("sidebar.sidebar"))
+              .bindTo(.useLiquidGlassSidebar)
+          }
         SettingsItem.Switch(title: .general("sidebar.compact_interface"))
           .image(name: "rectangle.grid.3x2.fill")
           .bindTo(.compactUI)
@@ -382,7 +380,7 @@ fileprivate class WindowInitialSizeView: SettingsContainer {
     (.text_point, 0), (.text_ofScreen, 1)
   ])
 
-  lazy var textField: NSTextField = ui.textInput(value: "1280", width: 64)
+  lazy var textField: NSTextField = ui.textInput(value: "1280", width: Tokens.Size.textInputWidth)
 
   init(geometryBindings: GeometryBindings) {
     self.container = NSView()
@@ -430,9 +428,9 @@ fileprivate class WindowInitialPositionView: SettingsContainer {
     (.text_point, 0), (.text_ofScreen, 1)
   ])
 
-  lazy var textFieldX: NSTextField = ui.textInput(value: "20", width: 64)
+  lazy var textFieldX: NSTextField = ui.textInput(value: "20", width: Tokens.Size.textInputWidth)
 
-  lazy var textFieldY: NSTextField = ui.textInput(value: "20", width: 64)
+  lazy var textFieldY: NSTextField = ui.textInput(value: "20", width: Tokens.Size.textInputWidth)
 
   init(geometryBindings: GeometryBindings) {
     self.container = NSView()
@@ -445,13 +443,13 @@ fileprivate class WindowInitialPositionView: SettingsContainer {
       ui.hStack(align: .firstBaseline, ui.image("arrow.left.to.line"), ui.smallLabel(bindTo: .text_XOffset), textFieldX, popupButtonXUnit)
     )
     view.addArrangedSubview(
-      ui.hStack(align: .firstBaseline, ui.space(width: 16), ui.smallLabel(bindTo: .text_toThe), popupButtonXPos, ui.smallLabel(bindTo: .text_sideOfTheScreen))
+      ui.hStack(align: .firstBaseline, ui.space(width: Tokens.Size.n16), ui.smallLabel(bindTo: .text_toThe), popupButtonXPos, ui.smallLabel(bindTo: .text_sideOfTheScreen))
     )
     view.addArrangedSubview(
       ui.hStack(align: .firstBaseline, ui.image("arrow.up.to.line"), ui.smallLabel(bindTo: .text_YOffset), textFieldY, popupButtonYUnit)
     )
     view.addArrangedSubview(
-      ui.hStack(align: .firstBaseline, ui.space(width: 16), ui.smallLabel(bindTo: .text_toThe), popupButtonYPos, ui.smallLabel(bindTo: .text_sideOfTheScreen))
+      ui.hStack(align: .firstBaseline, ui.space(width: Tokens.Size.n16), ui.smallLabel(bindTo: .text_toThe), popupButtonYPos, ui.smallLabel(bindTo: .text_sideOfTheScreen))
     )
 
     container.addSubview(view)

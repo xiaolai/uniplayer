@@ -64,6 +64,26 @@ class OSDView: TranslucentView {
     fatalError("init(coder:) has not been implemented")
   }
 
+  private static var templateCache: [String: Template] = [:]
+
+  /// Render a trusted OSD template, falling back to literal text on any parse
+  /// error. Compiled templates are cached because the set is small and fixed.
+  private func render(_ template: String, with data: [String: String]) -> String {
+    do {
+      let compiled: Template
+      if let cached = Self.templateCache[template] {
+        compiled = cached
+      } else {
+        compiled = try Template(string: template)
+        Self.templateCache[template] = compiled
+      }
+      return try compiled.render(data)
+    } catch {
+      Logger.log("OSD template error: \(error)", level: .error)
+      return template
+    }
+  }
+
   func updateViews(fromMessage message: OSDMessage, player: PlayerCore) {
     let textSize = CGFloat(Preference.float(for: .osdTextSize))
     let iconSize = textSize * 0.8
@@ -86,7 +106,7 @@ class OSDView: TranslucentView {
     secondaryLabel.font = Tokens.Typography.numericFont(size: secondaryTextSize)
 
     let (osdString, osdType) = message.titleAndType()
-    let renderedLabel = try! (try! Template(string: osdString)).render(osdData)
+    let renderedLabel = message.isLiteralTitle ? osdString : render(osdString, with: osdData)
     if let attrString = message.attributedTitle(renderedLabel, fontSize: textSize, smallFontSize: smallTextSize) {
       label.attributedStringValue = attrString
     } else {
@@ -128,7 +148,7 @@ class OSDView: TranslucentView {
       fallthrough
     case .withText(let text):
       stackView.setVisibilityPriority(.mustHold, for: secondaryLabel)
-      secondaryLabel.stringValue = try! (try! Template(string: text)).render(osdData)
+      secondaryLabel.stringValue = render(text, with: osdData)
     }
   }
 
@@ -136,7 +156,7 @@ class OSDView: TranslucentView {
   func addAccessoryView(_ view: NSView) {
     removeAccessoryView()
     stackView.addArrangedSubview(view)
-    view.widthAnchor.constraint(greaterThanOrEqualToConstant: 240).isActive = true
+    view.widthAnchor.constraint(greaterThanOrEqualToConstant: Tokens.Size.n240).isActive = true
     accessoryView = view
   }
 

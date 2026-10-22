@@ -331,9 +331,9 @@ class TouchBarPlaySliderCell: NSSliderCell {
     self.controlView?.superview?.layer?.backgroundColor = Tokens.Palette.black.nsColor.cgColor
     let rect = super.barRect(flipped: flipped)
     return NSRect(x: rect.origin.x,
-                  y: 2,
+                  y: Tokens.Size.n2,
                   width: rect.width,
-                  height: self.controlView!.frame.height - 4)
+                  height: self.controlView!.frame.height - Tokens.Size.n4)
   }
 
   override func knobRect(flipped: Bool) -> NSRect {

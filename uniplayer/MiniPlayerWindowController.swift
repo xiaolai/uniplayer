@@ -138,7 +138,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     [leftLabel, rightLabel].forEach { label in
       label!.textColor = Tokens.Palette.textSecondary.nsColor
       label!.font = .monospacedDigitFont(for: .mini)
-      label!.widthAnchor.constraint(greaterThanOrEqualToConstant: 32).isActive = true
+      label!.widthAnchor.constraint(greaterThanOrEqualToConstant: Tokens.Size.n32).isActive = true
     }
 
     backgroundView.addSubview(leftLabel)
@@ -272,7 +272,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     playlistWrapperView.apply(Tokens.Material.underWindowBackground)
     cv.addSubview(playlistWrapperView)
     playlistWrapperView.size(width: Tokens.Size.n300)
-    playlistWrapperView.heightAnchor.constraint(greaterThanOrEqualToConstant: 200).isActive = true
+    playlistWrapperView.heightAnchor.constraint(greaterThanOrEqualToConstant: Tokens.Size.n200).isActive = true
     playlistWrapperView.padding(.horizontal).spacing(.top, to: backgroundView)
     let playlistWrapperBottomConstraint = cv.bottomAnchor.constraint(equalTo: playlistWrapperView.bottomAnchor)
     playlistWrapperBottomConstraint.priority = .defaultLow

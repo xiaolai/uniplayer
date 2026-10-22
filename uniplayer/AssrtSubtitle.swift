@@ -62,6 +62,8 @@ class Assrt {
               let subFilename = "[\(self.index)]\(file.filename)"
               if let url = data.saveToFolder(Utility.tempDirURL, filename: subFilename) {
                 resolver.fulfill(url)
+              } else {
+                resolver.reject(OnlineSubtitle.CommonError.fsError)
               }
             })
           }

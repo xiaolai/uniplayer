@@ -99,51 +99,13 @@ class PrefCodecViewController: PreferenceViewController, PreferenceWindowEmbedda
   /// audio output driver. The selected audio device may need to be updated to one using the currently configured audio output driver.
   private func updateAudioDevicePopUp() {
     audioDevicePopUp.removeAllItems()
-    let audioDevices = PlayerCore.active.getAudioDevices()
-    let audioDevice = Preference.string(for: .audioDevice)!
-    var selected = false
-    audioDevices.forEach { device in
+    let selection = MPVAudioDevice.currentSelection()
+    for device in selection.devices {
       audioDevicePopUp.addItem(withTitle: device.description)
       audioDevicePopUp.lastItem!.representedObject = device
-      if device.name == audioDevice {
+      if device.name == selection.selected.name {
         audioDevicePopUp.select(audioDevicePopUp.lastItem!)
-        selected = true
       }
-    }
-    if !selected {
-      // The configured audio device may not have been found because the configured audio output
-      // driver was changed. Try and find the same audio device but with the currently configured
-      // audio output driver.
-      let description = Preference.string(for: .audioDeviceDesc)!
-      let device = MPVAudioDevice(desc: description, name: audioDevice)
-      let avfoundationEnabled = Preference.bool(for: PK.audioDriverEnableAVFoundation)
-      let invalid = avfoundationEnabled ? "coreaudio" : "avfoundation"
-      if device.driver == invalid {
-        // The configured audio device is not for the currently configured audio output driver. Try
-        // and find the same device with the configured driver.
-        let driver = avfoundationEnabled ? "avfoundation" : "coreaudio"
-        let replacement = MPVAudioDevice(device, driver)
-        let index = audioDevicePopUp.indexOfItem(withTitle: String(describing: replacement))
-        if index != -1 {
-          // Update the audio device configured in settings with the corresponding device that is
-          // for the currently configured audio output driver.
-          Logger.log("""
-              Audio output driver changed to \(driver), changing audio device setting
-                from: \(audioDevice)
-                to: \(replacement.name)
-              """)
-          audioDevicePopUp.selectItem(at: index)
-          Preference.set(replacement.name, for: .audioDevice)
-          selected = true
-        }
-      }
-    }
-    if !selected {
-      let device = MPVAudioDevice(desc: Preference.string(for: .audioDeviceDesc)!,
-                                  name: audioDevice, isMissing: true)
-      audioDevicePopUp.addItem(withTitle: String(describing: device))
-      audioDevicePopUp.lastItem!.representedObject = device
-      audioDevicePopUp.select(audioDevicePopUp.lastItem!)
     }
   }
 

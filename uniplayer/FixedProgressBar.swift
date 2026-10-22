@@ -22,8 +22,8 @@ class FixedProgressBar: NSView {
 
     Tokens.Palette.accent.nsColor.setFill()
 
-    let boundRect = NSMakeRect(0, paddingY, bounds.width, bounds.height - 2 * paddingY)
-    let progressRect = NSMakeRect(0, paddingY, bounds.width * doubleValue, bounds.height - 2 * paddingY)
+    let boundRect = NSMakeRect(0, paddingY, bounds.width, bounds.height - Tokens.Size.n2 * paddingY)
+    let progressRect = NSMakeRect(0, paddingY, bounds.width * doubleValue, bounds.height - Tokens.Size.n2 * paddingY)
     NSBezierPath(roundedRect: boundRect, xRadius: Tokens.Radius.n3, yRadius: Tokens.Radius.n3).addClip()
     NSBezierPath(rect: progressRect).fill()
 

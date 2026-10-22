@@ -109,19 +109,10 @@ fileprivate class PluginInstallView: SettingsAccessory.Base {
   }
 
   @IBAction func installPluginFromGitHub(_ sender: Any) {
-    if #available(macOS 12.0, *) {
-      let panel = PluginStorePanel()
-      panel.contentMaxSize = NSSize(width: Tokens.Size.n800, height: Tokens.Size.n600)
-      view.window!.beginSheet(panel) { _ in
-        self.page.listView.reload()
-      }
-    } else {
-      Utility.quickPromptPanel("install_plugin_macos_11", sheetWindow: view.window!) { url in
-        if url.isEmpty { return }
-        Task { @MainActor in
-          await self.page.pluginManager.install(gitHubString: url)
-        }
-      }
+    let panel = PluginStorePanel()
+    panel.contentMaxSize = NSSize(width: Tokens.Size.n800, height: Tokens.Size.n600)
+    view.window!.beginSheet(panel) { _ in
+      self.page.listView.reload()
     }
   }
 }
@@ -590,11 +581,7 @@ fileprivate class PluginDetailsWindow: NSWindow {
 
     segControl.segmentCount = 3
     segControl.segmentStyle = .texturedSquare
-    if #available(macOS 26.0, *) {
-      segControl.controlSize = .extraLarge
-    } else {
-      segControl.size(width: Tokens.Size.n360)
-    }
+    segControl.controlSize = .extraLarge
     segControl.target = self
     segControl.action = #selector(changeTab)
 
@@ -672,9 +659,7 @@ fileprivate class PluginDetailsWindow: NSWindow {
     config.userContentController.add(self, name: "iina")
 
     self.webView = WKWebView(frame: .zero, configuration: config)
-    if #available(macOS 13.3, *) {
-      webView.isInspectable = true
-    }
+    webView.isInspectable = true
     webView.navigationDelegate = self
     webView.translatesAutoresizingMaskIntoConstraints = false
     webView.setValue(false, forKey: "drawsBackground")
@@ -820,38 +805,7 @@ extension PluginDetailsWindow: WKScriptMessageHandler, WKNavigationDelegate {
   func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
     // Since all tabs share the same webview, we don't want uncontrolled message from anywhere, e.g. the help page
     guard currentTab == .settings else { return }
-
-    guard let dict = message.body as? [Any], dict.count == 2 else { return }
-    guard let name = dict[0] as? String else { return }
-    guard let data = dict[1] as? [Any], let prefName = data[0] as? String else { return }
-
-    if name == "set" {
-      plugin.preferences[prefName] = data[1]
-    } else if name == "get" {
-      var value: Any? = nil
-      if let v = plugin.preferences[prefName] {
-        value = v
-      } else if let v = plugin.defaultPreferences[prefName] {
-        value = v
-      }
-      let result: String
-      if let value {
-        if JSONSerialization.isValidJSONObject(value), let json = try? String(data: JSONSerialization.data(withJSONObject: value, options: []), encoding: .utf8) {
-          result = json
-        } else if value is String {
-          result = "\"\(value)\""
-        } else {
-          result = "\(value)"
-        }
-      } else {
-        result = "null"
-      }
-      webView.evaluateJavaScript("window.iina._call(\(data[1]), \(result))")
-    } else if name == "error" {
-      Logger.log("JS:\(plugin.name) Preference page \(data[0]) \(data[2]),\(data[3]): \(data[4])")
-    } else if name == "log" {
-      Logger.log("JS:\(plugin.name) Preference page: \(data[0])")
-    }
+    JavascriptPlugin.handlePreferencesMessage(message, plugin: plugin, webView: webView)
   }
 }
 

@@ -14,7 +14,6 @@ import Carbon
 
 // MARK: - Menu Controller
 
-@available(macOS 12.0, *)
 extension MenuController {
   func menuItem(forPluginInstance inst: JavascriptPluginInstance, tag: Int) -> NSMenuItem {
     let item = NSMenuItem()
@@ -40,7 +39,6 @@ extension MenuController {
 
 // MARK: - Data
 
-@available(macOS 12.0, *)
 fileprivate struct ResultItem: Identifiable {
   enum ResultType {
     case number(NSNumber)
@@ -69,7 +67,6 @@ fileprivate struct ResultItem: Identifiable {
   }
 }
 
-@available(macOS 12.0, *)
 fileprivate class JSEventsContainer : ObservableObject {
   @Published var idCounter = 0
   @Published var counter = 0
@@ -118,7 +115,6 @@ fileprivate class JSEventsContainer : ObservableObject {
 // MARK: - Dev Tool Window
 
 
-@available(macOS 12.0, *)
 struct JavasctiptDevTool: View {
   // NSMenuItem
   static let JSMenuItemInstance = 1
@@ -158,7 +154,6 @@ struct JavasctiptDevTool: View {
 
 
 #if DEBUG
-@available(macOS 12.0, *)
 struct JavasctiptDevTool_Previews: PreviewProvider {
   static let jsContext = JSContext()
   static fileprivate let events: JSEventsContainer = {
@@ -180,7 +175,6 @@ struct JavasctiptDevTool_Previews: PreviewProvider {
 // MARK: - Views
 
 /// The text editor view in the console
-@available(macOS 12.0, *)
 struct CommandEditor: NSViewRepresentable {
   @Binding var text: String
 
@@ -268,7 +262,6 @@ struct CommandEditor: NSViewRepresentable {
 
 
 /// Display the content of a JavaScript array or object
-@available(macOS 12.0, *)
 struct ObjectView: View {
   enum ViewType {
     case array, object
@@ -310,7 +303,6 @@ struct ObjectView: View {
 
 
 /// Display a JavaScript command entered by user
-@available(macOS 12.0, *)
 fileprivate struct PromptView: View {
   var result: ResultItem
   
@@ -328,7 +320,6 @@ fileprivate struct PromptView: View {
 
 
 /// Display the return value of the JavaScript command
-@available(macOS 12.0, *)
 fileprivate struct ReturnValueView: View {
   var result: ResultItem
   
@@ -344,7 +335,6 @@ fileprivate struct ReturnValueView: View {
 }
 
 
-@available(macOS 12.0, *)
 fileprivate struct ConsoleView: View {
   unowned let jsContext: JSContext
   @EnvironmentObject fileprivate var events: JSEventsContainer
@@ -385,7 +375,7 @@ fileprivate struct ConsoleView: View {
           .font(.footnote)
           .foregroundColor(Tokens.Palette.textSecondary.color)
       }
-      .padding([.top, .horizontal], 8)
+      .padding([.top, .horizontal], Tokens.Space.n8)
       // Editor
       CommandEditor(text: $input)
         .frame(maxHeight: Tokens.Size.n100)
@@ -444,20 +434,19 @@ fileprivate struct ConsoleView: View {
 
 
 /// Display various JavaScript values and log messages
-@available(macOS 12.0, *)
 fileprivate struct ResultView: View {
   var result: ResultItem
 
   var body: some View {
     switch (result.result) {
     case .string(let value):
-      Text(value).font(.monospacedSystem).foregroundColor(.brown)
+      Text(value).font(.monospacedSystem).foregroundColor(Tokens.Palette.logString.color)
 
     case .number(let value):
       Text("\(value)").font(.monospacedSystem).foregroundColor(Tokens.Palette.logInfo.color)
 
     case .boolean(let value):
-      Text(value ? "true" : "false").font(.monospacedSystem).foregroundColor(.purple)
+      Text(value ? "true" : "false").font(.monospacedSystem).foregroundColor(Tokens.Palette.logBoolean.color)
 
     case .null:
       Text("null").font(.monospacedSystem).foregroundColor(Tokens.Palette.textSecondary.color)
@@ -497,7 +486,7 @@ fileprivate struct ResultView: View {
           .padding(.all, Tokens.Space.n8)
       }
       .background(
-        ([.error: .red, .debug: .gray, .verbose: .gray, .warning: .orange] as [Logger.Level: Color])[level]!.opacity(Tokens.Opacity.n10))
+        ([.error: Tokens.Palette.logError.color, .debug: Tokens.Palette.logDebug.color, .verbose: Tokens.Palette.logDebug.color, .warning: Tokens.Palette.logWarning.color] as [Logger.Level: Color])[level]!.opacity(Tokens.Opacity.n10))
     case .none:
       Text("")
     }
@@ -507,22 +496,18 @@ fileprivate struct ResultView: View {
 
 // MARK: - Utils
 
-@available(macOS 12.0, *)
 fileprivate extension Font {
   static let monospacedSystem: Font = .system(.body, design: .monospaced)
 }
 
 // MARK: - Window
 
-@available(macOS 12.0, *)
 fileprivate class JSDevToolWindow: NSWindow {
   var rootView: JavasctiptDevTool!
 }
 
-@available(macOS 12.0, *)
 fileprivate var windows: [JSContext: JSDevToolWindow] = [:]
 
-@available(macOS 12.0, *)
 func createJavascriptDevToolWindow(forInstance inst: JavascriptPluginInstance, title: String) {
   let ctx = inst.js
   if let window = windows[ctx] {

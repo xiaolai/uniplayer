@@ -296,11 +296,7 @@ class MenuController: NSObject, NSMenuDelegate {
     pictureInPicture.action = #selector(MainWindowController.menuTogglePIP(_:))
     alwaysOnTop.action = #selector(MainWindowController.menuAlwaysOnTop(_:))
     lockAspectRatio.action = #selector(MainWindowController.menuLockAspectRatio(_:))
-    if #available(macOS 13, *) {
-      liveText.action = #selector(MainWindowController.menuToggleLiveText(_:))
-    } else {
-      liveText.isHidden = true
-    }
+    liveText.action = #selector(MainWindowController.menuToggleLiveText(_:))
 
     // -- aspect
     var aspectList = AppData.aspects
@@ -650,11 +646,7 @@ class MenuController: NSObject, NSMenuDelegate {
           pluginMenu.addItem(.separator())
         }
 
-        if #available(macOS 14.0, *) {
-          pluginMenu.addItem(.sectionHeader(title: instance.plugin.name))
-        } else {
-          pluginMenu.addItem(withTitle: instance.plugin.name, enabled: false)
-        }
+        pluginMenu.addItem(.sectionHeader(title: instance.plugin.name))
 
         for item in menuItems {
           if counter == 5 {
@@ -671,30 +663,24 @@ class MenuController: NSObject, NSMenuDelegate {
         }
       }
 
-      if #available(macOS 12.0, *) {
-        let devToolItem = NSMenuItem()
-        devToolItem.title = instance.plugin.name
+      let devToolItem = NSMenuItem()
+      devToolItem.title = instance.plugin.name
+      developerTool.submenu?.addItem(
+        menuItem(forPluginInstance: instance, tag: JavasctiptDevTool.JSMenuItemInstance))
+      if let globalInst = instance.plugin.globalInstance {
         developerTool.submenu?.addItem(
-          menuItem(forPluginInstance: instance, tag: JavasctiptDevTool.JSMenuItemInstance))
-        if let globalInst = instance.plugin.globalInstance {
-          developerTool.submenu?.addItem(
-            menuItem(forPluginInstance: globalInst, tag: JavasctiptDevTool.JSMenuItemInstance))
-        }
+          menuItem(forPluginInstance: globalInst, tag: JavasctiptDevTool.JSMenuItemInstance))
       }
     }
 
     if errorList.count > 0 {
       let item = NSMenuItem(title: NSLocalizedString("menu.conflicting_shortcuts", comment: "Conflicting key shortcuts…"), action: nil, keyEquivalent: "")
-      if #available(macOS 14.0, *) {
-        item.badge = NSMenuItemBadge.alerts(count: errorList.count)
-      }
+      item.badge = NSMenuItemBadge.alerts(count: errorList.count)
       pluginMenu.insertItem(item, at: 0)
     }
 
     pluginMenu.addItem(.separator())
-    if #available(macOS 12.0, *) {
-      pluginMenu.addItem(developerTool)
-    }
+    pluginMenu.addItem(developerTool)
     pluginMenu.addItem(reloadPluginsItem)
 
   }

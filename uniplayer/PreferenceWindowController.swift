@@ -46,9 +46,6 @@ class CustomCellView: NSTableCellView {
   @IBOutlet weak var leadingConstraint: NSLayoutConstraint!
 
   override func viewWillDraw() {
-    if #unavailable (macOS 11.0) {
-      leadingConstraint.constant = 20
-    }
     super.viewWillDraw()
   }
 }
@@ -188,11 +185,9 @@ class PreferenceWindowController: NSWindowController {
     
     // It seems that on Tahoe RC, the sytstem will force to draw titlebar background if there's a scrollview
     // that overlaps with the titlebar area. We just add an ugly workaround for now and wait for the new settings window.
-    if #available(macOS 26, *) {
-      scrollViewTopConstraint.constant = 32
-      searchFieldTopConstraint.constant = 40
-      searchFieldBottomConstraint.constant = 8
-    }
+    scrollViewTopConstraint.constant = 32
+    searchFieldTopConstraint.constant = 40
+    searchFieldBottomConstraint.constant = 8
 
     detailViewBottomConstraint = prefDetailContentView.bottomAnchor.constraint(equalTo: prefDetailContentView.superview!.bottomAnchor)
 

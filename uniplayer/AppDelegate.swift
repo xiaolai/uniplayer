@@ -175,7 +175,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     if thermalState != .nominal {
       Logger.log("Thermal state: \(thermalState)")
     }
-    if #available(macOS 12, *), ProcessInfo.processInfo.isLowPowerModeEnabled {
+    if ProcessInfo.processInfo.isLowPowerModeEnabled {
       Logger.log("Low Power Mode is active")
     }
   }
@@ -792,7 +792,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   /// This is about conformance to [NSSecureCoding](https://developer.apple.com/documentation/foundation/nssecurecoding)
   /// which protects against object substitution attacks. If an application does not implement this method then a warning will be emitted
   /// reporting secure coding is not enabled for restorable state.
-  @available(macOS 12.0, *)
   @MainActor func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool { true }
 
   // MARK: - Accept dropped string and URL
@@ -872,7 +871,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
     if host == "open" || host == "weblink" {
       // open a file or link
       guard let queries = parsed.queryItems else { return }
-      let queryDict = [String: String](uniqueKeysWithValues: queries.map { ($0.name, $0.value ?? "") })
+      // First value wins. A duplicate query name is malformed input, not a
+      // reason to trap with Dictionary(uniqueKeysWithValues:).
+      let queryDict = queries.firstValueDictionary
 
       // url
       guard let urlValue = queryDict["url"], !urlValue.isEmpty else {
@@ -1192,7 +1193,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   ///         `defaults write com.lixiaolai.uniplayer enableRecentDocumentsWorkaround true`
   private func restoreRecentDocuments() {
     guard Preference.bool(for: .enableRecentDocumentsWorkaround),
-          #available(macOS 13, *), Preference.bool(for: .recordRecentFiles),
+          Preference.bool(for: .recordRecentFiles),
           NSDocumentController.shared.recentDocumentURLs.isEmpty,
           let recentDocuments = Preference.array(for: .recentDocuments),
           !recentDocuments.isEmpty else { return }
@@ -1246,7 +1247,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, SPUUpdaterDelegate {
   /// `restoreRecentDocuments` and the issue [#4688](https://github.com/iina/iina/issues/4688) for more
   /// information..
   func saveRecentDocuments() {
-    guard Preference.bool(for: .enableRecentDocumentsWorkaround), #available(macOS 13, *) else { return }
+    guard Preference.bool(for: .enableRecentDocumentsWorkaround) else { return }
     var recentDocuments: [Any] = []
     for document in NSDocumentController.shared.recentDocumentURLs {
       guard let bookmark = try? document.bookmarkData() else {

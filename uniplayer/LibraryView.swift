@@ -25,7 +25,6 @@ enum LibrarySection: String, CaseIterable, Identifiable {
   case continueWatching
   case recent
   case all
-  case playlists
 
   var id: String { rawValue }
 
@@ -36,7 +35,6 @@ enum LibrarySection: String, CaseIterable, Identifiable {
     case .continueWatching: return L("Continue Watching")
     case .recent: return L("Recently Added")
     case .all: return L("All Videos")
-    case .playlists: return L("Playlists")
     }
   }
 
@@ -47,7 +45,6 @@ enum LibrarySection: String, CaseIterable, Identifiable {
     case .continueWatching: return "play.circle"
     case .recent: return "clock"
     case .all: return "rectangle.stack"
-    case .playlists: return "list.bullet.rectangle"
     }
   }
 }
@@ -56,6 +53,7 @@ enum LibrarySection: String, CaseIterable, Identifiable {
 
 struct LibraryRootView: View {
   private let open: (URL) -> Void
+  private let openMany: ([URL]) -> Void
 
   @StateObject private var model: LibraryModel
   @State private var selection: LibrarySection? = .home
@@ -69,7 +67,14 @@ struct LibraryRootView: View {
         player?.openURL(url)
       }
     }
+    let openMany: ([URL]) -> Void = { [weak player] urls in
+      guard !urls.isEmpty else { return }
+      DispatchQueue.main.async {
+        _ = player?.openURLs(urls)
+      }
+    }
     self.open = open
+    self.openMany = openMany
     _model = StateObject(wrappedValue: LibraryModel(open: open))
   }
 
@@ -108,10 +113,23 @@ struct LibraryRootView: View {
       }
     }
     .onDrop(of: [UTType.fileURL.identifier], isTargeted: $dropTargeted) { providers in
-      for provider in providers {
+      var urls = Array<URL?>(repeating: nil, count: providers.count)
+      let group = DispatchGroup()
+      for (index, provider) in providers.enumerated() {
+        group.enter()
         _ = provider.loadObject(ofClass: URL.self) { url, _ in
-          guard let url, url.isFileURL else { return }
-          open(url)
+          if let url, url.isFileURL {
+            urls[index] = url
+          }
+          group.leave()
+        }
+      }
+      group.notify(queue: .main) {
+        let resolved = urls.compactMap { $0 }
+        if resolved.count == 1 {
+          open(resolved[0])
+        } else {
+          openMany(resolved)
         }
       }
       return true
@@ -137,8 +155,6 @@ struct LibraryRootView: View {
           .tag(LibrarySection.recent)
         Label(LibrarySection.all.title, systemImage: LibrarySection.all.symbol)
           .tag(LibrarySection.all)
-        Label(LibrarySection.playlists.title, systemImage: LibrarySection.playlists.symbol)
-          .tag(LibrarySection.playlists)
       } header: {
         Text(L("Library"))
       }
@@ -147,9 +163,9 @@ struct LibraryRootView: View {
     .scrollContentBackground(.hidden)
     .background(Tokens.Palette.sidebar.color)
     .navigationSplitViewColumnWidth(
-      min: 200,
+      min: Tokens.Library.sidebarMinimum,
       ideal: Tokens.Size.sidebarWidth,
-      max: 260)
+      max: Tokens.Library.sidebarMaximum)
     .safeAreaInset(edge: .bottom) {
       Text(versionText)
         .font(Tokens.Typography.caption.font)
@@ -198,8 +214,6 @@ struct LibraryRootView: View {
           model: model,
           select: { selectedItem = $0 },
           emptyMessage: L("Open a video to start your library."))
-      case .playlists:
-        PlaylistsView()
       }
     }
   }
@@ -235,7 +249,7 @@ private struct HomeView: View {
 
         if !model.recentlyAdded.isEmpty {
           RecentlyAddedShelf(
-            items: model.recentlyAdded,
+            items: Array(model.recentlyAdded.prefix(12)),
             select: select,
             seeAll: { seeAll(.recent) })
         }
@@ -344,7 +358,7 @@ private struct ContinueWatchingShelf: View {
       }
 
       ScrollView(.horizontal, showsIndicators: false) {
-        HStack(spacing: Tokens.Space.n16) {
+        LazyHStack(spacing: Tokens.Space.n16) {
           ForEach(items) { item in
             ContinueWatchingCard(item: item) {
               select(item)
@@ -364,6 +378,7 @@ private struct ContinueWatchingCard: View {
   @State private var hovering = false
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.colorSchemeContrast) private var contrast
+  @AppStorage(Preference.Key.disableAnimations.rawValue) private var disableAnimations = false
   @FocusState private var focused: Bool
 
   private var borderOpacity: Double {
@@ -376,7 +391,7 @@ private struct ContinueWatchingCard: View {
         PosterImage(url: item.url)
 
         LinearGradient(
-          colors: [.clear, Tokens.Palette.cardShade.color],
+          colors: [Tokens.Palette.clear.color, Tokens.Palette.cardShade.color],
           startPoint: .center,
           endPoint: .bottom)
 
@@ -406,8 +421,8 @@ private struct ContinueWatchingCard: View {
           .padding(-Tokens.Library.focusRingOutset)
       }
       .shadow(color: hovering ? Tokens.Shadow.cardHover.color.color : Tokens.Palette.clear.color, radius: Tokens.Shadow.cardHover.radius, x: Tokens.Shadow.cardHover.offset.width, y: Tokens.Shadow.cardHover.offset.height)
-      .scaleEffect(hovering && !reduceMotion ? 1.02 : 1)
-      .animation(reduceMotion ? nil : Tokens.Motion.hover.animation, value: hovering)
+      .scaleEffect(hovering && !(reduceMotion || disableAnimations) ? Tokens.Library.hoverScale : 1)
+      .animation(Tokens.Motion.swiftUI(Tokens.Motion.hover, reduceMotion: reduceMotion || disableAnimations), value: hovering)
     }
     .buttonStyle(.plain)
     .focusable()
@@ -522,6 +537,7 @@ private struct LibraryCard: View {
   @State private var hovering = false
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.colorSchemeContrast) private var contrast
+  @AppStorage(Preference.Key.disableAnimations.rawValue) private var disableAnimations = false
   @FocusState private var focused: Bool
 
   private var borderOpacity: Double {
@@ -540,7 +556,7 @@ private struct LibraryCard: View {
           .overlay {
             RoundedRectangle(cornerRadius: Tokens.Radius.card, style: .continuous)
               .stroke(
-                .white.opacity(borderOpacity),
+                Tokens.Palette.white.color.opacity(borderOpacity),
                 lineWidth: contrast == .increased ? 2 : 1)
           }
           .overlay {
@@ -561,8 +577,8 @@ private struct LibraryCard: View {
           .lineLimit(1)
       }
       .contentShape(Rectangle())
-      .scaleEffect(hovering && !reduceMotion ? 1.015 : 1)
-      .animation(reduceMotion ? nil : Tokens.Motion.hover.animation, value: hovering)
+      .scaleEffect(hovering && !(reduceMotion || disableAnimations) ? Tokens.Library.cardHoverScale : 1)
+      .animation(Tokens.Motion.swiftUI(Tokens.Motion.hover, reduceMotion: reduceMotion || disableAnimations), value: hovering)
     }
     .buttonStyle(.plain)
     .focusable()
@@ -636,19 +652,6 @@ private struct SearchView: View {
     .onAppear {
       focused = true
     }
-  }
-}
-
-// MARK: - Playlists
-
-private struct PlaylistsView: View {
-  var body: some View {
-    EmptyStateView(
-      symbol: "list.bullet.rectangle",
-      title: L("No playlists yet"),
-      message: L("Playlists you create will appear here."))
-      .frame(maxWidth: .infinity, maxHeight: .infinity)
-      .background(Tokens.Palette.canvas.color)
   }
 }
 
@@ -839,7 +842,10 @@ private struct PosterImage: View {
       .frame(width: proxy.size.width, height: proxy.size.height)
     }
     .task(id: url) {
-      image = await PosterStore.shared.image(for: url)
+      image = nil
+      let loaded = await PosterStore.shared.image(for: url)
+      guard !Task.isCancelled else { return }
+      image = loaded
     }
   }
 }

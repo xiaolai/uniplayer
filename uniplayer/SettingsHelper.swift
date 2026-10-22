@@ -20,7 +20,7 @@ extension NSTextField {
 }
 
 // not sure from which version, need further tests
-let topConstraintOffset: CGFloat = if #available(macOS 26, *) { -4 } else { 0 }
+let topConstraintOffset: CGFloat = -4
 
 class SettingsUIHelper: UIHelper {
   static let sharedUI = SettingsUIHelper(scope: "settings")

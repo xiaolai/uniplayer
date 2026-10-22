@@ -44,9 +44,7 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
       guard let button = toolbarItem(withID: .followButton) else { return }
       let symbolName = following ? "arrow.up.left.circle.fill" : "arrow.up.left.circle"
       button.image = .sf(symbolName)
-      if #available(macOS 26, *) {
-        button.style = following ? .prominent : .plain
-      }
+      button.style = following ? .prominent : .plain
     }
   }
   private var filteredLogLevel = Logger.Level.preferred {
@@ -57,14 +55,12 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
   private var filteredSubsystems = Set<String>() {
     didSet {
       updatePredicate()
-      if #available(macOS 26, *) {
-        let item = toolbarItem(withID: .subsystemButton)!
-        let filteredCount = filteredSubsystems.count
-        if filteredCount != 0 {
-          item.badge = .count(filteredCount)
-        } else {
-          item.badge = nil
-        }
+      let item = toolbarItem(withID: .subsystemButton)!
+      let filteredCount = filteredSubsystems.count
+      if filteredCount != 0 {
+        item.badge = .count(filteredCount)
+      } else {
+        item.badge = nil
       }
     }
   }
@@ -180,9 +176,9 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
       return column
     }
 
-    tableView.addTableColumn(makeColumn(key: "level", minWidth: 10, noTitle: true))
-    tableView.addTableColumn(makeColumn(key: "time", minWidth: 90))
-    tableView.addTableColumn(makeColumn(key: "subsystem", minWidth: 100, maxWidth: 200))
+    tableView.addTableColumn(makeColumn(key: "level", minWidth: Tokens.Size.n10, noTitle: true))
+    tableView.addTableColumn(makeColumn(key: "time", minWidth: Tokens.Size.n90))
+    tableView.addTableColumn(makeColumn(key: "subsystem", minWidth: Tokens.Size.n100, maxWidth: Tokens.Size.n200))
     tableView.addTableColumn(makeColumn(key: "message"))
 
     scrollView.documentView = tableView
@@ -320,11 +316,7 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
 
   @objc private func clearSubsystemFilter(_ sender: NSMenuItem) {
     filteredSubsystems = []
-    if #available(macOS 14.0, *) {
-      subsystemMenu.selectedItems = []
-    } else {
-      subsystemMenu.items.forEach { $0.state = .off }
-    }
+    subsystemMenu.selectedItems = []
   }
 
   @objc private func subsystemChanged(_ sender: NSMenuItem) {

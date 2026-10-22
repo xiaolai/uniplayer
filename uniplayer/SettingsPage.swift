@@ -103,16 +103,6 @@ struct SettingsItemsBuilder {
 }
 
 @resultBuilder
-struct SettingsSubItemsBuilder {
-  static func buildBlock(_ components: SettingsItem.Base...) -> [SettingsItem.Base] {
-    for component in components {
-      component.controlSize = .small
-    }
-    return components
-  }
-}
-
-@resultBuilder
 struct SettingsSubListBuilder {
   static func buildBlock(_ components: SettingsItem.Base...) -> SettingsSubList {
     return SettingsSubList(components)
@@ -145,18 +135,10 @@ class SettingsPage {
   var localizationTable: String { "" }
   var image: NSImage { NSImage() }
   var helpInfo: String? { nil }
-  var sectionSpacing: CGFloat { 16 }
+  var sectionSpacing: CGFloat { Tokens.Settings.sectionSpacing }
   var showSubSections: Bool { true }
 
-  let symbolConfiguration = NSImage.SymbolConfiguration(pointSize: 18, weight: .bold)
-
-  static var corderRadius: CGFloat = {
-    if #available(macOS 26, *) {
-      12
-    } else {
-      4
-    }
-  }()
+  let symbolConfiguration = NSImage.SymbolConfiguration(pointSize: Tokens.Icon.n18, weight: .bold)
 
   lazy var builtSections: [SettingsSection] = {
     content()
@@ -399,10 +381,8 @@ class SettingsList: SettingsContainer {
       self.titlePosition = .noTitle
       self.contentViewMargins = .zero
 
-      if #available(macOS 26, *) {
-        self.boxType = .custom
-        self.cornerRadius = SettingsPage.corderRadius
-      }
+      self.boxType = .custom
+      self.cornerRadius = Tokens.Settings.cardCorner
     }
 
     required init?(coder: NSCoder) {
@@ -415,14 +395,12 @@ class SettingsList: SettingsContainer {
     }
 
     override func viewDidChangeEffectiveAppearance() {
-      if #available(macOS 26, *) {
-        if effectiveAppearance.isDark {
-          self.borderColor = Tokens.Palette.separator.nsColor
-          self.fillColor = .underPageBackgroundColor
-        } else {
-          self.borderColor = Tokens.Palette.settingsCardBorderSubtle.nsColor
-          self.fillColor = Tokens.Palette.settingsCardFill.nsColor
-        }
+      if effectiveAppearance.isDark {
+        self.borderColor = Tokens.Palette.separator.nsColor
+        self.fillColor = .underPageBackgroundColor
+      } else {
+        self.borderColor = Tokens.Palette.settingsCardBorderSubtle.nsColor
+        self.fillColor = Tokens.Palette.settingsCardFill.nsColor
       }
     }
   }

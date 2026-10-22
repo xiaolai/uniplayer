@@ -44,40 +44,38 @@ class SidebarLayoutPane: SidebarScrollView {
       )
     )
 
-    if #available(macOS 26.0, *) {
-      themeSettingStack.addArrangedSubview(ui.vStack(
-        spacing: .sidebarItemSpacing,
+    themeSettingStack.addArrangedSubview(ui.vStack(
+      spacing: .sidebarItemSpacing,
+      ui.hStack(
+        ui.image("capsule.on.rectangle.liquid.glass", "liquid.glass", size: Tokens.Icon.n20, config: .sidebarIconConfig),
+        ui.label("sidebar.liquid_glass"),
+        ui.flexibleSpace(),
+      ),
+      ui.vStack(
+        spacing: .liquidGlassSettingsSpacing,
         ui.hStack(
-          ui.image("capsule.on.rectangle.liquid.glass", "liquid.glass", size: Tokens.Icon.n20, config: .sidebarIconConfig),
-          ui.label("sidebar.liquid_glass"),
+          ui.space(),
+          ui.image("osd", size: Tokens.Icon.n16, config: .sidebarIconConfig),
+          ui.label("settings.$OnScreenDisplay", isSmall: true),
           ui.flexibleSpace(),
+          ui.toggleButton(bindTo: .useLiquidGlassOSD, size: .mini)
         ),
-        ui.vStack(
-          spacing: .liquidGlassSettingsSpacing,
-          ui.hStack(
-            ui.space(),
-            ui.image("osd", size: Tokens.Icon.n16, config: .sidebarIconConfig),
-            ui.label("settings.$OnScreenDisplay", isSmall: true),
-            ui.flexibleSpace(),
-            ui.toggleButton(bindTo: .useLiquidGlassOSD, size: .mini)
-          ),
-          ui.hStack(
-            ui.space(),
-            ui.image("osc.floating", size: Tokens.Icon.n16, config: .sidebarIconConfig),
-            ui.label("settings.$OnScreenController", isSmall: true),
-            ui.flexibleSpace(),
-            ui.toggleButton(bindTo: .useLiquidGlassOSC, size: .mini)
-          ),
-          ui.hStack(
-            ui.space(),
-            ui.image("sidebar.squares.trailing", size: Tokens.Icon.n16, config: .sidebarIconConfig),
-            ui.label("sidebar.sidebar", isSmall: true),
-            ui.flexibleSpace(),
-            ui.toggleButton(bindTo: .useLiquidGlassSidebar, size: .mini)
-          ),
-        )
-      ))
-    }
+        ui.hStack(
+          ui.space(),
+          ui.image("osc.floating", size: Tokens.Icon.n16, config: .sidebarIconConfig),
+          ui.label("settings.$OnScreenController", isSmall: true),
+          ui.flexibleSpace(),
+          ui.toggleButton(bindTo: .useLiquidGlassOSC, size: .mini)
+        ),
+        ui.hStack(
+          ui.space(),
+          ui.image("sidebar.squares.trailing", size: Tokens.Icon.n16, config: .sidebarIconConfig),
+          ui.label("sidebar.sidebar", isSmall: true),
+          ui.flexibleSpace(),
+          ui.toggleButton(bindTo: .useLiquidGlassSidebar, size: .mini)
+        ),
+      )
+    ))
 
     stack.addArrangedSubview(Container(themeSettingStack) {
       $0.padding(.all(.sidebarContainerPadding))
@@ -329,7 +327,7 @@ fileprivate class OSCLayoutSelector: NSBox {
         animator().borderColor = isActive ? Tokens.Palette.accent.nsColor : .sidebarContainerBorder
         animator().borderWidth = isActive ? 2 : 1
         animator().fillColor = isActive ? Tokens.Palette.accent.nsColor.withAlphaComponent(Tokens.Opacity.n10) :
-          .gray.withAlphaComponent(Tokens.Opacity.n10)
+          Tokens.Palette.gray.nsColor.withAlphaComponent(Tokens.Opacity.n10)
       }
     }
 
@@ -368,7 +366,7 @@ fileprivate class OSCLayoutSelector: NSBox {
     let content = ui.vStack(
       align: .centerX,
       ui.image(position == .floating ? "osc.bottom" : "osc.\(position.description)",
-               width: 40, height: 28, scaleUp: true),
+               width: Tokens.Size.n40, height: Tokens.Size.n28, scaleUp: true),
       ui.label(NSLocalizedString("osc_pos.\(position.description)", comment: ""), isSmall: true)
     )
     content.distribution = .fillEqually

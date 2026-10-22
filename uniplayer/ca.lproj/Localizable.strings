@@ -345,8 +345,6 @@
 "alert.clear_watch_later.title" = "Suprimeix el progrés de reproducció desat";
 "alert.clear_watch_later.message" = "Estàs segur que vols suprimir tot el progrés de reproducció desat? (dades de \"watch later\")?";
 
-"alert.restore_alerts.title" = "Restaura alertes silenciades";
-"alert.restore_alerts.message" = "Segur que vols restaurar les alertes silenciades?";
 
 "alert.cleared" = "Fet.";
 "alert.restored" = "Restaurat.";
@@ -375,8 +373,6 @@
 "alert.plugin_update_found.message" = "L'última versió és %@. Tu tens %@. Vols actualitzar?";
 "alert.plugin_permission" = "Aquest complement necessita els següents permisos. Si us plau, revisa'ls abans de continuar.";
 "alert.plugin_permission_added" = "Aquesta actualització necessita els següents permisos. Si us plau, revisa'ls abans de continuar.";
-"alert.install_plugin_macos_11.title" = "Instal·la el connector des de GitHub";
-"alert.install_plugin_macos_11.message" = "Utilitza el format usuari/repositori o introdueix l’URL complet de GitHub. La botiga de connectors no està disponible a macOS 11. Es recomana un sistema més recent per gaudir de la millor experiència.";
 
 "playlist.total_length" = "%@ en total";
 "playlist.total_length_with_selected" = "%@ de %@ seleccionats";
@@ -398,7 +394,6 @@
 "pl_menu.add_file" = "Afegeix fitxer…";
 "pl_menu.add_url" = "Afegeix enllaç…";
 "pl_menu.clear_playlist" = "Neteja llista de reproducció";
-"pl_menu.matched_sub" = "%d Subtítol(s) coincident(s)";
 "pl_menu.add_sub" = "Afegeix subtítol…";
 "pl_menu.wrong_sub" = "Wrong Subtitle!";
 "pl_menu.browser" = "Obre al navegador";
@@ -989,9 +984,6 @@
 "settings.$PleaseSelectTheMediaTypes" = "Si us plau selecciona els tipus de fitxer multimèdia que vols que UniPlayer en sigui l'aplicació per defecte.";
 "settings.$Position" = "Posició";
 "settings.$PreferredLanguage" = "Idioma preferit";
-"settings.$RestoreAlerts" = "Restaurar alertes";
-"settings.$RestoreAllAlertsThat" = "Restore all alerts that have been suppressed using the \"Do not show this message again\" checkbox.";
-"settings.$RestoreSuppressedAlerts" = "Restaura alertes silenciades";
 "settings.$SPDIFOutput" = "Sortida S/PDIF";
 "settings.$SPDIFOutputWarning" = "List of codecs for which compressed audio passthrough should be used.\n\nWarning: There is not much reason to use this setting. HDMI supports uncompressed multichannel PCM, and lossless DTS-HD decoding is supported via FFmpeg's DCA decoder. Playback may not start if the output device does not support S/PDIF and this setting is enabled.";
 "settings.$Safari" = "Safari";

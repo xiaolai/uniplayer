@@ -127,9 +127,7 @@ fileprivate class VisibilitySwitch: NSSwitch {
     self.isPrimary = isPrimary
     super.init(frame: .zero)
 
-    if #available(macOS 26, *) {
-      controlSize = .mini
-    }
+    controlSize = .mini
     target = self
     action = #selector(switchAction)
     update()
@@ -234,9 +232,7 @@ fileprivate class SubDelayView: SidebarSliderView {
     slider.minValue = -5
     slider.maxValue = 5
     slider.numberOfTickMarks = 21
-    if #available(macOS 26, *) {
-      slider.neutralValue = 0
-    }
+    slider.neutralValue = 0
 
     let fmt = NumberFormatter()
     fmt.numberStyle = .decimal
@@ -258,20 +254,19 @@ fileprivate class SubDelayView: SidebarSliderView {
   }
 
   override func sliderAction() {
-    let eventType = NSApp.currentEvent!.type
-    if eventType == .leftMouseDown {
+    let event = NSApp.currentEvent
+    if event?.type == .leftMouseDown {
       slider.allowsTickMarkValuesOnly = true
     }
-    if eventType == .leftMouseUp {
+    if event?.type == .leftMouseUp {
       slider.allowsTickMarkValuesOnly = false
     }
     let sliderValue = slider.doubleValue
     input.doubleValue = sliderValue
     updateIndicator()
-    if let event = NSApp.currentEvent {
-      if event.type == .leftMouseUp {
-        player.setSubDelay(sliderValue, forPrimary: isPrimary)
-      }
+    // Keyboard and accessibility actions have no mouse event; apply them too.
+    if event == nil || event?.type == .leftMouseUp {
+      player.setSubDelay(sliderValue, forPrimary: isPrimary)
     }
   }
 
@@ -288,7 +283,8 @@ fileprivate class SubDelayView: SidebarSliderView {
   }
 
   override func resetButtonAction() {
-    player.setAudioDelay(0)
+    player.setSubDelay(0, forPrimary: isPrimary)
+    update()
   }
 }
 
@@ -313,6 +309,8 @@ fileprivate class SubPositionDelayView: NSView {
     primarySwitch.setLabel(NSLocalizedString("sidebar.primary", comment: ""), forSegment: 0)
     primarySwitch.setLabel(NSLocalizedString("sidebar.secondary", comment: ""), forSegment: 1)
     primarySwitch.selectedSegment = 0
+    primarySwitch.target = self
+    primarySwitch.action = #selector(switchAction(_:))
     primarySwitch.setContentHuggingPriority(.init(100), for: .horizontal)
     primarySwitch.segmentDistribution = .fillEqually
 
@@ -323,9 +321,7 @@ fileprivate class SubPositionDelayView: NSView {
     positionSlider.target = self
     positionSlider.action = #selector(positionAction)
 
-    if #available(macOS 26.0, *) {
-      positionSlider.tintProminence = .none
-    }
+    positionSlider.tintProminence = .none
 
     self.delayView = SubDelayView(player: player)
 
@@ -364,6 +360,7 @@ fileprivate class SubPositionDelayView: NSView {
 
   @objc private func switchAction(_ sender: AnyObject) {
     isPrimary = primarySwitch.selectedSegment == 0
+    delayView.isPrimary = isPrimary
     update()
   }
 
@@ -399,9 +396,7 @@ fileprivate class SubStyleView: NSView {
     scaleSlider.controlSize = .small
     scaleSlider.target = self
     scaleSlider.action = #selector(scaleAction)
-    if #available(macOS 26.0, *) {
-      scaleSlider.neutralValue = 0
-    }
+    scaleSlider.neutralValue = 0
 
     let scaleResetButton = NSButton(
       image: .sf("arrow.counterclockwise.circle.fill")!,
@@ -412,7 +407,7 @@ fileprivate class SubStyleView: NSView {
 
     self.fontChooser = NSButton()
     fontChooser.bezelStyle = .push
-    fontChooser.widthAnchor.constraint(lessThanOrEqualToConstant: 200).isActive = true
+    fontChooser.widthAnchor.constraint(lessThanOrEqualToConstant: Tokens.Size.n200).isActive = true
     fontChooser.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
     fontChooser.target = self
     fontChooser.action = #selector(chooseSubFontAction)
@@ -492,18 +487,10 @@ fileprivate class SubStyleView: NSView {
   }
 
   private func createColorWell(_ keyPath: ReferenceWritableKeyPath<SubStyleView, NSColorWell?>, tag: Int) -> NSColorWell {
-    let colorWell = if #available(macOS 13.0, *) {
-      NSColorWell()
-    } else {
-      RoundedColorWell()
-    }
+    let colorWell = NSColorWell()
     colorWell.tag = tag
     colorWell.translatesAutoresizingMaskIntoConstraints = false
-    if #available(macOS 13.0, *) {
-      colorWell.colorWellStyle = .expanded
-    } else {
-      colorWell.size(width: Tokens.Size.n24)
-    }
+    colorWell.colorWellStyle = .expanded
     colorWell.size(height: Tokens.Size.n24)
     colorWell.target = self
     colorWell.action = #selector(colorAction)

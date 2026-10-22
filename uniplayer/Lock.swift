@@ -10,18 +10,13 @@ import Foundation
 
 /// An object that coordinates the operation of multiple threads of execution.
 ///
-/// This class hides the need for different implementations depending upon the macOS version.
-/// An [os_unfair_lock](https://developer.apple.com/documentation/os/os_unfair_lock) is preferred for its efficiency,
-/// however it was introduced in macOS 10.12, so an
-/// [NSLock](https://developer.apple.com/documentation/foundation/nslock) is used when running under earlier
-/// macOS versions.
+/// This is a thin wrapper around
+/// [os_unfair_lock](https://developer.apple.com/documentation/os/os_unfair_lock).
+/// Its interface is patterned after
+/// [OSAllocatedUnfairLock](https://developer.apple.com/documentation/os/osallocatedunfairlock).
 ///
-/// The interface exposed is patterned after
-/// [OSAllocatedUnfairLock](https://developer.apple.com/documentation/os/osallocatedunfairlock)
-/// which is expected to be included in macOS 13.
-///
-///- Warning: This isn’t a recursive lock. Attempting to lock an object more than once from the same thread without unlocking in
-///    between will either trigger a runtime exception (macOS 10.12+) or will block your thread permanently (macOS 10.11).
+///- Warning: This isn’t a recursive lock. Attempting to lock an object more than once from the same thread without
+///    unlocking in between will trigger a runtime exception.
 class Lock {
 
   private let lock = OSUnfairLockImpl()
@@ -37,11 +32,7 @@ class Lock {
 
 // MARK: - Implementation
 
-private protocol LockImpl {
-  func withLock<R>(_ body: () throws -> R) rethrows -> R
-}
-
-private class OSUnfairLockImpl: LockImpl {
+private class OSUnfairLockImpl {
 
   // Use a pointer to ensure the lock, which is a struct, is not copied.
   private let lock = os_unfair_lock_t.allocate(capacity: 1)
@@ -58,17 +49,6 @@ private class OSUnfairLockImpl: LockImpl {
   func withLock<R>(_ body: () throws -> R) rethrows -> R {
     os_unfair_lock_lock(lock)
     defer { os_unfair_lock_unlock(lock) }
-    return try body()
-  }
-}
-
-private struct NSLockImpl: LockImpl {
-
-  private let lock = NSLock()
-
-  func withLock<R>(_ body: () throws -> R) rethrows -> R {
-    lock.lock()
-    defer { lock.unlock() }
     return try body()
   }
 }

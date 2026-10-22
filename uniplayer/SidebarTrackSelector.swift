@@ -32,7 +32,7 @@ class TrackSelector: NSScrollView, NSTableViewDelegate, NSTableViewDataSource {
     drawsBackground = false
     wantsLayer = true
     layer?.cornerRadius = Tokens.Radius.n8
-    size(height: 98)
+    size(height: Tokens.Size.n98)
 
     player.observe(.iinaTracklistChanged) { [weak self] _ in
       self?.tableView.reloadData()
@@ -107,7 +107,7 @@ class TrackSelector: NSScrollView, NSTableViewDelegate, NSTableViewDataSource {
     var languageLabel: NSTextField
 
     override init(frame frameRect: NSRect) {
-      self.selectedIndicator = ColoredView(color: .controlAccentColor, cornerRadius: Tokens.Radius.n2)
+      self.selectedIndicator = ColoredView(color: Tokens.Palette.accent.nsColor, cornerRadius: Tokens.Radius.n2)
       selectedIndicator.translatesAutoresizingMaskIntoConstraints = false
 
       self.languageTag = ColoredView(color: .controlColor, cornerRadius: Tokens.Radius.n3)

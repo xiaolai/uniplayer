@@ -108,7 +108,7 @@ class AboutWindowController: NSWindowController {
     }
 
     contributorsCollectionView.dataSource = self
-    contributorsCollectionView.backgroundColors = [.clear]
+    contributorsCollectionView.backgroundColors = [Tokens.Palette.clear.nsColor]
     contributorsCollectionView.register(AboutWindowContributorAvatarItem.self, forItemWithIdentifier: .dataSourceItem)
 
     let image = NSImage(size: contributorsFooterView.frame.size)

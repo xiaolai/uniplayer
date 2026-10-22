@@ -343,8 +343,6 @@
 "alert.clear_watch_later.title" = "清除儲存的播放進度";
 "alert.clear_watch_later.message" = "確定要清除所有儲存的播放進度，即「watch later」資料嗎？";
 
-"alert.restore_alerts.title" = "復原已關閉的警告";
-"alert.restore_alerts.message" = "你確定想要復原這些關閉的警告嗎？";
 
 "alert.cleared" = "已清除。";
 "alert.restored" = "已恢復";
@@ -373,8 +371,6 @@
 "alert.plugin_update_found.message" = "最新版本是 %@，你的版本是 %@，要更新嗎？";
 "alert.plugin_permission" = "本外掛程式需要以下權限，請在繼續之前先審核這些權限。";
 "alert.plugin_permission_added" = "此更新需要額外的權限，請在繼續之前先審核這些權限。";
-"alert.install_plugin_macos_11.title" = "安裝 GitHub 上的外掛程式";
-"alert.install_plugin_macos_11.message" = "請使用標準的 user/repo 格式，或輸入完整的 GitHub 連結網址。 macOS 11 作業系統不支援外掛程式商店功能，建議搭配版本較新的作業系統，以獲得最佳體驗。";
 
 "playlist.total_length" = "總計 %@";
 "playlist.total_length_with_selected" = "%@ / %@ 已選取";
@@ -396,7 +392,6 @@
 "pl_menu.add_file" = "加入檔案⋯";
 "pl_menu.add_url" = "加入 URL⋯";
 "pl_menu.clear_playlist" = "清除播放列表";
-"pl_menu.matched_sub" = "已找到符合的 %d 個字幕";
 "pl_menu.add_sub" = "加入字幕⋯";
 "pl_menu.wrong_sub" = "錯誤的字幕！";
 "pl_menu.browser" = "在瀏覽器中打開";
@@ -988,9 +983,6 @@
 "settings.$PleaseSelectTheMediaTypes" = "請選擇您要將 UniPlayer 設為預設應用程式的媒體類型。";
 "settings.$Position" = "位置";
 "settings.$PreferredLanguage" = "偏好的語言";
-"settings.$RestoreAlerts" = "復原警告";
-"settings.$RestoreAllAlertsThat" = "Restore all alerts that have been suppressed using the \"Do not show this message again\" checkbox.";
-"settings.$RestoreSuppressedAlerts" = "復原已關閉的警告";
 "settings.$SPDIFOutput" = "S/PDIF 輸出";
 "settings.$SPDIFOutputWarning" = "List of codecs for which compressed audio passthrough should be used.\n\nWarning: There is not much reason to use this setting. HDMI supports uncompressed multichannel PCM, and lossless DTS-HD decoding is supported via FFmpeg's DCA decoder. Playback may not start if the output device does not support S/PDIF and this setting is enabled.";
 "settings.$Safari" = "Safari";

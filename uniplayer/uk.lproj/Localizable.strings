@@ -343,8 +343,6 @@
 "alert.clear_watch_later.title" = "Очистити збережений прогрес перегляду";
 "alert.clear_watch_later.message" = "Упевнені, що хочете видалити весь прогрес перегляду (дані «переглянути пізніше»)?";
 
-"alert.restore_alerts.title" = "Відновити приховані оповіщення";
-"alert.restore_alerts.message" = "Ви дійсно бажаєте відновити приховані сповіщення?";
 
 "alert.cleared" = "Очищено.";
 "alert.restored" = "Відновлено.";
@@ -373,8 +371,6 @@
 "alert.plugin_update_found.message" = "Найновіша версія %@. Ваша версія %@. Хотіли би ви оновити?";
 "alert.plugin_permission" = "Цей плагін потребує додаткових дозволів. Будь ласка, перегляньте їх, перш ніж продовжити.";
 "alert.plugin_permission_added" = "Це оновлення потребує додаткових дозволів. Будь ласка, перегляньте їх, перш ніж продовжити.";
-"alert.install_plugin_macos_11.title" = "Встановити плагін з GitHub";
-"alert.install_plugin_macos_11.message" = "Use the format user/repo or enter the full GitHub URL. The plugin store is not available on macOS 11. A newer system is recommended for the best experience.";
 
 "playlist.total_length" = "%@ загалом";
 "playlist.total_length_with_selected" = "%@ з %@ вибрано";
@@ -396,7 +392,6 @@
 "pl_menu.add_file" = "Додати файл…";
 "pl_menu.add_url" = "Додати URL…";
 "pl_menu.clear_playlist" = "Очистити плейлист";
-"pl_menu.matched_sub" = "Зіставлено %d субтитрів";
 "pl_menu.add_sub" = "Додати субтитри…";
 "pl_menu.wrong_sub" = "Субтитри неправильні!";
 "pl_menu.browser" = "Відкрити в браузері";
@@ -986,9 +981,6 @@
 "settings.$PleaseSelectTheMediaTypes" = "Будь ласка, оберіть типи медіафайлів, для яких ви хочете призначити UniPlayer стандартною програмою.";
 "settings.$Position" = "Позиція";
 "settings.$PreferredLanguage" = "Бажана мова";
-"settings.$RestoreAlerts" = "Відновити оповіщення";
-"settings.$RestoreAllAlertsThat" = "Restore all alerts that have been suppressed using the \"Do not show this message again\" checkbox.";
-"settings.$RestoreSuppressedAlerts" = "Відновити приховані оповіщення";
 "settings.$SPDIFOutput" = "Вихід S/PDIF";
 "settings.$SPDIFOutputWarning" = "List of codecs for which compressed audio passthrough should be used.\n\nWarning: There is not much reason to use this setting. HDMI supports uncompressed multichannel PCM, and lossless DTS-HD decoding is supported via FFmpeg's DCA decoder. Playback may not start if the output device does not support S/PDIF and this setting is enabled.";
 "settings.$Safari" = "Safari";

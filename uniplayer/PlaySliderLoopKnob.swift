@@ -128,12 +128,7 @@ final class PlaySliderLoopKnob: NSView {
     // The frame is taller than the drawn knob. Adjust the y coordinate accordingly.
     let adjustedY = rect.origin.y + (rect.height - knobHeight) / 2
     let drawing: NSRect
-    if #available(macOS 14, *) {
-      drawing = NSMakeRect(0, adjustedY, cell.knobWidth, knobHeight)
-    } else {
-      // Round the X position for cleaner drawing
-      drawing = NSMakeRect(round(rect.origin.x), adjustedY, cell.knobWidth, knobHeight)
-    }
+    drawing = NSMakeRect(0, adjustedY, cell.knobWidth, knobHeight)
     let path = NSBezierPath(roundedRect: drawing, xRadius: cell.knobRadius, yRadius: cell.knobRadius)
     knobColor().setFill()
     path.fill()

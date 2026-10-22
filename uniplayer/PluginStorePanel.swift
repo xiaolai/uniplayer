@@ -16,19 +16,19 @@ fileprivate let defaultPlugins = [
   [
     "name": "Online Media",
     "url": "https://github.com/iina/plugin-online-media",
-    "id": "com.lixiaolai.uniplayer.ytdl",
+    "id": "io.iina.ytdl",
     "desc": "Official plugin for playing online media via yt-dlp / youtube-dl. The built-in youtube-dl support will be disabled when this plugin is enabled."
   ],
   [
     "name": "Userscript",
     "url": "https://github.com/iina/plugin-userscript",
-    "id": "com.lixiaolai.uniplayer.user-script",
+    "id": "io.iina.user-script",
     "desc": "User Scripts for UniPlayer"
   ],
   [
     "name": "Online Subtitles",
     "url": "https://github.com/iina/plugin-opensub",
-    "id": "com.lixiaolai.uniplayer.opensub",
+    "id": "io.iina.opensub",
     "desc": "Official OpenSubtitles plugin for UniPlayer"
   ],
 ]
@@ -44,7 +44,6 @@ fileprivate class RefreshIndicator: ObservableObject {
 }
 
 
-@available(macOS 12.0, *)
 class PluginStorePanel: NSWindow {
   lazy var pluginManager = PluginManager(window: self)
 
@@ -112,7 +111,6 @@ struct Plugin: Identifiable, Hashable, Decodable {
 let officialPlugins = defaultPlugins.map { Plugin($0) }
 
 
-@available(macOS 12.0, *)
 struct PluginStoreView: View {
   let panel: PluginStorePanel
 
@@ -204,11 +202,7 @@ struct PluginStoreView: View {
 
       HStack(spacing: Tokens.Space.n4) {
         VStack(alignment: .leading) {
-          if #available(macOS 13.0, *) {
-            list.scrollContentBackground(.hidden)
-          } else {
-            list
-          }
+          list.scrollContentBackground(.hidden)
         }.frame(width: Tokens.Size.n240)
         GroupBox {
           ScrollView {
@@ -236,7 +230,6 @@ struct PluginStoreView: View {
 }
 
 
-@available(macOS 12.0, *)
 struct PluginDetailView: View {
   let plugin: Plugin?
   let panel: PluginStorePanel
@@ -414,7 +407,6 @@ class GitHubService {
 }
 
 
-@available(macOS 12.0, *)
 struct RepoDetailView: View {
   let owner: String
   let repo: String
@@ -432,21 +424,9 @@ struct RepoDetailView: View {
           ProgressView("Loading…")
         }
       } else if let errorMessage {
-        if #available(macOS 14.0, *) {
-          ContentUnavailableView("Failed to load",
-                                 systemImage: "exclamationmark.triangle",
-                                 description: Text(errorMessage))
-        } else {
-          VStack(spacing: Tokens.Space.n6) {
-            Image(systemName: "exclamationmark.triangle")
-              .font(.title2)
-            Text("Failed to load").bold()
-            Text(errorMessage)
-              .font(.caption)
-              .foregroundColor(Tokens.Palette.textSecondary.color)
-              .multilineTextAlignment(.center)
-          }
-        }
+        ContentUnavailableView("Failed to load",
+                               systemImage: "exclamationmark.triangle",
+                               description: Text(errorMessage))
       } else if let repoData {
         repoContent(repoData)
       } else {

@@ -225,7 +225,7 @@ fileprivate class MPVOptionsEditor: SettingsAccessory.Base, NSTableViewDelegate,
     delBtn.target = self
     delBtn.action = #selector(removeOptionAction)
 
-    guard let op = Preference.value(for: .userOptions) as? [[String]] else {
+    guard let op = MPVOptionsStore.load() else {
       Utility.showAlert("extra_option.cannot_read", sheetWindow: view.window)
       return
     }
@@ -233,8 +233,7 @@ fileprivate class MPVOptionsEditor: SettingsAccessory.Base, NSTableViewDelegate,
   }
 
   private func saveToUserDefaults() {
-    Preference.set(options, for: .userOptions)
-    UserDefaults.standard.synchronize()
+    MPVOptionsStore.save(options)
   }
 
   private static func parsePastedOption(_ string: String) -> [String]? {
@@ -264,15 +263,14 @@ fileprivate class MPVOptionsEditor: SettingsAccessory.Base, NSTableViewDelegate,
   }
 
   @objc func addOptionAction(_ sender: AnyObject) {
-    options.append(["name", "value"])
+    let row = MPVOptionsStore.append(&options)
     tableView.reloadData()
-    tableView.selectRowIndexes(IndexSet(integer: options.count - 1), byExtendingSelection: false)
+    tableView.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
     saveToUserDefaults()
   }
 
   @objc func removeOptionAction(_ sender: AnyObject) {
-    if tableView.selectedRow >= 0 {
-      options.remove(at: tableView.selectedRow)
+    if MPVOptionsStore.remove(at: tableView.selectedRow, from: &options) {
       tableView.reloadData()
       saveToUserDefaults()
     }
@@ -303,12 +301,8 @@ fileprivate class MPVOptionsEditor: SettingsAccessory.Base, NSTableViewDelegate,
       Utility.showAlert("extra_option.empty", sheetWindow: view.window)
       return
     }
-    guard options.count > row else { return }
-    if identifier == .key {
-      options[row][0] = value
-    } else if identifier == .value {
-      options[row][1] = value
-    }
+    let column: MPVOptionsStore.Column = identifier == .key ? .key : .value
+    guard MPVOptionsStore.set(value, row: row, column: column, in: &options) else { return }
     saveToUserDefaults()
   }
 

@@ -343,8 +343,6 @@
 "alert.clear_watch_later.title" = "Gesicherten Wiedergabefortschritt löschen";
 "alert.clear_watch_later.message" = "Möchtest du den Wiedergabefortschritt aller Videos löschen?";
 
-"alert.restore_alerts.title" = "Warnungen wiederherstellen";
-"alert.restore_alerts.message" = "Möchtest du alle Warnungen wiederherstellen?";
 
 "alert.cleared" = "Geleert.";
 "alert.restored" = "Wiederhergestellt.";
@@ -373,8 +371,6 @@
 "alert.plugin_update_found.message" = "Die neueste Version ist %@. Du verwendest %@. Möchtest du aktualisieren?";
 "alert.plugin_permission" = "Diese Erweiterung benötigt die folgenden Berechtigungen. Bitte überprüfe diese, bevor du fortfährst.";
 "alert.plugin_permission_added" = "Dieses Update erfordert zusätzliche Berechtigungen. Bitte überprüfe diese, bevor du fortfährst.";
-"alert.install_plugin_macos_11.title" = "Von GitHub installieren";
-"alert.install_plugin_macos_11.message" = "Verwenden Sie das Format „user/repo“ oder geben Sie die vollständige GitHub-URL ein. Der Plugin-Store ist unter macOS 11 nicht verfügbar. Für ein optimales Erlebnis wird ein neueres Betriebssystem empfohlen.";
 
 "playlist.total_length" = "%@ insgesamt";
 "playlist.total_length_with_selected" = "%@ von %@ ausgewählt";
@@ -396,7 +392,6 @@
 "pl_menu.add_file" = "Datei hinzufügen …";
 "pl_menu.add_url" = "Adresse hinzufügen …";
 "pl_menu.clear_playlist" = "Wiedergabeliste leeren";
-"pl_menu.matched_sub" = "%d passende Untertitel";
 "pl_menu.add_sub" = "Untertitel hinzufügen …";
 "pl_menu.wrong_sub" = "Falscher Untertitel!";
 "pl_menu.browser" = "In Browser öffnen";
@@ -986,9 +981,6 @@
 "settings.$PleaseSelectTheMediaTypes" = "Bitte wähle die Medienarten aus, für die UniPlayer als Standardprogramm festgelegt werden soll.";
 "settings.$Position" = "Position";
 "settings.$PreferredLanguage" = "Bevorzugte Sprache";
-"settings.$RestoreAlerts" = "Warnungen wiederherstellen";
-"settings.$RestoreAllAlertsThat" = "Alle Warnungen, die mit dem Kontrollkästchen \"Diese Nachricht nicht erneut anzeigen\" unterdrückt wurden, wiederherstellen.";
-"settings.$RestoreSuppressedAlerts" = "Warnungen wiederherstellen";
 "settings.$SPDIFOutput" = "S/PDIF-Ausgabe";
 "settings.$SPDIFOutputWarning" = "Liste der Codecs, für die komprimierte Audio-Durchgänge verwendet werden sollen.\n\nWarnung: Es gibt nicht viel Grund, diese Einstellung zu verwenden. HDMI unterstützt unkomprimierte Multichannel-PCM, und verlustfreie DTS-HD-Dekodierung wird über den DCA-Decodierer von FFmpeg unterstützt. Die Wiedergabe kann nicht gestartet werden, wenn das Ausgabegerät S/PDIF nicht unterstützt und diese Einstellung aktiviert ist.";
 "settings.$Safari" = "Safari";

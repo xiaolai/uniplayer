@@ -69,7 +69,7 @@ class PlaySliderCell: NSSliderCell {
   private func drawKnobOnly(knobRect: NSRect) -> NSBezierPath {
     // Round the X position for cleaner drawing
     let rect = NSMakeRect(round(knobRect.origin.x),
-                          knobRect.origin.y + 0.5 * (knobRect.height - knobHeight),
+                          knobRect.origin.y + Tokens.Size.n0_5 * (knobRect.height - knobHeight),
                           knobRect.width,
                           knobHeight)
 
@@ -151,7 +151,7 @@ class PlaySliderCell: NSSliderCell {
         if chapters.count > 1 {
           for chapt in chapters[1...] {
             let chapPos = CGFloat(chapt.time.second) / CGFloat(totalSec) * barRect.width
-            let rect = NSRect(x: chapPos - 0.5, y: barRect.origin.y, width: Tokens.Size.n1, height: barRect.height)
+            let rect = NSRect(x: chapPos - Tokens.Size.n0_5, y: barRect.origin.y, width: Tokens.Size.n1, height: barRect.height)
             chapterClip.append(NSBezierPath(rect: rect))
           }
         }
@@ -166,7 +166,7 @@ class PlaySliderCell: NSSliderCell {
 
     if controlView!.window!.effectiveAppearance.isDark {
       // Clip 1px around the knob
-      path.append(NSBezierPath(rect: NSRect(x: knobPos - 1, y: barRect.origin.y, width: knobWidth + 2, height: barRect.height)).reversed);
+      path.append(NSBezierPath(rect: NSRect(x: knobPos - Tokens.Size.n1, y: barRect.origin.y, width: knobWidth + Tokens.Size.n2, height: barRect.height)).reversed);
     }
 
     barColorLeft.setFill()

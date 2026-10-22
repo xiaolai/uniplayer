@@ -51,7 +51,7 @@ class PrefAdvancedViewController: PreferenceViewController, PreferenceWindowEmbe
   override func viewDidLoad() {
     super.viewDidLoad()
 
-    guard let op = Preference.value(for: .userOptions) as? [[String]] else {
+    guard let op = MPVOptionsStore.load() else {
       Utility.showAlert("extra_option.cannot_read", sheetWindow: view.window)
       return
     }
@@ -66,8 +66,7 @@ class PrefAdvancedViewController: PreferenceViewController, PreferenceWindowEmbe
   }
 
   func saveToUserDefaults() {
-    Preference.set(options, for: .userOptions)
-    UserDefaults.standard.synchronize()
+    MPVOptionsStore.save(options)
   }
 
   // MARK: - IBAction
@@ -81,15 +80,14 @@ class PrefAdvancedViewController: PreferenceViewController, PreferenceWindowEmbe
   }
 
   @IBAction func addOptionBtnAction(_ sender: AnyObject) {
-    options.append(["name", "value"])
+    let row = MPVOptionsStore.append(&options)
     optionsTableView.reloadData()
-    optionsTableView.selectRowIndexes(IndexSet(integer: options.count - 1), byExtendingSelection: false)
+    optionsTableView.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
     saveToUserDefaults()
   }
 
   @IBAction func removeOptionBtnAction(_ sender: AnyObject) {
-    if optionsTableView.selectedRow >= 0 {
-      options.remove(at: optionsTableView.selectedRow)
+    if MPVOptionsStore.remove(at: optionsTableView.selectedRow, from: &options) {
       optionsTableView.reloadData()
       saveToUserDefaults()
     }
@@ -134,12 +132,8 @@ extension PrefAdvancedViewController: NSTableViewDelegate, NSTableViewDataSource
       Utility.showAlert("extra_option.empty", sheetWindow: view.window)
       return
     }
-    guard options.count > row else { return }
-    if identifier == .key {
-      options[row][0] = value
-    } else if identifier == .value {
-      options[row][1] = value
-    }
+    let column: MPVOptionsStore.Column = identifier == .key ? .key : .value
+    guard MPVOptionsStore.set(value, row: row, column: column, in: &options) else { return }
     saveToUserDefaults()
   }
 

@@ -101,7 +101,7 @@ class JavascriptAPICore: JavascriptAPI, JavascriptAPICoreExportable {
   }
   
   func setUIVisibility(_ visible: Bool) {
-    player!.disableUI = visible
+    player!.disableUI = !visible
   }
 
   func getHistory() -> Any {

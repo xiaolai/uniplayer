@@ -8,16 +8,6 @@
 
 import Cocoa
 
-fileprivate let isMacOS26: Bool = {
-  if #available(macOS 27.0, *) {
-    return false
-  }
-  if #unavailable(macOS 26.0) {
-    return false
-  }
-  return true
-}()
-
 fileprivate extension NSView {
   var allSubviews: [NSView] {
     var subviews = [NSView]()
@@ -52,6 +42,8 @@ class SettingsWindow: CommonWindow {
   private var cachedPageViews: [String: NSView] = [:]
 
   private var sectionNames: [String] = []
+  private var sectionViews: [SettingsSection.View] = []
+  private var currentSectionTitle: String?
   private var sectionNameStackView: NSStackView?
   private var sectionIndicatorTopConstraint: NSLayoutConstraint?
 
@@ -97,10 +89,10 @@ class SettingsWindow: CommonWindow {
     self.searchBox = NSSearchField()
     self.highlightView = HighlightView()
 
-    super.init(contentRect: NSRect(x: 0, y: 0, width: Tokens.Size.settingsWindowWidth, height: Tokens.Size.n520),
+    super.init(contentRect: NSRect(x: 0, y: 0, width: Tokens.Settings.windowWidth, height: Tokens.Size.n520),
                styleMask: [.closable, .miniaturizable, .resizable, .titled, .fullSizeContentView],
                backing: .buffered, defer: false)
-    self.minSize = NSSize(width: Tokens.Size.settingsWindowWidth, height: Tokens.Size.n480)
+    self.minSize = NSSize(width: Tokens.Settings.windowWidth, height: Tokens.Size.n480)
 
     let splitViewController = NSSplitViewController()
     self.contentViewController = splitViewController
@@ -138,13 +130,8 @@ class SettingsWindow: CommonWindow {
     sidebarBackground.addSubview(sidebarScrollView)
     sidebarScrollView.padding(.bottom, .horizontal)
 
-    if isMacOS26 {
-      searchBox.padding(.top(Tokens.Space.n40), .horizontal(Tokens.Space.n8))
-      sidebarScrollView.spacing(.top(Tokens.Space.n16), to: searchBox)
-    } else {
-      searchBox.padding(.top(Tokens.Space.n52), .horizontal(Tokens.Space.n8))
-      sidebarScrollView.spacing(.top(Tokens.Space.n8), to: searchBox)
-    }
+    searchBox.padding(.top(Tokens.Space.n52), .horizontal(Tokens.Space.n8))
+    sidebarScrollView.spacing(.top(Tokens.Space.n8), to: searchBox)
 
     let contentViewController = NSViewController()
     contentViewController.view = NSView()
@@ -169,13 +156,13 @@ class SettingsWindow: CommonWindow {
 
     // Add the sidebar and content view controllers to the split view
     let sidebarSplitItem = NSSplitViewItem(sidebarWithViewController: sidebarViewController)
-    sidebarSplitItem.maximumThickness = 220
-    sidebarSplitItem.minimumThickness = 180
+    sidebarSplitItem.maximumThickness = Tokens.Settings.sidebarMaximum
+    sidebarSplitItem.minimumThickness = Tokens.Settings.sidebarWidth
     sidebarSplitItem.canCollapse = false
     splitViewController.addSplitViewItem(sidebarSplitItem)
 
     let contentSplitItem = NSSplitViewItem(viewController: contentViewController)
-    contentSplitItem.minimumThickness = 430
+    contentSplitItem.minimumThickness = Tokens.Settings.contentMinimum
     splitViewController.addSplitViewItem(contentSplitItem)
 
     sidebarSplitItem.titlebarSeparatorStyle = .automatic
@@ -214,9 +201,8 @@ class SettingsWindow: CommonWindow {
     contentScrollView.contentView.scroll(to: NSPoint(x: 0, y: -contentScrollView.contentInsets.top))
     contentScrollView.reflectScrolledClipView(contentScrollView.contentView)
 
-    sectionNames = content.allSubviews.compactMap {
-      ($0 as? SettingsSection.View)?.sectionTitle
-    }
+    sectionViews = content.allSubviews.compactMap { $0 as? SettingsSection.View }
+    sectionNames = sectionViews.compactMap { $0.sectionTitle }
     // if no section name, add the page name to avoid layout issues
     if sectionNames.isEmpty {
       sectionNames.append(page.title)
@@ -263,8 +249,6 @@ class SettingsWindow: CommonWindow {
       // get the section that is in the middle of the viewport
       let vr = documentView.visibleRect
       let midRect = NSRect(x: vr.origin.x, y: vr.origin.y + vr.height * 0.33, width: vr.width, height: Tokens.Size.n40)
-      let sectionViews = documentView.allSubviews
-        .compactMap { $0 as? SettingsSection.View }
       if
         let visibleIndex = sectionViews.firstIndex(where: {
           midRect.intersects($0.convert($0.bounds, to: documentView))
@@ -278,24 +262,24 @@ class SettingsWindow: CommonWindow {
     }
 
     guard let firstVisibleTitle, let sectionNameStackView else { return }
+    guard firstVisibleTitle != currentSectionTitle else { return }
+    currentSectionTitle = firstVisibleTitle
 
     let titleIndex = sectionNames.firstIndex(of: firstVisibleTitle) ?? 0
 
     NSAnimationContext.runAnimationGroup({ context in
       context.duration = AccessibilityPreferences.adjustedDuration(0.1)
       context.timingFunction = CAMediaTimingFunction(name: .linear)
-      sectionIndicatorTopConstraint?.animator().constant = CGFloat(8 + 22 * titleIndex)
-      sectionNameStackView.arrangedSubviews.forEach {
-        if let view = $0 as? NSTextField {
-          view.animator().textColor = view.stringValue == firstVisibleTitle ? Tokens.Palette.textPrimary.nsColor : Tokens.Palette.textSecondary.nsColor
-        }
-      }
+      sectionIndicatorTopConstraint?.animator().constant = Tokens.Space.n8 + 22 * CGFloat(titleIndex)
     }, completionHandler: {
       sectionNameStackView.arrangedSubviews.forEach {
-        if let view = $0 as? NSTextField {
-          let isActive = view.stringValue == firstVisibleTitle
-          view.font = isActive ? Tokens.Typography.size12Strong.nsFont : Tokens.Typography.caption.nsFont
-        }
+        guard let button = $0 as? NSButton else { return }
+        let isActive = button.title == firstVisibleTitle
+        let font = isActive ? Tokens.Typography.size12Strong.nsFont : Tokens.Typography.caption.nsFont
+        let color = isActive ? Tokens.Palette.textPrimary.nsColor : Tokens.Palette.textSecondary.nsColor
+        button.attributedTitle = NSAttributedString(
+          string: button.title,
+          attributes: [.font: font, .foregroundColor: color])
       }
     })
   }
@@ -435,10 +419,10 @@ extension SettingsWindow {
       view.addSubview(scrollView)
       scrollView.padding(.all(Tokens.Space.n0))
       scrollView.automaticallyAdjustsContentInsets = false
-      scrollView.contentInsets.bottom = 8
-      scrollView.widthAnchor.constraint(equalToConstant: Tokens.Size.n340).isActive = true
-      scrollView.heightAnchor.constraint(greaterThanOrEqualToConstant: 120).isActive = true
-      scrollView.heightAnchor.constraint(lessThanOrEqualToConstant: 400).isActive = true
+      scrollView.contentInsets.bottom = Tokens.Space.n8
+      scrollView.widthAnchor.constraint(equalToConstant: Tokens.Settings.contentWidth).isActive = true
+      scrollView.heightAnchor.constraint(greaterThanOrEqualToConstant: Tokens.Settings.previewMinimumHeight).isActive = true
+      scrollView.heightAnchor.constraint(lessThanOrEqualToConstant: Tokens.Settings.previewMaximumHeight).isActive = true
       self.contentHeightConstraint = scrollView.heightAnchor.constraint(equalToConstant: Tokens.Size.n0)
       contentHeightConstraint.priority = .defaultHigh
       contentHeightConstraint.isActive = true
@@ -501,16 +485,19 @@ extension SettingsWindow {
       if entry.isPageHeader {
         let view = (tableView.makeView(withIdentifier: .searchResultHeader,
                                        owner: self) as? HeaderView) ?? HeaderView()
+        view.identifier = .searchResultHeader
         view.setup(entry: entry)
         return view
       } else if entry.parentEntry != nil {
         let view = (tableView.makeView(withIdentifier: .searchResultItemWithParent,
                                        owner: self) as? ItemWithParentView) ?? ItemWithParentView()
+        view.identifier = .searchResultItemWithParent
         view.setup(entry: entry)
         return view
       } else {
         let view = (tableView.makeView(withIdentifier: .searchResultItem,
                                        owner: self) as? ItemView) ?? ItemView()
+        view.identifier = .searchResultItem
         view.setup(entry: entry)
         return view
       }
@@ -537,8 +524,9 @@ extension SettingsWindow {
           titleLabel.font = Tokens.Typography.bodyStrong.nsFont
           titleLabel.translatesAutoresizingMaskIntoConstraints = false
           addSubview(titleLabel)
+          self.textField = titleLabel
 
-          iconView = NSImageView(image: entry.icon!)
+          iconView = NSImageView(image: entry.icon ?? NSImage())
           iconView.imageScaling = .scaleProportionallyDown
           iconView.translatesAutoresizingMaskIntoConstraints = false
           addSubview(iconView)
@@ -576,6 +564,7 @@ extension SettingsWindow {
           titleLabel.lineBreakMode = .byTruncatingMiddle
           titleLabel.translatesAutoresizingMaskIntoConstraints = false
           addSubview(titleLabel)
+          self.textField = titleLabel
 
           sectionLabel.padding(.leading(Tokens.Space.n8), .bottom(Tokens.Space.n6))
             .spacing(.trailing(Tokens.Space.n4), to: titleLabel)
@@ -621,6 +610,7 @@ extension SettingsWindow {
           titleLabel.lineBreakMode = .byTruncatingMiddle
           titleLabel.translatesAutoresizingMaskIntoConstraints = false
           addSubview(titleLabel)
+          self.textField = titleLabel
 
           sectionLabel.padding(.leading(Tokens.Space.n8)).spacing(.trailing(Tokens.Space.n4), to: parentLabel)
             .center(.y, with: parentLabel)
@@ -706,7 +696,7 @@ extension SettingsWindow: NSTableViewDataSource, NSTableViewDelegate {
 
     let vr = documentView.visibleRect
     let y = labelRect.minY - vr.height * 0.33 - 40
-    let rect = NSRect(x: labelRect.minX, y: y, width: labelRect.width, height: vr.height - 40)
+    let rect = NSRect(x: labelRect.minX, y: y, width: labelRect.width, height: vr.height - Tokens.Size.n40)
 
     var newOrigin = clipView.bounds.origin
     if newOrigin.x > rect.origin.x {
@@ -741,7 +731,7 @@ extension SettingsWindow: NSTableViewDataSource, NSTableViewDelegate {
       sectionStackView.spacing = 8
 
       let indicatorImage = NSImageView(image: .init(systemSymbolName: "circlebadge.fill", accessibilityDescription: nil)!)
-      indicatorImage.contentTintColor = .init(white: 0.5, alpha: 1)
+      indicatorImage.contentTintColor = Tokens.Palette.indicatorNeutral.nsColor
       indicatorImage.translatesAutoresizingMaskIntoConstraints = false
 
       let line = VerticalLine(frame: NSRect(x: 0, y: 0, width: Tokens.Size.n1, height: Tokens.Size.n40))
@@ -750,7 +740,7 @@ extension SettingsWindow: NSTableViewDataSource, NSTableViewDelegate {
       line.addSubview(indicatorImage)
       indicatorImage.center(.x).size(width: Tokens.Size.n8, height: Tokens.Size.n8)
 
-      self.sectionIndicatorTopConstraint = indicatorImage.centerYAnchor.constraint(equalTo: line.topAnchor, constant: Tokens.Space.n8)
+      self.sectionIndicatorTopConstraint = indicatorImage.centerYAnchor.constraint(equalTo: line.topAnchor, constant: Tokens.Settings.indicatorOffset)
       sectionIndicatorTopConstraint?.isActive = true
       sectionStackView.addArrangedSubview(line)
 
@@ -786,14 +776,7 @@ extension SettingsWindow: NSTableViewDataSource, NSTableViewDelegate {
     let imageView = NSImageView(image: page.image)
     imageView.translatesAutoresizingMaskIntoConstraints = false
     imageView.size(width: Tokens.Size.n24, height: Tokens.Size.n24)
-    if #unavailable(macOS 14) {
-      imageView.imageScaling = .scaleProportionallyUpOrDown
-    }
-    if #available(macOS 26, *) {
-      imageView.contentTintColor = Tokens.Palette.documentText.nsColor
-    } else {
-      imageView.contentTintColor = Tokens.Palette.accent.nsColor
-    }
+    imageView.contentTintColor = Tokens.Palette.documentText.nsColor
 
     let labelStackView = NSStackView(views: [imageView, textField])
     labelStackView.orientation = .horizontal
@@ -899,8 +882,6 @@ extension SettingsWindow: NSToolbarDelegate {
     let vc = NSViewController()
     vc.view = view
     popover.contentViewController = vc
-    // if #available(macOS 14.0, *)
-    // switch to popover.show(relativeTo:NSToolbarItem) when min macOS version becomes 10.14
     popover.show(relativeTo: sender.bounds, of: sender, preferredEdge: .maxY)
   }
 }
@@ -917,7 +898,7 @@ fileprivate class VerticalLine: NSView {
   override func draw(_ dirtyRect: NSRect) {
     let color = NSAppearance.currentDrawing().isDark ? Tokens.Palette.white.nsColor : Tokens.Palette.black.nsColor
     color.withAlphaComponent(Tokens.Opacity.n40).setFill()
-    NSBezierPath(rect: NSRect(x: frame.width / 2 - 0.5, y: 0, width: Tokens.Size.n1, height: frame.height)).fill()
+    NSBezierPath(rect: NSRect(x: frame.width / 2 - Tokens.Size.n0_5, y: 0, width: Tokens.Size.n1, height: frame.height)).fill()
     super.draw(dirtyRect)
   }
 }

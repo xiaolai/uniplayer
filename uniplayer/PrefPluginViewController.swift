@@ -10,9 +10,9 @@ import Cocoa
 @preconcurrency import WebKit
 
 fileprivate let defaultPlugins = [
-  ["url": "uniplayer/plugin-online-media", "id": "com.lixiaolai.uniplayer.ytdl"],
-  ["url": "uniplayer/plugin-userscript", "id": "com.lixiaolai.uniplayer.user-script"],
-  ["url": "uniplayer/plugin-opensub", "id": "com.lixiaolai.uniplayer.opensub"],
+  ["url": "iina/plugin-online-media", "id": "io.iina.ytdl"],
+  ["url": "iina/plugin-userscript", "id": "io.iina.user-script"],
+  ["url": "iina/plugin-opensub", "id": "io.iina.opensub"],
 ]
 
 fileprivate extension NSUserInterfaceItemIdentifier {
@@ -187,9 +187,7 @@ class PrefPluginViewController: PreferenceViewController, PreferenceWindowEmbedd
     config.userContentController.add(self, name: "iina")
     
     pluginPreferencesWebView = NonscrollableWebview(frame: .zero, configuration: config)
-    if #available(macOS 13.3, *) {
-      pluginPreferencesWebView.isInspectable = true
-    }
+    pluginPreferencesWebView.isInspectable = true
     pluginPreferencesViewController = PrefPluginPreferencesViewController()
     pluginPreferencesViewController.view = pluginPreferencesWebView
 
@@ -291,41 +289,6 @@ class PrefPluginViewController: PreferenceViewController, PreferenceWindowEmbedd
       pluginHelpWebView.loadFileURL(helpURL, allowingReadAccessTo: currentPlugin.root)
     } else {
       pluginHelpWebView.load(URLRequest(url: helpURL))
-    }
-  }
-
-  private func showPermissionsSheet(forPlugin plugin: JavascriptPlugin, previousPlugin: JavascriptPlugin?, handler: @escaping (Bool) -> Void) {
-    let block = {
-      let alert = NSAlert()
-      let permissionListView = PrefPluginPermissionListView()
-      let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: Tokens.Size.n500, height: Tokens.Size.n300))
-      permissionListView.translatesAutoresizingMaskIntoConstraints = false
-      alert.messageText = NSLocalizedString("alert.title_warning", comment: "Warning")
-      alert.informativeText = NSLocalizedString(previousPlugin == nil ? "alert.plugin_permission" : "alert.plugin_permission_added", comment: "")
-      alert.alertStyle = .warning
-      alert.accessoryView = scrollView
-      scrollView.drawsBackground = false
-      scrollView.documentView = permissionListView
-      Utility.quickConstraints(["H:|-0-[v]-0-|", "V:|-0-[v]"], ["v": permissionListView])
-      alert.addButton(withTitle: NSLocalizedString("plugin.install", comment: "Install"))
-      alert.addButton(withTitle: NSLocalizedString("general.cancel", comment: "Cancel"))
-      permissionListView.setPlugin(plugin, onlyShowAddedFrom: previousPlugin)
-      alert.layout()
-      let height = permissionListView.frame.height
-      if height < 300 {
-        scrollView.frame.size.height = height
-        alert.layout()
-      }
-      alert.beginSheetModal(for: self.view.window!) { result in
-        handler(result == .alertFirstButtonReturn)
-      }
-    }
-    if Thread.isMainThread {
-      block()
-    } else {
-      DispatchQueue.main.sync {
-        block()
-      }
     }
   }
 
@@ -591,36 +554,7 @@ extension PrefPluginViewController: WKNavigationDelegate {
 extension PrefPluginViewController: WKScriptMessageHandler {
   func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
     guard let plugin = currentPlugin else { return }
-    guard let dict = message.body as? [Any], dict.count == 2 else { return }
-    guard let name = dict[0] as? String else { return }
-    guard let data = dict[1] as? [Any], let prefName = data[0] as? String else { return }
-    if name == "set" {
-      plugin.preferences[prefName] = data[1]
-    } else if name == "get" {
-      var value: Any? = nil
-      if let v = plugin.preferences[prefName] {
-        value = v
-      } else if let v = plugin.defaultPreferences[prefName] {
-        value = v
-      }
-      let result: String
-      if let value = value {
-        if JSONSerialization.isValidJSONObject(value), let json = try? String(data: JSONSerialization.data(withJSONObject: value, options: []), encoding: .utf8) {
-          result = json
-        } else if value is String {
-          result = "\"\(value)\""
-        } else {
-          result = "\(value)"
-        }
-      } else {
-        result = "null"
-      }
-      pluginPreferencesWebView.evaluateJavaScript("window.iina._call(\(data[1]), \(result))")
-    } else if name == "error" {
-      Logger.log("JS:\(plugin.name) Preference page \(data[0]) \(data[2]),\(data[3]): \(data[4])")
-    } else if name == "log" {
-      Logger.log("JS:\(plugin.name) Preference page: \(data[0])")
-    }
+    JavascriptPlugin.handlePreferencesMessage(message, plugin: plugin, webView: pluginPreferencesWebView)
   }
 }
 

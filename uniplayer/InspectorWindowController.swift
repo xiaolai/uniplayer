@@ -417,10 +417,11 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
         } else {
           let errorString = NSLocalizedString("inspector.error", comment: "Error")
 
-          let italicDescriptor: NSFontDescriptor = textField.font!.fontDescriptor.withSymbolicTraits(NSFontDescriptor.SymbolicTraits.italic)
-          let errorFont = NSFont(descriptor: italicDescriptor, size: textField.font!.pointSize)
+          let sourceFont = textField.font ?? Tokens.Typography.body.nsFont
+          let italicDescriptor: NSFontDescriptor = sourceFont.fontDescriptor.withSymbolicTraits(NSFontDescriptor.SymbolicTraits.italic)
+          let errorFont = Tokens.Typography.descriptorFont(italicDescriptor, size: sourceFont.pointSize)
 
-          textField.attributedStringValue = NSMutableAttributedString(string: errorString, attributes: [.font: errorFont!])
+          textField.attributedStringValue = NSMutableAttributedString(string: errorString, attributes: [.font: errorFont])
           textField.isSelectable = false
           textField.textColor = Tokens.Palette.textDisabled.nsColor
         }

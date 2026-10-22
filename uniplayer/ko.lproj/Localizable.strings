@@ -343,8 +343,6 @@
 "alert.clear_watch_later.title" = "이어보기 목록 지우기";
 "alert.clear_watch_later.message" = "\"watch later\"폴더에 저장된 이어보기 목록을 지우겠습니까?";
 
-"alert.restore_alerts.title" = "비활성화된 알림 복구하기";
-"alert.restore_alerts.message" = "비활성화된 모든 알림을 다시 활성화 하시겠습니까?";
 
 "alert.cleared" = "지워졌습니다.";
 "alert.restored" = "복구됨";
@@ -373,8 +371,6 @@
 "alert.plugin_update_found.message" = "최신 버전은 %@입니다. %@에서 업데이트 하시겠습니까?";
 "alert.plugin_permission" = "이 플러그인은 다음과 같은 권한을 필요로 합니다. 진행하기 전에 확인해 주세요.";
 "alert.plugin_permission_added" = "이 업데이트는 추가적인 승인이 필요합니다. 진행하기 전에 다시 한번 읽어주세요.";
-"alert.install_plugin_macos_11.title" = "깃허브에서 새로운 플러그인 설치";
-"alert.install_plugin_macos_11.message" = "Use the format user/repo or enter the full GitHub URL. The plugin store is not available on macOS 11. A newer system is recommended for the best experience.";
 
 "playlist.total_length" = "전체 %@";
 "playlist.total_length_with_selected" = "%@ 선택됨 / 전체 %@";
@@ -396,7 +392,6 @@
 "pl_menu.add_file" = "파일 추가…";
 "pl_menu.add_url" = "URL 추가…";
 "pl_menu.clear_playlist" = "재생목록 지움";
-"pl_menu.matched_sub" = "%d개의 자막 일치";
 "pl_menu.add_sub" = "자막 추가…";
 "pl_menu.wrong_sub" = "잘못된 자막!";
 "pl_menu.browser" = "브라우저에서 열기";
@@ -986,9 +981,6 @@
 "settings.$PleaseSelectTheMediaTypes" = "UniPlayer를 기본 응용프로그램으로 사용할 미디어 유형을 선택하십시오.";
 "settings.$Position" = "위치";
 "settings.$PreferredLanguage" = "선호 언어";
-"settings.$RestoreAlerts" = "알림 복구하기";
-"settings.$RestoreAllAlertsThat" = "Restore all alerts that have been suppressed using the \"Do not show this message again\" checkbox.";
-"settings.$RestoreSuppressedAlerts" = "비활성화된 알림 복구하기";
 "settings.$SPDIFOutput" = "S/PDIF 출력";
 "settings.$SPDIFOutputWarning" = "List of codecs for which compressed audio passthrough should be used.\n\nWarning: There is not much reason to use this setting. HDMI supports uncompressed multichannel PCM, and lossless DTS-HD decoding is supported via FFmpeg's DCA decoder. Playback may not start if the output device does not support S/PDIF and this setting is enabled.";
 "settings.$Safari" = "Safari";

@@ -88,9 +88,7 @@ fileprivate class AudioDelayView: SidebarSliderView {
     slider.minValue = -5
     slider.maxValue = 5
     slider.numberOfTickMarks = 21
-    if #available(macOS 26, *) {
-      slider.neutralValue = 0
-    }
+    slider.neutralValue = 0
 
     let fmt = NumberFormatter()
     fmt.numberStyle = .decimal
@@ -111,10 +109,10 @@ fileprivate class AudioDelayView: SidebarSliderView {
   }
 
   override func sliderAction() {
-    let eventType = NSApp.currentEvent!.type
+    let eventType = NSApp.currentEvent?.type
     let sliderValue: Double
     switch eventType {
-    case .leftMouseDown, .leftMouseDragged, .leftMouseUp:
+    case .leftMouseDown?, .leftMouseDragged?, .leftMouseUp?:
       // When dragging slider with the mouse, snap to the nearest 50ms (1/20 sec)
       // Although it is possible to show tick marks at every step of 0.05 in the slider, it is visually unpleasant.
       // So we draw less tick marks, and keep "Only stop on tick marks" disabled, and add our own logic to stop on
@@ -126,10 +124,8 @@ fileprivate class AudioDelayView: SidebarSliderView {
     }
     input.doubleValue = sliderValue
     updateIndicator()
-    if let event = NSApp.currentEvent {
-      if event.type == .leftMouseUp {
-        player.setAudioDelay(sliderValue)
-      }
+    if eventType == nil || eventType == .leftMouseUp {
+      player.setAudioDelay(sliderValue)
     }
   }
 
@@ -172,9 +168,7 @@ fileprivate class EqualizerView: NSView, NSMenuDelegate {
       slider.minValue = -12
       slider.maxValue = 12
       slider.numberOfTickMarks = 5
-      if #available(macOS 26.0, *) {
-        slider.neutralValue = 0
-      }
+      slider.neutralValue = 0
       slider.tag = $0
       slider.target = self
       slider.action = #selector(audioEqSliderAction)

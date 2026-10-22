@@ -7,7 +7,6 @@
 //
 
 import Cocoa
-import UniformTypeIdentifiers
 
 class PrefUtilsViewController: PreferenceViewController, PreferenceWindowEmbeddable {
 
@@ -24,11 +23,10 @@ class PrefUtilsViewController: PreferenceViewController, PreferenceWindowEmbedda
   }
 
   override var sectionViews: [NSView] {
-    return [sectionDefaultAppView, sectionRestoreAlertsView, sectionClearCacheView, sectionBrowserExtView]
+    return [sectionDefaultAppView, sectionClearCacheView, sectionBrowserExtView]
   }
 
   @IBOutlet var sectionDefaultAppView: NSView!
-  @IBOutlet var sectionRestoreAlertsView: NSView!
   @IBOutlet var sectionClearCacheView: NSView!
   @IBOutlet var sectionBrowserExtView: NSView!
   @IBOutlet var setAsDefaultSheet: NSWindow!
@@ -38,7 +36,6 @@ class PrefUtilsViewController: PreferenceViewController, PreferenceWindowEmbedda
   @IBOutlet weak var thumbCacheSizeLabel: NSTextField!
   @IBOutlet weak var savedPlaybackProgressClearedLabel: NSTextField!
   @IBOutlet weak var playHistoryClearedLabel: NSTextField!
-  @IBOutlet weak var restoreAlertsRestoredLabel: NSTextField!
 
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -57,60 +54,15 @@ class PrefUtilsViewController: PreferenceViewController, PreferenceWindowEmbedda
   }
 
   @IBAction func setAsDefaultOKBtnAction(_ sender: Any) {
+    guard let result = UtilityActions.setAsDefaultApplication(
+      video: setAsDefaultVideoCheckBox.state == .on,
+      audio: setAsDefaultAudioCheckBox.state == .on,
+      playlists: setAsDefaultPlaylistCheckBox.state == .on
+    ) else { return }
 
-    guard
-      let utiImportedTypes = Bundle.main.infoDictionary?["UTImportedTypeDeclarations"] as? [[String: Any]],
-      let cfBundleID = Bundle.main.bundleIdentifier as CFString?
-      else { return }
-
-    Logger.log("Setting this app as default")
-
-    var successCount = 0
-    var failedCount = 0
-
-    let utiChecked = [
-      "public.movie": setAsDefaultVideoCheckBox.state == .on,
-      "public.audio": setAsDefaultAudioCheckBox.state == .on,
-      "public.text": setAsDefaultPlaylistCheckBox.state == .on
-    ]
-
-    var utiTargetSet: Set<String> = []
-    for utiImportedType in utiImportedTypes {
-      guard
-        let identifier = utiImportedType["UTTypeIdentifier"] as? String,
-        let conformsTo = utiImportedType["UTTypeConformsTo"] as? [String],
-        let tagSpec = utiImportedType["UTTypeTagSpecification"] as? [String: Any],
-        let exts = tagSpec["public.filename-extension"] as? [String]
-      else {
-        return
-      }
-
-      // make sure that `conformsTo` contains a checked UTI type
-      guard utiChecked.map({ (uti, checked) in checked && conformsTo.contains(uti) }).contains(true) else {
-        continue
-      }
-
-      Logger.log("UTImportedType: \(identifier.quoted) ➤ \(exts)", level: .verbose)
-      for ext in exts {
-        let uttypesForExt = UTType.types(tag: ext, tagClass: .filenameExtension, conformingTo: nil)
-        for uttype in uttypesForExt {
-          utiTargetSet.insert(uttype.identifier)
-        }
-      }
-    }
-
-    for identifier in utiTargetSet {
-      Logger.log("Setting default for UTI: \(identifier.quoted)", level: .verbose)
-      let status = LSSetDefaultRoleHandlerForContentType(identifier as CFString, .all, cfBundleID)
-      if status == kOSReturnSuccess {
-        successCount += 1
-      } else {
-        Logger.log("Failed for \(identifier.quoted): return value \(status)", level: .error)
-        failedCount += 1
-      }
-    }
-
-    Utility.showAlert("set_default.success", arguments: [successCount, failedCount], style: .informational,
+    Utility.showAlert("set_default.success",
+                      arguments: [result.succeeded, result.failed],
+                      style: .informational,
                       sheetWindow: view.window)
     view.window!.endSheet(setAsDefaultSheet)
   }
@@ -119,31 +71,22 @@ class PrefUtilsViewController: PreferenceViewController, PreferenceWindowEmbedda
     view.window!.endSheet(setAsDefaultSheet)
   }
 
-  @IBAction func resetSuppressedAlertsBtnAction(_ sender: Any) {
-    Utility.quickAskPanel("restore_alerts", sheetWindow: view.window) { respond in
-      guard respond == .alertFirstButtonReturn else { return }
-      // This operation used to restore an alert about preventing display sleeping failing. That
-      // alert has been removed so at this time we do not have any alerts that can be suppressed.
-      // That might change in the future, so for now we are retaining this operation.
-      self.restoreAlertsRestoredLabel.isHidden = false
-    }
-  }
-
   @IBAction func clearWatchLaterBtnAction(_ sender: Any) {
     Utility.quickAskPanel("clear_watch_later", sheetWindow: view.window) { respond in
       guard respond == .alertFirstButtonReturn else { return }
-      try? FileManager.default.removeItem(atPath: Utility.watchLaterURL.path)
-      Utility.createDirIfNotExist(url: Utility.watchLaterURL)
-      self.savedPlaybackProgressClearedLabel.isHidden = false
+      do {
+        try UtilityActions.clearWatchLater()
+        self.savedPlaybackProgressClearedLabel.isHidden = false
+      } catch {
+        Utility.showAlert("custom", arguments: ["\(error)"], style: .critical, sheetWindow: self.view.window)
+      }
     }
   }
 
   @IBAction func clearHistoryBtnAction(_ sender: Any) {
     Utility.quickAskPanel("clear_history", sheetWindow: view.window) { respond in
       guard respond == .alertFirstButtonReturn else { return }
-      try? FileManager.default.removeItem(atPath: Utility.playbackHistoryURL.path)
-      AppDelegate.shared.clearRecentDocuments(self)
-      Preference.set(nil, for: .iinaLastPlayedFilePath)
+      UtilityActions.clearPlaybackHistory()
       self.playHistoryClearedLabel.isHidden = false
     }
   }
@@ -151,8 +94,7 @@ class PrefUtilsViewController: PreferenceViewController, PreferenceWindowEmbedda
   @IBAction func clearCacheBtnAction(_ sender: Any) {
     Utility.quickAskPanel("clear_cache", sheetWindow: view.window) { respond in
       guard respond == .alertFirstButtonReturn else { return }
-      try? FileManager.default.removeItem(atPath: Utility.thumbnailCacheURL.path)
-      Utility.createDirIfNotExist(url: Utility.thumbnailCacheURL)
+      UtilityActions.clearThumbnailCache()
       self.updateThumbnailCacheStat()
     }
   }

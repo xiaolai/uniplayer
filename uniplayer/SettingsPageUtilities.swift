@@ -6,7 +6,6 @@
 //  Copyright © 2026 lhc. All rights reserved.
 //
 
-import UniformTypeIdentifiers
 import SafariServices.SFSafariApplication
 
 fileprivate let ui = SettingsUIHelper.sharedUI
@@ -42,14 +41,6 @@ class SettingsPageUtilities: SettingsPage {
           SettingsItem.General(title: .text_SetUniPlayerAsTheDefault)
             .image(name: ["app.badge.checkmark.fill", "app"])
             .extraViews(actionButton(action: #selector(setUniPlayerAsDefaultAction)))
-        }
-      }
-      section {
-        SettingsList(title: .text_RestoreAlerts) {
-          SettingsItem.General(title: .text_RestoreSuppressedAlerts)
-            .image(name: "arrow.counterclockwise")
-            .extraViews(actionButton(action: #selector(resetSuppressedAlertsBtnAction)))
-            .hasDescription(content: .text_RestoreAllAlertsThat)
         }
       }
       section {
@@ -98,24 +89,12 @@ class SettingsPageUtilities: SettingsPage {
   }
 
 
-  @objc func resetSuppressedAlertsBtnAction(_ sender: Any) {
-    guard let window = (sender as? NSView)?.window else { return }
-    Utility.quickAskPanel("restore_alerts", sheetWindow: window) { respond in
-      guard respond == .alertFirstButtonReturn else { return }
-      // This operation used to restore an alert about preventing display sleeping failing. That
-      // alert has been removed so at this time we do not have any alerts that can be suppressed.
-      // That might change in the future, so for now we are retaining this operation.
-      Utility.showAlert("restored", style: .informational, sheetWindow: window)
-    }
-  }
-
   @objc func clearWatchLaterBtnAction(_ sender: Any) {
     guard let window = (sender as? NSView)?.window else { return }
     Utility.quickAskPanel("clear_watch_later", sheetWindow: window) { respond in
       guard respond == .alertFirstButtonReturn else { return }
       do {
-        try FileManager.default.removeItem(atPath: Utility.watchLaterURL.path)
-        Utility.createDirIfNotExist(url: Utility.watchLaterURL)
+        try UtilityActions.clearWatchLater()
         Utility.showAlert("cleared", style: .informational, sheetWindow: window)
       } catch {
         Utility.showAlert("custom", arguments: ["\(error)"], style: .critical, sheetWindow: window)
@@ -127,9 +106,7 @@ class SettingsPageUtilities: SettingsPage {
     guard let window = (sender as? NSView)?.window else { return }
     Utility.quickAskPanel("clear_history", sheetWindow: window) { respond in
       guard respond == .alertFirstButtonReturn else { return }
-      try? FileManager.default.removeItem(atPath: Utility.playbackHistoryURL.path)
-      AppDelegate.shared.clearRecentDocuments(self)
-      Preference.set(nil, for: .iinaLastPlayedFilePath)
+      UtilityActions.clearPlaybackHistory()
       Utility.showAlert("cleared", style: .informational, sheetWindow: window)
     }
   }
@@ -138,7 +115,7 @@ class SettingsPageUtilities: SettingsPage {
     guard let window = (sender as? NSView)?.window else { return }
     Utility.quickAskPanel("clear_cache", sheetWindow: window) { respond in
       guard respond == .alertFirstButtonReturn else { return }
-      ThumbnailCache.clearThumbnailCache()
+      UtilityActions.clearThumbnailCache()
       self.updateThumbnailCacheStat()
     }
   }
@@ -207,59 +184,15 @@ fileprivate class SetAsDefaultSheetWindow: NSWindow {
 
   @objc func okBtnAction(_ sender: Any) {
     guard let window = contextWindow else { return }
-    guard
-      let utiImportedTypes = Bundle.main.infoDictionary?["UTImportedTypeDeclarations"] as? [[String: Any]],
-      let cfBundleID = Bundle.main.bundleIdentifier as CFString?
-      else { return }
+    guard let result = UtilityActions.setAsDefaultApplication(
+      video: videoCheckBox.state == .on,
+      audio: audioCheckBox.state == .on,
+      playlists: playListCheckBox.state == .on
+    ) else { return }
 
-    Logger.log("Setting this app as default")
-
-    var successCount = 0
-    var failedCount = 0
-
-    let utiChecked = [
-      "public.movie": videoCheckBox.state == .on,
-      "public.audio": audioCheckBox.state == .on,
-      "public.text": playListCheckBox.state == .on
-    ]
-
-    var utiTargetSet: Set<String> = []
-    for utiImportedType in utiImportedTypes {
-      guard
-        let identifier = utiImportedType["UTTypeIdentifier"] as? String,
-        let conformsTo = utiImportedType["UTTypeConformsTo"] as? [String],
-        let tagSpec = utiImportedType["UTTypeTagSpecification"] as? [String: Any],
-        let exts = tagSpec["public.filename-extension"] as? [String]
-      else {
-        return
-      }
-
-      // make sure that `conformsTo` contains a checked UTI type
-      guard utiChecked.map({ (uti, checked) in checked && conformsTo.contains(uti) }).contains(true) else {
-        continue
-      }
-
-      Logger.log("UTImportedType: \(identifier.quoted) ➤ \(exts)", level: .verbose)
-      for ext in exts {
-        let uttypesForExt = UTType.types(tag: ext, tagClass: .filenameExtension, conformingTo: nil)
-        for uttype in uttypesForExt {
-          utiTargetSet.insert(uttype.identifier)
-        }
-      }
-    }
-
-    for identifier in utiTargetSet {
-      Logger.log("Setting default for UTI: \(identifier.quoted)", level: .verbose)
-      let status = LSSetDefaultRoleHandlerForContentType(identifier as CFString, .all, cfBundleID)
-      if status == kOSReturnSuccess {
-        successCount += 1
-      } else {
-        Logger.log("Failed for \(identifier.quoted): return value \(status)", level: .error)
-        failedCount += 1
-      }
-    }
-
-    Utility.showAlert("set_default.success", arguments: [successCount, failedCount], style: .informational,
+    Utility.showAlert("set_default.success",
+                      arguments: [result.succeeded, result.failed],
+                      style: .informational,
                       sheetWindow: window)
     window.endSheet(self)
   }

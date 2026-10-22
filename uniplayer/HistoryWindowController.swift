@@ -47,10 +47,8 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
     .fileLocation: {
       if $0.url.isFileURL {
         $0.url.deletingLastPathComponent().path
-      } else if #available(macOS 13, *) {
-        $0.url.host(percentEncoded: false) ?? "-"
       } else {
-        $0.url.host ?? "-"
+        $0.url.host(percentEncoded: false) ?? "-"
       }
     }
   ]
@@ -661,12 +659,7 @@ extension HistoryWindowController: NSToolbarDelegate {
 
   func makeSearchMenu() -> NSMenu {
     let searchIn: NSMenuItem
-    if #available(macOS 14, *) {
-      searchIn = NSMenuItem.sectionHeader(title: NSLocalizedString("history_window.search.search_in", comment: "Search in"))
-    } else {
-      searchIn = NSMenuItem(title: NSLocalizedString("history_window.search.search_in", comment: "Search in"), action: nil, keyEquivalent: "")
-      searchIn.isEnabled = false
-    }
+    searchIn = NSMenuItem.sectionHeader(title: NSLocalizedString("history_window.search.search_in", comment: "Search in"))
 
     let filenameItem = NSMenuItem(title: NSLocalizedString("history_window.search.filename", comment: "Filename"), action: #selector(searchInOption(_:)), keyEquivalent: "")
     filenameItem.tag = MenuItemTagSearchFilename
@@ -678,9 +671,6 @@ extension HistoryWindowController: NSToolbarDelegate {
 
     (searchOption == .filename ? filenameItem : fullPathItem).state = .on
 
-    if #unavailable(macOS 14) {
-      [filenameItem, fullPathItem].forEach { $0.indentationLevel = 1 }
-    }
 
     // Managed by AppKit; placeholders
     let noRecents = NSMenuItem(title: NSLocalizedString("history_window.search.no_recents", comment: "No Recent Searches"), action: nil, keyEquivalent: "")
@@ -691,9 +681,6 @@ extension HistoryWindowController: NSToolbarDelegate {
     recentsTitle.isEnabled = false
     let recentItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     recentItem.tag = NSSearchField.recentsMenuItemTag
-    if #unavailable(macOS 14) {
-      recentItem.indentationLevel = 1
-    }
     let clear = NSMenuItem(title: NSLocalizedString("history_window.search.clear_recents", comment: "Clear Recents"), action: nil, keyEquivalent: "")
     clear.tag = NSSearchField.clearRecentsMenuItemTag
     clear.image = .sf("trash")
@@ -794,7 +781,7 @@ class HistoryProgressCellView: NSTableCellView {
 
     [indicator, textField].forEach { $0.center(.y) }
     indicator.padding(.leading)
-    indicator.widthAnchor.constraint(greaterThanOrEqualToConstant: 30).isActive = true
+    indicator.widthAnchor.constraint(greaterThanOrEqualToConstant: Tokens.Size.n30).isActive = true
     indicator.spacing(.trailing(Tokens.Space.n6), to: textField)
     textField.padding(.trailing)
   }

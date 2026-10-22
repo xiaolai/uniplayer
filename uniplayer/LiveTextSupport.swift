@@ -58,7 +58,6 @@ class LiveTextController: NSObject {
   }
 
   func updateOverlayInsets() {
-    guard #available(macOS 13.0, *) else { return }
     guard let view = overlayView as? ImageAnalysisOverlayView else { return }
     let isBottom = Preference.enum(for: .oscPosition) as Preference.OSCPosition == .bottom
     let isCompact = Preference.bool(for: .compactUI)
@@ -68,12 +67,12 @@ class LiveTextController: NSObject {
   }
 
   func requestAnalysis() {
-    guard #available(macOS 13.0, *), Preference.isLiveTextEnabled, isAvailable else { return }
+    guard Preference.isLiveTextEnabled, isAvailable else { return }
     requestAnalysisImpl()
   }
 
   func clearAnalysis() {
-    guard #available(macOS 13.0, *), analysisTask != nil || isShown else { return }
+    guard analysisTask != nil || isShown else { return }
     clearAnalysisImpl()
   }
 
@@ -94,7 +93,6 @@ class LiveTextController: NSObject {
 }
 
 
-@available(macOS 13.0, *)
 extension LiveTextController: ImageAnalysisOverlayViewDelegate {
   @discardableResult
   func setupLiveTextOverlay() -> ImageAnalysisOverlayView {

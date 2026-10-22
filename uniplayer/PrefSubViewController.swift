@@ -57,10 +57,8 @@ class PrefSubViewController: PreferenceViewController, PreferenceWindowEmbeddabl
     subOverrideLevelText.font = Tokens.Typography.codeSample.nsFont
 
 #if MACOS_13_AVAILABLE
-    if #available(macOS 13.0, *) {
-      [subColorWell, subBackgroundColorWell, subBorderColorWell, subShadowColorWell].forEach {
-        $0.colorWellStyle = .expanded
-      }
+    [subColorWell, subBackgroundColorWell, subBorderColorWell, subShadowColorWell].forEach {
+      $0.colorWellStyle = .expanded
     }
 #endif
 

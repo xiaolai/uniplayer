@@ -30,7 +30,7 @@ class SidebarChaptersPane: NSView, SidebarPane {
 
     self.tableView = NSTableView()
     tableView.style = .fullWidth
-    tableView.intercellSpacing = .init(width: 4, height: 2)
+    tableView.intercellSpacing = .init(width: Tokens.Size.n4, height: Tokens.Size.n2)
     tableView.allowsColumnResizing = false
     tableView.selectionHighlightStyle = .none
     tableView.rowHeight = Tokens.Size.n40

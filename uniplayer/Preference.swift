@@ -1017,7 +1017,6 @@ struct Preference {
   }
 
   static func liquidGlass(_ component: LiquidGlassOption) -> Bool {
-    guard #available(macOS 26.0, *) else { return false }
     return switch component {
     case .osc:
       Preference.bool(for: .useLiquidGlassOSC)
@@ -1029,7 +1028,6 @@ struct Preference {
   }
 
   static var isLiveTextAvailable: Bool = {
-    guard #available(macOS 13, *) else { return false }
     let defaults = UserDefaults.standard
     if defaults.object(forKey: "AppleLiveTextEnabled") == nil {
       return true

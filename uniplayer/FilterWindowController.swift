@@ -465,7 +465,7 @@ class NewFilterSheetViewController: NSViewController, NSTableViewDelegate, NSTab
   private func quickLabel(title: String) -> NSTextField {
     let label = NSTextField(frame: NSRect(x: 0, y: 0,
                                           width: scrollContentView.frame.width,
-                                          height: 17))
+                                          height: Tokens.Size.n17))
     label.font = Tokens.Typography.body.nsFont
     label.stringValue = title
     label.drawsBackground = false
@@ -484,8 +484,8 @@ class NewFilterSheetViewController: NSViewController, NSTableViewDelegate, NSTab
     case .text:
       // Text field
       let label = NSTextField(frame: NSRect(x: 0, y: 0,
-                              width: scrollContentView.frame.width - 8,
-                              height: 22))
+                              width: scrollContentView.frame.width - Tokens.Size.n8,
+                              height: Tokens.Size.n22))
       label.stringValue = param.defaultValue.stringValue
       label.isSelectable = false
       label.isEditable = true
@@ -496,8 +496,8 @@ class NewFilterSheetViewController: NSViewController, NSTableViewDelegate, NSTab
     case .int:
       // Slider
       let slider = NSSlider(frame: NSRect(x: 0, y: 0,
-                                          width: scrollContentView.frame.width - 8,
-                                          height: 19))
+                                          width: scrollContentView.frame.width - Tokens.Size.n8,
+                                          height: Tokens.Size.n19))
       slider.minValue = Double(param.minInt!)
       slider.maxValue = Double(param.maxInt!)
       if let step = param.step {
@@ -510,8 +510,8 @@ class NewFilterSheetViewController: NSViewController, NSTableViewDelegate, NSTab
     case .float:
       // Slider
       let slider = NSSlider(frame: NSRect(x: 0, y: 0,
-                                          width: scrollContentView.frame.width - 8,
-                                          height: 19))
+                                          width: scrollContentView.frame.width - Tokens.Size.n8,
+                                          height: Tokens.Size.n19))
       slider.minValue = Double(param.min!)
       slider.maxValue = Double(param.max!)
       slider.floatValue = param.defaultValue.floatValue
@@ -519,8 +519,8 @@ class NewFilterSheetViewController: NSViewController, NSTableViewDelegate, NSTab
     case .choose:
       // Choose
       let popupBtn = NSPopUpButton(frame: NSRect(x: 0, y: 0,
-                                                 width: scrollContentView.frame.width - 8,
-                                                 height: 26))
+                                                 width: scrollContentView.frame.width - Tokens.Size.n8,
+                                                 height: Tokens.Size.n26))
       popupBtn.addItems(withTitles: param.choices)
       return popupBtn
     }

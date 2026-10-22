@@ -35,7 +35,7 @@ class OSCFloatingView: TranslucentView {
     let container = NSView()
     container.translatesAutoresizingMaskIntoConstraints = false
 
-    let cornerRadius: CGFloat = if #available(macOS 26.0, *) { 12 } else { 6 }
+    let cornerRadius = Tokens.Radius.n12
     super.init(liquidGlassCornerRadius: cornerRadius, vevCornerRadius: cornerRadius, padding: (0, 0))
 
     self.oscTopView = NSStackView()
@@ -55,7 +55,7 @@ class OSCFloatingView: TranslucentView {
 
     setContent(container)
 
-    widthAnchor.constraint(greaterThanOrEqualToConstant: 200).isActive = true
+    widthAnchor.constraint(greaterThanOrEqualToConstant: Tokens.Size.n200).isActive = true
 
     prefObserver.add(.useLiquidGlassOSC, runNow: true) { [unowned self] _ in
       setStyle(Preference.liquidGlass(.osc) ? .liquidGlass : .visualEffect)
@@ -159,7 +159,7 @@ class OSCFloatingView: TranslucentView {
     // bound to window frame
     let xMax = windowFrame.width - frame.width - 10
     let yMax = windowFrame.height - frame.height - 25
-    newOrigin = newOrigin.constrained(to: NSRect(x: 10, y: 0, width: xMax, height: yMax))
+    newOrigin = newOrigin.constrained(to: NSRect(x: Tokens.Size.n10, y: 0, width: xMax, height: yMax))
     // apply position
     let newConstraint = newOrigin.x + frame.width / 2
     xConstraint.constant = userInterfaceLayoutDirection == .rightToLeft ?

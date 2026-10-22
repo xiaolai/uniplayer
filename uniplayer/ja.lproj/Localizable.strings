@@ -344,8 +344,6 @@
 "alert.clear_watch_later.title" = "保存済みの再生進行状況を消去";
 "alert.clear_watch_later.message" = "すべての保存済みの再生進行状況（\"あとで再生\"データ）を削除してもよろしいですか?";
 
-"alert.restore_alerts.title" = "非表示にした警告を復元";
-"alert.restore_alerts.message" = "すべての非表示にした警告を復元してもよろしいですか?";
 
 "alert.cleared" = "消去しました。";
 "alert.restored" = "復元しました。";
@@ -374,8 +372,6 @@
 "alert.plugin_update_found.message" = "最新バージョンは%@です。 現在使用中のバージョンは%@です。アップデートしますか?";
 "alert.plugin_permission" = "このプラグインには次のアクセス権が必要です。続行する前に確認してください。";
 "alert.plugin_permission_added" = "このアップデートには追加のアクセス権が必要です。続行する前に確認してください。";
-"alert.install_plugin_macos_11.title" = "GitHubから新しいプラグインをインストール";
-"alert.install_plugin_macos_11.message" = "ユーザ/リポジトリのフォーマットを使用するか、完全なGitHub URLを入力してください。プラグインストアは macOS 11では利用できません。 最高の体験を得るには、新しいシステムをお勧めします。";
 
 "playlist.total_length" = "合計%@件";
 "playlist.total_length_with_selected" = "%@件（%@件中）を選択";
@@ -397,7 +393,6 @@
 "pl_menu.add_file" = "ファイルを追加…";
 "pl_menu.add_url" = "URLを追加…";
 "pl_menu.clear_playlist" = "プレイリストを消去";
-"pl_menu.matched_sub" = "%d件の字幕に一致";
 "pl_menu.add_sub" = "字幕を追加…";
 "pl_menu.wrong_sub" = "字幕が違います!";
 "pl_menu.browser" = "ブラウザで開く";
@@ -987,9 +982,6 @@
 "settings.$PleaseSelectTheMediaTypes" = "UniPlayerをデフォルトの再生アプリケーションに設定したいメディアの種類を選択してください。";
 "settings.$Position" = "配置";
 "settings.$PreferredLanguage" = "優先言語";
-"settings.$RestoreAlerts" = "通知を復元";
-"settings.$RestoreAllAlertsThat" = "\"今後このメッセージを表示しない\" チェックボックスを使って非表示にしたすべての通知を復元します。";
-"settings.$RestoreSuppressedAlerts" = "非表示にした警告を復元";
 "settings.$SPDIFOutput" = "S/PDIF出力";
 "settings.$SPDIFOutputWarning" = "圧縮オーディオをパススルーするコーデックのリストです。
 

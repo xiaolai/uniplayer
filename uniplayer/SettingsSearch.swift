@@ -6,75 +6,6 @@
 //  Copyright © 2026 lhc. All rights reserved.
 //
 
-fileprivate class Trie {
-  class Node {
-    var children: [Node] = []
-    let char: Character
-    init(_ c: Character) {
-      char = c
-    }
-  }
-
-  let entry: SettingsSearch.Entry
-
-  private let root: Node
-  private var lastPosition: Node
-  var active: Bool
-
-  init(_ entry: SettingsSearch.Entry) {
-    self.entry = entry
-    self.root = Node(" ")
-    self.lastPosition = root
-    self.active = true
-
-    let s = [[entry.title], entry.extraTerms]
-      .flatMap { $0 }.compactMap { $0 }.joined(separator: " ").lowercased()
-    let strings = s.components(separatedBy: " ")
-    for string in strings {
-      var t = string
-      while t.count != 0 {
-        addString(t)
-        t.removeFirst()
-      }
-    }
-  }
-
-  func reset() {
-    lastPosition = root
-    active = true
-  }
-
-  func addString(_ str: String) {
-    var current = root
-    for c in Array(str) {
-      if let next = current.children.first(where: { $0.char == c }) {
-        current = next
-      } else {
-        let newNode = Node(c)
-        current.children.append(newNode)
-        current = newNode
-      }
-    }
-  }
-
-  func search(_ str: String) {
-    for c in str {
-      // half-width and full-width spaces
-      if c == " " || c == "　" {
-        lastPosition = root
-        continue
-      }
-      if let next = lastPosition.children.first(where: { $0.char == c }) {
-        lastPosition = next
-      } else {
-        active = false
-        return
-      }
-    }
-  }
-}
-
-
 struct SettingsSearch {
   class Entry {
     let page: String
@@ -148,31 +79,33 @@ struct SettingsSearch {
 
   static var entries: [Entry] = []
 
-  static private var tries: [Trie] = []
   static private var lastString: String = ""
 
   static func makeTries() {
     Entry.assignMainAndParentEntries(entries)
-    for entry in entries {
-      add(entry: entry)
-    }
   }
 
   static func search(_ searchString: String) -> [SettingsSearch.Entry]? {
     if searchString == lastString {
       return nil
     }
-    if searchString.hasPrefix(lastString) {
-      tries.filter { $0.active }.forEach { $0.search(String(searchString.dropFirst(lastString.count))) }
-    } else {
-      tries.forEach { $0.reset(); $0.search(searchString) }
-    }
     lastString = searchString
-    return tries.filter { $0.active }.map { $0.entry }
+
+    let terms = searchString.lowercased().split(whereSeparator: { $0 == " " || $0 == "　" })
+    guard !terms.isEmpty else { return entries }
+
+    return entries.filter { entry in
+      let haystack = ([[entry.title], entry.extraTerms]
+        .flatMap { $0 }
+        .compactMap { $0 }
+        .joined(separator: " "))
+        .lowercased()
+      return terms.allSatisfy { haystack.contains($0) }
+    }
   }
 
   static func add(entry: SettingsSearch.Entry) {
-    tries.append(Trie(entry))
+    entries.append(entry)
   }
 }
 
