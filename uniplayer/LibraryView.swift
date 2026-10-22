@@ -651,6 +651,7 @@ private struct HeroView: View {
             .keyboardShortcut(.defaultAction)
             .padding(.top, Tokens.Space.n4)
             .accessibilityLabel(item.isResumable ? L("Resume") : L("Play"))
+            .help(item.isResumable ? L("Resume") : L("Play"))
           }
           .foregroundStyle(Tokens.Palette.onMedia.color)
           .padding(Tokens.Library.heroPadding)
@@ -1022,6 +1023,8 @@ private struct DetailView: View {
         .buttonStyle(.plain)
         .foregroundStyle(Tokens.Palette.textSecondary.color)
         .keyboardShortcut(.cancelAction)
+        .accessibilityLabel(L("Back"))
+        .help(L("Back"))
 
         if isPlayingHere {
           liveSurface
@@ -1039,6 +1042,8 @@ private struct DetailView: View {
             }
             .buttonStyle(.borderedProminent)
             .keyboardShortcut(.defaultAction)
+            .accessibilityLabel(item.isResumable ? L("Resume") : L("Play"))
+            .help(item.isResumable ? L("Resume") : L("Play"))
           } else {
             Button(action: openInNewWindow) {
               Label(L("Open in New Window"), systemImage: "macwindow.on.rectangle")
@@ -1047,6 +1052,8 @@ private struct DetailView: View {
                 .padding(.vertical, Tokens.Space.n10)
             }
             .buttonStyle(.bordered)
+            .accessibilityLabel(L("Open in New Window"))
+            .help(L("Open in New Window"))
           }
 
           if item.isResumable {
@@ -1067,6 +1074,8 @@ private struct DetailView: View {
               NSWorkspace.shared.activateFileViewerSelecting([item.url])
             }
             .buttonStyle(.bordered)
+            .accessibilityLabel(L("Show in Finder"))
+            .help(L("Show in Finder"))
           }
         }
 

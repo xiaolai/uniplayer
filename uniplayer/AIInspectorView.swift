@@ -611,6 +611,8 @@ struct AIInspectorView: View {
           }
           .buttonStyle(.bordered)
           .controlSize(.small)
+          .accessibilityLabel(prompt)
+          .help(prompt)
         }
       }
       .padding(.top, Tokens.Space.n4)
@@ -664,11 +666,13 @@ struct AIInspectorView: View {
           }
           .buttonStyle(.borderedProminent)
           .controlSize(.small)
+          .help(aiL("Allow"))
           Button(aiL("Cancel")) {
             model.cancelPendingTool()
           }
           .buttonStyle(.bordered)
           .controlSize(.small)
+          .help(aiL("Cancel"))
         }
       }
       .padding(Tokens.Space.n12)
@@ -748,6 +752,7 @@ struct AIInspectorView: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(aiL("What will be sent"))
+        .help(aiL("What will be sent"))
 
         if disclosureExpanded {
           Text(model.contextDisclosure ?? "")
@@ -781,6 +786,7 @@ struct AIInspectorView: View {
             .buttonStyle(.plain)
             .accessibilityLabel(aiL("Include full file path"))
             .accessibilityValue(model.includeFilePath ? aiL("On") : aiL("Off"))
+            .help(aiL("Include full file path"))
           }
         }
       } else {

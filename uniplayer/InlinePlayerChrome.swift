@@ -319,12 +319,12 @@ struct InlinePlayerChrome: View {
         .foregroundStyle(Tokens.Palette.onMediaSecondary.color)
         .monospacedDigit()
 
-      Slider(
+      InlineSlider(
         value: Binding(
           get: { displayedPosition },
           set: { scrubValue = $0 }),
-        in: 0...max(model.duration, 1),
-        onEditingChanged: { editing in
+        range: 0...max(model.duration, 1),
+        label: inlineL("Playback position")) { editing in
           if editing {
             scrubbing = true
             scrubValue = model.position
@@ -332,10 +332,7 @@ struct InlinePlayerChrome: View {
             scrubbing = false
             model.seek(to: scrubValue)
           }
-        })
-      .tint(Tokens.Palette.onMedia.color)
-      .accessibilityLabel(inlineL("Playback position"))
-      .accessibilityValue(VideoTime(displayedPosition).stringRepresentation)
+        }
 
       Text(VideoTime(model.duration).stringRepresentation)
         .font(Tokens.Typography.numeric.font)
@@ -380,7 +377,8 @@ struct InlinePlayerChrome: View {
         in: 0...Double(Preference.integer(for: .maxVolume)))
       .frame(width: Tokens.Size.n70)
       .tint(Tokens.Palette.onMedia.color)
-      .accessibilityLabel(inlineL("Volume"))
+      .accessibilityLabel(Text(inlineL("Volume")))
+      .help(inlineL("Volume"))
 
       controlButton(model.isFullscreen
                     ? "arrow.down.right.and.arrow.up.left"
@@ -495,5 +493,68 @@ struct InlinePlayerChrome: View {
       .padding(.vertical, Tokens.HUD.capsuleVertical)
       .glassEffect(.regular, in: .capsule)
       .accessibilityAddTraits(.isStaticText)
+  }
+}
+
+
+// MARK: - Labelled slider
+
+/// A SwiftUI `Slider` does not expose an accessibility name in this embedded
+/// layout, so the inline controls use a real `NSSlider`, which carries both a
+/// role and an explicit label.
+private struct InlineSlider: NSViewRepresentable {
+  @Binding var value: Double
+  let range: ClosedRange<Double>
+  let label: String
+  var onEditingChanged: (Bool) -> Void = { _ in }
+
+  func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+  func makeNSView(context: Context) -> SliderView {
+    let slider = SliderView(value: value,
+                            minValue: range.lowerBound,
+                            maxValue: range.upperBound,
+                            target: context.coordinator,
+                            action: #selector(Coordinator.valueChanged(_:)))
+    slider.isContinuous = true
+    slider.controlSize = .small
+    slider.setAccessibilityLabel(label)
+    slider.onEditingChanged = { [weak coordinator = context.coordinator] editing in
+      coordinator?.parent.onEditingChanged(editing)
+    }
+    context.coordinator.slider = slider
+    return slider
+  }
+
+  func updateNSView(_ nsView: SliderView, context: Context) {
+    context.coordinator.parent = self
+    nsView.minValue = range.lowerBound
+    nsView.maxValue = range.upperBound
+    nsView.setAccessibilityLabel(label)
+    if !context.coordinator.isDragging {
+      nsView.doubleValue = value
+    }
+  }
+
+  final class Coordinator: NSObject {
+    var parent: InlineSlider
+    weak var slider: SliderView?
+    var isDragging = false
+
+    init(_ parent: InlineSlider) { self.parent = parent }
+
+    @objc func valueChanged(_ sender: NSSlider) {
+      parent.value = sender.doubleValue
+    }
+  }
+
+  final class SliderView: NSSlider {
+    var onEditingChanged: ((Bool) -> Void)?
+
+    override func mouseDown(with event: NSEvent) {
+      onEditingChanged?(true)
+      super.mouseDown(with: event)
+      onEditingChanged?(false)
+    }
   }
 }
