@@ -60,15 +60,28 @@ class PluginManager {
         return (.cancelled, nil)
       }
 
-      // install update
-      guard let newPlugin = try plugin.updated() else {
+      // install update off the main actor; unpacking and network work must not
+      // block the consent UI.
+      guard let newPlugin = try await Task.detached(priority: .userInitiated, operation: {
+        try plugin.updated()
+      }).value else {
         return (.cancelled, nil)
       }
 
-      // alert the user if plugin has new permissions
-      var permissionCleared = newPlugin.permissions.subtracting(plugin.permissions).isEmpty
-      if (!permissionCleared) {
-        permissionCleared = await showPermissionsSheet(forPlugin: newPlugin, previousPlugin: plugin)
+      // Alert the user if the update adds a permission or widens the network
+      // scope. A wider domain list is a new capability even when the
+      // network-request permission itself is unchanged.
+      let newPermissions = newPlugin.permissions.subtracting(plugin.permissions)
+      let oldDomains = Set(plugin.domainList)
+      let newDomains = Set(newPlugin.domainList)
+      let domainsExpanded = newPlugin.permissions.contains(.networkRequest)
+        && !oldDomains.contains("*")
+        && !newDomains.isSubset(of: oldDomains)
+      var permissionCleared = newPermissions.isEmpty && !domainsExpanded
+      if !permissionCleared {
+        permissionCleared = await showPermissionsSheet(
+          forPlugin: newPlugin,
+          previousPlugin: domainsExpanded ? nil : plugin)
       }
       if permissionCleared {
         if let pos = plugin.remove() {
@@ -155,13 +168,15 @@ class PluginManager {
   @MainActor
   func install(gitHubString string: String? = nil, localPackageURL url: URL? = nil, handler: ((Result) -> Void)? = nil) async {
     do {
-      let plugin = if let string {
-        try JavascriptPlugin.create(fromGitURL: string)
-      } else if let url {
-        try JavascriptPlugin.create(fromPackageURL: url)
-      } else {
-        fatalError("PluginManager.install: a source must be provided.")
-      }
+      let plugin = try await Task.detached(priority: .userInitiated) {
+        if let string {
+          return try JavascriptPlugin.create(fromGitURL: string)
+        } else if let url {
+          return try JavascriptPlugin.create(fromPackageURL: url)
+        } else {
+          fatalError("PluginManager.install: a source must be provided.")
+        }
+      }.value
       let res = await install(plugin)
       handler?(res)
     } catch let error {

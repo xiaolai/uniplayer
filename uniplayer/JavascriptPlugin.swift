@@ -9,6 +9,7 @@
 import Foundation
 import JavaScriptCore
 import Just
+import WebKit
 
 fileprivate let githubRepoRegex = Regex("^[\\w-]+/[\\w-]+$")
 fileprivate let idRegex = Regex("^([\\w-_]+\\.)+[\\w-_]+$")
@@ -16,6 +17,7 @@ fileprivate let idRegex = Regex("^([\\w-_]+\\.)+[\\w-_]+$")
 class JavascriptPlugin: NSObject {
   enum Permission: String {
     case networkRequest = "network-request"
+    case networkListener = "network-listener"
     case showOSD = "show-osd"
     case showAlert = "show-alert"
     case displayVideoOverlay = "video-overlay"
@@ -23,7 +25,7 @@ class JavascriptPlugin: NSObject {
 
     var isDangerous: Bool {
       switch self {
-      case .networkRequest, .accessFileSystem:
+      case .networkRequest, .networkListener, .accessFileSystem:
         return true
       default:
         return false
@@ -39,8 +41,13 @@ class JavascriptPlugin: NSObject {
     case cannotLoadPlugin
   }
 
+  static let ytdlIdentifiers: Set<String> = [
+    "io.iina.ytdl",
+    "com.lixiaolai.uniplayer.ytdl", // pre-fork installs
+  ]
+
   static var hasYTDL: Bool {
-    return plugins.contains { $0.enabled && $0.identifier == "com.lixiaolai.uniplayer.ytdl" }
+    plugins.contains { $0.enabled && ytdlIdentifiers.contains($0.identifier) }
   }
 
   static var plugins = loadPlugins() {
@@ -181,7 +188,124 @@ class JavascriptPlugin: NSObject {
     UserDefaults.standard.set((values ?? plugins).map({ $0.identifier }), forKey: "PluginOrder")
   }
 
-  @discardableResult
+  /// Handle a message from a plugin preference page.
+  ///
+  /// The page is untrusted input: validate the operation's arity before
+  /// indexing, accept only the main frame, and hand values to JavaScript as
+  /// arguments rather than interpolating them into source.
+  static func handlePreferencesMessage(_ message: WKScriptMessage, plugin: JavascriptPlugin, webView: WKWebView) {
+    guard message.frameInfo.isMainFrame else { return }
+    guard let dict = message.body as? [Any], dict.count == 2,
+          let name = dict[0] as? String,
+          let data = dict[1] as? [Any] else { return }
+
+    switch name {
+    case "set":
+      guard data.count >= 2, let prefName = data[0] as? String else { return }
+      plugin.preferences[prefName] = data[1]
+
+    case "get":
+      guard data.count >= 2, let prefName = data[0] as? String else { return }
+      let raw: Any = plugin.preferences[prefName] ?? plugin.defaultPreferences[prefName] ?? NSNull()
+      let value: Any
+      if JSONSerialization.isValidJSONObject(raw) || raw is String || raw is NSNumber || raw is NSNull {
+        value = raw
+      } else {
+        value = String(describing: raw)
+      }
+      webView.callAsyncJavaScript(
+        "window.iina._call(id, value)",
+        arguments: ["id": data[1], "value": value],
+        in: nil,
+        in: .page,
+        completionHandler: nil)
+
+    case "error":
+      guard data.count >= 5, let prefName = data[0] as? String else { return }
+      Logger.log("JS:\(plugin.name) Preference page \(prefName) \(data[2]),\(data[3]): \(data[4])")
+
+    case "log":
+      guard data.count >= 1, let prefName = data[0] as? String else { return }
+      Logger.log("JS:\(plugin.name) Preference page: \(prefName)")
+
+    default:
+      return
+    }
+  }
+
+  /// Unpack a plugin archive without a shell and without allowing an entry to
+  /// escape the plugin directory.
+  private static func extractPackage(zipName: String, folder: String, decompressDir: String, stripTopLevel: Bool) throws {
+    let root = Utility.pluginsURL
+    let zipURL = root.appendingPathComponent(zipName)
+    let decompressURL = root.appendingPathComponent(decompressDir)
+
+    try FileManager.default.createDirectory(at: decompressURL, withIntermediateDirectories: true)
+
+    let listing = Process.run(["/usr/bin/unzip", "-Z1", zipURL.path], at: root)
+    guard listing.status == 0 else {
+      throw PluginError.cannotUnpackage(
+        String(decoding: listing.stdout, as: UTF8.self),
+        String(decoding: listing.stderr, as: UTF8.self))
+    }
+    for rawName in String(decoding: listing.stdout, as: UTF8.self).split(separator: "\n") {
+      let name = String(rawName)
+      guard !name.isEmpty else { continue }
+      let components = name.split(separator: "/", omittingEmptySubsequences: false)
+      if name.hasPrefix("/") || components.contains("..") {
+        throw PluginError.cannotUnpackage("", "Unsafe archive entry: \(name)")
+      }
+    }
+
+    // zipinfo marks a symlink entry with `l` in the first column. A plugin
+    // package has no reason to contain one, and a symlink can escape the
+    // extraction directory.
+    let info = Process.run(["/usr/bin/zipinfo", "-l", zipURL.path], at: root)
+    guard info.status == 0 else {
+      throw PluginError.cannotUnpackage(
+        String(decoding: info.stdout, as: UTF8.self),
+        String(decoding: info.stderr, as: UTF8.self))
+    }
+    for line in String(decoding: info.stdout, as: UTF8.self).split(separator: "\n") where line.hasPrefix("l") {
+      throw PluginError.cannotUnpackage("", "Archive contains a symlink: \(line)")
+    }
+
+    let extraction = Process.run(["/usr/bin/unzip", "-oq", zipURL.path, "-d", decompressURL.path], at: root)
+    guard extraction.status == 0 else {
+      throw PluginError.cannotUnpackage(
+        String(decoding: extraction.stdout, as: UTF8.self),
+        String(decoding: extraction.stderr, as: UTF8.self))
+    }
+
+    if let enumerator = FileManager.default.enumerator(
+      at: decompressURL,
+      includingPropertiesForKeys: [.isSymbolicLinkKey]
+    ) {
+      for case let item as URL in enumerator {
+        if (try? item.resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink == true {
+          throw PluginError.cannotUnpackage("", "Archive contains a symlink: \(item.lastPathComponent)")
+        }
+      }
+    }
+
+    var source = decompressURL
+    if stripTopLevel {
+      let top = try FileManager.default.contentsOfDirectory(
+        at: decompressURL,
+        includingPropertiesForKeys: [.isDirectoryKey])
+      guard top.count == 1, top[0].isExistingDirectory else {
+        throw PluginError.cannotUnpackage("", "The downloaded archive has an unexpected layout")
+      }
+      source = top[0]
+    }
+
+    let folderURL = root.appendingPathComponent(folder)
+    try FileManager.default.createDirectory(at: folderURL, withIntermediateDirectories: true)
+    for item in try FileManager.default.contentsOfDirectory(at: source, includingPropertiesForKeys: nil) {
+      try FileManager.default.moveItem(at: item, to: folderURL.appendingPathComponent(item.lastPathComponent))
+    }
+  }
+
   static func create(fromPackageURL url: URL) throws -> JavascriptPlugin {
     guard FileManager.default.fileExists(atPath: url.path) else {
       throw PluginError.fileNotFound(url.path)
@@ -204,19 +328,13 @@ class JavascriptPlugin: NSObject {
       try? FileManager.default.removeItem(at: pluginsRoot.appendingPathComponent(tempFolder))
     }
 
-    let cmd = [
-      "cp '\(url.path)' '\(tempZipFile)'",
-      "mkdir '\(tempFolder)' '\(tempDecompressDir)'",
-      "unzip '\(tempZipFile)' -d '\(tempDecompressDir)'",
-      "mv '\(tempDecompressDir)'/* '\(tempFolder)'/"
-    ].joined(separator: " && ")
-    let (process, stdout, stderr) = Process.run(["/bin/sh", "-c", cmd], at: pluginsRoot)
-
-    guard process.terminationStatus == 0 else {
-      let outText = String(data: stdout.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? "None"
-      let errText = String(data: stderr.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? "None"
+    let zipURL = pluginsRoot.appendingPathComponent(tempZipFile)
+    do {
+      try FileManager.default.copyItem(at: url, to: zipURL)
+      try extractPackage(zipName: tempZipFile, folder: tempFolder, decompressDir: tempDecompressDir, stripTopLevel: false)
+    } catch {
       removeTempPluginFolder()
-      throw PluginError.cannotUnpackage(outText, errText)
+      throw error
     }
 
     guard let plugin = JavascriptPlugin(filename: tempFolder) else {
@@ -290,19 +408,19 @@ class JavascriptPlugin: NSObject {
       try? FileManager.default.removeItem(at: pluginsRoot.appendingPathComponent(tempFolder))
     }
 
-    let cmd = [
-      "curl -fsSL '\(githubMasterURL)' > '\(tempZipFile)'",
-      "mkdir '\(tempFolder)' '\(tempDecompressDir)'",
-      "unzip '\(tempZipFile)' -d '\(tempDecompressDir)'",
-      "mv '\(tempDecompressDir)'/*/* '\(tempFolder)'/"
-    ].joined(separator: " && ")
-    let (process, stdout, stderr) = Process.run(["/bin/sh", "-c", cmd], at: pluginsRoot)
-
-    guard process.terminationStatus == 0 else {
-      let outText = String(data: stdout.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? "None"
-      let errText = String(data: stderr.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? "None"
+    let zipURL = pluginsRoot.appendingPathComponent(tempZipFile)
+    let download = Process.run(["/usr/bin/curl", "-fsSL", "-o", zipURL.path, githubMasterURL], at: pluginsRoot)
+    guard download.status == 0 else {
       removeTempPluginFolder()
-      throw PluginError.cannotDownload(outText, errText)
+      throw PluginError.cannotDownload(
+        String(decoding: download.stdout, as: UTF8.self),
+        String(decoding: download.stderr, as: UTF8.self))
+    }
+    do {
+      try extractPackage(zipName: tempZipFile, folder: tempFolder, decompressDir: tempDecompressDir, stripTopLevel: true)
+    } catch {
+      removeTempPluginFolder()
+      throw error
     }
 
     guard let plugin = JavascriptPlugin(filename: tempFolder) else {
@@ -609,7 +727,7 @@ fileprivate func resolvePath(_ path: String?, root: URL, allowNetwork: Bool = fa
     else { return nil }
   } else {
     let url = root.appendingPathComponent(path).standardized
-    if url.absoluteString.hasPrefix(root.absoluteString) {
+    if url.isContained(in: root) {
       guard FileManager.default.fileExists(atPath: url.path) else {
         Logger.log("The file \(path) doesn't exist", level: .error)
         return nil

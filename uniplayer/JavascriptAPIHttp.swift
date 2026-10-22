@@ -68,19 +68,25 @@ class JavascriptAPIHttp: JavascriptAPI, JavascriptAPIHttpExportable {
       let params = options?["params"] as? [String: String]
       let headers = options?["headers"] as? [String: String]
       let data = options?["data"] as? [String: Any]
-      return createPromise { resolve, reject in
+      return createPromise { [self] resolve, reject in
         Just.request(method, url: url,
                      params: params ?? [:],
                      data: data ?? [:],
                      headers: headers ?? [:],
-                     asyncCompletionHandler:  { [unowned self] response in
+                     asyncCompletionHandler:  { [self] response in
           if (response.ok) {
+            guard let content = response.content else {
+              self.throwError(withMessage: "The response has no body.")
+              reject.call(withArguments: ["The response has no body."])
+              return
+            }
             do {
-              try response.content?.write(to: URL(fileURLWithPath: destPath))
+              try content.write(to: URL(fileURLWithPath: destPath))
+              resolve.call(withArguments: [])
             } catch {
               self.throwError(withMessage: "Unable to write to the destination.")
+              reject.call(withArguments: [error.localizedDescription])
             }
-            resolve.call(withArguments: [])
           } else {
             reject.call(withArguments: [response.toDict()])
           }

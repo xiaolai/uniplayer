@@ -107,36 +107,21 @@ class JavascriptAPIUtils: JavascriptAPI, JavascriptAPIUtilsExportable {
       var args = args
       if !file.contains("/") {
         if let url = searchBinary(file, in: Utility.binariesURL) ?? searchBinary(file, in: Utility.exeDirURL) {
-          // a binary included in UniPlayer's bundle?
-          if #available(macOS 13.0, *) {
-            path = url.path(percentEncoded: false)
-          } else {
-            path = url.path
-          }
+          // a binary included in UniPlayer's bundle
+          path = url.path(percentEncoded: false)
         } else {
-          // assume it's a system command
-          let useBash = false
-          if useBash {
-            path = "/bin/bash"
-            args.insert(file, at: 0)
-            args = ["-c", args.map {
-              $0.replacingOccurrences(of: " ", with: "\\ ")
-                .replacingOccurrences(of: "'", with: "\\'")
-                .replacingOccurrences(of: "\"", with: "\\\"")
-            }.joined(separator: " ")]
-          } else {
-            args.insert(file, at: 0)
-          }
+          // Resolve a bare system command through env's PATH rather than
+          // launching an empty path.
+          path = "/usr/bin/env"
+          args.insert(file, at: 0)
         }
       } else {
         // it should be an existing file
         if file.first == "/" {
-          // an absolute path?
           path = file
         } else {
           path = parsePath(file).path ?? ""
         }
-        // make sure the file exists
         guard FileManager.default.fileExists(atPath: path) else {
           reject.call(withArguments: [-1, "Cannot find the binary \(file)"])
           return
@@ -145,8 +130,8 @@ class JavascriptAPIUtils: JavascriptAPI, JavascriptAPIUtilsExportable {
 
       // If this binary belongs to the plugin but doesn't have exec permission, try fix it
       if !FileManager.default.isExecutableFile(atPath: path) && (
-        path.hasPrefix(self.pluginInstance.plugin.dataURL.path) ||
-        path.hasPrefix(self.pluginInstance.plugin.tmpURL.path)) {
+        URL(fileURLWithPath: path).isContained(in: self.pluginInstance.plugin.dataURL) ||
+        URL(fileURLWithPath: path).isContained(in: self.pluginInstance.plugin.tmpURL)) {
         do {
           try FileManager.default.setAttributes([.posixPermissions: NSNumber(integerLiteral: 0o755)], ofItemAtPath: path)
         } catch {
@@ -155,19 +140,18 @@ class JavascriptAPIUtils: JavascriptAPI, JavascriptAPIUtilsExportable {
         }
       }
 
-      let (stdout, stderr) = (Pipe(), Pipe())
+      let stdout = Pipe()
+      let stderr = Pipe()
       let process = Process()
       process.environment = ["LC_ALL": "en_US.UTF-8"]
-      process.launchPath = path
+      process.executableURL = URL(fileURLWithPath: path)
       process.arguments = args
       if let cwd, cwd.isString, let cwdPath = parsePath(cwd.toString()).path {
-        process.currentDirectoryPath = cwdPath
+        process.currentDirectoryURL = URL(fileURLWithPath: cwdPath)
       }
       process.standardOutput = stdout
       process.standardError = stderr
 
-      var stdoutContent = ""
-      var stderrContent = ""
       var stdoutHook: JSValue?
       var stderrHook: JSValue?
       if let hookVal = stdoutHook_, hookVal.isObject {
@@ -177,16 +161,31 @@ class JavascriptAPIUtils: JavascriptAPI, JavascriptAPIUtilsExportable {
         stderrHook = hookVal
       }
 
+      let outputQueue = DispatchQueue(label: "uniplayer.plugin-exec-output-\(UUID().uuidString)")
+      var stdoutData = Data()
+      var stderrData = Data()
+
+      func deliver(_ data: Data, hook: JSValue?, isStdout: Bool) {
+        guard !data.isEmpty else { return }
+        outputQueue.async {
+          if isStdout {
+            stdoutData.append(data)
+          } else {
+            stderrData.append(data)
+          }
+          if let hook, let output = String(data: data, encoding: .utf8) {
+            self.pluginInstance.queue.async { hook.call(withArguments: [output]) }
+          }
+        }
+      }
+
       stdout.fileHandleForReading.readabilityHandler = { file in
-        guard let output = String(data: file.availableData, encoding: .utf8) else { return }
-        stdoutContent += output
-        stdoutHook?.call(withArguments: [output])
+        deliver(file.availableData, hook: stdoutHook, isStdout: true)
       }
       stderr.fileHandleForReading.readabilityHandler = { file in
-        guard let output = String(data: file.availableData, encoding: .utf8) else { return }
-        stderrContent += output
-        stderrHook?.call(withArguments: [output])
+        deliver(file.availableData, hook: stderrHook, isStdout: false)
       }
+
       Logger.log("Executing \(path) \(args.joined(separator: " "))", subsystem: pluginInstance.subsystem)
       do {
         try process.run()
@@ -195,16 +194,25 @@ class JavascriptAPIUtils: JavascriptAPI, JavascriptAPIUtilsExportable {
         return
       }
 
-      self.pluginInstance.queue.async {
+      DispatchQueue.global(qos: .userInitiated).async {
         process.waitUntilExit()
-        stderr.fileHandleForReading.readabilityHandler = nil
         stdout.fileHandleForReading.readabilityHandler = nil
-        DispatchQueue.main.async {
-          resolve.call(withArguments: [[
-            "status": process.terminationStatus,
-            "stdout": stdoutContent,
-            "stderr": stderrContent
-          ] as [String: Any]])
+        stderr.fileHandleForReading.readabilityHandler = nil
+        let restOut = stdout.fileHandleForReading.readDataToEndOfFile()
+        let restErr = stderr.fileHandleForReading.readDataToEndOfFile()
+        outputQueue.sync {
+          stdoutData.append(restOut)
+          stderrData.append(restErr)
+          let out = String(decoding: stdoutData, as: UTF8.self)
+          let err = String(decoding: stderrData, as: UTF8.self)
+          let status = process.terminationStatus
+          self.pluginInstance.queue.async {
+            resolve.call(withArguments: [[
+              "status": status,
+              "stdout": out,
+              "stderr": err
+            ] as [String: Any]])
+          }
         }
       }
     }

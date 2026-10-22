@@ -486,7 +486,7 @@ extension NSColor {
       let g = Double((rgb >> 8) & 0xFF) / 255
       let b = Double(rgb & 0xFF) / 255
 
-      self.init(red: r, green: g, blue: b, alpha: a)
+      self.init(red: r, green: g, blue: b, alpha: a) // token-exempt: parses an mpv colour value, not a design value
     } else {
       let splitted = str.split(separator: "/").map { (seq) -> Double? in
         return Double(String(seq))
@@ -494,9 +494,9 @@ extension NSColor {
       // check nil
       if (!splitted.contains {$0 == nil}) {
         if splitted.count == 3 {  // if doesn't have alpha value
-          self.init(red: CGFloat(splitted[0]!), green: CGFloat(splitted[1]!), blue: CGFloat(splitted[2]!), alpha: CGFloat(1))
+          self.init(red: CGFloat(splitted[0]!), green: CGFloat(splitted[1]!), blue: CGFloat(splitted[2]!), alpha: CGFloat(1)) // token-exempt: parses an mpv colour value, not a design value
         } else if splitted.count == 4 {  // if has alpha value
-          self.init(red: CGFloat(splitted[0]!), green: CGFloat(splitted[1]!), blue: CGFloat(splitted[2]!), alpha: CGFloat(splitted[3]!))
+          self.init(red: CGFloat(splitted[0]!), green: CGFloat(splitted[1]!), blue: CGFloat(splitted[2]!), alpha: CGFloat(splitted[3]!)) // token-exempt: parses an mpv colour value, not a design value
         } else {
           return nil
         }
@@ -622,9 +622,6 @@ extension URL {
     guard isFileURL else {
       return absoluteString
     }
-    guard #available(macOS 13.0, *) else {
-      return path
-    }
     return path(percentEncoded: false)
   }
 
@@ -634,6 +631,18 @@ extension URL {
 
   var isExistingDirectory: Bool {
     return (try? self.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory ?? false
+  }
+
+  /// True when this file URL resolves inside `directory`.
+  ///
+  /// Both paths are standardized and symlinks are resolved before a
+  /// component-wise comparison, so a sibling whose name merely starts with the
+  /// directory name cannot pass, and a symlink cannot point outside.
+  func isContained(in directory: URL) -> Bool {
+    let target = standardizedFileURL.resolvingSymlinksInPath().pathComponents
+    let root = directory.standardizedFileURL.resolvingSymlinksInPath().pathComponents
+    guard target.count >= root.count else { return false }
+    return Array(target.prefix(root.count)) == root
   }
 }
 
@@ -841,11 +850,7 @@ extension NSScreen {
 
   /// Height of the camera housing on this screen if this screen has an embedded camera.
   var cameraHousingHeight: CGFloat? {
-    if #available(macOS 12.0, *) {
-      return safeAreaInsets.top == 0.0 ? nil : safeAreaInsets.top
-    } else {
-      return nil
-    }
+    return safeAreaInsets.top == 0.0 ? nil : safeAreaInsets.top
   }
 
   /// [CGDirectDisplayID](https://developer.apple.com/documentation/CoreGraphics/CGDirectDisplayID) of the
@@ -961,22 +966,48 @@ extension NSWindow {
 
 extension Process {
   @discardableResult
-  static func run(_ cmd: [String], at currentDir: URL? = nil) -> (process: Process, stdout: Pipe, stderr: Pipe) {
-    guard cmd.count > 0 else {
-      fatalError("Process.launch: the command should not be empty")
+  /// Run a process, draining both output pipes concurrently with execution.
+  ///
+  /// The old helper waited for exit before callers could read the pipes, which
+  /// deadlocks when a child fills a pipe buffer. Output is captured here and
+  /// returned as data, so callers never race the termination path.
+  static func run(_ cmd: [String], at currentDir: URL? = nil) -> (status: Int32, stdout: Data, stderr: Data) {
+    guard !cmd.isEmpty else {
+      return (-1, Data(), Data("empty command".utf8))
     }
 
-    let (stdout, stderr) = (Pipe(), Pipe())
+    let stdout = Pipe()
+    let stderr = Pipe()
     let process = Process()
     process.executableURL = URL(fileURLWithPath: cmd[0])
     process.currentDirectoryURL = currentDir
     process.arguments = [String](cmd.dropFirst())
     process.standardOutput = stdout
     process.standardError = stderr
-    process.launch()
-    process.waitUntilExit()
 
-    return (process, stdout, stderr)
+    do {
+      try process.run()
+    } catch {
+      return (-1, Data(), Data(error.localizedDescription.utf8))
+    }
+
+    let group = DispatchGroup()
+    var stdoutData = Data()
+    var stderrData = Data()
+    group.enter()
+    DispatchQueue.global(qos: .userInitiated).async {
+      stdoutData = stdout.fileHandleForReading.readDataToEndOfFile()
+      group.leave()
+    }
+    group.enter()
+    DispatchQueue.global(qos: .userInitiated).async {
+      stderrData = stderr.fileHandleForReading.readDataToEndOfFile()
+      group.leave()
+    }
+    process.waitUntilExit()
+    group.wait()
+
+    return (process.terminationStatus, stdoutData, stderrData)
   }
 }
 
@@ -1105,6 +1136,21 @@ extension NSEvent {
     return views.compactMap{ $0 }.contains { view in
       view.isMousePoint(view.convert(locationInWindow, from: nil), in: view.bounds)
     }
+  }
+}
+
+extension Collection where Element == URLQueryItem {
+
+  /// A query dictionary that keeps the first value for each name.
+  ///
+  /// `Dictionary(uniqueKeysWithValues:)` traps on a duplicate name, and an
+  /// external URL is untrusted input, so a malformed query must not crash.
+  var firstValueDictionary: [String: String] {
+    var result: [String: String] = [:]
+    for item in self where result[item.name] == nil {
+      result[item.name] = item.value ?? ""
+    }
+    return result
   }
 }
 

@@ -168,24 +168,31 @@ func createPlugin(_ args: ArraySlice<String>) -> Bool {
   }
   print("Downloading to \(tmpURL.path)")
   
-  let cmd = "curl -o template.zip \(templateURL) && unzip -oq template.zip -d template"
-  var (process, stdout, stderr) = Process.run(["/bin/bash", "-c", cmd], at: tmpURL)
-  
-  guard process.terminationStatus == 0 else {
-    let outText = String(data: stdout.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? "None"
-    let errText = String(data: stderr.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? "None"
-    printErrorAndExit("Unable to download the plugin template.\n\(outText)\n\(errText)")
+  guard let template = URL(string: templateURL),
+        let scheme = template.scheme?.lowercased(),
+        scheme == "https" || scheme == "http" else {
+    printErrorAndExit("The template URL must be HTTP(S): \(templateURL)")
   }
-  (process, stdout, stderr) = Process.run(["/bin/bash", "-c", "ls template"], at: tmpURL)
-  let outText = String(data: stdout.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? "None"
-  let errText = String(data: stderr.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? "None"
-  guard process.terminationStatus == 0 else {
-    printErrorAndExit("Unable to download the plugin template.\n\(outText)\n\(errText)")
+
+  let download = Process.run(["/usr/bin/curl", "-fsSL", "-o", "template.zip", template.absoluteString], at: tmpURL)
+  guard download.status == 0 else {
+    printErrorAndExit("Unable to download the plugin template.\n\(String(decoding: download.stdout, as: UTF8.self))\n\(String(decoding: download.stderr, as: UTF8.self))")
   }
-  
-  // if the previous command succeeded, stdout should be the folder name inside template/
-  let templateDir = tmpURL.appendingPathComponent("template")
-    .appendingPathComponent(outText.trimmingCharacters(in: .whitespacesAndNewlines))
+
+  let unzip = Process.run(["/usr/bin/unzip", "-oq", "template.zip", "-d", "template"], at: tmpURL)
+  guard unzip.status == 0 else {
+    printErrorAndExit("Unable to unpack the plugin template.\n\(String(decoding: unzip.stdout, as: UTF8.self))\n\(String(decoding: unzip.stderr, as: UTF8.self))")
+  }
+
+  let templateRoot = tmpURL.appendingPathComponent("template")
+  let templateEntries = (try? FileManager.default.contentsOfDirectory(
+    at: templateRoot,
+    includingPropertiesForKeys: [.isDirectoryKey])) ?? []
+  guard let templateDir = templateEntries.first(where: {
+    (try? $0.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true
+  }) else {
+    printErrorAndExit("The template archive has an unexpected layout.")
+  }
 
   guard FileManager.default.fileExists(atPath: templateDir.path) else {
     printErrorAndExit("Unable to find the plugin template")
@@ -271,7 +278,11 @@ func packPlugin(_ args: ArraySlice<String>) -> Bool {
     exit(EXIT_FAILURE)
   }
 
-  let plgzFileName = pluginDir.lastPathComponent + "-" + version + ".iinaplgz"
+  let safeVersion = version.replacingOccurrences(
+    of: "[^A-Za-z0-9._-]", with: "_", options: .regularExpression)
+  let safeBase = pluginDir.lastPathComponent.replacingOccurrences(
+    of: "[^A-Za-z0-9._-]", with: "_", options: .regularExpression)
+  let plgzFileName = (safeBase.isEmpty ? "plugin" : safeBase) + "-" + (safeVersion.isEmpty ? "unversioned" : safeVersion) + ".iinaplgz"
   let packagePath = currentDirURL.appendingPathComponent(plgzFileName).path
   if FileManager.default.fileExists(atPath: packagePath) {
     if !promptYesOrNo("File \(packagePath) already exists. Overwrite?") {
@@ -279,13 +290,11 @@ func packPlugin(_ args: ArraySlice<String>) -> Bool {
     }
   }
   
-  let cmd = "zip -ryq \(packagePath) . -x 'node_modules/*' -x '.*'"
-  let (process, stdout, stderr) = Process.run(["/bin/bash", "-c", cmd], at: pluginDir)
-  
-  guard process.terminationStatus == 0 else {
-    let outText = String(data: stdout.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? "None"
-    let errText = String(data: stderr.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? "None"
-    print("Unable to create the archive.\n\(outText)\n\(errText)")
+  let zip = Process.run(
+    ["/usr/bin/zip", "-ryq", packagePath, ".", "-x", "node_modules/*", "-x", ".*"],
+    at: pluginDir)
+  guard zip.status == 0 else {
+    print("Unable to create the archive.\n\(String(decoding: zip.stdout, as: UTF8.self))\n\(String(decoding: zip.stderr, as: UTF8.self))")
     exit(EXIT_FAILURE)
   }
   
@@ -396,22 +405,43 @@ fileprivate func resolvePluginDir(from path: String) -> URL? {
 
 fileprivate extension Process {
   @discardableResult
-  static func run(_ cmd: [String], at currentDir: URL? = nil) -> (process: Process, stdout: Pipe, stderr: Pipe) {
-    guard cmd.count > 0 else {
-      fatalError("Process.launch: the command should not be empty")
+  static func run(_ cmd: [String], at currentDir: URL? = nil) -> (status: Int32, stdout: Data, stderr: Data) {
+    guard !cmd.isEmpty else {
+      return (-1, Data(), Data("empty command".utf8))
     }
 
-    let (stdout, stderr) = (Pipe(), Pipe())
+    let stdout = Pipe()
+    let stderr = Pipe()
     let process = Process()
     process.executableURL = URL(fileURLWithPath: cmd[0])
     process.currentDirectoryURL = currentDir
     process.arguments = [String](cmd.dropFirst())
     process.standardOutput = stdout
     process.standardError = stderr
-    process.launch()
-    process.waitUntilExit()
 
-    return (process, stdout, stderr)
+    do {
+      try process.run()
+    } catch {
+      return (-1, Data(), Data(error.localizedDescription.utf8))
+    }
+
+    let group = DispatchGroup()
+    var stdoutData = Data()
+    var stderrData = Data()
+    group.enter()
+    DispatchQueue.global().async {
+      stdoutData = stdout.fileHandleForReading.readDataToEndOfFile()
+      group.leave()
+    }
+    group.enter()
+    DispatchQueue.global().async {
+      stderrData = stderr.fileHandleForReading.readDataToEndOfFile()
+      group.leave()
+    }
+    process.waitUntilExit()
+    group.wait()
+
+    return (process.terminationStatus, stdoutData, stderrData)
   }
 }
 
