@@ -24,6 +24,37 @@ pull requests in this repository instead.
 By submitting a contribution you agree that it is licensed under GPL-3.0-or-later,
 the license of this project.
 
+## Design tokens
+
+Every appearance value is a token in [`uniplayer/DesignTokens.swift`](uniplayer/DesignTokens.swift).
+Do not hand-roll a colour, font, spacing, radius, stroke, opacity, size, shadow,
+material or animation duration in a view; read the token instead. The values
+follow the macOS 27 Human Interface Guidelines: system semantic colours that
+adapt to appearance, Increase Contrast and Reduce Transparency; the system
+font; Liquid Glass with an opaque visual-effect fallback; and motion that
+honours Reduce Motion.
+
+[`DESIGN_TOKENS.md`](DESIGN_TOKENS.md) is the generated ledger. Run
+`python3 scripts/check-design-tokens.py --ledger` before opening a pull request;
+CI runs the same check. After adding or changing a token, regenerate the ledger
+with `python3 scripts/check-design-tokens.py --write-ledger` and commit both
+files. Tokens must have a `///` doc comment; the check fails without one.
+
+System text styles (`.font(.body)`, `.font(.caption)`), standard control sizes
+and `alphaValue` visibility state are platform semantics rather than design
+literals, so they are allowed.
+
+The only escape is a line comment that names a genuinely non-appearance reason,
+such as parsing an mpv colour value:
+
+```swift
+let color = NSColor(mpvColorString: value) // token-exempt: parses an mpv colour
+```
+
+Interface Builder documents must use system catalog colours and `metaFont`s.
+Embedded plugin web documents keep their own CSS; they are a separate rendering
+surface and are listed under "Coverage" in the ledger.
+
 ## Localization
 
 The translations in `uniplayer/*.lproj` come from the upstream project. Do not edit

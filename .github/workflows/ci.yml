@@ -14,11 +14,14 @@ jobs:
     strategy:
       matrix:
         include:
-          - xcode: "26.5"
+          - xcode: "27.1"
             deployment_target: ""
-    runs-on:  macos-26
+    runs-on:  macos-27
     steps:
       - uses: actions/checkout@v7
+
+      - name: Check design tokens
+        run: python3 scripts/check-design-tokens.py --ledger
 
       - name: Install dependencies
         run: ./other/download_libs.sh $DOWNLOAD_LIBS_ARGS
