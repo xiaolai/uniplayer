@@ -89,18 +89,15 @@ struct LibraryRootView: View {
   }
 
   var body: some View {
-    VStack(spacing: 0) {
-      header
-      NavigationSplitView(columnVisibility: $columnVisibility) {
-        sidebar
-          .toolbar(removing: .sidebarToggle)
-      } detail: {
-        detail
-          .frame(maxWidth: .infinity, maxHeight: .infinity)
-          .background(Tokens.Palette.canvas.color)
-      }
-      .navigationSplitViewStyle(.balanced)
+    NavigationSplitView(columnVisibility: $columnVisibility) {
+      sidebar
+        .toolbar(removing: .sidebarToggle)
+    } detail: {
+      detail
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Tokens.Palette.canvas.color)
     }
+    .navigationSplitViewStyle(.balanced)
     .tint(Tokens.Palette.accent.color)
     .background(Tokens.Palette.canvas.color)
     .ignoresSafeArea(.container, edges: .top)
@@ -168,39 +165,6 @@ struct LibraryRootView: View {
     channelPendingDeletion = nil
   }
 
-  private var header: some View {
-    HStack(spacing: Tokens.Space.n4) {
-      Button {
-        model.openFilePanel()
-      } label: {
-        Image(systemName: "folder")
-      }
-      .help(L("Open File…"))
-
-      Button {
-        AppDelegate.shared.openURL(NSApp)
-      } label: {
-        Image(systemName: "link")
-      }
-      .help(L("Open URL…"))
-
-      Button {
-        columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
-      } label: {
-        Image(systemName: "sidebar.squares.leading")
-      }
-      .help(columnVisibility == .detailOnly ? L("Show Sidebar") : L("Hide Sidebar"))
-
-      Spacer()
-    }
-    .buttonStyle(.borderless)
-    .imageScale(.medium)
-    .padding(.leading, Tokens.Space.n80)
-    .padding(.trailing, Tokens.Space.n12)
-    .frame(height: Tokens.Size.n48)
-    .background(Tokens.Palette.canvas.color)
-  }
-
   private var sidebar: some View {
     List(selection: $selection) {
       Section {
@@ -247,6 +211,12 @@ struct LibraryRootView: View {
       min: Tokens.Library.sidebarMinimum,
       ideal: Tokens.Size.sidebarWidth,
       max: Tokens.Library.sidebarMaximum)
+    .safeAreaInset(edge: .top, spacing: 0) {
+      Tokens.Palette.clear.color.frame(height: Tokens.Size.n28)
+    }
+    .overlay(alignment: .topLeading) {
+      sidebarControls
+    }
     .safeAreaInset(edge: .bottom) {
       Text(versionText)
         .font(Tokens.Typography.caption.font)
@@ -308,6 +278,35 @@ struct LibraryRootView: View {
         }
       }
     }
+  }
+
+  private var sidebarControls: some View {
+    HStack(spacing: Tokens.Space.n4) {
+      Button {
+        model.openFilePanel()
+      } label: {
+        Image(systemName: "folder")
+      }
+      .help(L("Open File…"))
+
+      Button {
+        AppDelegate.shared.openURL(NSApp)
+      } label: {
+        Image(systemName: "link")
+      }
+      .help(L("Open URL…"))
+
+      Button {
+        columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
+      } label: {
+        Image(systemName: "sidebar.squares.leading")
+      }
+      .help(columnVisibility == .detailOnly ? L("Show Sidebar") : L("Hide Sidebar"))
+    }
+    .buttonStyle(.borderless)
+    .imageScale(.medium)
+    .padding(.leading, Tokens.Space.n80)
+    .padding(.top, Tokens.Space.n8)
   }
 
   private var versionText: String {
