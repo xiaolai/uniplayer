@@ -8,6 +8,9 @@
 
 import Cocoa
 
+/// How far the pointer must move before a press becomes a window drag.
+let minimumWindowDragDistance: CGFloat = 3.0
+
 /// Common base class for UniPlayer windows.
 class CommonWindow: NSWindow {
 
@@ -113,5 +116,41 @@ class CommonWindow: NSWindow {
     self.usesUnifiedToolbar = usesUnifiedToolbar
     super.init(contentRect: contentRect, styleMask: style, backing: backingStoreType, defer: flag)
     isReleasedWhenClosed = false
+  }
+}
+
+extension NSWindow {
+  /// Moves the window when the user Command-drags anywhere inside it.
+  ///
+  /// `isMovableByWindowBackground` only covers views that do not handle mouse
+  /// events. A web page or a list owns its own drag gestures, so a plain drag
+  /// there must keep scrolling, selecting and scrubbing. Command-drag leaves
+  /// those gestures intact: a Command-click that does not move still reaches
+  /// the content, while a Command-drag past the movement threshold starts a
+  /// window drag. Option is deliberately not used because macOS reserves
+  /// Option-drag for window tiling. Keep the returned token and pass it to
+  /// `NSEvent.removeMonitor(_:)` when the window is released.
+  func installCommandDragMonitor() -> Any? {
+    var mouseDownLocation: NSPoint?
+    return NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .leftMouseDragged, .leftMouseUp]) {
+      [weak self] event in
+      guard let self, event.window === self else { return event }
+      switch event.type {
+      case .leftMouseDown:
+        mouseDownLocation = event.modifierFlags.contains(.command) ? event.locationInWindow : nil
+      case .leftMouseDragged:
+        guard let start = mouseDownLocation else { return event }
+        if start.distance(to: event.locationInWindow) > minimumWindowDragDistance {
+          mouseDownLocation = nil
+          self.performDrag(with: event)
+          return nil
+        }
+      case .leftMouseUp:
+        mouseDownLocation = nil
+      default:
+        break
+      }
+      return event
+    }
   }
 }

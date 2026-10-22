@@ -23,8 +23,6 @@ fileprivate extension NSStackView.VisibilityPriority {
 }
 
 // The minimum distance that the user must drag before their click or tap gesture is interpreted as a drag gesture:
-fileprivate let minimumInitialDragDistance: CGFloat = 3.0
-
 fileprivate let layoutSides: [NSLayoutConstraint.Attribute] = [.top, .bottom, .leading, .trailing]
 
 class MainWindowController: PlayerWindowController {
@@ -146,6 +144,7 @@ class MainWindowController: PlayerWindowController {
   let fadeableViews = FadeableViewController()
 
   private var fadeableWindowButtons: [NSButton] = []
+  private var commandDragMonitor: Any?
 
   // Left and right arrow buttons
 
@@ -462,6 +461,12 @@ class MainWindowController: PlayerWindowController {
 
   // MARK: - Initialization
 
+  deinit {
+    if let commandDragMonitor {
+      NSEvent.removeMonitor(commandDragMonitor)
+    }
+  }
+
   override func windowDidLoad() {
     super.windowDidLoad()
     MemoryUsage.shared.logUsage("after window loaded")
@@ -474,6 +479,7 @@ class MainWindowController: PlayerWindowController {
 
     // need to deal with control bar, so we handle it manually
     // w.isMovableByWindowBackground  = true
+    commandDragMonitor = window.installCommandDragMonitor()
 
     // set background color to black
     window.backgroundColor = window.effectiveAppearance.isDark ? Tokens.Palette.black.nsColor : Tokens.Palette.white.nsColor
@@ -1393,8 +1399,8 @@ class MainWindowController: PlayerWindowController {
           /// Require that the user must drag the cursor at least a small distance for it to start a "drag" (`isDragging==true`)
           /// The user's action will only be counted as a click if `isDragging==false` when `mouseUp` is called.
           /// (Apple's trackpad in particular is very sensitive and tends to call `mouseDragged()` if there is even the slightest
-          /// roll of the finger during a click, and the distance of the "drag" may be less than `minimumInitialDragDistance`)
-          if mousePosRelatedToWindow.distance(to: event.locationInWindow) <= minimumInitialDragDistance {
+          /// roll of the finger during a click, and the distance of the "drag" may be less than `minimumWindowDragDistance`)
+          if mousePosRelatedToWindow.distance(to: event.locationInWindow) <= minimumWindowDragDistance {
             return
           }
           if Logger.isEmitting(.verbose) {

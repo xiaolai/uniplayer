@@ -14,6 +14,7 @@ final class LibraryWindowController: NSWindowController {
 
   weak var player: PlayerCore!
   private(set) var loaded = false
+  private var commandDragMonitor: Any?
 
   init(playerCore: PlayerCore) {
     self.player = playerCore
@@ -60,6 +61,13 @@ final class LibraryWindowController: NSWindowController {
 
     self.window = window
     self.loaded = true
+    commandDragMonitor = window.installCommandDragMonitor()
+  }
+
+  deinit {
+    if let commandDragMonitor {
+      NSEvent.removeMonitor(commandDragMonitor)
+    }
   }
 
   /// Called when history or recent documents have changed.
