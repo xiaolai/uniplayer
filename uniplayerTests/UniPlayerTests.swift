@@ -119,6 +119,16 @@ final class UniPlayerTests: XCTestCase {
     XCTAssertEqual(value as? String, "hello")
   }
 
+  // MARK: - Permission boundaries
+
+  func testHostAllowlistMatchesExactAndWildcardDomains() {
+    XCTAssertTrue(JavascriptPluginInstance.hostAllowed("example.com", domains: ["example.com"]))
+    XCTAssertFalse(JavascriptPluginInstance.hostAllowed("api.example.com", domains: ["example.com"]))
+    XCTAssertTrue(JavascriptPluginInstance.hostAllowed("api.example.com", domains: ["*.example.com"]))
+    XCTAssertFalse(JavascriptPluginInstance.hostAllowed("badexample.com", domains: ["*.example.com"]))
+    XCTAssertTrue(JavascriptPluginInstance.hostAllowed("anything.invalid", domains: ["*"]))
+  }
+
   // MARK: - Keychain identity
 
   func testGenericPasswordIdentityUsesServiceAndAccount() {

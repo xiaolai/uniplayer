@@ -79,8 +79,12 @@ class JavascriptPluginInstance {
     apis.values.forEach { $0.cleanUp(self) }
   }
 
-  private func canAccess(host: String) -> Bool {
-    plugin.domainList.contains { domain in
+  /// Whether a host is covered by a plugin's declared domain list.
+  ///
+  /// A `*.` entry matches only subdomains: the retained dot prevents
+  /// `badexample.com` from matching `*.example.com`.
+  static func hostAllowed(_ host: String, domains: [String]) -> Bool {
+    domains.contains { domain in
       if domain == "*" {
         return true
       } else if domain.hasPrefix("*.") {
@@ -89,6 +93,10 @@ class JavascriptPluginInstance {
         return domain == host
       }
     }
+  }
+
+  private func canAccess(host: String) -> Bool {
+    Self.hostAllowed(host, domains: plugin.domainList)
   }
 
   func canAccess(url: URL) -> Bool {
