@@ -1,6 +1,7 @@
 # UniPlayer dependency lock — universal
 # Generated from deps/ on 2026-10-22. Regenerate with: other/download_libs.sh --write-lock
-# Source: https://iina.io/dylibs/universal and https://github.com/yt-dlp/yt-dlp/releases/download/2026.10.21/yt-dlp_macos
+# Source: https://iina.io/dylibs/universal, https://github.com/yt-dlp/yt-dlp/releases/download/2026.10.21/yt-dlp_macos,
+# and the pinned iina/plugin-online-media, plugin-userscript, plugin-opensub releases
 # The upstream URLs are mutable; these digests pin the exact artifacts.
 # <sha256>  <path>
 98dd6860fb8537082fff9d2821ff6dafe8882ee2b1d849ad468922cf5938190b  libarchive.13.dylib
@@ -49,3 +50,6 @@ fa214d54d2851a934f131e19940061cb849ff76e3679c876ee449f2cf7bb5158  libzimg.2.dyli
 5947ee456759d8731af51074da6138b1e69b89655d4d3b7d6bdcde88a8e14ec7  libzstd.1.dylib
 7a6fe71d7d680f1fb0ac18d4949873d77db2859e90017c0f44bd94b23be4ee40  executable/youtube-dl-github
 b8b744228d13b191604673ce42cf98f3d6ddfd2e522ef251bfacdf7b26285b5f  executable/youtube-dl-iina
+9929fc5432323cc8a436ee8f88edbc6c557e657ff00f34cc0770eb5b2887cc52  plugins/iina-plugin-ytdl-0.9.10.iinaplgz
+c519215cdaa3cbd2624c75580aa63239e74b522cb031ac7f1d1f3bbc0cc52d31  plugins/iina-plugin-userscript-0.9.3.iinaplgz
+87cf7990e5126893b8a55508dcadc2a3dfb090f98b98bc3fb5366bd4f719ebcb  plugins/iina-plugin-opensub-0.9.6.iinaplgz

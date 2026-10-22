@@ -244,7 +244,7 @@ while IFS= read -r line; do
   [[ -z "$line" || "$line" == \#* ]] && continue
   file=${line#*  }
   hash=${line%%  *}
-  [[ "$file" == "executable/"* ]] && continue
+  [[ "$file" == "executable/"* || "$file" == "plugins/"* ]] && continue
   entries+=("$hash $file")
 done < "$LOCK_PATH"
 
@@ -294,110 +294,44 @@ if [[ "$SKIP_PLUGINS" == true ]]; then
   exit 0
 fi
 
-fetch_latest_plugin_asset() {
-  local repo="$1"
-  local response_file
-  local status_code
-  local curl_args=()
-
-  if [[ -n "${GITHUB_TOKEN:-}" ]]; then
-    curl_args=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
-  fi
-
-  response_file=$(mktemp) || return 1
-  status_code=$(curl -s -L "${curl_args[@]}" -o "$response_file" -w "%{http_code}" "https://api.github.com/repos/${repo}/releases/latest") || {
-    echo -e "${RED}Failed to contact GitHub for ${repo}.${NC}" >&2
-    rm -f "$response_file"
-    return 1
-  }
-
-  if [[ "$status_code" -lt 200 || "$status_code" -ge 300 ]]; then
-    echo -e "${RED}GitHub API returned HTTP ${status_code} for ${repo}.${NC}" >&2
-    python3 -c '
-import json
-import pathlib
-import sys
-
-path = pathlib.Path(sys.argv[1])
-text = path.read_text(encoding="utf-8", errors="replace").strip()
-if not text:
-    raise SystemExit(0)
-try:
-    payload = json.loads(text)
-except json.JSONDecodeError:
-    print(text[:240], file=sys.stderr)
-    raise SystemExit(0)
-message = payload.get("message")
-if message:
-    print(message, file=sys.stderr)
-' "$response_file"
-    rm -f "$response_file"
-    return 1
-  fi
-
-  python3 -c '
-import json
-import pathlib
-import sys
-
-path = pathlib.Path(sys.argv[1])
-text = path.read_text(encoding="utf-8", errors="replace")
-try:
-    release = json.loads(text)
-except json.JSONDecodeError as exc:
-    print(f"Failed to decode GitHub API response as JSON: {exc}", file=sys.stderr)
-    preview = text.strip()
-    if preview:
-        print(preview[:240], file=sys.stderr)
-    raise SystemExit(1)
-assets = [asset for asset in release.get("assets", []) if asset.get("name", "").endswith(".iinaplgz")]
-if not assets:
-    message = release.get("message")
-    if message:
-        print(message, file=sys.stderr)
-    else:
-        print("Latest release does not contain a .iinaplgz asset.", file=sys.stderr)
-    raise SystemExit(1)
-asset = assets[0]
-print(asset["name"])
-print(asset["browser_download_url"])
-' "$response_file"
-  local status=$?
-  rm -f "$response_file"
-  return $status
-}
-
 download_plugin() {
   local repo="$1"
-  local prefix="$2"
-  local asset_info
-  local asset_name
-  local asset_url
-  local tmp_path
+  local tag="$2"
+  local asset="$3"
+  local prefix="$4"
+  local lock_key="plugins/${asset}"
+  local url="https://github.com/${repo}/releases/download/${tag}/${asset}"
+  local tmp_path="${PLUGIN_PATH}/${asset}.download"
+  local expected
+  local actual
 
-  echo -e "${YELLOW}Downloading latest plugin release for ${repo}...${NC}"
-  asset_info=$(fetch_latest_plugin_asset "$repo") || {
-    echo -e "${RED}Failed to fetch the latest plugin asset for ${repo}.${NC}" >&2
+  expected=$(awk -v key="$lock_key" '$2 == key {print $1}' "$LOCK_PATH")
+  if [[ -z "$expected" ]]; then
+    echo -e "${RED}No lock entry for ${lock_key}.${NC}" >&2
+    echo -e "${RED}Add the pinned release asset and its digest deliberately.${NC}" >&2
     return 1
-  }
+  fi
 
-  asset_name=$(printf "%s\n" "$asset_info" | sed -n "1p")
-  asset_url=$(printf "%s\n" "$asset_info" | sed -n "2p")
-  tmp_path="${PLUGIN_PATH}/${asset_name}.download"
-
-  curl -s -f -L "$asset_url" -o "$tmp_path" || {
-    echo -e "${RED}Failed downloading ${asset_name}.${NC}" >&2
+  echo -e "${YELLOW}Downloading ${asset}...${NC}"
+  if ! curl -fsSL "$url" -o "$tmp_path"; then
+    echo -e "${RED}Failed downloading ${asset}.${NC}" >&2
     rm -f "$tmp_path"
     return 1
-  }
+  fi
+  actual=$(shasum -a 256 "$tmp_path" | awk '{print $1}')
+  if [[ "$actual" != "$expected" ]]; then
+    echo -e "${RED}Checksum mismatch for ${asset}: expected ${expected}, got ${actual}.${NC}" >&2
+    rm -f "$tmp_path"
+    return 1
+  fi
 
   find "$PLUGIN_PATH" -maxdepth 1 -type f -name "${prefix}-*.iinaplgz" -delete
-  mv "$tmp_path" "${PLUGIN_PATH}/${asset_name}"
-  echo -e "${GREEN}Downloaded ${asset_name}${NC}"
+  mv "$tmp_path" "${PLUGIN_PATH}/${asset}"
+  echo -e "${GREEN}Verified ${asset}${NC}"
 }
 
-download_plugin "iina/plugin-online-media" "iina-plugin-ytdl" || exit 1
-download_plugin "iina/plugin-userscript" "iina-plugin-userscript" || exit 1
-download_plugin "iina/plugin-opensub" "iina-plugin-opensub" || exit 1
+download_plugin "iina/plugin-online-media" "v0.9.10" "iina-plugin-ytdl-0.9.10.iinaplgz" "iina-plugin-ytdl" || exit 1
+download_plugin "iina/plugin-userscript" "v0.9.3" "iina-plugin-userscript-0.9.3.iinaplgz" "iina-plugin-userscript" || exit 1
+download_plugin "iina/plugin-opensub" "v0.9.6" "iina-plugin-opensub-0.9.6.iinaplgz" "iina-plugin-opensub" || exit 1
 
 echo -e "${GREEN}All downloads completed.${NC}"
