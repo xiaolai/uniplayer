@@ -2524,6 +2524,17 @@ class MainWindowController: PlayerWindowController {
   func displayOSD(_ message: OSDMessage, autoHide: Bool = true, forcedTimeout: Float? = nil, accessoryView: NSView? = nil, context: Any? = nil) {
     guard player.displayOSD || message.alwaysEnabled, !isShowingPersistentOSD else { return }
 
+    // The HUD already shows playback state and position; the pause/time OSD
+    // duplicated it in the top-left and collided with the utility capsule.
+    if oscPosition == .floating {
+      switch message {
+      case .pause, .resume, .showTime:
+        return
+      default:
+        break
+      }
+    }
+
     if hideOSDTimer != nil {
       hideOSDTimer!.invalidate()
       hideOSDTimer = nil
@@ -3091,7 +3102,7 @@ class MainWindowController: PlayerWindowController {
     playButton.toolTip = label
 
     guard oscPosition == .floating else { return }
-    let configuration = NSImage.SymbolConfiguration(pointSize: 44, weight: .semibold)
+    let configuration = NSImage.SymbolConfiguration(pointSize: 48, weight: .semibold)
     playButton.image = NSImage(
       systemSymbolName: paused ? "play.fill" : "pause.fill",
       accessibilityDescription: nil)?.withSymbolConfiguration(configuration)
@@ -3115,7 +3126,7 @@ class MainWindowController: PlayerWindowController {
         .filter { $0.firstAttribute == .width || $0.firstAttribute == .height }
         .forEach { $0.isActive = false }
       button.size(width: size, height: size)
-      button.imageScaling = .scaleProportionallyUpOrDown
+      button.imageScaling = hud ? .scaleNone : .scaleProportionallyUpOrDown
     }
 
     oscPlayControlMiddleView.spacing = hud ? 28 : 16
@@ -3170,7 +3181,7 @@ class MainWindowController: PlayerWindowController {
   /// button. This allows the user to control the speed using pressure when using devices that support pressure sensitivity.
   func updateArrowButtons() {
     if oscPosition == .floating {
-      let configuration = NSImage.SymbolConfiguration(pointSize: 26, weight: .medium)
+      let configuration = NSImage.SymbolConfiguration(pointSize: 30, weight: .medium)
       func symbol(_ name: String) -> NSImage? {
         NSImage(systemSymbolName: name, accessibilityDescription: nil)?
           .withSymbolConfiguration(configuration)
