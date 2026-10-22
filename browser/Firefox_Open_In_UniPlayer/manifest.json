@@ -1,13 +1,13 @@
 {
   "manifest_version": 2,
-  "applications": {
+  "browser_specific_settings": {
     "gecko": {
       "id": "open-in-uniplayer@uniplayer.invalid"
     }
   },
   "name": "Open In UniPlayer",
   "description": "Open videos and audios in UniPlayer.",
-  "version": "2.0.0",
+  "version": "2.0.2",
   "options_ui": {
     "page": "options.html"
   },
