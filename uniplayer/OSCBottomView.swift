@@ -7,8 +7,8 @@
 //
 
 fileprivate extension LayoutValue {
-  static let oscPadding = LayoutValue(12, 8)
-  static let oscPaddingLeading = LayoutValue(16, 12)
+  static let oscPadding = LayoutValue(Tokens.Space.n12, Tokens.Space.n8)
+  static let oscPaddingLeading = LayoutValue(Tokens.Space.n16, Tokens.Space.n12)
 }
 
 
@@ -43,9 +43,9 @@ class OSCBottomView: NSView {
 
     addSubview(translucentView)
     translucentView.padding(.vertical)
-    leadingConstraint = translucentView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 0)
+    leadingConstraint = translucentView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: Tokens.Space.n0)
     leadingConstraint.isActive = true
-    trailingConstraint = trailingAnchor.constraint(equalTo: translucentView.trailingAnchor, constant: 0)
+    trailingConstraint = trailingAnchor.constraint(equalTo: translucentView.trailingAnchor, constant: Tokens.Space.n0)
     trailingConstraint.isActive = true
 
     prefObserver.add(.useLiquidGlassOSC, runNow: true) { [unowned self] _ in

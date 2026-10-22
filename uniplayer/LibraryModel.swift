@@ -240,7 +240,7 @@ final class PosterStore {
   private static func quickLook(_ url: URL) async -> NSImage? {
     let request = QLThumbnailGenerator.Request(
       fileAt: url,
-      size: CGSize(width: 640, height: 360),
+      size: CGSize(width: Tokens.Size.n640, height: Tokens.Size.n360),
       scale: 1,
       representationTypes: .thumbnail)
 
@@ -255,7 +255,7 @@ final class PosterStore {
     let asset = AVURLAsset(url: url)
     let generator = AVAssetImageGenerator(asset: asset)
     generator.appliesPreferredTrackTransform = true
-    generator.maximumSize = CGSize(width: 640, height: 360)
+    generator.maximumSize = CGSize(width: Tokens.Size.n640, height: Tokens.Size.n360)
     do {
       let duration = try await asset.load(.duration)
       let seconds = max(1, min(duration.seconds * 0.1, 60))

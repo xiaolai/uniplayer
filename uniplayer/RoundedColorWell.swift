@@ -18,7 +18,7 @@ class RoundedColorWell: NSColorWell {
   }
 
   override func draw(_ dirtyRect: NSRect) {
-    let circleRect = NSInsetRect(bounds, 3, 3)
+    let circleRect = NSInsetRect(bounds, Tokens.Space.n3, Tokens.Space.n3)
 
     // darker if is pressing mouse button
     if self.isMouseDown {
@@ -28,9 +28,9 @@ class RoundedColorWell: NSColorWell {
     }
 
     // draw
-    NSColor.white.withAlphaComponent(0.8).setStroke()
+    Tokens.Palette.white.nsColor.withAlphaComponent(Tokens.Opacity.n80).setStroke()
     let circlePath = NSBezierPath(ovalIn: circleRect)
-    circlePath.lineWidth = 1.5
+    circlePath.lineWidth = Tokens.Stroke.n1_5
     circlePath.fill()
     circlePath.stroke()
   }

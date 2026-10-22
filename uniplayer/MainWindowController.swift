@@ -18,10 +18,9 @@ fileprivate let isMacOS11: Bool = {
   return false
 }()
 
-fileprivate let InteractiveModeBottomViewHeight: CGFloat = 60
+fileprivate let InteractiveModeBottomViewHeight = Tokens.Size.n60
 
-fileprivate let UIAnimationDuration = 0.25
-fileprivate let OSDAnimationDuration = 0.5
+fileprivate let UIAnimationDuration = Tokens.Motion.n25.duration
 fileprivate let CropAnimationDuration = 0.2
 
 fileprivate extension NSStackView.VisibilityPriority {
@@ -484,7 +483,7 @@ class MainWindowController: PlayerWindowController {
     // w.isMovableByWindowBackground  = true
 
     // set background color to black
-    window.backgroundColor = window.effectiveAppearance.isDark ? .black : .white
+    window.backgroundColor = window.effectiveAppearance.isDark ? Tokens.Palette.black.nsColor : Tokens.Palette.white.nsColor
 
     // size
     window.minSize = AppData.mainWindowMinSize
@@ -499,9 +498,9 @@ class MainWindowController: PlayerWindowController {
     // reproduced (issue #4015). The workaround adds a tiny subview with such a low alpha level it
     // is invisible to the human eye. This workaround may not be effective in all cases.
     if #available(macOS 13, *), Preference.bool(for: .enableHdrWorkaround) {
-      let view = NSView(frame: NSRect(origin: .zero, size: NSSize(width: 0.1, height: 0.1)))
+      let view = NSView(frame: NSRect(origin: .zero, size: NSSize(width: 0.1, height: 0.1))) // token-exempt: invisible probe view, not a design value
       view.wantsLayer = true
-      view.layer?.backgroundColor = NSColor.black.cgColor
+      view.layer?.backgroundColor = Tokens.Palette.black.nsColor.cgColor
       view.layer?.opacity = 0.01
       cv.addSubview(view)
     }
@@ -563,16 +562,16 @@ class MainWindowController: PlayerWindowController {
 
     self.oscVolumeView = NSView()
     oscVolumeView.translatesAutoresizingMaskIntoConstraints = false
-    oscVolumeView.size(width: 108, height: 24)
+    oscVolumeView.size(width: Tokens.Size.n108, height: Tokens.Size.n24)
 
-    volumeSlider.size(width: 70)
+    volumeSlider.size(width: Tokens.Size.n70)
 
     oscVolumeView.addSubview(muteButton)
     oscVolumeView.addSubview(volumeSlider)
-    muteButton.size(width: 24, height: 24)
-      .padding(.vertical, .leading(4)).spacing(.trailing(4), to: volumeSlider)
-    volumeSlider.size(width: 70).center(.y)
-      .padding(.trailing(6))
+    muteButton.size(width: Tokens.Size.n24, height: Tokens.Size.n24)
+      .padding(.vertical, .leading(Tokens.Space.n4)).spacing(.trailing(Tokens.Space.n4), to: volumeSlider)
+    volumeSlider.size(width: Tokens.Size.n70).center(.y)
+      .padding(.trailing(Tokens.Space.n6))
 
     self.oscPlayControlView = NSStackView()
     oscPlayControlView.translatesAutoresizingMaskIntoConstraints = false
@@ -590,27 +589,27 @@ class MainWindowController: PlayerWindowController {
       button!.translatesAutoresizingMaskIntoConstraints = false
       button!.bezelStyle = .smallSquare
       button!.isBordered = false
-      button!.size(width: 24, height: 24)
+      button!.size(width: Tokens.Size.n24, height: Tokens.Size.n24)
     }
 
     self.oscSpeedLabelLeftContainer = NSView()
     self.oscSpeedLabelRightContainer = NSView()
     [oscSpeedLabelLeftContainer, oscSpeedLabelRightContainer].forEach { view in
       view!.translatesAutoresizingMaskIntoConstraints = false
-      view!.size(width: 30)  // label: 26 + padding: 8
+      view!.size(width: Tokens.Size.n30)  // label: 26 + padding: 8
     }
 
     self.oscSpeedLabelLeft = NSTextField(labelWithString: "")
     self.oscSpeedLabelRight = NSTextField(labelWithString: "")
     [oscSpeedLabelLeft, oscSpeedLabelRight].forEach { label in
       label!.translatesAutoresizingMaskIntoConstraints = false
-      label!.font = .systemFont(ofSize: 10)
-      label!.textColor = .secondaryLabelColor
+      label!.font = Tokens.Typography.size10.nsFont
+      label!.textColor = Tokens.Palette.textSecondary.nsColor
     }
     oscSpeedLabelLeftContainer.addSubview(oscSpeedLabelLeft)
-    oscSpeedLabelLeft.padding(.vertical, .trailing(8))
+    oscSpeedLabelLeft.padding(.vertical, .trailing(Tokens.Space.n8))
     oscSpeedLabelRightContainer.addSubview(oscSpeedLabelRight)
-    oscSpeedLabelRight.padding(.vertical, .leading(8))
+    oscSpeedLabelRight.padding(.vertical, .leading(Tokens.Space.n8))
 
     self.oscPlayControlMiddleView = NSStackView(views: [leftArrowButton, playButton, rightArrowButton])
     oscPlayControlMiddleView.translatesAutoresizingMaskIntoConstraints = false
@@ -623,37 +622,37 @@ class MainWindowController: PlayerWindowController {
     oscToolbarView.orientation = .horizontal
     oscToolbarView.alignment = .centerY
     oscToolbarView.spacing = 0
-    oscToolbarView.size(height: 24)
+    oscToolbarView.size(height: Tokens.Size.n24)
 
     self.oscSliderView = TimeLabelOverflowedView()
     [leftLabel, rightLabel].forEach { label in
-      label!.textColor = .secondaryLabelColor
+      label!.textColor = Tokens.Palette.textSecondary.nsColor
       label!.alignment = .center
-      label!.font = .monospacedDigitSystemFont(ofSize: 11, weight: .regular)
+      label!.font = Tokens.Typography.numeric.nsFont
       label!.widthAnchor.constraint(greaterThanOrEqualToConstant: 46).isActive = true
     }
     oscSliderView.translatesAutoresizingMaskIntoConstraints = false
     oscSliderView.addSubview(leftLabel)
     oscSliderView.addSubview(rightLabel)
     oscSliderView.addSubview(playSlider)
-    leftLabel.padding(.leading(2)).spacing(.trailing(2), to: playSlider)
+    leftLabel.padding(.leading(Tokens.Space.n2)).spacing(.trailing(Tokens.Space.n2), to: playSlider)
       .center(.y, with: playSlider)
-    rightLabel.padding(.trailing(2)).spacing(.leading(2), to: playSlider)
+    rightLabel.padding(.trailing(Tokens.Space.n2)).spacing(.leading(Tokens.Space.n2), to: playSlider)
       .center(.y, with: playSlider)
-    playSlider.padding(.vertical(6))
+    playSlider.padding(.vertical(Tokens.Space.n6))
     playSlider.setAccessibilityLabel(NSLocalizedString("Playback position", comment: ""))
 
     // osd
 
     osdView.padding(.trailing(greaterThan: 8), .bottom(greaterThan: 8))
-      .spacing(.top(8), to: titleBarView)
-      .spacing(.leading(8), to: sidebars.leadingSidebar.view)
+      .spacing(.top(Tokens.Space.n8), to: titleBarView)
+      .spacing(.leading(Tokens.Space.n8), to: sidebars.leadingSidebar.view)
 
     // additional info view
 
     additionalInfoView.padding(.leading(greaterThan: 8), .bottom(greaterThan: 8))
-      .spacing(.top(8), to: titleBarView)
-      .spacing(.trailing(8), to: sidebars.trailingSidebar.view)
+      .spacing(.top(Tokens.Space.n8), to: titleBarView)
+      .spacing(.trailing(Tokens.Space.n8), to: sidebars.trailingSidebar.view)
     additionalInfoView.isHidden = true
 
     // buffer indicator view
@@ -925,7 +924,7 @@ class MainWindowController: PlayerWindowController {
     if Preference.bool(for: .edgeToEdgeVideo) || oscPosition == .floating {
       layoutSides.forEach { attr in
         videoContainerConstraints[attr] = NSLayoutConstraint(item: videoViewContainer!, attribute: attr, relatedBy: .equal,
-                                                        toItem: cv, attribute: attr, multiplier: 1, constant: 0)
+                                                        toItem: cv, attribute: attr, multiplier: 1, constant: Tokens.Space.n0)
       }
     } else {
       let docked = Preference.bool(for: .dockedControlBarAndTitlebar)
@@ -998,10 +997,10 @@ class MainWindowController: PlayerWindowController {
     airplay.translatesAutoresizingMaskIntoConstraints = false
     airplay.isRoutePickerButtonBordered = false
     airplay.setAccessibilityLabel(NSLocalizedString("AirPlay", comment: ""))
-    airplay.size(width: 20, height: 20)
+    airplay.size(width: Tokens.Size.n20, height: Tokens.Size.n20)
 
     let share = makeHUDIconButton(
-      hudSymbol("square.and.arrow.up", size: 16),
+      hudSymbol("square.and.arrow.up", size: Tokens.Icon.n16),
       action: #selector(shareCurrentFile(_:)),
       label: "Share")
 
@@ -1015,15 +1014,15 @@ class MainWindowController: PlayerWindowController {
 
   private func makeHUDAuxiliaryCapsule() -> HUDCapsuleView {
     let subtitles = makeHUDIconButton(
-      hudSymbol("captions.bubble.fill", size: 16),
+      hudSymbol("captions.bubble.fill", size: Tokens.Icon.n16),
       action: #selector(hudSubAction(_:)),
       label: "Subtitles")
     let audio = makeHUDIconButton(
-      hudSymbol("waveform", size: 16),
+      hudSymbol("waveform", size: Tokens.Icon.n16),
       action: #selector(hudAudioAction(_:)),
       label: "Audio")
     let speed = makeHUDIconButton(
-      hudSymbol("speedometer", size: 16),
+      hudSymbol("speedometer", size: Tokens.Icon.n16),
       action: #selector(hudSpeedAction(_:)),
       label: "Playback Speed")
 
@@ -1046,20 +1045,20 @@ class MainWindowController: PlayerWindowController {
     slider.target = self
     slider.action = #selector(hudVolumeChanged(_:))
     slider.setAccessibilityLabel(NSLocalizedString("Volume", comment: ""))
-    slider.size(width: 80)
+    slider.size(width: Tokens.Size.n80)
     hudVolumeSlider = slider
 
     let mute = NSButton()
     mute.translatesAutoresizingMaskIntoConstraints = false
     mute.isBordered = false
     mute.bezelStyle = .smallSquare
-    mute.image = hudSymbol("speaker.wave.2.fill", size: 14)
-    mute.contentTintColor = .white
+    mute.image = hudSymbol("speaker.wave.2.fill", size: Tokens.Icon.n14)
+    mute.contentTintColor = Tokens.Palette.onMedia.nsColor
     mute.target = self
     mute.action = #selector(hudMuteAction(_:))
     mute.setAccessibilityLabel(NSLocalizedString("Mute", comment: ""))
     mute.toolTip = NSLocalizedString("Mute", comment: "")
-    mute.size(width: 20, height: 20)
+    mute.size(width: Tokens.Size.n20, height: Tokens.Size.n20)
     hudMuteButton = mute
 
     let stack = NSStackView(views: [slider, mute])
@@ -1079,7 +1078,7 @@ class MainWindowController: PlayerWindowController {
       let disc = NSView()
       disc.translatesAutoresizingMaskIntoConstraints = false
       disc.wantsLayer = true
-      disc.layer?.backgroundColor = NSColor(white: 0.13, alpha: 0.90).cgColor
+      disc.layer?.backgroundColor = Tokens.Palette.hudDiscBackground.nsColor.cgColor
       disc.layer?.cornerRadius = radius
       disc.layer?.masksToBounds = true
       disc.layer?.contentsScale = window?.backingScaleFactor ?? 2
@@ -1088,8 +1087,8 @@ class MainWindowController: PlayerWindowController {
 
       let glass = NSGlassEffectView()
       glass.translatesAutoresizingMaskIntoConstraints = false
-      glass.style = .regular
-      glass.tintColor = NSColor.black.withAlphaComponent(0.55)
+      glass.style = Tokens.Material.glassTransport.style
+      glass.tintColor = Tokens.Palette.black.nsColor.withAlphaComponent(Tokens.Opacity.n55)
       glass.cornerRadius = radius
       glass.layer?.contentsScale = window?.backingScaleFactor ?? 2
       disc.addSubview(glass)
@@ -1114,7 +1113,7 @@ class MainWindowController: PlayerWindowController {
     button.bezelStyle = .smallSquare
     button.imageScaling = .scaleProportionallyDown
     button.image = image
-    button.contentTintColor = .white
+    button.contentTintColor = Tokens.Palette.onMedia.nsColor
     button.target = self
     button.action = action
     if let tag {
@@ -1123,7 +1122,7 @@ class MainWindowController: PlayerWindowController {
     let localized = NSLocalizedString(label, comment: "")
     button.setAccessibilityLabel(localized)
     button.toolTip = localized
-    button.size(width: 24, height: 24)
+    button.size(width: Tokens.Size.n24, height: Tokens.Size.n24)
     return button
   }
 
@@ -1276,7 +1275,7 @@ class MainWindowController: PlayerWindowController {
       ? .remaining
       : (Preference.bool(for: .showRemainingTime) ? .remaining : .duration)
     let timeLabelColor: NSColor = newPosition == .floating
-      ? NSColor.white.withAlphaComponent(0.8)
+      ? Tokens.Palette.white.nsColor.withAlphaComponent(Tokens.Opacity.n80)
       : .secondaryLabelColor
     leftLabel.textColor = timeLabelColor
     rightLabel.textColor = timeLabelColor
@@ -2147,7 +2146,7 @@ class MainWindowController: PlayerWindowController {
       // Force black background in camera housing. Cannot extend the window frame
       // to cover the area because window background is white in light theme.
       let housingWindow = NSWindow(contentRect: .zero, styleMask: [], backing: .buffered, defer: false, screen: screen)
-      housingWindow.backgroundColor = .black
+      housingWindow.backgroundColor = Tokens.Palette.black.nsColor
       // the level must be exactly .mainMenu, otherwise the main menu will not show
       housingWindow.level = .mainMenu
       let cameraRect = NSRect(
@@ -2175,7 +2174,7 @@ class MainWindowController: PlayerWindowController {
     window.level = .floating
 
     // cancel aspect ratio
-    window.resizeIncrements = NSSize(width: 1, height: 1)
+    window.resizeIncrements = NSSize(width: Tokens.Size.n1, height: Tokens.Size.n1)
     // auto hide menubar and dock
     NSApp.presentationOptions.insert(.autoHideMenuBar)
     NSApp.presentationOptions.insert(.autoHideDock)
@@ -2562,7 +2561,7 @@ class MainWindowController: PlayerWindowController {
         osdContext = context
       }
 
-      let heightConstraint = NSLayoutConstraint(item: accessoryView, attribute: .height, relatedBy: .greaterThanOrEqual, toItem: nil, attribute: .notAnAttribute, multiplier: 1, constant: 300)
+      let heightConstraint = NSLayoutConstraint(item: accessoryView, attribute: .height, relatedBy: .greaterThanOrEqual, toItem: nil, attribute: .notAnAttribute, multiplier: 1, constant: Tokens.Space.n300)
       heightConstraint.priority = .defaultLow
       heightConstraint.isActive = true
 
@@ -2572,7 +2571,7 @@ class MainWindowController: PlayerWindowController {
       let winFrame = window!.frame
       var newFrame = winFrame
       if (winFrame.height < 300) {
-        newFrame = winFrame.centeredResize(to: winFrame.size.satisfyMinSizeWithSameAspectRatio(NSSize(width: 500, height: 300)))
+        newFrame = winFrame.centeredResize(to: winFrame.size.satisfyMinSizeWithSameAspectRatio(NSSize(width: Tokens.Size.n500, height: Tokens.Size.n300)))
       }
 
       accessoryView.wantsLayer = true
@@ -2598,7 +2597,7 @@ class MainWindowController: PlayerWindowController {
   func hideOSD() {
     NSAnimationContext.runAnimationGroup({ (context) in
       self.osdAnimationState = .willHide
-      context.duration = OSDAnimationDuration
+      context.duration = Tokens.Motion.n50.appKitDuration
       osdView.animator().alphaValue = 0
     }) {
       if self.osdAnimationState == .willHide {
@@ -2970,7 +2969,7 @@ class MainWindowController: PlayerWindowController {
       var screenRect = screen.frame
       screenRect.origin = CGPoint(x: 0, y: 0)
       let blackWindow = NSWindow(contentRect: screenRect, styleMask: [], backing: .buffered, defer: false, screen: screen)
-      blackWindow.backgroundColor = .black
+      blackWindow.backgroundColor = Tokens.Palette.black.nsColor
       blackWindow.level = .iinaBlackScreen
 
       blackWindows.append(blackWindow)
@@ -3136,18 +3135,18 @@ class MainWindowController: PlayerWindowController {
     oscPlayControlMiddleView.spacing = hud ? 28 : 16
 
     playButton.wantsLayer = true
-    playButton.layer?.backgroundColor = NSColor.clear.cgColor
-    playButton.layer?.cornerRadius = 0
-    playButton.contentTintColor = hud ? .white : nil
+    playButton.layer?.backgroundColor = Tokens.Palette.clear.nsColor.cgColor
+    playButton.layer?.cornerRadius = Tokens.Radius.n0
+    playButton.contentTintColor = hud ? Tokens.Palette.onMedia.nsColor : nil
     playButton.alternateImage = hud ? nil : .pause
 
     for button in [leftArrowButton, rightArrowButton] {
       guard let button else { continue }
       button.wantsLayer = true
-      button.layer?.backgroundColor = NSColor.clear.cgColor
-      button.layer?.cornerRadius = 0
-      button.contentTintColor = hud ? .white : nil
-      button.layer?.shadowOpacity = 0
+      button.layer?.backgroundColor = Tokens.Palette.clear.nsColor.cgColor
+      button.layer?.cornerRadius = Tokens.Radius.n0
+      button.contentTintColor = hud ? Tokens.Palette.onMedia.nsColor : nil
+      button.layer?.shadowOpacity = Float(Tokens.Opacity.n00)
     }
     hudTransportDiscs.forEach { $0.isHidden = !hud }
 
@@ -3226,8 +3225,8 @@ class MainWindowController: PlayerWindowController {
     super.updateVolume()
     hudVolumeSlider?.doubleValue = player.info.volume
     let muted = player.info.isMuted || player.info.volume <= 0
-    hudMuteButton?.image = hudSymbol(muted ? "speaker.slash.fill" : "speaker.wave.2.fill", size: 14)
-    hudMuteButton?.contentTintColor = .white
+    hudMuteButton?.image = hudSymbol(muted ? "speaker.slash.fill" : "speaker.wave.2.fill", size: Tokens.Icon.n14)
+    hudMuteButton?.contentTintColor = Tokens.Palette.onMedia.nsColor
   }
 
   // MARK: - IBActions

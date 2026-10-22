@@ -28,7 +28,7 @@ class ScrollingTextField: NSTextField {
   private var step: CGFloat = 1
 
   private var scrollingString = NSAttributedString(string: "")
-  private var appendedStringCopyWidth: CGFloat = 0
+  private var appendedStringCopyWidth = Tokens.Size.n0
 
   override var stringValue: String {
     didSet {

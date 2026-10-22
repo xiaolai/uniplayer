@@ -24,7 +24,7 @@ class AdditionalInfoView: TranslucentView {
 
     self.title = NSTextField(labelWithString: "")
     title.translatesAutoresizingMaskIntoConstraints = false
-    title.font = .systemFont(ofSize: 18)
+    title.font = Tokens.Typography.detailTitle.nsFont
     // priority must be in (250, 500) so it grows but can be compressed by window width
     title.setContentCompressionResistancePriority(
       NSLayoutConstraint.Priority(rawValue: 300),
@@ -38,28 +38,28 @@ class AdditionalInfoView: TranslucentView {
     stackView.spacing = 4
 
     self.timeLabel = NSTextField(labelWithString: "")
-    timeLabel.font = .monospacedSystemFont(ofSize: 18, weight: .bold)
-    timeLabel.textColor = .secondaryLabelColor
+    timeLabel.font = Tokens.Typography.monoTitle.nsFont
+    timeLabel.textColor = Tokens.Palette.textSecondary.nsColor
     timeLabel.translatesAutoresizingMaskIntoConstraints = false
 
     let separator = NSBox()
     separator.translatesAutoresizingMaskIntoConstraints = false
     separator.boxType = .separator
-    separator.size(width: 2, height: 16)
+    separator.size(width: Tokens.Size.n2, height: Tokens.Size.n16)
 
     let batteryImage = NSImageView(image: .battery)
     batteryImage.translatesAutoresizingMaskIntoConstraints = false
 
     self.batteryLabel = NSTextField(labelWithString: "")
     batteryLabel.translatesAutoresizingMaskIntoConstraints = false
-    batteryLabel.font = .boldSystemFont(ofSize: 13)
-    batteryLabel.textColor = .secondaryLabelColor
+    batteryLabel.font = Tokens.Typography.bodyStrong.nsFont
+    batteryLabel.textColor = Tokens.Palette.textSecondary.nsColor
 
     self.batteryView = NSView()
     batteryView.translatesAutoresizingMaskIntoConstraints = false
     batteryView.addSubview(batteryImage)
     batteryView.addSubview(batteryLabel)
-    batteryImage.padding(.all(0))
+    batteryImage.padding(.all(Tokens.Space.n0))
     batteryLabel.center()
 
     super.init(liquidGlassCornerRadius: 16, vevCornerRadius: 10, padding: (16, 8))
@@ -68,7 +68,7 @@ class AdditionalInfoView: TranslucentView {
       .withSymbolConfiguration(.init(pointSize: 18, weight: .bold)) {
       let timeImage = NSImageView(image: clockImage)
       timeImage.translatesAutoresizingMaskIntoConstraints = false
-      timeImage.size(width: 24, height: 24)
+      timeImage.size(width: Tokens.Size.n24, height: Tokens.Size.n24)
       stackView.addArrangedSubview(timeImage)
     }
     stackView.addArrangedSubview(timeLabel)
@@ -77,7 +77,7 @@ class AdditionalInfoView: TranslucentView {
 
     container.addSubview(title)
     container.addSubview(stackView)
-    title.padding(.top, .horizontal).spacing(.bottom(8), to: stackView)
+    title.padding(.top, .horizontal).spacing(.bottom(Tokens.Space.n8), to: stackView)
     stackView.padding(.bottom, .trailing, .leading(greaterThan: 0))
     setContent(container)
   }

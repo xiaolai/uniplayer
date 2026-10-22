@@ -33,7 +33,7 @@ class SettingsUIHelper: UIHelper {
     let button = NSPopUpButton()
     button.bezelStyle = .accessoryBarAction
     button.controlSize = .small
-    button.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
+    button.font = Tokens.Typography.caption.nsFont
     for (key, value) in items {
       let item = NSMenuItem()
       item.title = localized(key)

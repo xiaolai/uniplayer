@@ -72,6 +72,7 @@ class FontPickerWindowController: NSWindowController, NSTableViewDelegate, NSTab
       tv.delegate = self
     }
     otherField.placeholderString = Constants.String.mpvDefaultFont
+    previewField.font = Tokens.Typography.preview.nsFont
     searchField.delegate = self
     faceTableView.doubleAction = #selector(okBtnPressed)
     Logger.log("FontPickerWindow init done")
@@ -196,11 +197,11 @@ class FontPickerWindowController: NSWindowController, NSTableViewDelegate, NSTab
   // - MARK: Utils
 
   private func updatePreview() {
-    let chosenFont = NSFont(name: chosenFace, size: 24)
+    let chosenFont = NSFont(name: chosenFace, size: Tokens.Typography.aboutTitle.size)
     if let chosenFont {
       Logger.log("Previewing chosen typeface: \(chosenFont.fontName)")
     }
-    let font = chosenFont ?? NSFont.systemFont(ofSize: 24)
+    let font = chosenFont ?? Tokens.Typography.systemFont(size: Tokens.Typography.aboutTitle.size)
     previewField.font = font
   }
 

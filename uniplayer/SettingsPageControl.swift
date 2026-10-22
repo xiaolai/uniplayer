@@ -105,14 +105,14 @@ fileprivate class SliderView: SettingsAccessory.Base {
     slider.numberOfTickMarks = 4
     slider.minValue = 1
     slider.maxValue = 4
-    slider.size(width: 100)
+    slider.size(width: Tokens.Size.n100)
     slider.bind(.value, to: UserDefaults.standard, withKeyPath: key.rawValue)
 
     view.addSubview(label)
     view.addSubview(slider)
 
-    label.padding(.leading(SettingsSubList.indent + 8), .vertical(12))
-    slider.padding(.trailing(16))
+    label.padding(.leading(SettingsSubList.indent + 8), .vertical(Tokens.Space.n12))
+    slider.padding(.trailing(Tokens.Space.n16))
       .center(.y, with: label)
       .flexibleSpacingTo(view: label)
   }

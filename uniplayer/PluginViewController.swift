@@ -51,7 +51,7 @@ class PluginViewController: SidebarViewController {
     view.addSubview(pluginContentContainerView)
 
     pluginContentContainerView.padding(.bottom, .horizontal)
-      .spacing(.top(1), to: tabButtonsStackView)
+      .spacing(.top(Tokens.Space.n1), to: tabButtonsStackView)
 
     self.placeholderView = NSView()
     placeholderView.translatesAutoresizingMaskIntoConstraints = false

@@ -6,22 +6,17 @@
 //  Copyright © 2026 lhc. All rights reserved.
 //
 
-fileprivate let TitleBarHeightNormal: CGFloat = {
-  if #available(macOS 26, *) {
-    return 32
-  }
-  return 28
-}()
+
 
 fileprivate extension LayoutValue {
-  static let titlebarHeight = LayoutValue(TitleBarHeightNormal + 8, TitleBarHeightNormal)
-  static let oscBottomMargin = LayoutValue(10, 6)
+  static let titlebarHeight = LayoutValue(Tokens.Size.titlebarHeight + Tokens.Space.n8, Tokens.Size.titlebarHeight)
+  static let oscBottomMargin = LayoutValue(Tokens.Space.n10, Tokens.Space.n6)
 }
 
 
 class Titlebar: NSView {
   /// Default inset for the title container from the leading edge — clears the traffic lights.
-  static let docIconLeadingPadding: CGFloat = 86
+  static let docIconLeadingPadding = Tokens.Space.n86
 
   private let accessoryIconConfig = NSImage.SymbolConfiguration(pointSize: 12, weight: .regular)
 
@@ -87,13 +82,11 @@ class Titlebar: NSView {
 
     translatesAutoresizingMaskIntoConstraints = false
 
-    background.blendingMode = .withinWindow
-    background.material = .titlebar
+    background.apply(Tokens.Material.titlebar)
     background.wantsLayer = true
     background.layerContentsRedrawPolicy = .onSetNeedsDisplay
-    background.state = .active
     addSubview(background)
-    background.padding(.top, .bottom(1))
+    background.padding(.top, .bottom(Tokens.Space.n1))
     backgroundLeadingConstraint = background.leadingAnchor.constraint(equalTo: leadingAnchor)
     backgroundLeadingConstraint.isActive = true
     backgroundTrailingConstraint = trailingAnchor.constraint(equalTo: background.trailingAnchor)
@@ -102,16 +95,16 @@ class Titlebar: NSView {
     titleBarBottomBorder.boxType = .separator
     addSubview(titleBarBottomBorder)
     titleBarBottomBorder.fillColor = .titleBarBorder
-    titleBarBottomBorder.padding(.horizontal, .bottom).size(height: 1)
+    titleBarBottomBorder.padding(.horizontal, .bottom).size(height: Tokens.Size.n1)
 
-    onTopButton.size(height: 16)
+    onTopButton.size(height: Tokens.Size.n16)
     onTopButton.imageScaling = .scaleProportionallyDown
     onTopButton.translatesAutoresizingMaskIntoConstraints = false
     onTopButton.bezelStyle = .smallSquare
     onTopButton.isBordered = false
     updateOnTopIcon()
 
-    removeBlackBarButton.size(height: 16)
+    removeBlackBarButton.size(height: Tokens.Size.n16)
     removeBlackBarButton.imageScaling = .scaleProportionallyDown
     removeBlackBarButton.translatesAutoresizingMaskIntoConstraints = false
     removeBlackBarButton.bezelStyle = .smallSquare
@@ -151,7 +144,7 @@ class Titlebar: NSView {
       titlebarContainer.translatesAutoresizingMaskIntoConstraints = false
       container.addArrangedSubview(titlebarContainer)
       titlebarContainer.padding(.horizontal)
-      titleHeightConstraint = titlebarContainer.heightAnchor.constraint(equalToConstant: 0)
+      titleHeightConstraint = titlebarContainer.heightAnchor.constraint(equalToConstant: Tokens.Size.n0)
       LayoutValue.titlebarHeight.use { [weak self] value in
         self?.titleHeightConstraint.constant = value
       }
@@ -161,16 +154,16 @@ class Titlebar: NSView {
       docIcon.translatesAutoresizingMaskIntoConstraints = false
       titlebarContainer.addSubview(docIcon)
       docIcon.padding(.leading(greaterThan: Titlebar.docIconLeadingPadding))
-        .center(.y).size(width: 16, height: 16)
+        .center(.y).size(width: Tokens.Size.n16, height: Tokens.Size.n16)
 
       self.titleTextField = NSTextField(labelWithString: window.title)
       titleTextField.translatesAutoresizingMaskIntoConstraints = false
-      titleTextField.font = .titleBarFont(ofSize: 13)
+      titleTextField.font = Tokens.Typography.body.nsFont
       titleTextField.lineBreakMode = .byTruncatingMiddle
       titleTextField.setContentCompressionResistancePriority(.init(200), for: .horizontal)
       titleTextField.setContentHuggingPriority(.defaultHigh, for: .horizontal)
       titlebarContainer.addSubview(titleTextField)
-      titleTextField.spacing(.leading(2), to: docIcon).center(.y)
+      titleTextField.spacing(.leading(Tokens.Space.n2), to: docIcon).center(.y)
 
       if #available(macOS 26.0, *) {
         self.titleLeadingConstraint = docIcon.leadingAnchor
@@ -194,7 +187,7 @@ class Titlebar: NSView {
       accessoryView.spacing = 8
 
       titlebarContainer.addSubview(accessoryView)
-      accessoryView.padding(.trailing(8)).center(.y)
+      accessoryView.padding(.trailing(Tokens.Space.n8)).center(.y)
       titleTextField.spacing(.trailing(greaterThan: 8), to: accessoryView)
 
       // osc
@@ -205,10 +198,10 @@ class Titlebar: NSView {
       self.oscView = TimeLabelOverflowedStackView()
       oscView.translatesAutoresizingMaskIntoConstraints = false
       oscContainer.addSubview(oscView)
-      oscView.padding(.trailing(6), .top, .bottom(.oscBottomMargin)).size(height: 24)
+      oscView.padding(.trailing(Tokens.Space.n6), .top, .bottom(.oscBottomMargin)).size(height: Tokens.Size.n24)
 
       oscLeadingConstraint = oscView.leadingAnchor
-        .constraint(equalTo: oscContainer.leadingAnchor, constant: 6)
+        .constraint(equalTo: oscContainer.leadingAnchor, constant: Tokens.Space.n6)
       oscLeadingConstraint.isActive = true
     }
 
@@ -344,7 +337,7 @@ class Titlebar: NSView {
       let item = NSMenuItem()
       item.title = FileManager.default.displayName(atPath: pathURL.path)
       item.image = NSWorkspace.shared.icon(forFile: pathURL.path)
-      item.image?.size = NSSize(width: 16, height: 16)
+      item.image?.size = NSSize(width: Tokens.Size.n16, height: Tokens.Size.n16)
       item.representedObject = pathURL
       item.target = self
       item.action = #selector(revealInFinder(_:))
@@ -362,8 +355,8 @@ class Titlebar: NSView {
   private func updateShadow() {
     if isTransparent {
       let shadow = NSShadow()
-      shadow.shadowColor = .black
-      shadow.shadowBlurRadius = 8
+      shadow.shadowColor = Tokens.Palette.black.nsColor
+      shadow.shadowBlurRadius = Tokens.Blur.n8
       shadow.shadowOffset = .zero
       titleTextField.shadow = shadow
     } else {

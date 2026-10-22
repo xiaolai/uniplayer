@@ -18,7 +18,7 @@ class PluginStandaloneWindow: NSWindow, WKNavigationDelegate, WKUIDelegate {
   private var pendingContent: String?
 
   static func create(pluginInstance: JavascriptPluginInstance) -> PluginStandaloneWindow {
-    let rect = NSRect(x: 0, y: 0, width: 600, height: 400)
+    let rect = NSRect(x: 0, y: 0, width: Tokens.Size.n600, height: Tokens.Size.n400)
     let window = PluginStandaloneWindow(contentRect: rect,
                                         styleMask: [.closable, .resizable, .titled],
                                         backing: .buffered,
@@ -122,7 +122,7 @@ class PluginStandaloneWindow: NSWindow, WKNavigationDelegate, WKUIDelegate {
     alert.informativeText = prompt
 
     // accessory view
-    let input = NSTextField(frame: NSRect(x: 0, y: 0, width: 240, height: 16))
+    let input = NSTextField(frame: NSRect(x: 0, y: 0, width: Tokens.Size.n240, height: Tokens.Size.n16))
     input.translatesAutoresizingMaskIntoConstraints = false
     input.lineBreakMode = .byClipping
     input.usesSingleLineMode = true
@@ -130,7 +130,7 @@ class PluginStandaloneWindow: NSWindow, WKNavigationDelegate, WKUIDelegate {
     if let inputValue = defaultText {
       input.stringValue = inputValue
     }
-    let stackView = NSStackView(frame: NSRect(x: 0, y: 0, width: 240, height: 20))
+    let stackView = NSStackView(frame: NSRect(x: 0, y: 0, width: Tokens.Size.n240, height: Tokens.Size.n20))
     stackView.orientation = .vertical
     stackView.alignment = .centerX
     stackView.addArrangedSubview(input)

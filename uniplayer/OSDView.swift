@@ -44,12 +44,12 @@ class OSDView: TranslucentView {
     self.secondaryLabel = NSTextField(labelWithString: "")
     secondaryLabel.lineBreakMode = .byTruncatingMiddle
     secondaryLabel.translatesAutoresizingMaskIntoConstraints = false
-    secondaryLabel.textColor = .secondaryLabelColor
+    secondaryLabel.textColor = Tokens.Palette.textSecondary.nsColor
     secondaryLabel.setContentCompressionResistancePriority(.init(499), for: .horizontal)
 
     self.progressBar = FixedProgressBar()
     progressBar.translatesAutoresizingMaskIntoConstraints = false
-    progressBar.heightAnchor.constraint(equalToConstant: 12).isActive = true
+    progressBar.heightAnchor.constraint(equalToConstant: Tokens.Size.n12).isActive = true
     progressBar.setContentHuggingPriority(.defaultHigh, for: .horizontal)
 
     super.init(liquidGlassCornerRadius: 16, vevCornerRadius: 10, padding: (16, 8))
@@ -82,8 +82,8 @@ class OSDView: TranslucentView {
       "chapterCount": player.info.chapters.count.description
     ]
 
-    label.font = NSFont.monospacedDigitSystemFont(ofSize: textSize, weight: .regular)
-    secondaryLabel.font = NSFont.monospacedDigitSystemFont(ofSize: secondaryTextSize, weight: .regular)
+    label.font = Tokens.Typography.numericFont(size: textSize)
+    secondaryLabel.font = Tokens.Typography.numericFont(size: secondaryTextSize)
 
     let (osdString, osdType) = message.titleAndType()
     let renderedLabel = try! (try! Template(string: osdString)).render(osdData)

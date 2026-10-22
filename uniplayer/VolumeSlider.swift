@@ -63,7 +63,7 @@ fileprivate class VolumeSliderCell: NSSliderCell {
     let knobPos: CGFloat = round(knobRect(flipped: flipped).origin.x);
 
     // Round the slider bar ends like is done for the playback progress slider.
-    let radius: CGFloat = 1.5
+    let radius: CGFloat = Tokens.Radius.n1_5
     let path = NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius)
 
     // The position at which volume is set to 100 rounded to obtain a pixel perfect clip line.
@@ -73,7 +73,7 @@ fileprivate class VolumeSliderCell: NSSliderCell {
     // be drawn with a small gap at the position that represents 100% volume.
     let gapClip: NSBezierPath?
     if maxValue > 100 {
-      let width: CGFloat = 2
+      let width: CGFloat = Tokens.Size.n2
       let gapRect = NSMakeRect(x100 - width / 2, rect.minY, width, rect.height)
       gapClip = NSBezierPath(rect: gapRect).reversed
     } else {
@@ -88,7 +88,7 @@ fileprivate class VolumeSliderCell: NSSliderCell {
       clipLeft.append(gapClip)
     }
     clipLeft.addClip()
-    NSColor.volumeSliderBarLeft.setFill()
+    Tokens.Palette.volumeSliderBarLeft.nsColor.setFill()
     path.fill()
     NSGraphicsContext.restoreGraphicsState()
 
@@ -101,7 +101,7 @@ fileprivate class VolumeSliderCell: NSSliderCell {
       clipRight.append(gapClip)
     }
     clipRight.addClip()
-    NSColor.volumeSliderBarRight.setFill()
+    Tokens.Palette.volumeSliderBarRight.nsColor.setFill()
     path.fill()
     NSGraphicsContext.restoreGraphicsState()
   }

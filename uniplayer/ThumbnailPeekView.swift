@@ -21,24 +21,24 @@ class ThumbnailPeekView: NSView {
 
   private func setup() {
     wantsLayer = true
-    layer?.cornerRadius = 4
+    layer?.cornerRadius = Tokens.Radius.n4
     layer?.masksToBounds = true
-    layer?.borderWidth = 1
+    layer?.borderWidth = Tokens.Stroke.hairline
     layer?.borderColor = CGColor(gray: 0.6, alpha: 0.5)
 
     let s = NSShadow()
-    s.shadowBlurRadius = 2
-    s.shadowColor = .black
+    s.shadowBlurRadius = Tokens.Blur.n2
+    s.shadowColor = Tokens.Palette.black.nsColor
     shadow = s
 
     imageView = NSImageView()
     imageView.translatesAutoresizingMaskIntoConstraints = false
     imageView.wantsLayer = true
-    imageView.layer?.cornerRadius = 4
+    imageView.layer?.cornerRadius = Tokens.Radius.n4
     imageView.layer?.masksToBounds = true
     imageView.imageScaling = .scaleAxesIndependently
     addSubview(imageView)
-    imageView.padding(.all(0))
+    imageView.padding(.all(Tokens.Space.n0))
   }
 
 }

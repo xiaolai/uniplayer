@@ -21,7 +21,7 @@ class TranslucentView: NSView {
   private var appliedStyle: Style?
 
   /// Optional Liquid Glass configuration, applied when the glass view is built.
-  var glassStyle: NSGlassEffectView.Style = .regular
+  var glassStyle: NSGlassEffectView.Style = Tokens.Material.glassTransport.style
   var glassTintColor: NSColor?
   var glassIsInteractive = false
 
@@ -92,8 +92,7 @@ class TranslucentView: NSView {
       let view = NSVisualEffectView()
       view.clipsToBounds = true
       view.translatesAutoresizingMaskIntoConstraints = false
-      view.blendingMode = .withinWindow
-      view.material = .popover
+      view.apply(Tokens.Material.popover)
       view.addSubview(wrapper)
       wrapper.padding(.all)
       view.wantsLayer = true

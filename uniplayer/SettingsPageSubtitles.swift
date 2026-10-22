@@ -194,9 +194,9 @@ fileprivate class SButton: NSButton {
 
   private func setup() {
     self.wantsLayer = true
-    self.layer?.borderWidth = 1
-    self.layer?.cornerRadius = 6
-    self.layer?.borderColor = NSColor.tertiaryLabelColor.cgColor
+    self.layer?.borderWidth = Tokens.Stroke.hairline
+    self.layer?.cornerRadius = Tokens.Radius.n6
+    self.layer?.borderColor = Tokens.Palette.textTertiary.nsColor.cgColor
     self.bezelStyle = .smallSquare
     self.isBordered = false
     updateAppearance()
@@ -253,7 +253,7 @@ fileprivate class SubtitlesASSView: SettingsAccessory.Base {
     segmentControl.selectedSegment = 0
 
     view.addSubview(stackView)
-    stackView.padding(.top(4), .bottom, .horizontal)
+    stackView.padding(.top(Tokens.Space.n4), .bottom, .horizontal)
   }
 
   override func registerSearchEntry(context: SettingsSearch.Context) {
@@ -295,7 +295,7 @@ fileprivate class SubtitlesFontView: SettingsAccessory.Base {
     widthConstraint.priority = .defaultLow
     widthConstraint.isActive = true
     fontButton.bind(.title, to: UserDefaults.standard, withKeyPath: Preference.Key.subTextFont.rawValue)
-    fontButton.size(height: 25)
+    fontButton.size(height: Tokens.Size.n25)
 
     let sizeInput = ui.input(bindTo: .subTextSize, range: 1...9000, allowsFloats: true)
 
@@ -303,18 +303,18 @@ fileprivate class SubtitlesFontView: SettingsAccessory.Base {
     boldButton.translatesAutoresizingMaskIntoConstraints = false
     boldButton.setButtonType(.toggle)
     boldButton.bind(.value, to: UserDefaults.standard, withKeyPath: Preference.Key.subBold.rawValue)
-    boldButton.size(width: 32, height: 25)
+    boldButton.size(width: Tokens.Size.n32, height: Tokens.Size.n25)
 
     let italicButton = SButton(image: .sf("italic"))
     italicButton.translatesAutoresizingMaskIntoConstraints = false
     italicButton.setButtonType(.toggle)
     italicButton.bind(.value, to: UserDefaults.standard, withKeyPath: Preference.Key.subItalic.rawValue)
-    italicButton.size(width: 32, height: 25)
+    italicButton.size(width: Tokens.Size.n32, height: Tokens.Size.n25)
 
     let stackView = ui.hStack(fontButton, sizeInput, boldButton, italicButton)
 
     view.addSubview(stackView)
-    stackView.padding(.top(8), .bottom(8), .leading, .trailing)
+    stackView.padding(.top(Tokens.Space.n8), .bottom(Tokens.Space.n8), .leading, .trailing)
   }
 
   @objc func chooseSubFontAction(_ sender: AnyObject) {
@@ -332,7 +332,7 @@ fileprivate class SubtitlesColorView: SettingsAccessory.Base {
     super.init()
     let colorWell = ui.colorWell(bindTo: .subTextColorString)
     view.addSubview(colorWell)
-    colorWell.padding(.top(8), .bottom(8), .leading, .trailing)
+    colorWell.padding(.top(Tokens.Space.n8), .bottom(Tokens.Space.n8), .leading, .trailing)
   }
 }
 
@@ -350,7 +350,7 @@ fileprivate class SubtitlesBorderView: SettingsAccessory.Base {
     let stackView = ui.hStack(widthLabel, widthInput, colorLabel, colorWell)
 
     view.addSubview(stackView)
-    stackView.padding(.vertical(8), .leading, .trailing)
+    stackView.padding(.vertical(Tokens.Space.n8), .leading, .trailing)
   }
 }
 
@@ -368,7 +368,7 @@ fileprivate class SubtitlesShadowView: SettingsAccessory.Base {
     let stackView = ui.hStack(sizeLabel, sizeInput, colorLabel, colorWell)
 
     view.addSubview(stackView)
-    stackView.padding(.vertical(8), .leading, .trailing)
+    stackView.padding(.vertical(Tokens.Space.n8), .leading, .trailing)
   }
 }
 
@@ -386,7 +386,7 @@ fileprivate class SubtitlesMarginView: SettingsAccessory.Base {
     let stackView = ui.hStack(xLabel, xInput, yLabel, yInput)
 
     view.addSubview(stackView)
-    stackView.padding(.vertical(8), .leading, .trailing)
+    stackView.padding(.vertical(Tokens.Space.n8), .leading, .trailing)
   }
 }
 
@@ -404,7 +404,7 @@ fileprivate class SubtitlesAlignView: SettingsAccessory.Base {
     let stackView = ui.hStack(xLabel, xPopUp, yLabel, yPopUp)
 
     view.addSubview(stackView)
-    stackView.padding(.vertical(8), .leading, .trailing)
+    stackView.padding(.vertical(Tokens.Space.n8), .leading, .trailing)
   }
 
   private func makePopUp(_ key: Preference.Key) -> NSPopUpButton {
@@ -448,7 +448,7 @@ fileprivate class SubtitlesEncodingView: SettingsAccessory.Base {
 
     popupButton.menu?.insertItem(NSMenuItem.separator(), at: 1)
     view.addSubview(popupButton)
-    popupButton.padding(.leading(SettingsSubList.indent), .top, .bottom(8), .trailing(8))
+    popupButton.padding(.leading(SettingsSubList.indent), .top, .bottom(Tokens.Space.n8), .trailing(Tokens.Space.n8))
   }
 
   @objc func changeDefaultEncoding(_ sender: NSPopUpButton) {
@@ -498,7 +498,7 @@ fileprivate class SubtitleSourceView: SettingsAccessory.Base {
     subSourcePopUpButton.padding(.horizontal)
 
     view.addSubview(subSourceStackView)
-    subSourceStackView.padding(.top, .bottom(8), .leading(SettingsSubList.indent), .trailing(8))
+    subSourceStackView.padding(.top, .bottom(Tokens.Space.n8), .leading(SettingsSubList.indent), .trailing(Tokens.Space.n8))
 
     subSourcePopUpButton.target = self
     subSourcePopUpButton.action = #selector(refreshSubSourceAccessoryView)

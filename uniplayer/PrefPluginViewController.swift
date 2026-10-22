@@ -200,7 +200,7 @@ class PrefPluginViewController: PreferenceViewController, PreferenceWindowEmbedd
     Utility.quickConstraints(["H:|[v]|", "V:|[v]|"], ["v": pluginPreferencesWebView])
     pluginPreferencesWebViewHeight = NSLayoutConstraint(item: pluginPreferencesWebView!, attribute: .height,
                                                         relatedBy: .equal, toItem: nil, attribute: .notAnAttribute,
-                                                        multiplier: 1, constant: 0)
+                                                        multiplier: 1, constant: Tokens.Space.n0)
     pluginPreferencesWebView.addConstraint(pluginPreferencesWebViewHeight)
   }
 
@@ -213,7 +213,7 @@ class PrefPluginViewController: PreferenceViewController, PreferenceWindowEmbedd
     Utility.quickConstraints(["H:|[v]|", "V:|[v]-(0@40)-|"], ["v": pluginHelpWebView])
     pluginHelpWebViewHeight = NSLayoutConstraint(item: pluginHelpWebView!, attribute: .height,
                                                         relatedBy: .equal, toItem: nil, attribute: .notAnAttribute,
-                                                        multiplier: 1, constant: 32)
+                                                        multiplier: 1, constant: Tokens.Space.n32)
     pluginHelpWebView.addConstraint(pluginHelpWebViewHeight)
   }
 
@@ -261,7 +261,7 @@ class PrefPluginViewController: PreferenceViewController, PreferenceWindowEmbedd
       pluginSourceTextView.textStorage?.setAttributedString(.init(string: NSLocalizedString("plugin.local", comment: "")))
       pluginSourceTextView.isSelectable = false
     }
-    pluginSourceTextView.textStorage?.font = .systemFont(ofSize: NSFont.systemFontSize)
+    pluginSourceTextView.textStorage?.font = Tokens.Typography.body.nsFont
     pluginCheckUpdatesBtn.isHidden = plugin.githubRepo == nil || plugin.githubVersion == nil
     // if the plugin is symlinked, disable the uninstall button since it can accidentally delete the project folder
     uninstallBtn.isEnabled = !plugin.isExternal
@@ -298,7 +298,7 @@ class PrefPluginViewController: PreferenceViewController, PreferenceWindowEmbedd
     let block = {
       let alert = NSAlert()
       let permissionListView = PrefPluginPermissionListView()
-      let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 500, height: 300))
+      let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: Tokens.Size.n500, height: Tokens.Size.n300))
       permissionListView.translatesAutoresizingMaskIntoConstraints = false
       alert.messageText = NSLocalizedString("alert.title_warning", comment: "Warning")
       alert.informativeText = NSLocalizedString(previousPlugin == nil ? "alert.plugin_permission" : "alert.plugin_permission_added", comment: "")

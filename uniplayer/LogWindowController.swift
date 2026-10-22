@@ -16,10 +16,10 @@ extension NSToolbarItem.Identifier {
   static let searchField = NSToolbarItem.Identifier("uniplayer.logWindow.toolbar.searchField")
 }
 
-fileprivate let textFieldHorizontalPadding: CGFloat = 4
-fileprivate let textFieldVerticalPadding: CGFloat = 2
+fileprivate let textFieldHorizontalPadding = Tokens.Space.n4
+fileprivate let textFieldVerticalPadding = Tokens.Space.n2
 
-fileprivate let logFont = NSFont.monospacedSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
+fileprivate let logFont = Tokens.Typography.monoCaption.nsFont
 
 fileprivate func indicatorIcon(withColor color: NSColor) -> NSImage {
   return NSImage(systemSymbolName: "circle.fill", accessibilityDescription: nil)!.withSymbolConfiguration(.init(scale: .small))!.tinted(color)
@@ -91,13 +91,13 @@ class LogWindowController: NSWindowController, NSMenuDelegate, NSToolbarDelegate
 
   convenience init() {
     let window = CommonWindow(
-        contentRect: NSRect(origin: .zero, size: NSSize(width: 800, height: 500)),
+        contentRect: NSRect(origin: .zero, size: NSSize(width: Tokens.Size.n800, height: Tokens.Size.n500)),
         styleMask: [.titled, .closable, .miniaturizable, .resizable],
         backing: .buffered,
         defer: false,
         usesUnifiedToolbar: true
     )
-    window.minSize = NSMakeSize(800, 500)
+    window.minSize = NSMakeSize(Tokens.Size.n800, Tokens.Size.n500)
     window.title = NSLocalizedString("logwindow.title", comment: "Log Viewer")
     self.init(window: window)
     self.windowFrameAutosaveName = "LogWindow"
@@ -492,8 +492,8 @@ extension LogWindowController: NSTableViewDelegate {
       imageView.imageScaling = .scaleProportionallyDown
       cell.addSubview(imageView)
       cell.imageView = imageView
-      imageView.size(width: 12, height: 12)
-      imageView.padding(.top(2.5))
+      imageView.size(width: Tokens.Size.n12, height: Tokens.Size.n12)
+      imageView.padding(.top(Tokens.Space.n2_5))
       imageView.center(.x)
     } else {
       let textField = NSTextField(wrappingLabelWithString: "")

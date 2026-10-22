@@ -24,13 +24,13 @@ struct SettingsItem {
       label.controlSize = controlSize
       switch controlSize {
       case .small:
-        label.font = NSFont.systemFont(ofSize: NSFont.systemFontSize - 1)
+        label.font = Tokens.Typography.size12.nsFont
       case .mini:
-        label.font = NSFont.systemFont(ofSize: 9)
+        label.font = Tokens.Typography.badge.nsFont
       case .large:
-        label.font = NSFont.systemFont(ofSize: 15)
+        label.font = Tokens.Typography.size15.nsFont
       default:
-        label.font = NSFont.systemFont(ofSize: NSFont.systemFontSize)
+        label.font = Tokens.Typography.body.nsFont
       }
     }
 
@@ -64,7 +64,7 @@ struct SettingsItem {
       view.addSubview(customView)
       customView.padding(.all)
       view.wantsLayer = true
-      view.layer?.cornerRadius = 6
+      view.layer?.cornerRadius = Tokens.Radius.n6
       view.layer?.masksToBounds = true
       return view
     }
@@ -127,10 +127,10 @@ struct SettingsItem {
 
       if let imageName, let symbol = NSImage.sf(imageName) {
         iconView.image = symbol
-        iconView.size(width: 24, height: 20)
+        iconView.size(width: Tokens.Size.n24, height: Tokens.Size.n20)
       } else {
         iconView.isHidden = true
-        label.padding(.leading(30))
+        label.padding(.leading(Tokens.Space.n30))
       }
 
       labelStackView.translatesAutoresizingMaskIntoConstraints = false
@@ -145,18 +145,18 @@ struct SettingsItem {
       if hasDesc {
         let descKey =  descKey ?? .init("\(key!.rawValue).desc")
         let descLabel = NSTextField(labelWithString: ui.localized(descKey))
-        descLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
-        descLabel.textColor = .secondaryLabelColor
+        descLabel.font = Tokens.Typography.caption.nsFont
+        descLabel.textColor = Tokens.Palette.textSecondary.nsColor
         stackView.addArrangedSubview(descLabel)
         descLabel.makeMultiLine()
-        descLabel.padding(.leading(30))
+        descLabel.padding(.leading(Tokens.Space.n30))
       }
 
       view.addSubview(stackView)
 
-      textField.padding(.leading(30), .trailing)
+      textField.padding(.leading(Tokens.Space.n30), .trailing)
 
-      stackView.padding(.leading(6), .trailing(8), .vertical(8))
+      stackView.padding(.leading(Tokens.Space.n6), .trailing(Tokens.Space.n8), .vertical(Tokens.Space.n8))
       return view
     }
 
@@ -330,8 +330,8 @@ struct SettingsItem {
       if hasDesc {
         let descText = ui.localized(descKey ?? .init("\(key!.rawValue).desc"))
         desc = NSTextField(labelWithString: descText)
-        desc.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
-        desc.textColor = .secondaryLabelColor
+        desc.font = Tokens.Typography.caption.nsFont
+        desc.textColor = Tokens.Palette.textSecondary.nsColor
         desc.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         desc.lineBreakMode = .byWordWrapping
         labelStackView.addArrangedSubview(desc)
@@ -346,7 +346,7 @@ struct SettingsItem {
       }
       backgroundView.addSubview(image)
 
-      disclosureButton = NonClickableButton(frame: NSRect(x: 0, y: 0, width: 12, height: 12))
+      disclosureButton = NonClickableButton(frame: NSRect(x: 0, y: 0, width: Tokens.Size.n12, height: Tokens.Size.n12))
       disclosureButton.translatesAutoresizingMaskIntoConstraints = false
       disclosureButton.setButtonType(.pushOnPushOff)
       disclosureButton.bezelStyle = .disclosure
@@ -376,14 +376,14 @@ struct SettingsItem {
 
       valueStackView.centerYAnchor
         .constraint(equalTo: backgroundView.topAnchor, constant: verticalPadding + 8).isActive = true
-      valueStackView.padding(.trailing(8))
-//       valueStackView.padding(.top(verticalPaddingFixed), .trailing(8))
-//      valueStackView.padding(.vertical(verticalPadding), .trailing(8)).center(.y)
-      image.size(width: 24, height: 20).spacing(.trailing(6), to: labelStackView)
-        .padding(.top(11))
-      disclosureButton.padding(.trailing(12)).center(.y)
+      valueStackView.padding(.trailing(Tokens.Space.n8))
+//       valueStackView.padding(.top(verticalPaddingFixed), .trailing(Tokens.Space.n8))
+//      valueStackView.padding(.vertical(verticalPadding), .trailing(Tokens.Space.n8)).center(.y)
+      image.size(width: Tokens.Size.n24, height: Tokens.Size.n20).spacing(.trailing(Tokens.Space.n6), to: labelStackView)
+        .padding(.top(Tokens.Space.n11))
+      disclosureButton.padding(.trailing(Tokens.Space.n12)).center(.y)
       labelStackView.center(.y).flexibleSpacingTo(view: valueStackView, trailing: 8)
-        .padding(.leading(36), .vertical(greaterThan: verticalPadding))
+        .padding(.leading(Tokens.Space.n36), .vertical(greaterThan: verticalPadding))
 
       prepareExpandableView()
     }
@@ -446,7 +446,7 @@ struct SettingsItem {
       expandingStackView!.padding(.all)
       expandingStackView!.addArrangedSubview(backgroundView)
       expandingStackView!.addArrangedSubview(detailView)
-      detailView.padding(.leading(8), .trailing)
+      detailView.padding(.leading(Tokens.Space.n8), .trailing)
       if isExpandable {
         if isExpandableAndClickable {
           disclosureButton.isHidden = false
@@ -889,7 +889,7 @@ struct SettingsItem {
       textField.translatesAutoresizingMaskIntoConstraints = false
       textField.controlSize = controlSize
       textField.bezelStyle = .roundedBezel
-      textField.size(width: 64)
+      textField.size(width: Tokens.Size.n64)
       setControlSize(textField)
       if let range {
         let formatter = NumberFormatter()
@@ -966,7 +966,7 @@ struct SettingsItem {
       textField.translatesAutoresizingMaskIntoConstraints = false
       textField.controlSize = controlSize
       textField.bezelStyle = .roundedBezel
-      textField.size(width: 64)
+      textField.size(width: Tokens.Size.n64)
       setControlSize(textField)
       if let range {
         let formatter = NumberFormatter()
@@ -1098,7 +1098,7 @@ fileprivate class ClickableView: NSView {
   }
 
   override func mouseExited(with event: NSEvent) {
-    layer?.backgroundColor = .clear
+    layer?.backgroundColor = Tokens.Palette.clear.nsColor.cgColor
   }
 
   required init?(coder: NSCoder) {
@@ -1108,12 +1108,12 @@ fileprivate class ClickableView: NSView {
   override func viewDidChangeEffectiveAppearance() {
     backgroundColor = if #available(macOS 26, *) {
       if effectiveAppearance.isDark {
-        NSColor.highlightColor.withAlphaComponent(0.1).cgColor
+        Tokens.Palette.highlight.nsColor.withAlphaComponent(Tokens.Opacity.n10).cgColor
       } else {
-        NSColor.black.withAlphaComponent(0.08).cgColor
+        Tokens.Palette.black.nsColor.withAlphaComponent(Tokens.Opacity.n08).cgColor
       }
     } else {
-      NSColor.highlightColor.withAlphaComponent(0.2).cgColor
+      Tokens.Palette.highlight.nsColor.withAlphaComponent(Tokens.Opacity.n20).cgColor
     }
   }
 }
@@ -1183,7 +1183,7 @@ class SettingsAccessory {
 
       box.translatesAutoresizingMaskIntoConstraints = false
       box.boxType = .custom
-      box.borderWidth = 0
+      box.borderWidth = Tokens.Stroke.none
       box.titlePosition = .noTitle
       box.contentView = stackView
 
@@ -1191,7 +1191,7 @@ class SettingsAccessory {
       stackView.orientation = .vertical
       stackView.spacing = 4
       stackView.setHuggingPriority(.defaultLow, for: .horizontal)
-      stackView.padding(.top(topConstraintOffset), .bottom(0), .horizontal)
+      stackView.padding(.top(topConstraintOffset), .bottom(Tokens.Space.n0), .horizontal)
     }
 
     @MainActor required init?(coder: NSCoder) {
@@ -1215,8 +1215,8 @@ class SettingsAccessory {
         box.titlePosition = .noTitle
         let itemTitle = NSTextField(labelWithString: title)
         let itemDesc = NSTextField(labelWithString: desc)
-        itemDesc.textColor = .secondaryLabelColor
-        itemDesc.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
+        itemDesc.textColor = Tokens.Palette.textSecondary.nsColor
+        itemDesc.font = Tokens.Typography.caption.nsFont
         itemDesc.lineBreakMode = .byWordWrapping
         itemDesc.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         let itemStackView = NSStackView(views: [itemTitle, itemDesc])
@@ -1226,7 +1226,7 @@ class SettingsAccessory {
         itemStackView.alignment = .leading
         itemStackView.setHuggingPriority(.init(100), for: .horizontal)
         box.contentView = itemStackView
-        box.cornerRadius = 6
+        box.cornerRadius = Tokens.Radius.n6
         box.listener = { [unowned self] in
           if let transformer = self.customtransformer {
             Preference.set(transformer.0(tag), for: self.key!)
@@ -1235,12 +1235,12 @@ class SettingsAccessory {
           }
         }
         items[tag] = box
-        itemStackView.padding(.vertical(6), .horizontal(12))
+        itemStackView.padding(.vertical(Tokens.Space.n6), .horizontal(Tokens.Space.n12))
         stackView.addArrangedSubview(box)
       }
 
       view.addSubview(box)
-      box.padding(.top, .leading(SettingsSubList.indent), .trailing(8), .bottom(8))
+      box.padding(.top, .leading(SettingsSubList.indent), .trailing(Tokens.Space.n8), .bottom(Tokens.Space.n8))
 
       initBinding()
       builtView = view
@@ -1295,15 +1295,15 @@ class SettingsAccessory {
     private func updateSelection() {
       let selectedItem = items[selectedValue]!
       NSAnimationContext.runAnimationGroup { context in
-        context.duration = 0.1
+        context.duration = Tokens.Motion.n10.appKitDuration
         items.values.forEach {
-          $0.borderColor = .separatorColor
-          $0.borderWidth = 1
-          $0.fillColor = .gray.withAlphaComponent(0.1)
+          $0.borderColor = Tokens.Palette.separator.nsColor
+          $0.borderWidth = Tokens.Stroke.hairline
+          $0.fillColor = Tokens.Palette.gray.nsColor.withAlphaComponent(Tokens.Opacity.n10)
         }
-        selectedItem.animator().borderColor = .controlAccentColor
-        selectedItem.animator().borderWidth = 2
-        selectedItem.animator().fillColor = .controlAccentColor.withAlphaComponent(0.1)
+        selectedItem.animator().borderColor = Tokens.Palette.accent.nsColor
+        selectedItem.animator().borderWidth = Tokens.Stroke.strong
+        selectedItem.animator().fillColor = Tokens.Palette.accent.nsColor.withAlphaComponent(Tokens.Opacity.n10)
       }
     }
 
@@ -1379,7 +1379,7 @@ class SettingsAccessory {
       stackView.addArrangedSubview(audioLangTokenField)
       view.addSubview(stackView)
 
-      stackView.padding(.top(topConstraintOffset), .leading(SettingsSubList.indent), .trailing(8), .bottom(8))
+      stackView.padding(.top(topConstraintOffset), .leading(SettingsSubList.indent), .trailing(Tokens.Space.n8), .bottom(Tokens.Space.n8))
     }
 
     @MainActor required init?(coder: NSCoder) {
@@ -1403,8 +1403,8 @@ class SettingsAccessory {
         if hasDesc {
           let descLabel = NSTextField(labelWithString: ui.localized("\(key.rawValue).desc"))
           descLabel.makeMultiLine()
-          descLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
-          descLabel.textColor = .secondaryLabelColor
+          descLabel.font = Tokens.Typography.caption.nsFont
+          descLabel.textColor = Tokens.Palette.textSecondary.nsColor
           stackView.addArrangedSubview(descLabel)
         }
       }

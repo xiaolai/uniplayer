@@ -9,8 +9,8 @@
 import Cocoa
 
 fileprivate extension NSColor {
-  static let keyRecordViewBackground = NSColor.controlBackgroundColor.withSystemEffect(.disabled)
-  static let keyRecordViewBackgroundActive = NSColor.controlBackgroundColor
+  static let keyRecordViewBackground = Tokens.Palette.controlBackground.nsColor.withSystemEffect(.disabled)
+  static let keyRecordViewBackgroundActive = Tokens.Palette.controlBackground.nsColor
 }
 
 protocol KeyRecordViewDelegate {
@@ -26,12 +26,12 @@ class KeyRecordView: NSView {
 
   override func awakeFromNib() {
     wantsLayer = true
-    layer?.backgroundColor = NSColor.keyRecordViewBackgroundActive.cgColor
-    layer?.cornerRadius = 4
+    layer?.backgroundColor = Tokens.Palette.keyRecordBackgroundActive.nsColor.cgColor
+    layer?.cornerRadius = Tokens.Radius.n4
   }
 
   override func updateLayer() {
-    layer?.backgroundColor = NSColor.keyRecordViewBackgroundActive.cgColor
+    layer?.backgroundColor = Tokens.Palette.keyRecordBackgroundActive.nsColor.cgColor
   }
   
   override var acceptsFirstResponder: Bool {
@@ -50,14 +50,14 @@ class KeyRecordView: NSView {
 
   override func resignFirstResponder() -> Bool {
     effectiveAppearance.applyAppearanceFor {
-      layer?.backgroundColor = NSColor.keyRecordViewBackground.cgColor
+      layer?.backgroundColor = Tokens.Palette.keyRecordBackground.nsColor.cgColor
     }
     return true
   }
 
   override func becomeFirstResponder() -> Bool {
     effectiveAppearance.applyAppearanceFor {
-      layer?.backgroundColor = NSColor.keyRecordViewBackgroundActive.cgColor
+      layer?.backgroundColor = Tokens.Palette.keyRecordBackgroundActive.nsColor.cgColor
     }
     return true
   }

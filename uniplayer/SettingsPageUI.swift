@@ -400,7 +400,7 @@ fileprivate class WindowInitialSizeView: SettingsContainer {
     geometryBindings.initControl(\.windowSizeUnit, popupButtonUnit)
 
     container.addSubview(view)
-    view.padding(.bottom(8), .top(0), .leading(SettingsSubList.indent), .trailing(0))
+    view.padding(.bottom(Tokens.Space.n8), .top(Tokens.Space.n0), .leading(SettingsSubList.indent), .trailing(Tokens.Space.n0))
   }
 
   func makeView() -> NSView {
@@ -455,7 +455,7 @@ fileprivate class WindowInitialPositionView: SettingsContainer {
     )
 
     container.addSubview(view)
-    view.padding(.bottom(8), .top(0), .leading(SettingsSubList.indent), .trailing(0))
+    view.padding(.bottom(Tokens.Space.n8), .top(Tokens.Space.n0), .leading(SettingsSubList.indent), .trailing(Tokens.Space.n0))
 
     geometryBindings.initControl(\.windowPosXAnchor, popupButtonXPos)
     geometryBindings.initControl(\.windowPosXUnit, popupButtonXUnit)
@@ -484,7 +484,7 @@ fileprivate class ResizeWindowView: SettingsContainer {
 
     buttons.forEach {
       view.addSubview($0)
-      $0.padding(.leading(20))
+      $0.padding(.leading(Tokens.Space.n20))
     }
     SettingsUIHelper.vEquallySpaced(buttons, 8, top: 0, bottom: 12)
   }
@@ -514,13 +514,13 @@ fileprivate class OSCLayoutView: SettingsContainer {
 
     imageViews.forEach { iv in
       iv.wantsLayer = true
-      iv.layer?.borderWidth = 2.0
-      iv.layer?.borderColor = NSColor.separatorColor.cgColor
-      iv.layer?.cornerRadius = 6.0
+      iv.layer?.borderWidth = Tokens.Stroke.strong
+      iv.layer?.borderColor = Tokens.Palette.separator.nsColor.cgColor
+      iv.layer?.cornerRadius = Tokens.Radius.n6
       iv.layer?.masksToBounds = true
       iv.translatesAutoresizingMaskIntoConstraints = false
       container.addSubview(iv)
-      iv.padding(.top(4)).size(width: 480 * 0.22, height: 270 * 0.22)
+      iv.padding(.top(Tokens.Space.n4)).size(width: Tokens.Size.imagePreviewWidth, height: Tokens.Size.imagePreviewHeight)
     }
     SettingsUIHelper.hEquallySpaced(imageViews, 8, leading: SettingsSubList.indent, trailing: 8)
 
@@ -530,7 +530,7 @@ fileprivate class OSCLayoutView: SettingsContainer {
 
     for (i, btn) in buttons.enumerated() {
       container.addSubview(btn)
-      btn.spacing(.top(8), to: imageViews[i]).padding(.bottom(12))
+      btn.spacing(.top(Tokens.Space.n8), to: imageViews[i]).padding(.bottom(Tokens.Space.n12))
         .center(.x, with: imageViews[i])
     }
 
@@ -598,9 +598,9 @@ private class OSCToolbarView: SettingsContainer {
     box.titlePosition = .noTitle
     box.contentViewMargins = .zero
     box.addSubview(oscToolbarStackView)
-    oscToolbarStackView.padding(.vertical, .leading(greaterThan: 0), .trailing(0))
+    oscToolbarStackView.padding(.vertical, .leading(greaterThan: 0), .trailing(Tokens.Space.n0))
     container.addSubview(box)
-    box.padding(.top, .bottom(8))
+    box.padding(.top, .bottom(Tokens.Space.n8))
     box.widthAnchor
       .constraint(equalTo: box.heightAnchor, multiplier: 5).isActive = true
 

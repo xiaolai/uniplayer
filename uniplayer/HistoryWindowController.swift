@@ -69,7 +69,7 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
 
   init() {
     let window = CommonWindow(
-      contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
+      contentRect: NSRect(x: 0, y: 0, width: Tokens.Size.n800, height: Tokens.Size.n600),
       styleMask: [.titled, .closable, .resizable, .miniaturizable],
       backing: .buffered,
       defer: false,
@@ -77,7 +77,7 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
     )
     window.title = NSLocalizedString("history_window.title", comment: "Playback History")
     window.setFrameAutosaveName("PlaybackHistoryWindow")
-    window.minSize = NSMakeSize(400, 200)
+    window.minSize = NSMakeSize(Tokens.Size.n400, Tokens.Size.n200)
     super.init(window: window)
 
     let toolbar = NSToolbar(identifier: "HistoryWindowToolbar")
@@ -314,15 +314,15 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
         let cell = (outlineView.makeView(withIdentifier: .filename, owner: nil) as? HistoryFilenameCellView) ?? HistoryFilenameCellView()
         if let title = entry.title {
           cell.title.stringValue = title
-          cell.title.textColor = fileExists ? .controlTextColor : .disabledControlTextColor
+          cell.title.textColor = fileExists ? Tokens.Palette.controlText.nsColor : Tokens.Palette.textDisabled.nsColor
           cell.filename.stringValue = entry.url.isFileURL ? entry.name : entry.url.absoluteString
-          cell.filename.textColor = fileExists ? .secondaryLabelColor : .disabledControlTextColor
+          cell.filename.textColor = fileExists ? Tokens.Palette.textSecondary.nsColor : Tokens.Palette.textDisabled.nsColor
           cell.textField?.isHidden = true
           cell.title.isHidden = false
           cell.filename.isHidden = false
         } else {
           cell.textField?.stringValue = entry.url.isFileURL ? entry.name : entry.url.absoluteString
-          cell.textField?.textColor = fileExists ? .controlTextColor : .disabledControlTextColor
+          cell.textField?.textColor = fileExists ? Tokens.Palette.controlText.nsColor : Tokens.Palette.textDisabled.nsColor
           cell.title.isHidden = true
           cell.filename.isHidden = true
           cell.textField?.isHidden = false
@@ -367,11 +367,11 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
     cell.identifier = .time
     let textField = NSTextField(labelWithString: "")
     textField.translatesAutoresizingMaskIntoConstraints = false
-    textField.font = .monospacedSystemFont(ofSize: 13, weight: .regular)
+    textField.font = Tokens.Typography.mono.nsFont
     cell.addSubview(textField)
-    textField.padding(.leading(4), .trailing)
+    textField.padding(.leading(Tokens.Space.n4), .trailing)
     textField.center(.y)
-    textField.textColor = .secondaryLabelColor
+    textField.textColor = Tokens.Palette.textSecondary.nsColor
     cell.textField = textField
     return cell
   }
@@ -383,7 +383,7 @@ class HistoryWindowController: NSWindowController, NSOutlineViewDelegate, NSOutl
     textField.translatesAutoresizingMaskIntoConstraints = false
     textField.lineBreakMode = .byTruncatingTail
     cell.addSubview(textField)
-    textField.padding(.leading(4), .trailing)
+    textField.padding(.leading(Tokens.Space.n4), .trailing)
     textField.center(.y)
     cell.textField = textField
     return cell
@@ -738,22 +738,22 @@ class HistoryFilenameCellView: NSTableCellView {
     filename.translatesAutoresizingMaskIntoConstraints = false
     filename.lineBreakMode = .byTruncatingMiddle
     filename.allowsExpansionToolTips = true
-    filename.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
+    filename.font = Tokens.Typography.caption.nsFont
     addSubview(filename)
 
     textField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
     title.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
     filename.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
-    docImage.size(width: 18, height: 18)
+    docImage.size(width: Tokens.Size.n18, height: Tokens.Size.n18)
     docImage.padding(.leading)
-    docImage.spacing(.trailing(8), to: title)
-    docImage.spacing(.trailing(8), to: filename)
-    docImage.spacing(.trailing(8), to: textField)
+    docImage.spacing(.trailing(Tokens.Space.n8), to: title)
+    docImage.spacing(.trailing(Tokens.Space.n8), to: filename)
+    docImage.spacing(.trailing(Tokens.Space.n8), to: textField)
     docImage.center(.y)
     title.padding(.top, .trailing)
-    filename.spacing(.top(1), to: title)
-    filename.padding(.bottom(2), .trailing)
+    filename.spacing(.top(Tokens.Space.n1), to: title)
+    filename.padding(.bottom(Tokens.Space.n2), .trailing)
     textField.center(.y)
     textField.padding(.trailing)
   }
@@ -782,12 +782,12 @@ class HistoryProgressCellView: NSTableCellView {
     indicator.maxValue = 1.0
     indicator.levelIndicatorStyle = .continuousCapacity
     indicator.controlSize = .mini
-    indicator.fillColor = .controlAccentColor
+    indicator.fillColor = Tokens.Palette.accent.nsColor
     indicator.warningValue = 2
     indicator.criticalValue = 2
     let textField = NSTextField(labelWithString: "")
     textField.translatesAutoresizingMaskIntoConstraints = false
-    textField.font = .monospacedDigitSystemFont(ofSize: 0, weight: .regular)
+    textField.font = Tokens.Typography.menuNumeric.nsFont
     self.textField = textField
     addSubview(indicator)
     addSubview(textField)
@@ -795,7 +795,7 @@ class HistoryProgressCellView: NSTableCellView {
     [indicator, textField].forEach { $0.center(.y) }
     indicator.padding(.leading)
     indicator.widthAnchor.constraint(greaterThanOrEqualToConstant: 30).isActive = true
-    indicator.spacing(.trailing(6), to: textField)
+    indicator.spacing(.trailing(Tokens.Space.n6), to: textField)
     textField.padding(.trailing)
   }
   

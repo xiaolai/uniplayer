@@ -179,7 +179,7 @@ fileprivate class ConfigEditor: SettingsAccessory.Base {
 
     let chooserStackView = ui.hStack(chooserPopupButton, delConfBtn, addConfBtn)
     chooserView.addSubview(chooserStackView)
-    chooserStackView.padding(.all(8))
+    chooserStackView.padding(.all(Tokens.Space.n8))
 
     addKeyMappingBtn.translatesAutoresizingMaskIntoConstraints = false
     addKeyMappingBtn.imagePosition = .imageOnly
@@ -187,16 +187,16 @@ fileprivate class ConfigEditor: SettingsAccessory.Base {
     addKeyMappingBtn.image = .sf("plus")
     addKeyMappingBtn.target = self
     addKeyMappingBtn.action = #selector(addKeyMappingAction)
-    addKeyMappingBtn.size(width: 26, height: 26)
+    addKeyMappingBtn.size(width: Tokens.Size.n26, height: Tokens.Size.n26)
 
     let headerViewContainer = NSView()
     headerViewContainer.translatesAutoresizingMaskIntoConstraints = false
-    headerViewContainer.size(height: 32)
+    headerViewContainer.size(height: Tokens.Size.n32)
     let headerView = ui.hStack(searchField, addKeyMappingBtn)
     headerViewContainer.addSubview(headerView)
-    headerView.padding(.top(8), .leading(16), .trailing(16))
+    headerView.padding(.top(Tokens.Space.n8), .leading(Tokens.Space.n16), .trailing(Tokens.Space.n16))
 
-    let editorStackView = ui.vStack(align: .leading, spacing: 0, headerViewContainer, kbTableView)
+    let editorStackView = ui.vStack(align: .leading, spacing: Tokens.Space.n0, headerViewContainer, kbTableView)
 
     searchField.setContentHuggingPriority(.defaultLow, for: .horizontal)
     searchField.bind(
@@ -207,7 +207,7 @@ fileprivate class ConfigEditor: SettingsAccessory.Base {
     )
 
     editorView.addSubview(editorStackView)
-    editorStackView.padding(.leading(16), .trailing, .vertical)
+    editorStackView.padding(.leading(Tokens.Space.n16), .trailing, .vertical)
 
     NotificationCenter.default.addObserver(forName: .iinaKeyBindingChanged, object: nil, queue: .main, using: saveToConfFile)
 
@@ -535,7 +535,7 @@ fileprivate class KeyMappingCell: NSTableCellView {
         let button = ButtonWithObject(
           title: "", image: image, target: editor, action: action)
         button.bezelStyle = .circular
-        button.size(width: 20, height: 20)
+        button.size(width: Tokens.Size.n20, height: Tokens.Size.n20)
         button.isHidden = true
         return button
       }
@@ -551,16 +551,16 @@ fileprivate class KeyMappingCell: NSTableCellView {
       keyBox.translatesAutoresizingMaskIntoConstraints = false
       keyBox.titlePosition = .noTitle
       keyBox.boxType = .custom
-      keyBox.borderWidth = 1
-      keyBox.borderColor = .separatorColor
-      keyBox.fillColor = .controlBackgroundColor
-      keyBox.cornerRadius = 4
+      keyBox.borderWidth = Tokens.Stroke.hairline
+      keyBox.borderColor = Tokens.Palette.separator.nsColor
+      keyBox.fillColor = Tokens.Palette.controlBackground.nsColor
+      keyBox.cornerRadius = Tokens.Radius.n4
       keyBox.contentViewMargins = .zero
       let keyLabel = NSTextField(labelWithAttributedString: NSAttributedString(string: ""))
       keyLabel.translatesAutoresizingMaskIntoConstraints = false
       keyBox.contentView?.addSubview(keyLabel)
-      keyBox.size(height: 28)
-      keyLabel.padding(.horizontal(4)).center(.y, with: keyBox.contentView)
+      keyBox.size(height: Tokens.Size.n28)
+      keyLabel.padding(.horizontal(Tokens.Space.n4)).center(.y, with: keyBox.contentView)
 
       self.keyLabel = keyLabel
       self.actionLabel = actionLabel
@@ -571,17 +571,17 @@ fileprivate class KeyMappingCell: NSTableCellView {
       stackView.alignment = .centerY
 
       self.addSubview(stackView)
-      stackView.padding(.vertical, .horizontal(4))
+      stackView.padding(.vertical, .horizontal(Tokens.Space.n4))
     }
 
     selectionChanged(isSelected)
 
     if Preference.bool(for: .displayKeyBindingRawValues) {
-      keyLabel.font = .monospacedSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
-      actionLabel.font = .monospacedSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
+      keyLabel.font = Tokens.Typography.mono.nsFont
+      actionLabel.font = Tokens.Typography.mono.nsFont
     } else {
-      keyLabel.font = .systemFont(ofSize: NSFont.systemFontSize, weight: .regular)
-      actionLabel.font = .systemFont(ofSize: NSFont.systemFontSize, weight: .regular)
+      keyLabel.font = Tokens.Typography.body.nsFont
+      actionLabel.font = Tokens.Typography.body.nsFont
     }
 
     keyLabel.attributedStringValue = km.attributedKeyForDisplay

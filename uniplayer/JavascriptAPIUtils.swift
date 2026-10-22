@@ -221,7 +221,7 @@ class JavascriptAPIUtils: JavascriptAPI, JavascriptAPIUtilsExportable {
   func prompt(_ title: String) -> String? {
     let panel = NSAlert()
     panel.messageText = title
-    let input = NSTextField(frame: NSRect(x: 0, y: 0, width: 240, height: 60))
+    let input = NSTextField(frame: NSRect(x: 0, y: 0, width: Tokens.Size.n240, height: Tokens.Size.n60))
     input.lineBreakMode = .byWordWrapping
     input.usesSingleLineMode = false
     panel.accessoryView = input

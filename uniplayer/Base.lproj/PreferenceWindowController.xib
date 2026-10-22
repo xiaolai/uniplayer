@@ -94,7 +94,7 @@
                                                                     <textFieldCell key="cell" sendsActionOnEndEditing="YES" title="Table View Cell" id="Ukj-Vg-wHf" customClass="PrefTabTitleLabelCell" customModule="UniPlayer" customModuleProvider="target">
                                                                         <font key="font" metaFont="systemBold"/>
                                                                         <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
-                                                                        <color key="backgroundColor" white="1" alpha="0.0" colorSpace="deviceWhite"/>
+                                                                        <color key="backgroundColor" name="clearColor" catalog="System" colorSpace="catalog"/>
                                                                     </textFieldCell>
                                                                     <connections>
                                                                         <binding destination="Cky-oa-sEY" name="value" keyPath="objectValue.title" id="pdj-Rl-qDR"/>
@@ -245,7 +245,7 @@
                                 <rect key="frame" x="0.0" y="0.0" width="340" height="180"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                 <size key="intercellSpacing" width="3" height="2"/>
-                                <color key="backgroundColor" white="1" alpha="0.0" colorSpace="deviceWhite"/>
+                                <color key="backgroundColor" name="clearColor" catalog="System" colorSpace="catalog"/>
                                 <color key="gridColor" name="gridColor" catalog="System" colorSpace="catalog"/>
                                 <tableColumns>
                                     <tableColumn width="308" minWidth="40" maxWidth="1000" id="jBz-A9-cFb">
@@ -278,7 +278,7 @@
                                                                         <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Label" drawsBackground="YES" id="bTQ-iD-3rD">
                                                                             <font key="font" metaFont="system"/>
                                                                             <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
-                                                                            <color key="backgroundColor" white="1" alpha="0.0" colorSpace="deviceWhite"/>
+                                                                            <color key="backgroundColor" name="clearColor" catalog="System" colorSpace="catalog"/>
                                                                         </textFieldCell>
                                                                         <connections>
                                                                             <binding destination="PUp-P1-eMl" name="value" keyPath="objectValue.label" id="iOB-UR-11t"/>
@@ -302,9 +302,9 @@
                                                                             <textField focusRingType="none" horizontalHuggingPriority="751" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="uYa-E5-kPM">
                                                                                 <rect key="frame" x="0.0" y="0.0" width="28" height="11"/>
                                                                                 <textFieldCell key="cell" controlSize="mini" lineBreakMode="truncatingTail" sendsActionOnEndEditing="YES" title="Label" drawsBackground="YES" id="Yqs-iT-EDU">
-                                                                                    <font key="font" metaFont="label" size="9"/>
+                                                                                    <font key="font" metaFont="miniSystem"/>
                                                                                     <color key="textColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
-                                                                                    <color key="backgroundColor" white="1" alpha="0.0" colorSpace="deviceWhite"/>
+                                                                                    <color key="backgroundColor" name="clearColor" catalog="System" colorSpace="catalog"/>
                                                                                 </textFieldCell>
                                                                                 <connections>
                                                                                     <binding destination="PUp-P1-eMl" name="value" keyPath="objectValue.tab" id="bag-hs-AJQ"/>
@@ -313,9 +313,9 @@
                                                                             <textField focusRingType="none" horizontalHuggingPriority="751" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="ch8-7m-EVc">
                                                                                 <rect key="frame" x="30" y="0.0" width="11" height="11"/>
                                                                                 <textFieldCell key="cell" controlSize="mini" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="»" drawsBackground="YES" id="hIj-J9-06Z">
-                                                                                    <font key="font" metaFont="label" size="9"/>
+                                                                                    <font key="font" metaFont="miniSystem"/>
                                                                                     <color key="textColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
-                                                                                    <color key="backgroundColor" white="1" alpha="0.0" colorSpace="deviceWhite"/>
+                                                                                    <color key="backgroundColor" name="clearColor" catalog="System" colorSpace="catalog"/>
                                                                                 </textFieldCell>
                                                                             </textField>
                                                                         </subviews>
@@ -333,17 +333,17 @@
                                                                             <textField focusRingType="none" horizontalHuggingPriority="751" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="wYV-pe-vBk">
                                                                                 <rect key="frame" x="30" y="0.0" width="11" height="11"/>
                                                                                 <textFieldCell key="cell" controlSize="mini" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="»" drawsBackground="YES" id="KCo-fS-6w5">
-                                                                                    <font key="font" metaFont="label" size="9"/>
+                                                                                    <font key="font" metaFont="miniSystem"/>
                                                                                     <color key="textColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
-                                                                                    <color key="backgroundColor" white="1" alpha="0.0" colorSpace="deviceWhite"/>
+                                                                                    <color key="backgroundColor" name="clearColor" catalog="System" colorSpace="catalog"/>
                                                                                 </textFieldCell>
                                                                             </textField>
                                                                             <textField focusRingType="none" horizontalHuggingPriority="751" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Oir-KU-ax2">
                                                                                 <rect key="frame" x="0.0" y="0.0" width="28" height="11"/>
                                                                                 <textFieldCell key="cell" controlSize="mini" scrollable="YES" lineBreakMode="clipping" sendsActionOnEndEditing="YES" title="Label" drawsBackground="YES" id="nPh-AY-eX8">
-                                                                                    <font key="font" metaFont="label" size="9"/>
+                                                                                    <font key="font" metaFont="miniSystem"/>
                                                                                     <color key="textColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
-                                                                                    <color key="backgroundColor" white="1" alpha="0.0" colorSpace="deviceWhite"/>
+                                                                                    <color key="backgroundColor" name="clearColor" catalog="System" colorSpace="catalog"/>
                                                                                 </textFieldCell>
                                                                                 <connections>
                                                                                     <binding destination="PUp-P1-eMl" name="value" keyPath="objectValue.section" id="KHT-AX-tfP"/>

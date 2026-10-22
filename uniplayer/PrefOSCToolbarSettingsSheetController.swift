@@ -233,7 +233,7 @@ class PrefOSCToolbarCurrentItemsView: NSStackView, NSDraggingSource {
     insertView(placeholderView, at: index, in: .trailing)
     // animate frames
     NSAnimationContext.runAnimationGroup({ context in
-      context.duration = 0.25
+      context.duration = Tokens.Motion.n25.appKitDuration
       context.allowsImplicitAnimation = true
       self.layoutSubtreeIfNeeded()
     }, completionHandler: nil)

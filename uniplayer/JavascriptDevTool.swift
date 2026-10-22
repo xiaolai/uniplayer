@@ -197,14 +197,14 @@ struct CommandEditor: NSViewRepresentable {
     view.delegate = context.coordinator
     view.parent = self
     view.translatesAutoresizingMaskIntoConstraints = false
-    view.backgroundColor = .clear
+    view.backgroundColor = Tokens.Palette.clear.nsColor
     return view
   }
 
   func updateNSView(_ nsView: NSView, context: Context) {
     let textView = nsView as! NSTextView
     textView.string = text
-    textView.font = .monospacedSystemFont(ofSize: NSFont.systemFontSize(for: .regular), weight: .regular)
+    textView.font = Tokens.Typography.mono.nsFont
     textView.isAutomaticDashSubstitutionEnabled = false
     textView.isAutomaticQuoteSubstitutionEnabled = false
     textView.isAutomaticSpellingCorrectionEnabled = false
@@ -284,7 +284,7 @@ struct ObjectView: View {
     VStack(alignment: .leading) {
       HStack {
         Image(systemName: "chevron.\(isExpanded ? "down" : "forward").circle.fill")
-          .frame(width: 10, height: 10)
+          .frame(width: Tokens.Size.n10, height: Tokens.Size.n10)
         Text(title).font(.monospacedSystem)
       }
       .onTapGesture {
@@ -294,14 +294,14 @@ struct ObjectView: View {
       if isExpanded {
         ForEach(dataToDisplay, id: \.0) { item in
           HStack {
-            Text("\(item.0):").font(.monospacedSystem).foregroundColor(.secondary)
-              .padding(.leading, 8)
+            Text("\(item.0):").font(.monospacedSystem).foregroundColor(Tokens.Palette.textSecondary.color)
+              .padding(.leading, Tokens.Space.n8)
             Text(item.1).font(.monospacedSystem)
               .lineLimit(1)
           }
         }
         if viewType == .array && data.count > 100 {
-          Text("... (\(data.count - 100)) more").font(.monospacedSystem).foregroundColor(.secondary)
+          Text("... (\(data.count - 100)) more").font(.monospacedSystem).foregroundColor(Tokens.Palette.textSecondary.color)
         }
       }
     }
@@ -315,11 +315,11 @@ fileprivate struct PromptView: View {
   var result: ResultItem
   
   var body: some View {
-    HStack(alignment: .top, spacing: 8) {
+    HStack(alignment: .top, spacing: Tokens.Space.n8) {
       Text("[\(result.index)]:")
-        .frame(width: 50, alignment: .trailing)
+        .frame(width: Tokens.Size.n50, alignment: .trailing)
         .font(.monospacedSystem)
-        .foregroundColor(.green)
+        .foregroundColor(Tokens.Palette.logSuccess.color)
       Text(result.prompt ?? "")
         .font(.monospacedSystem)
     }
@@ -333,11 +333,11 @@ fileprivate struct ReturnValueView: View {
   var result: ResultItem
   
   var body: some View {
-    HStack(alignment: .top, spacing: 8) {
+    HStack(alignment: .top, spacing: Tokens.Space.n8) {
       Text("→")
-        .frame(width: 50, alignment: .trailing)
+        .frame(width: Tokens.Size.n50, alignment: .trailing)
         .font(.monospacedSystem)
-        .foregroundColor(.secondary)
+        .foregroundColor(Tokens.Palette.textSecondary.color)
       ResultView(result: result)
     }
   }
@@ -352,14 +352,14 @@ fileprivate struct ConsoleView: View {
 
   
   var body: some View {
-    VStack(alignment: .leading, spacing: 0) {
+    VStack(alignment: .leading, spacing: Tokens.Space.n0) {
       // Toolbar
       HStack {
         // Run code
         Button(action: { executePrompt() }) {
           Image(systemName: "play.circle")
             .renderingMode(.template)
-            .foregroundColor(.accentColor)
+            .foregroundColor(Tokens.Palette.accent.color)
         }
         .help("Run code")
         .buttonStyle(PlainButtonStyle())
@@ -368,7 +368,7 @@ fileprivate struct ConsoleView: View {
         Button(action: { executePrompt(printGlobalObject: true) }) {
           Image(systemName: "point.3.filled.connected.trianglepath.dotted")
             .renderingMode(.template)
-            .foregroundColor(.secondary)
+            .foregroundColor(Tokens.Palette.textSecondary.color)
         }
         .buttonStyle(PlainButtonStyle())
         .help("Print global objects")
@@ -376,20 +376,20 @@ fileprivate struct ConsoleView: View {
         Button(action: {events.clearAll()} ) {
           Image(systemName: "clear")
             .renderingMode(.template)
-            .foregroundColor(.secondary)
+            .foregroundColor(Tokens.Palette.textSecondary.color)
         }
         .buttonStyle(PlainButtonStyle())
         .help("Clear history")
         Spacer()
         Text("Cmd+Return to run code")
           .font(.footnote)
-          .foregroundColor(.secondary)
+          .foregroundColor(Tokens.Palette.textSecondary.color)
       }
       .padding([.top, .horizontal], 8)
       // Editor
       CommandEditor(text: $input)
-        .frame(maxHeight: 100)
-        .padding(.all, 8)
+        .frame(maxHeight: Tokens.Size.n100)
+        .padding(.all, Tokens.Space.n8)
     }.background(.ultraThickMaterial)
   }
   
@@ -454,16 +454,16 @@ fileprivate struct ResultView: View {
       Text(value).font(.monospacedSystem).foregroundColor(.brown)
 
     case .number(let value):
-      Text("\(value)").font(.monospacedSystem).foregroundColor(.blue)
+      Text("\(value)").font(.monospacedSystem).foregroundColor(Tokens.Palette.logInfo.color)
 
     case .boolean(let value):
       Text(value ? "true" : "false").font(.monospacedSystem).foregroundColor(.purple)
 
     case .null:
-      Text("null").font(.monospacedSystem).foregroundColor(.secondary)
+      Text("null").font(.monospacedSystem).foregroundColor(Tokens.Palette.textSecondary.color)
 
     case .undefined:
-      Text("undefined").font(.monospacedSystem).foregroundColor(.secondary)
+      Text("undefined").font(.monospacedSystem).foregroundColor(Tokens.Palette.textSecondary.color)
 
     case .array(let title, let data):
       ObjectView(viewType: .array, title: title, data: data)
@@ -479,25 +479,25 @@ fileprivate struct ResultView: View {
         VStack(alignment: .leading) {
           Text("Exception: \(message)")
             .frame(maxWidth: .infinity, alignment: .leading)
-            .foregroundColor(.red)
+            .foregroundColor(Tokens.Palette.logError.color)
           Text(stack)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .foregroundColor(.secondary)
+            .foregroundColor(Tokens.Palette.textSecondary.color)
         }
         .textSelection(.enabled)
-        .padding(.all, 8)
+        .padding(.all, Tokens.Space.n8)
       }
-      .background(Color.red.opacity(0.1))
+      .background(Tokens.Palette.logError.color.opacity(Tokens.Opacity.n10))
 
     case .log(let message, let level):
       ZStack {
         Text(message).font(.monospacedSystem)
           .frame(maxWidth: .infinity, alignment: .leading)
           .textSelection(.enabled)
-          .padding(.all, 8)
+          .padding(.all, Tokens.Space.n8)
       }
       .background(
-        ([.error: .red, .debug: .gray, .verbose: .gray, .warning: .orange] as [Logger.Level: Color])[level]!.opacity(0.1))
+        ([.error: .red, .debug: .gray, .verbose: .gray, .warning: .orange] as [Logger.Level: Color])[level]!.opacity(Tokens.Opacity.n10))
     case .none:
       Text("")
     }
@@ -529,7 +529,7 @@ func createJavascriptDevToolWindow(forInstance inst: JavascriptPluginInstance, t
     window.makeKeyAndOrderFront(nil)
   } else {
     // create window
-    let window = JSDevToolWindow(contentRect: NSRect(origin: .zero, size: CGSize(width: 500, height: 400)),
+    let window = JSDevToolWindow(contentRect: NSRect(origin: .zero, size: CGSize(width: Tokens.Size.n500, height: Tokens.Size.n400)),
                                  styleMask: [.titled, .closable, .miniaturizable, .resizable],
                                  backing: .buffered,
                                  defer: false)
@@ -537,7 +537,7 @@ func createJavascriptDevToolWindow(forInstance inst: JavascriptPluginInstance, t
     window.rootView = JavasctiptDevTool(jsContext: ctx)
     window.contentView = NSHostingView(rootView: window.rootView)
     window.center()
-    window.backgroundColor = .clear
+    window.backgroundColor = Tokens.Palette.clear.nsColor
     windows[ctx] = window
 
     // override exception handler

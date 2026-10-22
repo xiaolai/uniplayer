@@ -49,7 +49,7 @@ class SidebarAudioPane: SidebarScrollView {
     })
 
     documentView!.addSubview(stack)
-    stack.padding(.horizontal(.sidebarMargin), .top(4), .bottom(.sidebarMargin))
+    stack.padding(.horizontal(.sidebarMargin), .top(Tokens.Space.n4), .bottom(.sidebarMargin))
   }
 
   @objc private func loadExternalAudioAction(_ sender: NSButton) {
@@ -193,9 +193,9 @@ fileprivate class EqualizerView: NSView, NSMenuDelegate {
     translatesAutoresizingMaskIntoConstraints = false
 
     let labelStack = ui.hStack(
-      spacing: 8,
-      ui.image("slider.vertical.3", size: 16, config: .sidebarIconConfig),
-      ui.label("sidebar.eq", font: .boldSystemFont(ofSize: 12)),
+      spacing: Tokens.Space.n8,
+      ui.image("slider.vertical.3", size: Tokens.Icon.n16, config: .sidebarIconConfig),
+      ui.label("sidebar.eq", font: Tokens.Typography.size12Strong.nsFont),
       ui.flexibleSpace(),
     )
 
@@ -239,12 +239,12 @@ fileprivate class EqualizerView: NSView, NSMenuDelegate {
       ui.label("-12 dB", isSmall: true),
     )
     dbLabelContainer.distribution = .equalSpacing
-    dbLabelContainer.size(height: 120)
+    dbLabelContainer.size(height: Tokens.Size.n120)
 
     let eqStack = ui.hStack(audioEQSliders + [dbLabelContainer])
     eqStack.setHuggingPriority(.init(100), for: .horizontal)
     eqStack.distribution = .equalSpacing
-    eqStack.size(height: 120)
+    eqStack.size(height: Tokens.Size.n120)
 
     let container = ui.vStack(
       spacing: .sidebarItemSpacing,
@@ -253,7 +253,7 @@ fileprivate class EqualizerView: NSView, NSMenuDelegate {
     )
 
     zip(eqFrequencyLabels, audioEQSliders).forEach { label, slider in
-      let label = ui.label(label, font: .systemFont(ofSize: 10), isSecondary: true)
+      let label = ui.label(label, font: Tokens.Typography.size10.nsFont, isSecondary: true)
       freqLabelContainer.addSubview(label)
       label.padding(.vertical)
       label.centerXAnchor.constraint(equalTo: slider.centerXAnchor).isActive = true

@@ -39,7 +39,7 @@ class PrefPluginPermissionView: NSViewController {
     descLabel.stringValue = desc
     cautionImage.isHidden = !isDangerous
     if isDangerous {
-      box.fillColor = NSColor.systemRed.withAlphaComponent(0.3)
+      box.fillColor = Tokens.Palette.destructive.nsColor.withAlphaComponent(Tokens.Opacity.n30)
     }
   }
 }

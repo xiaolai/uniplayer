@@ -98,7 +98,7 @@ fileprivate class PluginInstallView: SettingsAccessory.Base {
     stackView.spacing = 12
 
     view.addSubview(stackView)
-    stackView.padding(.all(12))
+    stackView.padding(.all(Tokens.Space.n12))
   }
 
   @IBAction func installPluginFromLocalPackage(_ sender: Any) {
@@ -111,7 +111,7 @@ fileprivate class PluginInstallView: SettingsAccessory.Base {
   @IBAction func installPluginFromGitHub(_ sender: Any) {
     if #available(macOS 12.0, *) {
       let panel = PluginStorePanel()
-      panel.contentMaxSize = NSSize(width: 800, height: 600)
+      panel.contentMaxSize = NSSize(width: Tokens.Size.n800, height: Tokens.Size.n600)
       view.window!.beginSheet(panel) { _ in
         self.page.listView.reload()
       }
@@ -152,14 +152,14 @@ fileprivate class PluginUpdateView: SettingsContainer {
     self.checkUpdateButton = NSButton()
     checkUpdateButton.translatesAutoresizingMaskIntoConstraints = false
 
-    checkUpdateLabel.font = .systemFont(ofSize: NSFont.smallSystemFontSize, weight: .bold)
-    checkUpdateLabel.textColor = .secondaryLabelColor
+    checkUpdateLabel.font = Tokens.Typography.captionStrong.nsFont
+    checkUpdateLabel.textColor = Tokens.Palette.textSecondary.nsColor
     checkUpdateLabel.translatesAutoresizingMaskIntoConstraints = false
 
     checkUpdateButton.image = .sf("arrow.clockwise.circle")
     checkUpdateButton.imagePosition = .imageOnly
     checkUpdateButton.isBordered = false
-    checkUpdateButton.size(width: 16, height: 16)
+    checkUpdateButton.size(width: Tokens.Size.n16, height: Tokens.Size.n16)
     checkUpdateButton.target = self
     checkUpdateButton.action = #selector(checkForUpdates)
 
@@ -170,7 +170,7 @@ fileprivate class PluginUpdateView: SettingsContainer {
     view.translatesAutoresizingMaskIntoConstraints = false
     view.addSubview(checkUpdateStackView)
 
-    checkUpdateStackView.padding(.top(8), .bottom, .horizontal(16))
+    checkUpdateStackView.padding(.top(Tokens.Space.n8), .bottom, .horizontal(Tokens.Space.n16))
   }
 
   required init?(coder: NSCoder) {
@@ -252,7 +252,7 @@ fileprivate class PluginListView: SettingsAccessory.Base {
     tableView.translatesAutoresizingMaskIntoConstraints = false
 
     view.addSubview(tableView)
-    tableView.padding(.all(0))
+    tableView.padding(.all(Tokens.Space.n0))
   }
 
   func reload() {
@@ -315,7 +315,7 @@ extension PluginListView: NSTableViewDelegate, NSTableViewDataSource {
 
         // left
         nameLabel = NSTextField(labelWithString: plugin.name)
-        nameLabel.font = NSFont.systemFont(ofSize: NSFont.systemFontSize, weight: .bold)
+        nameLabel.font = Tokens.Typography.bodyStrong.nsFont
 
         enabledSwitch = NSSwitch()
         enabledSwitch.state = plugin.enabled ? .on : .off
@@ -324,25 +324,25 @@ extension PluginListView: NSTableViewDelegate, NSTableViewDataSource {
         enabledSwitch.action = #selector(enabledSwitchAction)
 
         versionLabel = NSTextField(labelWithString: plugin.version)
-        versionLabel.textColor = .tertiaryLabelColor
-        versionLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
+        versionLabel.textColor = Tokens.Palette.textTertiary.nsColor
+        versionLabel.font = Tokens.Typography.caption.nsFont
 
         updateBtn = NSButton()
         updateBtn.isBordered = false
         updateBtn.image = .sf("arrow.up.circle")
-        updateBtn.contentTintColor = .systemOrange
+        updateBtn.contentTintColor = Tokens.Palette.systemOrange.nsColor
         updateBtn.isHidden = !PluginListView.pluginHasUpdate[plugin.identifier, default: false]
         updateBtn.target = self
         updateBtn.action = #selector(updateBtnAction)
 
         devLabel = NSTextField(labelWithString: "DEV")
         devLabel.isHidden = !plugin.isExternal
-        devLabel.textColor = .black
-        devLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize * 0.8, weight: .bold)
+        devLabel.textColor = Tokens.Palette.black.nsColor
+        devLabel.font = Tokens.Typography.devBadge.nsFont
         devLabel.drawsBackground = true
         devLabel.backgroundColor = .systemIndigo
         devLabel.wantsLayer = true
-        devLabel.layer?.cornerRadius = 3
+        devLabel.layer?.cornerRadius = Tokens.Radius.n3
 
         let nameStackView = NSStackView()
         nameStackView.translatesAutoresizingMaskIntoConstraints = false
@@ -359,7 +359,7 @@ extension PluginListView: NSTableViewDelegate, NSTableViewDataSource {
         actionsBtn.isBordered = false
         actionsBtn.target = self
         actionsBtn.action = #selector(actionsBtnAction)
-        actionsBtn.size(width: 16, height: 16)
+        actionsBtn.size(width: Tokens.Size.n16, height: Tokens.Size.n16)
 
         [enabledSwitch, nameLabel, progressIndicator, versionLabel, updateBtn, devLabel, actionsBtn].forEach {
           nameStackView.addArrangedSubview($0)
@@ -368,8 +368,8 @@ extension PluginListView: NSTableViewDelegate, NSTableViewDataSource {
         // bottom
         descLabel = NSTextField(labelWithString: plugin.desc ?? "No description")
         descLabel.lineBreakMode = .byTruncatingTail
-        descLabel.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
-        descLabel.textColor = .secondaryLabelColor
+        descLabel.font = Tokens.Typography.caption.nsFont
+        descLabel.textColor = Tokens.Palette.textSecondary.nsColor
 
         let stackView = NSStackView(views: [nameStackView, descLabel])
         stackView.translatesAutoresizingMaskIntoConstraints = false
@@ -377,7 +377,7 @@ extension PluginListView: NSTableViewDelegate, NSTableViewDataSource {
         stackView.alignment = .leading
 
         self.aboutBtn = NSButton()
-        aboutBtn.size(width: 18, height: 18)
+        aboutBtn.size(width: Tokens.Size.n18, height: Tokens.Size.n18)
         aboutBtn.image = .sf("info.circle")
         aboutBtn.imageScaling = .scaleProportionallyUpOrDown
         aboutBtn.isBordered = false
@@ -388,8 +388,8 @@ extension PluginListView: NSTableViewDelegate, NSTableViewDataSource {
         self.addSubview(stackView)
         self.addSubview(aboutBtn)
 
-        stackView.padding(.top(12), .bottom(4), .leading(8), .trailing(20))
-        aboutBtn.padding(.trailing(8))
+        stackView.padding(.top(Tokens.Space.n12), .bottom(Tokens.Space.n4), .leading(Tokens.Space.n8), .trailing(Tokens.Space.n20))
+        aboutBtn.padding(.trailing(Tokens.Space.n8))
           .center(.y, with: self)
       } else {
         nameLabel.stringValue = plugin.name
@@ -561,7 +561,7 @@ fileprivate class PluginDetailsWindow: NSWindow {
     self.loadingFailedView = NSTextField(labelWithString: ui.localized(.text_FailedToLoadThePage))
     loadingFailedView.translatesAutoresizingMaskIntoConstraints = false
 
-    super.init(contentRect: NSRect(x: 0, y: 0, width: 600, height: 450),
+    super.init(contentRect: NSRect(x: 0, y: 0, width: Tokens.Size.n600, height: Tokens.Size.n450),
                styleMask: style,
                backing: .buffered,
                defer: false)
@@ -576,24 +576,24 @@ fileprivate class PluginDetailsWindow: NSWindow {
 
     let nameLabel = NSTextField(labelWithString: plugin.name)
     nameLabel.translatesAutoresizingMaskIntoConstraints = false
-    nameLabel.font = .systemFont(ofSize: NSFont.systemFontSize, weight: .bold)
+    nameLabel.font = Tokens.Typography.bodyStrong.nsFont
 
     let versionLabel = NSTextField(labelWithString: plugin.version)
     versionLabel.translatesAutoresizingMaskIntoConstraints = false
-    versionLabel.textColor = .secondaryLabelColor
-    versionLabel.font = .systemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
+    versionLabel.textColor = Tokens.Palette.textSecondary.nsColor
+    versionLabel.font = Tokens.Typography.caption.nsFont
 
     let iconView = NSImageView()
     iconView.image = .sf("puzzlepiece.extension", "puzzlepiece")
     iconView.translatesAutoresizingMaskIntoConstraints = false
-    iconView.size(width: 24, height: 24)
+    iconView.size(width: Tokens.Size.n24, height: Tokens.Size.n24)
 
     segControl.segmentCount = 3
     segControl.segmentStyle = .texturedSquare
     if #available(macOS 26.0, *) {
       segControl.controlSize = .extraLarge
     } else {
-      segControl.size(width: 360)
+      segControl.size(width: Tokens.Size.n360)
     }
     segControl.target = self
     segControl.action = #selector(changeTab)
@@ -609,31 +609,31 @@ fileprivate class PluginDetailsWindow: NSWindow {
     }
 
     contentView.addSubview(iconView)
-    iconView.padding(.leading(16), .top(20))
+    iconView.padding(.leading(Tokens.Space.n16), .top(Tokens.Space.n20))
     contentView.addSubview(nameLabel)
-    nameLabel.padding(.top(16)).spacing(.leading(8), to: iconView)
+    nameLabel.padding(.top(Tokens.Space.n16)).spacing(.leading(Tokens.Space.n8), to: iconView)
     contentView.addSubview(versionLabel)
-    versionLabel.spacing(.top(4), to: nameLabel).spacing(.leading(8), to: iconView)
+    versionLabel.spacing(.top(Tokens.Space.n4), to: nameLabel).spacing(.leading(Tokens.Space.n8), to: iconView)
     contentView.addSubview(segControl)
-    segControl.padding(.top(16), .trailing(16))
+    segControl.padding(.top(Tokens.Space.n16), .trailing(Tokens.Space.n16))
     contentView.addSubview(okButton)
-    okButton.padding(.bottom(16), .trailing(16))
+    okButton.padding(.bottom(Tokens.Space.n16), .trailing(Tokens.Space.n16))
 
     createWebView()
     contentView.addSubview(webView)
-    webView.padding(.horizontal(16))
-      .spacing(.top(12), to: segControl)
-      .spacing(.bottom(16), to: okButton)
+    webView.padding(.horizontal(Tokens.Space.n16))
+      .spacing(.top(Tokens.Space.n12), to: segControl)
+      .spacing(.bottom(Tokens.Space.n16), to: okButton)
 
     loadingIndicator.style = .spinning
     loadingIndicator.isHidden = true
     contentView.addSubview(loadingIndicator)
-    loadingIndicator.center(.x, with: contentView).padding(.top(80))
+    loadingIndicator.center(.x, with: contentView).padding(.top(Tokens.Space.n80))
 
-    loadingFailedView.textColor = .systemRed
+    loadingFailedView.textColor = Tokens.Palette.destructive.nsColor
     loadingFailedView.isHidden = true
     contentView.addSubview(loadingFailedView)
-    loadingFailedView.center(.x, with: contentView).padding(.top(80))
+    loadingFailedView.center(.x, with: contentView).padding(.top(Tokens.Space.n80))
 
     // select settings tab by default
     segControl.selectedSegment = 0

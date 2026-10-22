@@ -403,8 +403,8 @@ class NewFilterSheetViewController: NSViewController, NSTableViewDelegate, NSTab
     var maxWidth = 0.0
     for preset in presets {
       let presetString = NSMutableAttributedString(string: preset.localizedName)
-      let fontSize = NSFont.systemFontSize(for: .regular)
-      let textFont = NSFont.systemFont(ofSize: fontSize)
+      let fontSize = Tokens.Typography.body.size
+      let textFont = Tokens.Typography.systemFont(size: fontSize)
       presetString.addAttribute(.font, value: textFont, range: NSRange(location: 0, length: presetString.length))
       let textWidth = presetString.size().width
       if textWidth > maxWidth {
@@ -466,7 +466,7 @@ class NewFilterSheetViewController: NSViewController, NSTableViewDelegate, NSTab
     let label = NSTextField(frame: NSRect(x: 0, y: 0,
                                           width: scrollContentView.frame.width,
                                           height: 17))
-    label.font = NSFont.systemFont(ofSize: NSFont.systemFontSize)
+    label.font = Tokens.Typography.body.nsFont
     label.stringValue = title
     label.drawsBackground = false
     label.isBezeled = false

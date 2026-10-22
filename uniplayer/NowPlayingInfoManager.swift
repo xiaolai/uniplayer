@@ -79,7 +79,7 @@ class NowPlayingInfoManager {
   /// generate.
   ///
   /// This matches the size mpv uses. Using sizes larger than this can cause `QLThumbnailGenerator` to fail.
-  private let qlThumbnailSize = CGSize(width: 2000, height: 2000)
+  private let qlThumbnailSize = CGSize(width: Tokens.Size.n2000, height: Tokens.Size.n2000)
 
   /// The URL of the media item in the Now Playing session.
   private var url: URL?

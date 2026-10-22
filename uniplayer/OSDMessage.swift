@@ -34,12 +34,12 @@ fileprivate func makeAttributedString(
 ) -> NSAttributedString? {
   let attrString = NSMutableAttributedString()
   attrString.append(NSAttributedString(string: part1, attributes: [
-    .font: NSFont.monospacedDigitSystemFont(ofSize: part1FontSize, weight: .regular),
-    .foregroundColor: part1IsSecondary ? NSColor.secondaryLabelColor : NSColor.labelColor,
+    .font: Tokens.Typography.numericFont(size: part1FontSize),
+    .foregroundColor: part1IsSecondary ? Tokens.Palette.textSecondary.nsColor : Tokens.Palette.textPrimary.nsColor,
   ]))
   attrString.append(NSAttributedString(string: part2, attributes: [
-    .font: NSFont.monospacedDigitSystemFont(ofSize: part2FontSize, weight: .regular),
-    .foregroundColor: part2IsSecondary ? NSColor.secondaryLabelColor : NSColor.labelColor,
+    .font: Tokens.Typography.numericFont(size: part2FontSize),
+    .foregroundColor: part2IsSecondary ? Tokens.Palette.textSecondary.nsColor : Tokens.Palette.textPrimary.nsColor,
   ]))
   return attrString
 }

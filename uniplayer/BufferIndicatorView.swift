@@ -35,11 +35,11 @@ class BufferIndicatorView: TranslucentView {
     stackView.orientation = .vertical
     stackView.alignment = .centerX
     stackView.spacing = 4
-    stackView.size(width: 150)
+    stackView.size(width: Tokens.Size.n150)
 
     let container = NSView()
     container.addSubview(stackView)
-    stackView.padding(.all(4))
+    stackView.padding(.all(Tokens.Space.n4))
     setContent(container)
   }
 

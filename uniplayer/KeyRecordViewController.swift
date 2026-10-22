@@ -57,6 +57,7 @@ class KeyRecordViewController: NSViewController, KeyRecordViewDelegate, NSRuleEd
     ruleEditor.delegate = self
     ruleEditor.addRow(self)
 
+    keyLabel.font = Tokens.Typography.keyRecord.nsFont
     keyLabel.delegate = self
     actionTextField.delegate = self
 

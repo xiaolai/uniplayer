@@ -23,8 +23,8 @@ class DurationDisplayTextField: NSTextField {
 
   override init(frame frameRect: NSRect) {
     super.init(frame: .zero)
-    let fontSize = NSFont.systemFontSize(for: .mini)
-    self.font = NSFont.monospacedDigitSystemFont(ofSize: fontSize, weight: .regular)
+    let fontSize = Tokens.Typography.badge.size
+    self.font = Tokens.Typography.numericFont(size: fontSize)
   }
   
   required init?(coder: NSCoder) {

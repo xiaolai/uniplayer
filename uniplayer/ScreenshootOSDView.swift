@@ -34,9 +34,9 @@ class ScreenshootOSDView: NSViewController {
     heightConstraint.constant = size!.height
     imageView.image = image
     imageView.wantsLayer = true
-    imageView.layer?.borderColor = NSColor.gridColor.withAlphaComponent(0.6).cgColor
-    imageView.layer?.borderWidth = 1
-    imageView.layer?.cornerRadius = 4
+    imageView.layer?.borderColor = Tokens.Palette.grid.nsColor.withAlphaComponent(Tokens.Opacity.n60).cgColor
+    imageView.layer?.borderWidth = Tokens.Stroke.hairline
+    imageView.layer?.cornerRadius = Tokens.Radius.n4
     imageView.layer?.masksToBounds = true
     if fileURL == nil {
       [deleteBtn, editBtn, revealBtn].forEach { $0?.isHidden = true }

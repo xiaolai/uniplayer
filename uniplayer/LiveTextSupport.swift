@@ -134,7 +134,7 @@ extension LiveTextController: ImageAnalysisOverlayViewDelegate {
           overlay.analysis = analysis
           overlay.frame = videoViewContainer.bounds
           videoViewContainer.addSubview(overlay)
-          overlay.padding(.all(0))
+          overlay.padding(.all(Tokens.Space.n0))
           liveTextLog("Image analysis overlay view inserted to video view")
           self.refreshUI()
         }

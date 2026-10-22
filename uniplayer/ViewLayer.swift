@@ -120,7 +120,7 @@ class ViewLayer: CAOpenGLLayer {
     displayLock = NSRecursiveLock()
     super.init()
     autoresizingMask = [.layerWidthSizable, .layerHeightSizable]
-    backgroundColor = NSColor.black.cgColor
+    backgroundColor = Tokens.Palette.black.nsColor.cgColor
     if bufferDepth > 8 {
       contentsFormat = .RGBA16Float
     }

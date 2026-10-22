@@ -146,8 +146,8 @@ class SettingsPageUtilities: SettingsPage {
 
 fileprivate func makeLabel() -> NSTextField {
   let tf = NSTextField(labelWithString: "")
-  tf.font = .systemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
-  tf.textColor = .secondaryLabelColor
+  tf.font = Tokens.Typography.caption.nsFont
+  tf.textColor = Tokens.Palette.textSecondary.nsColor
   return tf
 }
 
@@ -178,7 +178,7 @@ fileprivate class SetAsDefaultSheetWindow: NSWindow {
       $0.state = .on
     }
 
-    super.init(contentRect: NSRect(x: 0, y: 0, width: 300, height: 150),
+    super.init(contentRect: NSRect(x: 0, y: 0, width: Tokens.Size.n300, height: Tokens.Size.n150),
                styleMask: style,
                backing: .buffered,
                defer: false)
@@ -198,11 +198,11 @@ fileprivate class SetAsDefaultSheetWindow: NSWindow {
     contentView?.addSubview(okButton)
     contentView?.addSubview(cancelButton)
 
-    stackView.padding(.leading(24), .trailing(24), .top(24))
-      .spacing(.bottom(16), to: okButton)
+    stackView.padding(.leading(Tokens.Space.n24), .trailing(Tokens.Space.n24), .top(Tokens.Space.n24))
+      .spacing(.bottom(Tokens.Space.n16), to: okButton)
     cancelButton.center(.y, with: okButton)
-    okButton.padding(.bottom(24), .trailing(24))
-      .spacing(.leading(8), to: cancelButton)
+    okButton.padding(.bottom(Tokens.Space.n24), .trailing(Tokens.Space.n24))
+      .spacing(.leading(Tokens.Space.n8), to: cancelButton)
   }
 
   @objc func okBtnAction(_ sender: Any) {
@@ -288,7 +288,7 @@ fileprivate class BrowserExtensionView: SettingsAccessory.Base {
     let safariBtn = linkButton(.text_Safari, #selector(extSafariBtnAction), ["safari"])
     let stackView = ui.hStack(safariBtn, chromeBtn, firefoxBtn)
     view.addSubview(stackView)
-    stackView.padding(.top(0), .bottom(16), .leading(SettingsSubList.indent), .trailing(8))
+    stackView.padding(.top(Tokens.Space.n0), .bottom(Tokens.Space.n16), .leading(SettingsSubList.indent), .trailing(Tokens.Space.n8))
   }
 
   @objc func extChromeBtnAction(_ sender: Any) {

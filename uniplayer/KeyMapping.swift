@@ -33,14 +33,14 @@ class KeyMapping: NSObject {
   }
 
   // TODO: this is UI logic. Move it out of here.
-  /// When highlighting, the text will become color due to `NSColor.selectedTextColor`.
+  /// When highlighting, the text will become color due to `Tokens.Palette.selectedText.nsColor`.
   /// Since we have a custom NSBox underneath the text, we don't want the text field
   /// to change color to selected text color. The only way to prevent the system from
   /// changing color is use `NSAttributedString` in the text field.
   var attributedKeyForDisplay: NSAttributedString {
       NSAttributedString(
           string: keyForDisplay,
-          attributes: [.foregroundColor: NSColor.textColor]
+          attributes: [.foregroundColor: Tokens.Palette.documentText.nsColor]
       )
   }
 

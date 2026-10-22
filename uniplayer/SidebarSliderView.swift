@@ -40,7 +40,7 @@ class SidebarSliderView: NSView {
 
     self.indicator = NSTextField(labelWithString: "")
     indicator.translatesAutoresizingMaskIntoConstraints = false
-    indicator.font = .systemFont(ofSize: 10)
+    indicator.font = Tokens.Typography.size10.nsFont
     indicator.setContentCompressionResistancePriority(.required, for: .horizontal)
 
     self.input = NSTextField()
@@ -57,9 +57,9 @@ class SidebarSliderView: NSView {
     resetButton.isBordered = false
 
     let labelStack = ui.hStack(
-      spacing: 8,
-      ui.image(titleImage, size: 16, scaleUp: false),
-      ui.label(titleKey, font: .boldSystemFont(ofSize: 12)),
+      spacing: Tokens.Space.n8,
+      ui.image(titleImage, size: Tokens.Icon.n16, scaleUp: false),
+      ui.label(titleKey, font: Tokens.Typography.size12Strong.nsFont),
       ui.flexibleSpace(),
       resetButton,
     )
@@ -70,7 +70,7 @@ class SidebarSliderView: NSView {
     for (i, label) in tickMarkLabels.enumerated() {
       let label = NSTextField(labelWithString: label)
       label.translatesAutoresizingMaskIntoConstraints = false
-      label.font = .systemFont(ofSize: 10)
+      label.font = Tokens.Typography.size10.nsFont
       tickMarkView.addSubview(label)
       label.padding(.vertical)
       if i == 0 {
@@ -78,7 +78,7 @@ class SidebarSliderView: NSView {
       } else if i == tickMarkLabels.count - 1 {
         label.trailingAnchor.constraint(equalTo: tickMarkView.trailingAnchor).isActive = true
       } else {
-        let constraint = label.centerXAnchor.constraint(equalTo: tickMarkView.leadingAnchor, constant: 0)
+        let constraint = label.centerXAnchor.constraint(equalTo: tickMarkView.leadingAnchor, constant: Tokens.Space.n0)
         constraint.isActive = true
         tickMarkTextFieldsConstraints.append(constraint)
       }
@@ -93,16 +93,16 @@ class SidebarSliderView: NSView {
     addSubview(tickMarkView)
 
     indicator.padding(.horizontal(greaterThan: 0))
-      .spacing(.bottom(2), to: slider)
+      .spacing(.bottom(Tokens.Space.n2), to: slider)
     self.indicatorConstraint = indicator.centerXAnchor
       .constraint(equalTo: slider.leadingAnchor)
     indicatorConstraint.priority = .init(800)
     indicatorConstraint.isActive = true
 
     labelStack.padding(.horizontal, .top)
-    slider.padding(.leading, .bottom(16))
-      .spacing(.top(18), to: labelStack)
-    input.padding(.trailing).spacing(.leading(8), to: slider)
+    slider.padding(.leading, .bottom(Tokens.Space.n16))
+      .spacing(.top(Tokens.Space.n18), to: labelStack)
+    input.padding(.trailing).spacing(.leading(Tokens.Space.n8), to: slider)
       .center(.y, with: slider)
       .size(width: inputWidth)
     tickMarkView.padding(.leading, .bottom)

@@ -22,7 +22,7 @@ class OutlineView: NSOutlineView {
     }
     NSAnimationContext.beginGrouping()
     defer { NSAnimationContext.endGrouping() }
-    NSAnimationContext.current.duration = 0.0
+    NSAnimationContext.current.duration = Tokens.Motion.none.duration
     super.collapseItem(item, collapseChildren: collapseChildren)
   }
 
@@ -33,7 +33,7 @@ class OutlineView: NSOutlineView {
     }
     NSAnimationContext.beginGrouping()
     defer { NSAnimationContext.endGrouping() }
-    NSAnimationContext.current.duration = 0.0
+    NSAnimationContext.current.duration = Tokens.Motion.none.duration
     super.expandItem(item, expandChildren: expandChildren)
   }
 }

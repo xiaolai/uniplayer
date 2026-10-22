@@ -180,11 +180,11 @@ fileprivate class MPVOptionsEditor: SettingsAccessory.Base, NSTableViewDelegate,
 
     super.init()
 
-    let monoFont = NSFont.monospacedSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
+    let monoFont = Tokens.Typography.mono.nsFont
 
     scrollView.documentView = tableView
     scrollView.drawsBackground = false
-    tableView.backgroundColor = .clear
+    tableView.backgroundColor = Tokens.Palette.clear.nsColor
     tableView.focusRingType = .none
     tableView.registerForDraggedTypes([MPVOptionsEditor.dragType])
     tableView.delegate = self
@@ -210,12 +210,12 @@ fileprivate class MPVOptionsEditor: SettingsAccessory.Base, NSTableViewDelegate,
     columnValue.dataCell = valueCell
     tableView.addTableColumn(columnValue)
     tableView.columnAutoresizingStyle = .sequentialColumnAutoresizingStyle
-    tableView.rowHeight = 18
+    tableView.rowHeight = Tokens.Size.n18
 
     let stackView = ui.vStack(scrollView)
     view.addSubview(stackView)
-    stackView.padding(.leading(SettingsSubList.indent + 8), .trailing(0), .bottom(8), .top(0))
-    stackView.size(height: 120)
+    stackView.padding(.leading(SettingsSubList.indent + 8), .trailing(Tokens.Space.n0), .bottom(Tokens.Space.n8), .top(Tokens.Space.n0))
+    stackView.size(height: Tokens.Size.n120)
 
     addBtn.image = .sf("plus")
     addBtn.target = self

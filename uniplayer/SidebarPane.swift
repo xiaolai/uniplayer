@@ -89,8 +89,8 @@ class SidebarScrollView: NSScrollView, SidebarPane {
       clipsToBounds = true
       boxType = .custom
       borderColor = .sidebarContainerBorder
-      cornerRadius = 8
-      fillColor = .gray.withAlphaComponent(0.1)
+      cornerRadius = Tokens.Radius.n8
+      fillColor = Tokens.Palette.gray.nsColor.withAlphaComponent(Tokens.Opacity.n10)
       block(view)
     }
 

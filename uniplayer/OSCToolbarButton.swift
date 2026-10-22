@@ -39,7 +39,7 @@ class OSCToolbarButton {
     Logger.log("Dragging from AvailableItemsView: \(dragItem.draggingFrame) (imageSize: \(imageSize))")
     dragItem.imageComponentsProvider = {
       let imageComponent = NSDraggingImageComponent(key: .icon)
-      let image = buttonType.image().tinted(.textColor)
+      let image = buttonType.image().tinted(Tokens.Palette.documentText.nsColor)
       imageComponent.contents = image
       imageComponent.frame = NSRect(origin: .zero, size: imageSize)
       return [imageComponent]

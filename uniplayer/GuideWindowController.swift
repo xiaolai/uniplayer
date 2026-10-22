@@ -96,7 +96,7 @@ class GuideWindowButtonCell: NSButtonCell {
   override func awakeFromNib() {
     self.attributedTitle = NSAttributedString(
       string: title,
-      attributes: [NSAttributedString.Key.foregroundColor: NSColor.white]
+      attributes: [NSAttributedString.Key.foregroundColor: Tokens.Palette.white.nsColor]
     )
   }
 
@@ -104,19 +104,19 @@ class GuideWindowButtonCell: NSButtonCell {
     NSGraphicsContext.saveGraphicsState()
     let rectPath = NSBezierPath(
       roundedRect: NSRect(x: 2, y: 2, width: frame.width - 4, height: frame.height - 4),
-      xRadius: 4, yRadius: 4
+      xRadius: Tokens.Radius.n4, yRadius: Tokens.Radius.n4
     )
 
     let shadow = NSShadow()
-    shadow.shadowOffset = NSSize(width: 0, height: 0)
-    shadow.shadowBlurRadius = 1
-    shadow.shadowColor = NSColor.black.withAlphaComponent(0.5)
+    shadow.shadowOffset = .zero
+    shadow.shadowBlurRadius = Tokens.Blur.n1
+    shadow.shadowColor = Tokens.Palette.black.nsColor.withAlphaComponent(Tokens.Opacity.n50)
     shadow.set()
 
     if isHighlighted {
-      NSColor.systemBlue.highlight(withLevel: 0.1)?.setFill()
+      Tokens.Palette.systemBlue.nsColor.highlight(withLevel: 0.1)?.setFill()
     } else {
-      NSColor.systemBlue.setFill()
+      Tokens.Palette.systemBlue.nsColor.setFill()
     }
     rectPath.fill()
     NSGraphicsContext.restoreGraphicsState()

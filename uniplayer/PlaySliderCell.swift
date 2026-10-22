@@ -23,15 +23,15 @@ class PlaySliderCell: NSSliderCell {
     return knobWidth
   }
 
-  let knobWidth: CGFloat = 3
-  let knobHeight: CGFloat = 15
-  let knobRadius: CGFloat = 1
-  let barRadius: CGFloat = 1.5
+  let knobWidth = Tokens.Size.n3
+  let knobHeight = Tokens.Size.n15
+  let knobRadius = Tokens.Radius.n1
+  let barRadius = Tokens.Radius.n1_5
 
-  private var knobColor = NSColor.mainSliderKnob
-  private var knobActiveColor = NSColor.mainSliderKnobActive
-  private var barColorLeft = NSColor.mainSliderBarLeft
-  private var barColorRight = NSColor.mainSliderBarRight
+  private var knobColor = Tokens.Palette.mainSliderKnob.nsColor
+  private var knobActiveColor = Tokens.Palette.mainSliderKnobActive.nsColor
+  private var barColorLeft = Tokens.Palette.mainSliderBarLeft.nsColor
+  private var barColorRight = Tokens.Palette.mainSliderBarRight.nsColor
 
   var drawChapters = Preference.bool(for: .showChapterPos)
 
@@ -50,10 +50,10 @@ class PlaySliderCell: NSSliderCell {
 
   override func drawKnob(_ knobRect: NSRect) {
     if hudStyle {
-      let size: CGFloat = 12
+      let size: CGFloat = Tokens.Size.n12
       let rect = NSRect(x: knobRect.midX - size / 2, y: knobRect.midY - size / 2,
                         width: size, height: size)
-      NSColor.white.setFill()
+      Tokens.Palette.white.nsColor.setFill()
       NSBezierPath(ovalIn: rect).fill()
       return
     }
@@ -83,15 +83,15 @@ class PlaySliderCell: NSSliderCell {
     NSGraphicsContext.saveGraphicsState()
 
     let shadow = NSShadow()
-    shadow.shadowBlurRadius = 1
-    shadow.shadowOffset = NSSize(width: 0, height: -0.5)
+    shadow.shadowBlurRadius = Tokens.Blur.n1
+    shadow.shadowOffset = NSSize(width: 0, height: -Tokens.Size.n0_5)
     shadow.set()
 
     let path = drawKnobOnly(knobRect: knobRect)
 
     /// According to Apple's docs for `NSShadow`: `The default shadow color is black with an alpha of 1/3`
     if let shadowColor = shadow.shadowColor {
-      path.lineWidth = 0.4
+      path.lineWidth = Tokens.Stroke.n0_4
       shadowColor.setStroke()
       path.stroke()
     }
@@ -151,7 +151,7 @@ class PlaySliderCell: NSSliderCell {
         if chapters.count > 1 {
           for chapt in chapters[1...] {
             let chapPos = CGFloat(chapt.time.second) / CGFloat(totalSec) * barRect.width
-            let rect = NSRect(x: chapPos - 0.5, y: barRect.origin.y, width: 1, height: barRect.height)
+            let rect = NSRect(x: chapPos - 0.5, y: barRect.origin.y, width: Tokens.Size.n1, height: barRect.height)
             chapterClip.append(NSBezierPath(rect: rect))
           }
         }
@@ -187,17 +187,17 @@ class PlaySliderCell: NSSliderCell {
   }
 
   private func drawHUDBar(inside rect: NSRect, flipped: Bool) {
-    let height: CGFloat = 8
+    let height: CGFloat = Tokens.Size.n8
     let bar = NSRect(x: rect.minX, y: rect.midY - height / 2,
                      width: rect.width, height: height)
-    NSColor.white.withAlphaComponent(0.22).setFill()
+    Tokens.Palette.white.nsColor.withAlphaComponent(Tokens.Opacity.n22).setFill()
     NSBezierPath(roundedRect: bar, xRadius: height / 2, yRadius: height / 2).fill()
 
     let knob = knobRect(flipped: flipped)
     let progress = min(max(knob.midX - bar.minX, 0), bar.width)
     if progress > 0 {
       let left = NSRect(x: bar.minX, y: bar.minY, width: progress, height: bar.height)
-      NSColor.white.withAlphaComponent(0.92).setFill()
+      Tokens.Palette.white.nsColor.withAlphaComponent(Tokens.Opacity.n92).setFill()
       NSBezierPath(roundedRect: left, xRadius: height / 2, yRadius: height / 2).fill()
     }
   }

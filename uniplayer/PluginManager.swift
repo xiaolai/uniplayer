@@ -23,7 +23,7 @@ class PluginManager {
   func showPermissionsSheet(forPlugin plugin: JavascriptPlugin, previousPlugin: JavascriptPlugin? = nil) async -> Bool {
     let alert = NSAlert()
     let permissionListView = PrefPluginPermissionListView()
-    let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 500, height: 300))
+    let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: Tokens.Size.n500, height: Tokens.Size.n300))
     permissionListView.translatesAutoresizingMaskIntoConstraints = false
     alert.messageText = NSLocalizedString("alert.title_warning", comment: "Warning")
     alert.informativeText = NSLocalizedString(previousPlugin == nil ? "alert.plugin_permission" : "alert.plugin_permission_added", comment: "")

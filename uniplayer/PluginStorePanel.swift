@@ -50,7 +50,7 @@ class PluginStorePanel: NSWindow {
 
   init() {
     let style: NSWindow.StyleMask = [.titled, .resizable, .fullSizeContentView]
-    let rect = NSRect(x: 0, y: 0, width: 600, height: 500)
+    let rect = NSRect(x: 0, y: 0, width: Tokens.Size.n600, height: Tokens.Size.n500)
     super.init(contentRect: rect, styleMask: style, backing: .buffered, defer: false)
 
     self.contentView = NSView()
@@ -67,8 +67,8 @@ class PluginStorePanel: NSWindow {
     contentView?.addSubview(hostingView)
     contentView?.addSubview(closeBtn)
 
-    hostingView.padding(.top(0), .horizontal(0)).spacing(.bottom, to: closeBtn)
-    closeBtn.padding(.bottom(16), .trailing(16))
+    hostingView.padding(.top(Tokens.Space.n0), .horizontal(Tokens.Space.n0)).spacing(.bottom, to: closeBtn)
+    closeBtn.padding(.bottom(Tokens.Space.n16), .trailing(Tokens.Space.n16))
   }
 
   override func cancelOperation(_ sender: Any?) {
@@ -156,7 +156,7 @@ struct PluginStoreView: View {
         Button(action: { installFromURL(inputURL) }) {
           HStack {
             if isInstalling {
-              ProgressView().controlSize(.small).padding(.trailing, 4)
+              ProgressView().controlSize(.small).padding(.trailing, Tokens.Space.n4)
             }
             Text(ui.localized(isInstalling ? .text_Installing : .text_Install))
           }
@@ -166,7 +166,7 @@ struct PluginStoreView: View {
         .disabled(inputURLInvalid)
       }
 
-      Divider().padding(.top, 8).padding(.bottom, 8)
+      Divider().padding(.top, Tokens.Space.n8).padding(.bottom, Tokens.Space.n8)
 
       Text(ui.localized(.text_OrSelectFrom))
 
@@ -184,7 +184,7 @@ struct PluginStoreView: View {
           if let errorMessage {
             Text("Error: \(errorMessage)")
               .lineLimit(5)
-              .foregroundColor(.secondary)
+              .foregroundColor(Tokens.Palette.textSecondary.color)
               .multilineTextAlignment(.leading)
           } else if listDownloaded {
             ForEach(communityPluginList, id: \.self) { plugin in
@@ -200,23 +200,23 @@ struct PluginStoreView: View {
       }
       .id(indicator.refreshCount)
       .listStyle(.sidebar)
-      .padding(.leading, -12)
+      .padding(.leading, -Tokens.Space.n12)
 
-      HStack(spacing: 4) {
+      HStack(spacing: Tokens.Space.n4) {
         VStack(alignment: .leading) {
           if #available(macOS 13.0, *) {
             list.scrollContentBackground(.hidden)
           } else {
             list
           }
-        }.frame(width: 240)
+        }.frame(width: Tokens.Size.n240)
         GroupBox {
           ScrollView {
             PluginDetailView(plugin: selection, panel: panel)
               .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-              .padding(8)
+              .padding(Tokens.Space.n8)
           }
-        }.frame(minWidth: 200)
+        }.frame(minWidth: Tokens.Size.n200)
       }
     }
     .task() {
@@ -231,7 +231,7 @@ struct PluginStoreView: View {
       }
       listDownloaded = true
     }
-    .padding(20)
+    .padding(Tokens.Space.n20)
   }
 }
 
@@ -247,16 +247,16 @@ struct PluginDetailView: View {
   var body: some View {
     if let plugin {
       let (owner, repo) = ownerAndRepo(from: plugin.url)
-      VStack(alignment: .leading, spacing: 4) {
-        Text(plugin.name).font(.system(size: 14)).bold()
-        Text(plugin.id).font(.system(size: 11).monospaced())
-          .padding(.bottom, 6)
-        Text(plugin.desc).foregroundColor(.secondary)
-          .padding(.bottom, 4)
+      VStack(alignment: .leading, spacing: Tokens.Space.n4) {
+        Text(plugin.name).font(Tokens.Typography.settingsTitle.font)
+        Text(plugin.id).font(Tokens.Typography.monoCaption.font)
+          .padding(.bottom, Tokens.Space.n6)
+        Text(plugin.desc).foregroundColor(Tokens.Palette.textSecondary.color)
+          .padding(.bottom, Tokens.Space.n4)
         if let owner, let repo {
           Link(destination: plugin.url) {
             Text(plugin.url.absoluteString)
-              .font(.system(size: 11))
+              .font(Tokens.Typography.caption.font)
               .multilineTextAlignment(.leading)
           }
           Button(action: {
@@ -269,32 +269,32 @@ struct PluginDetailView: View {
           }) {
             HStack {
               if isInstalling {
-                ProgressView().controlSize(.small).padding(.trailing, 4)
+                ProgressView().controlSize(.small).padding(.trailing, Tokens.Space.n4)
               } else {
-                Image(systemName: plugin.icon).padding(.trailing, 4)
+                Image(systemName: plugin.icon).padding(.trailing, Tokens.Space.n4)
               }
               Text(ui.localized(plugin.installed ? .text_Installed :
                                     isInstalling ? .text_Installing : .text_Install))
             }
           }.buttonStyle(.borderedProminent)
             .disabled(plugin.installed || isInstalling)
-            .padding(.vertical, 8)
-          Divider().padding(.top, 8).padding(.bottom, 12)
+            .padding(.vertical, Tokens.Space.n8)
+          Divider().padding(.top, Tokens.Space.n8).padding(.bottom, Tokens.Space.n12)
           RepoDetailView(owner: owner, repo: repo)
         } else {
           Text(ui.localized(.text_ThisPluginIsNot))
-            .font(.system(size: 11))
-            .padding(.top, 8)
+            .font(Tokens.Typography.caption.font)
+            .padding(.top, Tokens.Space.n8)
           Link(destination: plugin.url) {
             Text(plugin.url.absoluteString)
-              .font(.system(size: 11))
+              .font(Tokens.Typography.caption.font)
               .multilineTextAlignment(.leading)
           }
         }
       }
     } else {
       Text(ui.localized(.text_NoSelection))
-        .bold().foregroundColor(.secondary)
+        .bold().foregroundColor(Tokens.Palette.textSecondary.color)
     }
   }
 
@@ -437,13 +437,13 @@ struct RepoDetailView: View {
                                  systemImage: "exclamationmark.triangle",
                                  description: Text(errorMessage))
         } else {
-          VStack(spacing: 6) {
+          VStack(spacing: Tokens.Space.n6) {
             Image(systemName: "exclamationmark.triangle")
               .font(.title2)
             Text("Failed to load").bold()
             Text(errorMessage)
               .font(.caption)
-              .foregroundColor(.secondary)
+              .foregroundColor(Tokens.Palette.textSecondary.color)
               .multilineTextAlignment(.center)
           }
         }
@@ -453,7 +453,7 @@ struct RepoDetailView: View {
         Text("No data")
       }
     }
-    .padding(0)
+    .padding(Tokens.Space.n0)
     .task(id: "\(owner)/\(repo)") {
       await load()
     }
@@ -461,31 +461,31 @@ struct RepoDetailView: View {
 
   @ViewBuilder
   private func repoContent(_ repo: GitHubRepo) -> some View {
-    VStack(alignment: .leading, spacing: 12) {
-      HStack(spacing: 12) {
+    VStack(alignment: .leading, spacing: Tokens.Space.n12) {
+      HStack(spacing: Tokens.Space.n12) {
         AsyncImage(url: repo.owner.avatarUrl) { image in
           image.resizable()
         } placeholder: {
-          Color.gray.opacity(0.2)
+          Tokens.Palette.placeholderFill.color
         }
-        .frame(width: 36, height: 36)
-        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .frame(width: Tokens.Size.n36, height: Tokens.Size.n36)
+        .clipShape(RoundedRectangle(cornerRadius: Tokens.Radius.n6))
 
         VStack(alignment: .leading) {
           Text(repo.name)
             .font(.headline)
           Text(repo.owner.login)
-            .font(.system(size: 11))
-            .foregroundColor(.secondary)
+            .font(Tokens.Typography.caption.font)
+            .foregroundColor(Tokens.Palette.textSecondary.color)
         }
       }
 
       if let description = repo.description {
         Text(description)
-          .foregroundColor(.secondary)
+          .foregroundColor(Tokens.Palette.textSecondary.color)
       }
 
-      HStack(spacing: 20) {
+      HStack(spacing: Tokens.Space.n20) {
         Label("\(repo.stargazersCount)", systemImage: "star.fill")
         Label("\(repo.forksCount)", systemImage: "tuningfork")
         Label("\(repo.openIssuesCount)", systemImage: "exclamationmark.circle")
@@ -494,11 +494,11 @@ struct RepoDetailView: View {
         }
       }
       .font(.callout)
-      .foregroundColor(.secondary)
+      .foregroundColor(Tokens.Palette.textSecondary.color)
 
       Text(formatUpdateDate(repo.pushedAt ?? repo.updatedAt))
         .font(.caption)
-        .foregroundColor(.secondary)
+        .foregroundColor(Tokens.Palette.textSecondary.color)
     }
     .frame(maxWidth: .infinity, alignment: .leading)
   }

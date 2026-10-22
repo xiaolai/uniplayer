@@ -34,7 +34,7 @@ final class LibraryWindowController: NSWindowController {
 
   private func createWindow() {
     let window = CommonWindow(
-      contentRect: NSRect(origin: .zero, size: Tokens.defaultWindowSize),
+      contentRect: NSRect(origin: .zero, size: Tokens.Window.defaultSize),
       styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
       backing: .buffered,
       defer: false,
@@ -45,11 +45,9 @@ final class LibraryWindowController: NSWindowController {
     window.titlebarAppearsTransparent = true
     window.titlebarSeparatorStyle = .none
     window.toolbarStyle = .unified
-    window.minSize = Tokens.minimumWindowSize
+    window.minSize = Tokens.Window.minimumSize
     window.isMovableByWindowBackground = false
-    window.backgroundColor = .uniplayerDynamic(
-      light: NSColor(hex: 0xF2F2F5),
-      dark: NSColor(hex: 0x0E0E12))
+    window.backgroundColor = Tokens.Palette.canvas.nsColor
     window.appearance = NSAppearance(uniplayerTheme: Preference.enum(for: .themeMaterial))
 
     if !window.setFrameUsingName("UniPlayerLibraryWindow") {

@@ -172,7 +172,7 @@ class SettingsPage {
     let containerView = NSView()
     containerView.translatesAutoresizingMaskIntoConstraints = false
     containerView.addSubview(view)
-    view.padding(.horizontal(4), .bottom(8), .top, from: containerView)
+    view.padding(.horizontal(Tokens.Space.n4), .bottom(Tokens.Space.n8), .top, from: containerView)
     return containerView
   }
 
@@ -266,13 +266,13 @@ class SettingsSection: SettingsContainer {
       let title = ui.localized(titleKey)
       view.sectionTitle = title
       let titleField = NSTextField(labelWithString: title)
-      titleField.font = NSFont.systemFont(ofSize: 14, weight: .bold)
+      titleField.font = Tokens.Typography.settingsTitle.nsFont
       titleField.translatesAutoresizingMaskIntoConstraints = false
-      titleField.textColor = NSColor.secondaryLabelColor
+      titleField.textColor = Tokens.Palette.textSecondary.nsColor
       view.titleField = titleField
       view.addSubview(titleField)
-      titleField.padding(.top, .leading(16), .trailing(8), from: view)
-      stackView.spacing(.top(12), to: titleField).padding(.leading, .trailing, .bottom, from: view)
+      titleField.padding(.top, .leading(Tokens.Space.n16), .trailing(Tokens.Space.n8), from: view)
+      stackView.spacing(.top(Tokens.Space.n12), to: titleField).padding(.leading, .trailing, .bottom, from: view)
     } else {
       stackView.padding(.all, from: view)
     }
@@ -326,15 +326,15 @@ class SettingsList: SettingsContainer {
     let title = ui.localized(titleKey)
     let titleField = NSTextField(labelWithString: SettingsList.SMALL_TITLE ? title.localizedUppercase : title)
     titleField.font = SettingsList.SMALL_TITLE ?
-      NSFont.systemFont(ofSize: NSFont.smallSystemFontSize, weight: .bold) :
-      NSFont.systemFont(ofSize: 14, weight: .bold)
+      Tokens.Typography.captionStrong.nsFont :
+      Tokens.Typography.settingsTitle.nsFont
     titleField.translatesAutoresizingMaskIntoConstraints = false
-    titleField.textColor = NSColor.secondaryLabelColor
+    titleField.textColor = Tokens.Palette.textSecondary.nsColor
     container.titleField = titleField
     container.addSubview(titleField)
-    titleField.padding(.top, .leading(16), .trailing(8), from: container)
+    titleField.padding(.top, .leading(Tokens.Space.n16), .trailing(Tokens.Space.n8), from: container)
     listView.spacing(.top(SettingsList.SMALL_TITLE ? 8 : 12), to: titleField)
-    listView.padding(.bottom, .horizontal(8), from: container)
+    listView.padding(.bottom, .horizontal(Tokens.Space.n8), from: container)
     return container
   }
 
@@ -363,7 +363,7 @@ class SettingsList: SettingsContainer {
       listView.contentView!.addSubview($0)
       $0.padding(.horizontal, from: listView.contentView)
     }
-    itemViews.first?.padding(.top(0), from: listView.contentView)
+    itemViews.first?.padding(.top(Tokens.Space.n0), from: listView.contentView)
     itemViews.last?.padding(.bottom, from: listView.contentView)
     zip(itemViews.dropFirst(), itemViews.dropLast()).forEach { (bottomItem, topItem) in
       bottomItem.spacing(.top, to: topItem)
@@ -372,7 +372,7 @@ class SettingsList: SettingsContainer {
       separator.boxType = .separator
       separator.titlePosition = .noTitle
       listView.contentView!.addSubview(separator)
-      separator.padding(.bottom, .leading(36), .trailing, from: topItem)
+      separator.padding(.bottom, .leading(Tokens.Space.n36), .trailing, from: topItem)
     }
   }
 
@@ -397,7 +397,7 @@ class SettingsList: SettingsContainer {
       super.init(frame: NSRect())
       self.translatesAutoresizingMaskIntoConstraints = false
       self.titlePosition = .noTitle
-      self.contentViewMargins = NSSize(width: 0, height: 0)
+      self.contentViewMargins = .zero
 
       if #available(macOS 26, *) {
         self.boxType = .custom
@@ -417,11 +417,11 @@ class SettingsList: SettingsContainer {
     override func viewDidChangeEffectiveAppearance() {
       if #available(macOS 26, *) {
         if effectiveAppearance.isDark {
-          self.borderColor = .separatorColor
+          self.borderColor = Tokens.Palette.separator.nsColor
           self.fillColor = .underPageBackgroundColor
         } else {
-          self.borderColor = .black.withAlphaComponent(0.05)
-          self.fillColor = .black.withAlphaComponent(0.02)
+          self.borderColor = Tokens.Palette.settingsCardBorderSubtle.nsColor
+          self.fillColor = Tokens.Palette.settingsCardFill.nsColor
         }
       }
     }
@@ -444,16 +444,16 @@ class SettingsSubList: SettingsList {
     separator.boxType = .separator
     separator.titlePosition = .noTitle
     listView.contentView!.addSubview(separator)
-    separator.padding(.top, .leading(36), .trailing, from: listView.contentView)
+    separator.padding(.top, .leading(Tokens.Space.n36), .trailing, from: listView.contentView)
     return listView
   }
 
   class View: SettingsList.View {
     override init() {
       super.init()
-      self.fillColor = .clear
+      self.fillColor = Tokens.Palette.clear.nsColor
       self.boxType = .custom
-      self.borderWidth = 0
+      self.borderWidth = Tokens.Stroke.none
     }
 
     required init?(coder: NSCoder) {

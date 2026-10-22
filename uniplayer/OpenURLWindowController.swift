@@ -25,6 +25,7 @@ class OpenURLWindowController: NSWindowController, NSTextFieldDelegate, NSContro
 
   @IBOutlet weak var overlayView: NSVisualEffectView!
   @IBOutlet weak var loadingMediaProgressIndicator: NSProgressIndicator!
+  @IBOutlet weak var loadingMediaLabel: NSTextField!
 
   var isAlternativeAction = false
 
@@ -45,6 +46,9 @@ class OpenURLWindowController: NSWindowController, NSTextFieldDelegate, NSContro
     window?.titlebarAppearsTransparent = true
     window?.titleVisibility = .hidden
     urlStackView.setVisibilityPriority(.notVisible, for: httpPrefixTextField)
+    httpPrefixTextField.font = Tokens.Typography.urlField.nsFont
+    urlField.font = Tokens.Typography.urlField.nsFont
+    loadingMediaLabel.font = Tokens.Typography.loading.nsFont
     urlField.delegate = self
     ([.closeButton, .miniaturizeButton, .zoomButton] as [NSWindow.ButtonType]).forEach {
       window?.standardWindowButton($0)?.isHidden = true
@@ -74,12 +78,12 @@ class OpenURLWindowController: NSWindowController, NSTextFieldDelegate, NSContro
     errorMessageLabel.stringValue = failedToOpenURLMessage
     errorMessageLabel.isHidden = false
     overlayView.isHidden = true
-    urlField.textColor = .systemRed
+    urlField.textColor = Tokens.Palette.destructive.nsColor
   }
 
   func resetWindowState() {
     urlField.stringValue = ""
-    urlField.textColor = .labelColor
+    urlField.textColor = Tokens.Palette.textPrimary.nsColor
     usernameField.stringValue = ""
     passwordField.stringValue = ""
     errorMessageLabel.stringValue = invalidURLMessage
@@ -181,7 +185,7 @@ class OpenURLWindowController: NSWindowController, NSTextFieldDelegate, NSContro
     if let textView = obj.userInfo?["NSFieldEditor"] as? NSTextView, let str = textView.textStorage?.string, str.isEmpty {
       errorMessageLabel.stringValue = invalidURLMessage
       errorMessageLabel.isHidden = true
-      urlField.textColor = .labelColor
+      urlField.textColor = Tokens.Palette.textPrimary.nsColor
       urlStackView.setVisibilityPriority(.notVisible, for: httpPrefixTextField)
       openButton.isEnabled = true
       return
@@ -189,7 +193,7 @@ class OpenURLWindowController: NSWindowController, NSTextFieldDelegate, NSContro
     let (url, hasScheme) = getURL()
     if let url, let host = url.host {
       errorMessageLabel.isHidden = true
-      urlField.textColor = .labelColor
+      urlField.textColor = Tokens.Palette.textPrimary.nsColor
       openButton.isEnabled = true
       if hasScheme {
         urlStackView.setVisibilityPriority(.notVisible, for: httpPrefixTextField)
@@ -205,7 +209,7 @@ class OpenURLWindowController: NSWindowController, NSTextFieldDelegate, NSContro
         passwordField.stringValue = ""
       }
     } else {
-      urlField.textColor = .systemRed
+      urlField.textColor = Tokens.Palette.destructive.nsColor
       errorMessageLabel.stringValue = invalidURLMessage
       errorMessageLabel.isHidden = false
       urlStackView.setVisibilityPriority(.notVisible, for: httpPrefixTextField)

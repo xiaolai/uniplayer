@@ -210,7 +210,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     playButton.alternateImage = .pause
 
     self.muteButton = VolumeButton(player: player, target: self, action: #selector(muteButtonAction))
-    muteButton.size(width: 24, height: 24)
+    muteButton.size(width: Tokens.Size.n24, height: Tokens.Size.n24)
 
     self.volumeSlider = VolumeSlider()
     volumeSlider.translatesAutoresizingMaskIntoConstraints = false
@@ -280,7 +280,7 @@ class PlayerWindowController: NSWindowController, NSWindowDelegate {
     guard let window, let theme else { return }
 
     window.appearance = NSAppearance(uniplayerTheme: theme)
-    window.backgroundColor = window.effectiveAppearance.isDark ? .black : .white
+    window.backgroundColor = window.effectiveAppearance.isDark ? Tokens.Palette.black.nsColor : Tokens.Palette.white.nsColor
   }
 
   // MARK: - Mouse / Trackpad events

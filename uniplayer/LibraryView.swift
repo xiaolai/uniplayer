@@ -79,11 +79,11 @@ struct LibraryRootView: View {
     } detail: {
       detail
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Tokens.canvas)
+        .background(Tokens.Palette.canvas.color)
     }
     .navigationSplitViewStyle(.balanced)
-    .tint(Tokens.accent)
-    .background(Tokens.canvas)
+    .tint(Tokens.Palette.accent.color)
+    .background(Tokens.Palette.canvas.color)
     .toolbar {
       ToolbarItem(placement: .primaryAction) {
         Button {
@@ -145,18 +145,18 @@ struct LibraryRootView: View {
     }
     .listStyle(.sidebar)
     .scrollContentBackground(.hidden)
-    .background(Tokens.sidebar)
+    .background(Tokens.Palette.sidebar.color)
     .navigationSplitViewColumnWidth(
       min: 200,
-      ideal: Tokens.sidebarWidth,
+      ideal: Tokens.Size.sidebarWidth,
       max: 260)
     .safeAreaInset(edge: .bottom) {
       Text(versionText)
-        .font(Tokens.caption)
-        .foregroundStyle(Tokens.textTertiary)
+        .font(Tokens.Typography.caption.font)
+        .foregroundStyle(Tokens.Palette.textTertiary.color)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 16)
-        .padding(.bottom, 10)
+        .padding(.horizontal, Tokens.Library.sidebarVersionInset)
+        .padding(.bottom, Tokens.Library.sidebarVersionBottom)
     }
   }
 
@@ -219,7 +219,7 @@ private struct HomeView: View {
 
   var body: some View {
     ScrollView {
-      VStack(alignment: .leading, spacing: Tokens.sectionSpacing) {
+      VStack(alignment: .leading, spacing: Tokens.Space.sectionGap) {
         if let hero = model.hero {
           HeroView(item: hero) {
             model.open(hero)
@@ -248,12 +248,12 @@ private struct HomeView: View {
             actionTitle: L("Open File…")) {
               model.openFilePanel()
             }
-          .frame(minHeight: 260)
+          .frame(minHeight: Tokens.Library.emptyStateMinimum)
         }
       }
-      .padding(.horizontal, Tokens.contentPadding)
-      .padding(.top, 28)
-      .padding(.bottom, 48)
+      .padding(.horizontal, Tokens.Space.pageMargin)
+      .padding(.top, Tokens.Space.n28)
+      .padding(.bottom, Tokens.Space.pageBottom)
       .frame(maxWidth: .infinity, alignment: .leading)
     }
   }
@@ -266,23 +266,23 @@ private struct HeroView: View {
   @Environment(\.colorSchemeContrast) private var contrast
 
   var body: some View {
-    Color.clear
-      .aspectRatio(16.0 / 9.0, contentMode: .fit)
+    Tokens.Palette.clear.color
+      .aspectRatio(Tokens.Aspect.video, contentMode: .fit)
       .overlay {
         ZStack(alignment: .bottomLeading) {
           PosterImage(url: item.url)
 
           LinearGradient(
-            colors: [.clear, .black.opacity(0.18), Tokens.heroShade],
+            colors: [Tokens.Palette.clear.color, Tokens.Palette.heroGradientMid.color, Tokens.Palette.heroShade.color],
             startPoint: .top,
             endPoint: .bottom)
 
-          VStack(alignment: .leading, spacing: 10) {
+          VStack(alignment: .leading, spacing: Tokens.Library.heroSpacing) {
             Text(item.title)
-              .font(Tokens.heroTitle)
+              .font(Tokens.Typography.heroTitle.font)
               .lineLimit(2)
 
-            HStack(spacing: 8) {
+            HStack(spacing: Tokens.Space.n8) {
               Text(item.subtitle)
               if item.isResumable {
                 Text("·")
@@ -292,36 +292,36 @@ private struct HeroView: View {
                 Text(item.durationText)
               }
             }
-            .font(Tokens.heroBody)
-            .foregroundStyle(.white.opacity(0.78))
+            .font(Tokens.Typography.heroBody.font)
+            .foregroundStyle(Tokens.Palette.onMediaSecondary.color)
 
             Button(action: play) {
               Label(
                 item.isResumable ? L("Resume") : L("Play"),
                 systemImage: "play.fill")
-                .font(Tokens.button)
-                .padding(.horizontal, 18)
-                .padding(.vertical, 9)
-                .background(.white, in: Capsule())
-                .foregroundStyle(.black)
+                .font(Tokens.Typography.button.font)
+                .padding(.horizontal, Tokens.Library.heroButtonHorizontal)
+                .padding(.vertical, Tokens.Library.heroButtonVertical)
+                .background(Tokens.Palette.white.color, in: Capsule())
+                .foregroundStyle(Tokens.Palette.black.color)
             }
             .buttonStyle(.plain)
             .keyboardShortcut(.defaultAction)
-            .padding(.top, 4)
+            .padding(.top, Tokens.Space.n4)
             .accessibilityLabel(item.isResumable ? L("Resume") : L("Play"))
           }
-          .foregroundStyle(.white)
-          .padding(32)
+          .foregroundStyle(Tokens.Palette.onMedia.color)
+          .padding(Tokens.Library.heroPadding)
         }
       }
-      .clipShape(RoundedRectangle(cornerRadius: Tokens.heroCorner, style: .continuous))
+      .clipShape(RoundedRectangle(cornerRadius: Tokens.Radius.hero, style: .continuous))
     .overlay {
-      RoundedRectangle(cornerRadius: Tokens.heroCorner, style: .continuous)
+      RoundedRectangle(cornerRadius: Tokens.Radius.hero, style: .continuous)
         .stroke(
-          .white.opacity(contrast == .increased ? 0.5 : 0.08),
-          lineWidth: contrast == .increased ? 2 : 1)
+          contrast == .increased ? Tokens.Palette.mediaBorderIncreased.color : Tokens.Palette.mediaBorder.color,
+          lineWidth: contrast == .increased ? Tokens.Stroke.strong : Tokens.Stroke.hairline)
     }
-    .shadow(color: .black.opacity(0.35), radius: 24, y: 12)
+    .shadow(color: Tokens.Shadow.hero.color.color, radius: Tokens.Shadow.hero.radius, x: Tokens.Shadow.hero.offset.width, y: Tokens.Shadow.hero.offset.height)
   }
 }
 
@@ -331,27 +331,27 @@ private struct ContinueWatchingShelf: View {
   let seeAll: () -> Void
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 12) {
+    VStack(alignment: .leading, spacing: Tokens.Library.shelfHeaderSpacing) {
       HStack(alignment: .firstTextBaseline) {
         Text(L("Continue Watching"))
-          .font(Tokens.sectionTitle)
-          .foregroundStyle(Tokens.textPrimary)
+          .font(Tokens.Typography.sectionTitle.font)
+          .foregroundStyle(Tokens.Palette.textPrimary.color)
         Spacer()
         Button(L("See All"), action: seeAll)
           .buttonStyle(.plain)
-          .font(Tokens.caption)
-          .foregroundStyle(Tokens.textSecondary)
+          .font(Tokens.Typography.caption.font)
+          .foregroundStyle(Tokens.Palette.textSecondary.color)
       }
 
       ScrollView(.horizontal, showsIndicators: false) {
-        HStack(spacing: 16) {
+        HStack(spacing: Tokens.Space.n16) {
           ForEach(items) { item in
             ContinueWatchingCard(item: item) {
               select(item)
             }
           }
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, Tokens.Space.n2)
       }
     }
   }
@@ -367,7 +367,7 @@ private struct ContinueWatchingCard: View {
   @FocusState private var focused: Bool
 
   private var borderOpacity: Double {
-    contrast == .increased ? 0.65 : (hovering ? 0.34 : 0.10)
+    contrast == .increased ? Tokens.Opacity.n65 : (hovering ? Tokens.Opacity.n34 : Tokens.Opacity.n10)
   }
 
   var body: some View {
@@ -376,38 +376,38 @@ private struct ContinueWatchingCard: View {
         PosterImage(url: item.url)
 
         LinearGradient(
-          colors: [.clear, Tokens.cardShade],
+          colors: [.clear, Tokens.Palette.cardShade.color],
           startPoint: .center,
           endPoint: .bottom)
 
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Tokens.Space.n6) {
           Text(item.title)
-            .font(Tokens.cardTitle)
+            .font(Tokens.Typography.cardTitle.font)
             .lineLimit(2)
           Text(item.progressText)
-            .font(Tokens.caption)
-            .foregroundStyle(.white.opacity(0.72))
+            .font(Tokens.Typography.caption.font)
+            .foregroundStyle(Tokens.Palette.onMediaTertiary.color)
           ProgressBar(value: item.progress)
         }
-        .padding(12)
-        .foregroundStyle(.white)
+        .padding(Tokens.Library.cardPadding)
+        .foregroundStyle(Tokens.Palette.onMedia.color)
       }
-      .frame(width: Tokens.cardWidth, height: Tokens.cardHeight)
-      .clipShape(RoundedRectangle(cornerRadius: Tokens.cardCorner, style: .continuous))
+      .frame(width: Tokens.Size.cardWidth, height: Tokens.Size.cardHeight)
+      .clipShape(RoundedRectangle(cornerRadius: Tokens.Radius.card, style: .continuous))
       .overlay {
-        RoundedRectangle(cornerRadius: Tokens.cardCorner, style: .continuous)
+        RoundedRectangle(cornerRadius: Tokens.Radius.card, style: .continuous)
           .stroke(
-            .white.opacity(borderOpacity),
-            lineWidth: contrast == .increased ? 2 : 1)
+            Tokens.Palette.white.color.opacity(borderOpacity),
+            lineWidth: contrast == .increased ? Tokens.Stroke.strong : Tokens.Stroke.hairline)
       }
       .overlay {
-        RoundedRectangle(cornerRadius: Tokens.cardCorner, style: .continuous)
-          .stroke(Tokens.accent, lineWidth: focused ? 3 : 0)
-          .padding(-3)
+        RoundedRectangle(cornerRadius: Tokens.Radius.card, style: .continuous)
+          .stroke(Tokens.Palette.accent.color, lineWidth: focused ? Tokens.Stroke.focus : Tokens.Stroke.none)
+          .padding(-Tokens.Library.focusRingOutset)
       }
-      .shadow(color: .black.opacity(hovering ? 0.28 : 0), radius: 14, y: 6)
+      .shadow(color: hovering ? Tokens.Shadow.cardHover.color.color : Tokens.Palette.clear.color, radius: Tokens.Shadow.cardHover.radius, x: Tokens.Shadow.cardHover.offset.width, y: Tokens.Shadow.cardHover.offset.height)
       .scaleEffect(hovering && !reduceMotion ? 1.02 : 1)
-      .animation(reduceMotion ? nil : Tokens.hover, value: hovering)
+      .animation(reduceMotion ? nil : Tokens.Motion.hover.animation, value: hovering)
     }
     .buttonStyle(.plain)
     .focusable()
@@ -424,24 +424,24 @@ private struct RecentlyAddedShelf: View {
   let seeAll: () -> Void
 
   private let columns = [
-    GridItem(.adaptive(minimum: Tokens.gridMinimum, maximum: Tokens.gridMaximum),
-             spacing: Tokens.gridSpacing)
+    GridItem(.adaptive(minimum: Tokens.Size.gridMinimum, maximum: Tokens.Size.gridMaximum),
+             spacing: Tokens.Library.cardGap)
   ]
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 14) {
+    VStack(alignment: .leading, spacing: Tokens.Space.n14) {
       HStack(alignment: .firstTextBaseline) {
         Text(L("Recently Added"))
-          .font(Tokens.sectionTitle)
-          .foregroundStyle(Tokens.textPrimary)
+          .font(Tokens.Typography.sectionTitle.font)
+          .foregroundStyle(Tokens.Palette.textPrimary.color)
         Spacer()
         Button(L("See All"), action: seeAll)
           .buttonStyle(.plain)
-          .font(Tokens.caption)
-          .foregroundStyle(Tokens.textSecondary)
+          .font(Tokens.Typography.caption.font)
+          .foregroundStyle(Tokens.Palette.textSecondary.color)
       }
 
-      LazyVGrid(columns: columns, alignment: .leading, spacing: 24) {
+      LazyVGrid(columns: columns, alignment: .leading, spacing: Tokens.Library.gridRowGap) {
         ForEach(items) { item in
           LibraryCard(item: item) {
             select(item)
@@ -463,30 +463,30 @@ private struct LibraryGridView: View {
   var onBack: (() -> Void)?
 
   private let columns = [
-    GridItem(.adaptive(minimum: Tokens.gridMinimum, maximum: Tokens.gridMaximum),
-             spacing: Tokens.gridSpacing)
+    GridItem(.adaptive(minimum: Tokens.Size.gridMinimum, maximum: Tokens.Size.gridMaximum),
+             spacing: Tokens.Library.cardGap)
   ]
 
   var body: some View {
     ScrollView {
-      VStack(alignment: .leading, spacing: 20) {
-        HStack(alignment: .firstTextBaseline, spacing: 10) {
+      VStack(alignment: .leading, spacing: Tokens.Space.n20) {
+        HStack(alignment: .firstTextBaseline, spacing: Tokens.Space.n10) {
           if let onBack {
             Button(action: onBack) {
               Image(systemName: "chevron.left")
-                .font(Tokens.sectionTitle)
+                .font(Tokens.Typography.sectionTitle.font)
             }
             .buttonStyle(.plain)
-            .foregroundStyle(Tokens.textSecondary)
+            .foregroundStyle(Tokens.Palette.textSecondary.color)
             .accessibilityLabel(L("Back"))
           }
           Text(title)
-            .font(.system(size: 26, weight: .bold))
-            .foregroundStyle(Tokens.textPrimary)
+            .font(Tokens.Typography.pageTitle.font)
+            .foregroundStyle(Tokens.Palette.textPrimary.color)
           Spacer()
           Text("\(items.count)")
-            .font(Tokens.caption)
-            .foregroundStyle(Tokens.textSecondary)
+            .font(Tokens.Typography.caption.font)
+            .foregroundStyle(Tokens.Palette.textSecondary.color)
         }
 
         if items.isEmpty {
@@ -497,9 +497,9 @@ private struct LibraryGridView: View {
             actionTitle: L("Open File…")) {
               model.openFilePanel()
             }
-          .frame(minHeight: 300)
+          .frame(minHeight: Tokens.Library.gridEmptyStateMinimum)
         } else {
-          LazyVGrid(columns: columns, alignment: .leading, spacing: 24) {
+          LazyVGrid(columns: columns, alignment: .leading, spacing: Tokens.Library.gridRowGap) {
             ForEach(items) { item in
               LibraryCard(item: item) {
                 select(item)
@@ -508,9 +508,9 @@ private struct LibraryGridView: View {
           }
         }
       }
-      .padding(.horizontal, Tokens.contentPadding)
-      .padding(.top, 28)
-      .padding(.bottom, 48)
+      .padding(.horizontal, Tokens.Space.pageMargin)
+      .padding(.top, Tokens.Space.n28)
+      .padding(.bottom, Tokens.Space.pageBottom)
     }
   }
 }
@@ -525,44 +525,44 @@ private struct LibraryCard: View {
   @FocusState private var focused: Bool
 
   private var borderOpacity: Double {
-    contrast == .increased ? 0.65 : (hovering ? 0.28 : 0.08)
+    contrast == .increased ? Tokens.Opacity.n65 : (hovering ? Tokens.Opacity.n28 : Tokens.Opacity.n08)
   }
 
   var body: some View {
     Button(action: play) {
-      VStack(alignment: .leading, spacing: 8) {
-        Color.clear
-          .aspectRatio(16.0 / 9.0, contentMode: .fit)
+      VStack(alignment: .leading, spacing: Tokens.Library.cardSpacing) {
+        Tokens.Palette.clear.color
+          .aspectRatio(Tokens.Aspect.video, contentMode: .fit)
           .overlay {
             PosterImage(url: item.url)
           }
-          .clipShape(RoundedRectangle(cornerRadius: Tokens.cardCorner, style: .continuous))
+          .clipShape(RoundedRectangle(cornerRadius: Tokens.Radius.card, style: .continuous))
           .overlay {
-            RoundedRectangle(cornerRadius: Tokens.cardCorner, style: .continuous)
+            RoundedRectangle(cornerRadius: Tokens.Radius.card, style: .continuous)
               .stroke(
                 .white.opacity(borderOpacity),
                 lineWidth: contrast == .increased ? 2 : 1)
           }
           .overlay {
-            RoundedRectangle(cornerRadius: Tokens.cardCorner, style: .continuous)
-              .stroke(Tokens.accent, lineWidth: focused ? 3 : 0)
-              .padding(-3)
+            RoundedRectangle(cornerRadius: Tokens.Radius.card, style: .continuous)
+              .stroke(Tokens.Palette.accent.color, lineWidth: focused ? 3 : 0)
+              .padding(-Tokens.Space.n3)
           }
-          .shadow(color: .black.opacity(hovering ? 0.22 : 0), radius: 12, y: 5)
+          .shadow(color: hovering ? Tokens.Shadow.card.color.color : Tokens.Palette.clear.color, radius: Tokens.Shadow.card.radius, x: Tokens.Shadow.card.offset.width, y: Tokens.Shadow.card.offset.height)
 
         Text(item.title)
-          .font(Tokens.cardTitle)
-          .foregroundStyle(Tokens.textPrimary)
+          .font(Tokens.Typography.cardTitle.font)
+          .foregroundStyle(Tokens.Palette.textPrimary.color)
           .lineLimit(1)
 
         Text(item.subtitle)
-          .font(Tokens.caption)
-          .foregroundStyle(Tokens.textSecondary)
+          .font(Tokens.Typography.caption.font)
+          .foregroundStyle(Tokens.Palette.textSecondary.color)
           .lineLimit(1)
       }
       .contentShape(Rectangle())
       .scaleEffect(hovering && !reduceMotion ? 1.015 : 1)
-      .animation(reduceMotion ? nil : Tokens.hover, value: hovering)
+      .animation(reduceMotion ? nil : Tokens.Motion.hover.animation, value: hovering)
     }
     .buttonStyle(.plain)
     .focusable()
@@ -581,29 +581,29 @@ private struct SearchView: View {
   @FocusState private var focused: Bool
 
   private let columns = [
-    GridItem(.adaptive(minimum: Tokens.gridMinimum, maximum: Tokens.gridMaximum),
-             spacing: Tokens.gridSpacing)
+    GridItem(.adaptive(minimum: Tokens.Size.gridMinimum, maximum: Tokens.Size.gridMaximum),
+             spacing: Tokens.Library.cardGap)
   ]
 
   var body: some View {
-    VStack(spacing: 28) {
-      HStack(spacing: 10) {
+    VStack(spacing: Tokens.Space.n28) {
+      HStack(spacing: Tokens.Space.n10) {
         Image(systemName: "magnifyingglass")
-          .foregroundStyle(Tokens.textSecondary)
+          .foregroundStyle(Tokens.Palette.textSecondary.color)
         TextField(L("Search"), text: $model.query)
           .textFieldStyle(.plain)
-          .font(.system(size: 15))
+          .font(Tokens.Typography.searchField.font)
           .focused($focused)
       }
-      .padding(.horizontal, 14)
-      .padding(.vertical, 10)
-      .background(Tokens.surface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+      .padding(.horizontal, Tokens.Library.searchHorizontal)
+      .padding(.vertical, Tokens.Library.searchVertical)
+      .background(Tokens.Palette.surface.color, in: RoundedRectangle(cornerRadius: Tokens.Library.searchCorner, style: .continuous))
       .overlay {
-        RoundedRectangle(cornerRadius: 10, style: .continuous)
-          .stroke(Tokens.hairline, lineWidth: 1)
+        RoundedRectangle(cornerRadius: Tokens.Library.searchCorner, style: .continuous)
+          .stroke(Tokens.Palette.separator.color, lineWidth: Tokens.Stroke.hairline)
       }
-      .frame(width: 420)
-      .padding(.top, 32)
+      .frame(width: Tokens.Size.searchFieldWidth)
+      .padding(.top, Tokens.Library.searchTop)
 
       if model.query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
         EmptyStateView(
@@ -619,20 +619,20 @@ private struct SearchView: View {
           .frame(maxHeight: .infinity)
       } else {
         ScrollView {
-          LazyVGrid(columns: columns, alignment: .leading, spacing: 24) {
+          LazyVGrid(columns: columns, alignment: .leading, spacing: Tokens.Library.gridRowGap) {
             ForEach(model.searchResults) { item in
               LibraryCard(item: item) {
                 select(item)
               }
             }
           }
-          .padding(.horizontal, Tokens.contentPadding)
-          .padding(.bottom, 48)
+          .padding(.horizontal, Tokens.Space.pageMargin)
+          .padding(.bottom, Tokens.Space.pageBottom)
         }
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .background(Tokens.canvas)
+    .background(Tokens.Palette.canvas.color)
     .onAppear {
       focused = true
     }
@@ -648,7 +648,7 @@ private struct PlaylistsView: View {
       title: L("No playlists yet"),
       message: L("Playlists you create will appear here."))
       .frame(maxWidth: .infinity, maxHeight: .infinity)
-      .background(Tokens.canvas)
+      .background(Tokens.Palette.canvas.color)
   }
 }
 
@@ -663,64 +663,64 @@ private struct DetailView: View {
 
   var body: some View {
     ScrollView {
-      VStack(alignment: .leading, spacing: 24) {
+      VStack(alignment: .leading, spacing: Tokens.Space.n24) {
         Button(action: back) {
           Label(L("Back"), systemImage: "chevron.left")
-            .font(Tokens.body)
+            .font(Tokens.Typography.body.font)
         }
         .buttonStyle(.plain)
-        .foregroundStyle(Tokens.textSecondary)
+        .foregroundStyle(Tokens.Palette.textSecondary.color)
         .keyboardShortcut(.cancelAction)
 
-        Color.clear
-          .aspectRatio(16.0 / 9.0, contentMode: .fit)
+        Tokens.Palette.clear.color
+          .aspectRatio(Tokens.Aspect.video, contentMode: .fit)
           .overlay {
             ZStack(alignment: .bottomLeading) {
               PosterImage(url: item.url)
               LinearGradient(
-                colors: [.clear, .black.opacity(0.15), .black.opacity(0.84)],
+                colors: [Tokens.Palette.clear.color, Tokens.Palette.detailGradientMid.color, Tokens.Palette.detailGradientEnd.color],
                 startPoint: .top,
                 endPoint: .bottom)
-              VStack(alignment: .leading, spacing: 8) {
+              VStack(alignment: .leading, spacing: Tokens.Library.cardSpacing) {
                 Text(item.title)
-                  .font(Tokens.heroTitle)
+                  .font(Tokens.Typography.heroTitle.font)
                   .lineLimit(2)
                 if !item.metadata.detailLine.isEmpty {
                   Text(item.metadata.detailLine)
-                    .font(Tokens.heroBody)
-                    .foregroundStyle(.white.opacity(0.78))
+                    .font(Tokens.Typography.heroBody.font)
+                    .foregroundStyle(Tokens.Palette.onMediaSecondary.color)
                 }
               }
-              .foregroundStyle(.white)
-              .padding(28)
+              .foregroundStyle(Tokens.Palette.onMedia.color)
+              .padding(Tokens.Space.n28)
             }
           }
-          .clipShape(RoundedRectangle(cornerRadius: Tokens.heroCorner, style: .continuous))
+          .clipShape(RoundedRectangle(cornerRadius: Tokens.Radius.hero, style: .continuous))
           .overlay {
-            RoundedRectangle(cornerRadius: Tokens.heroCorner, style: .continuous)
+            RoundedRectangle(cornerRadius: Tokens.Radius.hero, style: .continuous)
               .stroke(
-                .white.opacity(contrast == .increased ? 0.5 : 0.08),
-                lineWidth: contrast == .increased ? 2 : 1)
+                contrast == .increased ? Tokens.Palette.mediaBorderIncreased.color : Tokens.Palette.mediaBorder.color,
+                lineWidth: contrast == .increased ? Tokens.Stroke.strong : Tokens.Stroke.hairline)
           }
 
-        HStack(alignment: .center, spacing: 16) {
+        HStack(alignment: .center, spacing: Tokens.Space.n16) {
           Button(action: play) {
             Label(item.isResumable ? L("Resume") : L("Play"), systemImage: "play.fill")
-              .font(Tokens.button)
-              .padding(.horizontal, 20)
-              .padding(.vertical, 10)
+              .font(Tokens.Typography.button.font)
+              .padding(.horizontal, Tokens.Space.n20)
+              .padding(.vertical, Tokens.Space.n10)
           }
           .buttonStyle(.borderedProminent)
           .keyboardShortcut(.defaultAction)
 
           if item.isResumable {
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: Tokens.Space.n5) {
               Text(item.progressText)
-                .font(Tokens.caption)
-                .foregroundStyle(Tokens.textSecondary)
+                .font(Tokens.Typography.caption.font)
+                .foregroundStyle(Tokens.Palette.textSecondary.color)
               ProgressView(value: item.progress)
-                .tint(Tokens.accent)
-                .frame(width: 180)
+                .tint(Tokens.Palette.accent.color)
+                .frame(width: Tokens.Size.progressWidth)
             }
           }
 
@@ -734,12 +734,12 @@ private struct DetailView: View {
           }
         }
 
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: Tokens.Space.n12) {
           Text(L("Details"))
-            .font(Tokens.sectionTitle)
-            .foregroundStyle(Tokens.textPrimary)
+            .font(Tokens.Typography.sectionTitle.font)
+            .foregroundStyle(Tokens.Palette.textPrimary.color)
 
-          Grid(alignment: .leading, horizontalSpacing: 24, verticalSpacing: 8) {
+          Grid(alignment: .leading, horizontalSpacing: Tokens.Space.n24, verticalSpacing: Tokens.Space.n8) {
             detailRow(L("Folder"), item.subtitle)
             detailRow(L("File"), item.url.lastPathComponent)
             if item.duration > 0 {
@@ -764,11 +764,11 @@ private struct DetailView: View {
           }
         }
       }
-      .padding(.horizontal, Tokens.contentPadding)
-      .padding(.top, 24)
-      .padding(.bottom, 48)
+      .padding(.horizontal, Tokens.Space.pageMargin)
+      .padding(.top, Tokens.Space.pageTop)
+      .padding(.bottom, Tokens.Space.pageBottom)
     }
-    .background(Tokens.canvas)
+    .background(Tokens.Palette.canvas.color)
   }
 
   private var fileSize: String? {
@@ -787,12 +787,12 @@ private struct DetailView: View {
   private func detailRow(_ label: String, _ value: String) -> some View {
     GridRow {
       Text(label)
-        .font(Tokens.caption)
-        .foregroundStyle(Tokens.textSecondary)
+        .font(Tokens.Typography.caption.font)
+        .foregroundStyle(Tokens.Palette.textSecondary.color)
         .gridColumnAlignment(.trailing)
       Text(value)
-        .font(Tokens.body)
-        .foregroundStyle(Tokens.textPrimary)
+        .font(Tokens.Typography.body.font)
+        .foregroundStyle(Tokens.Palette.textPrimary.color)
         .lineLimit(1)
         .truncationMode(.middle)
         .textSelection(.enabled)
@@ -808,13 +808,13 @@ private struct ProgressBar: View {
   var body: some View {
     GeometryReader { proxy in
       ZStack(alignment: .leading) {
-        Capsule().fill(.white.opacity(0.26))
+        Capsule().fill(Tokens.Palette.progressTrack.color)
         Capsule()
-          .fill(.white)
+          .fill(Tokens.Palette.white.color)
           .frame(width: CGFloat(max(0, min(1, value))) * proxy.size.width)
       }
     }
-    .frame(height: 3)
+    .frame(height: Tokens.Library.progressHeight)
   }
 }
 
@@ -858,15 +858,15 @@ private struct PlaceholderArt: View {
     ZStack {
       LinearGradient(
         colors: [
-          Color(hue: hue, saturation: 0.42, brightness: 0.34),
-          Color(hue: hue, saturation: 0.50, brightness: 0.18)
+          Tokens.Library.placeholderTop(hue: hue),
+          Tokens.Library.placeholderBottom(hue: hue)
         ],
         startPoint: .topLeading,
         endPoint: .bottomTrailing)
 
       Image(systemName: "play.rectangle.fill")
-        .font(.system(size: 34, weight: .regular))
-        .foregroundStyle(.white.opacity(0.34))
+        .font(.system(size: Tokens.Library.placeholderGlyph, weight: .regular))
+        .foregroundStyle(Tokens.Palette.onMediaFaint.color)
     }
   }
 }
@@ -879,47 +879,47 @@ private struct EmptyStateView: View {
   var action: (() -> Void)?
 
   var body: some View {
-    VStack(spacing: 12) {
+    VStack(spacing: Tokens.Space.n12) {
       Image(systemName: symbol)
-        .font(.system(size: 42, weight: .light))
-        .foregroundStyle(Tokens.textSecondary)
+        .font(.system(size: Tokens.Library.emptyStateGlyph, weight: .light))
+        .foregroundStyle(Tokens.Palette.textSecondary.color)
       Text(title)
-        .font(Tokens.sectionTitle)
-        .foregroundStyle(Tokens.textPrimary)
+        .font(Tokens.Typography.sectionTitle.font)
+        .foregroundStyle(Tokens.Palette.textPrimary.color)
       Text(message)
-        .font(Tokens.body)
-        .foregroundStyle(Tokens.textSecondary)
+        .font(Tokens.Typography.body.font)
+        .foregroundStyle(Tokens.Palette.textSecondary.color)
         .multilineTextAlignment(.center)
-        .frame(maxWidth: 360)
+        .frame(maxWidth: Tokens.Size.emptyStateWidth)
       if let actionTitle, let action {
         Button(actionTitle, action: action)
           .buttonStyle(.borderedProminent)
-          .padding(.top, 4)
+          .padding(.top, Tokens.Space.n4)
       }
     }
     .frame(maxWidth: .infinity)
-    .padding(24)
+    .padding(Tokens.Library.dropPadding)
   }
 }
 
 private struct DropOverlay: View {
   var body: some View {
     ZStack {
-      RoundedRectangle(cornerRadius: 18, style: .continuous)
-        .fill(Tokens.accent.opacity(0.12))
-      RoundedRectangle(cornerRadius: 18, style: .continuous)
+      RoundedRectangle(cornerRadius: Tokens.Library.dropCorner, style: .continuous)
+        .fill(Tokens.Palette.accent.color.opacity(Tokens.Opacity.n12))
+      RoundedRectangle(cornerRadius: Tokens.Library.dropCorner, style: .continuous)
         .strokeBorder(
-          Tokens.accent,
-          style: StrokeStyle(lineWidth: 2, dash: [8, 6]))
-      VStack(spacing: 8) {
+          Tokens.Palette.accent.color,
+          style: StrokeStyle(lineWidth: Tokens.Stroke.strong, dash: Tokens.Library.dropDash))
+      VStack(spacing: Tokens.Space.n8) {
         Image(systemName: "arrow.down.doc")
-          .font(.system(size: 30, weight: .regular))
+          .font(.system(size: Tokens.Library.dropGlyph, weight: .regular))
         Text(L("Drop to open"))
-          .font(Tokens.sectionTitle)
+          .font(Tokens.Typography.sectionTitle.font)
       }
-      .foregroundStyle(Tokens.accent)
+      .foregroundStyle(Tokens.Palette.accent.color)
     }
-    .padding(24)
+    .padding(Tokens.Library.dropPadding)
     .allowsHitTesting(false)
   }
 }

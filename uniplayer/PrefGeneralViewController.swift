@@ -38,8 +38,8 @@ class PrefGeneralViewController: PreferenceViewController, PreferenceWindowEmbed
   override func viewDidLoad() {
     super.viewDidLoad()
     
-    afterOpenActionBox.heightAnchor.constraint(equalToConstant: 42).isActive = true
-    pauseActionBox.heightAnchor.constraint(equalToConstant: 146).isActive = true
+    afterOpenActionBox.heightAnchor.constraint(equalToConstant: Tokens.Size.n42).isActive = true
+    pauseActionBox.heightAnchor.constraint(equalToConstant: Tokens.Size.n146).isActive = true
   }
   
   // MARK: - IBAction

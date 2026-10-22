@@ -12,12 +12,13 @@ import Cocoa
 /// A clear Liquid Glass capsule that groups related HUD controls, the way the
 /// system player groups its utility controls.
 final class HUDCapsuleView: TranslucentView {
-  init(content: NSView, horizontalPadding: CGFloat = 10, verticalPadding: CGFloat = 5) {
-    super.init(liquidGlassCornerRadius: 15, vevCornerRadius: 15,
+  init(content: NSView, horizontalPadding: CGFloat = Tokens.HUD.capsuleHorizontal,
+       verticalPadding: CGFloat = Tokens.HUD.capsuleVertical) {
+    super.init(liquidGlassCornerRadius: Tokens.HUD.capsuleCorner, vevCornerRadius: Tokens.HUD.capsuleCorner,
                padding: (horizontalPadding, verticalPadding))
-    glassStyle = .clear
-    glassTintColor = NSColor.black.withAlphaComponent(0.45)
-    glassIsInteractive = true
+    glassStyle = Tokens.Material.glassCapsule.style
+    glassTintColor = Tokens.Material.glassCapsule.tint?.nsColor
+    glassIsInteractive = Tokens.Material.glassCapsule.interactive
     setContent(content)
   }
 
@@ -55,17 +56,17 @@ final class PlayerHUDView: NSView {
     wantsLayer = true
     layer?.masksToBounds = true
 
-    dimLayer.backgroundColor = NSColor.black.withAlphaComponent(0.30).cgColor
+    dimLayer.backgroundColor = Tokens.Palette.hudScrim.nsColor.cgColor
     layer?.addSublayer(dimLayer)
 
     topShade.colors = [
-      NSColor.black.withAlphaComponent(0.62).cgColor,
-      NSColor.clear.cgColor
+      Tokens.Palette.hudTopShade.nsColor.cgColor,
+      Tokens.Palette.clear.nsColor.cgColor
     ]
     topShade.locations = [0, 1]
     bottomShade.colors = [
-      NSColor.clear.cgColor,
-      NSColor.black.withAlphaComponent(0.84).cgColor
+      Tokens.Palette.clear.nsColor.cgColor,
+      Tokens.Palette.hudBottomShade.nsColor.cgColor
     ]
     bottomShade.locations = [0, 1]
     layer?.addSublayer(topShade)
@@ -73,58 +74,58 @@ final class PlayerHUDView: NSView {
 
     updateDim()
 
-    titleLabel.font = .systemFont(ofSize: 18, weight: .semibold)
-    titleLabel.textColor = .white
+    titleLabel.font = Tokens.HUD.titleFont.nsFont
+    titleLabel.textColor = Tokens.Palette.onMedia.nsColor
     titleLabel.lineBreakMode = .byTruncatingTail
-    subtitleLabel.font = .systemFont(ofSize: 11)
-    subtitleLabel.textColor = .white.withAlphaComponent(0.68)
+    subtitleLabel.font = Tokens.HUD.subtitleFont.nsFont
+    subtitleLabel.textColor = Tokens.Palette.onMediaSubtitle.nsColor
     subtitleLabel.lineBreakMode = .byTruncatingTail
 
     let metadata = NSStackView(views: [subtitleLabel, titleLabel])
     metadata.translatesAutoresizingMaskIntoConstraints = false
     metadata.orientation = .vertical
     metadata.alignment = .leading
-    metadata.spacing = 2
+    metadata.spacing = Tokens.HUD.metadataSpacing
 
     [topLeading, topTrailing, center, bottomLeading, bottomTrailing].forEach { stack in
       stack.translatesAutoresizingMaskIntoConstraints = false
       stack.orientation = .horizontal
       stack.alignment = .centerY
-      stack.spacing = 8
+      stack.spacing = Tokens.HUD.controlSpacing
       addSubview(stack)
     }
     bottomLeading.addArrangedSubview(metadata)
 
     timelineGlass.translatesAutoresizingMaskIntoConstraints = false
-    timelineGlass.style = .clear
-    timelineGlass.tintColor = NSColor.black.withAlphaComponent(0.45)
-    timelineGlass.cornerRadius = 14
+    timelineGlass.style = Tokens.Material.glassTimeline.style
+    timelineGlass.tintColor = Tokens.Material.glassTimeline.tint?.nsColor
+    timelineGlass.cornerRadius = Tokens.HUD.timelineCorner
     addSubview(timelineGlass)
 
     timeline.translatesAutoresizingMaskIntoConstraints = false
     addSubview(timeline)
 
-    topLeadingConstraint = topLeading.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 84)
+    topLeadingConstraint = topLeading.leadingAnchor.constraint(equalTo: leadingAnchor, constant: Tokens.HUD.topLeadingWindow)
 
     NSLayoutConstraint.activate([
       topLeadingConstraint,
-      topLeading.topAnchor.constraint(equalTo: topAnchor, constant: 24),
-      topTrailing.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -24),
+      topLeading.topAnchor.constraint(equalTo: topAnchor, constant: Tokens.HUD.topMargin),
+      topTrailing.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -Tokens.HUD.topMargin),
       topTrailing.centerYAnchor.constraint(equalTo: topLeading.centerYAnchor),
 
       center.centerXAnchor.constraint(equalTo: centerXAnchor),
-      center.centerYAnchor.constraint(equalTo: centerYAnchor, constant: -24),
+      center.centerYAnchor.constraint(equalTo: centerYAnchor, constant: -Tokens.HUD.transportOffset),
 
-      bottomLeading.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 40),
-      bottomLeading.bottomAnchor.constraint(equalTo: timeline.topAnchor, constant: -14),
-      bottomLeading.trailingAnchor.constraint(lessThanOrEqualTo: bottomTrailing.leadingAnchor, constant: -16),
-      bottomTrailing.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -40),
+      bottomLeading.leadingAnchor.constraint(equalTo: leadingAnchor, constant: Tokens.HUD.bottomMargin),
+      bottomLeading.bottomAnchor.constraint(equalTo: timeline.topAnchor, constant: -Tokens.HUD.metadataBottomGap),
+      bottomLeading.trailingAnchor.constraint(lessThanOrEqualTo: bottomTrailing.leadingAnchor, constant: -Tokens.HUD.metadataTrailingGap),
+      bottomTrailing.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -Tokens.HUD.bottomMargin),
       bottomTrailing.centerYAnchor.constraint(equalTo: bottomLeading.centerYAnchor),
 
-      timeline.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 40),
-      timeline.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -40),
-      timeline.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -28),
-      timeline.heightAnchor.constraint(equalToConstant: 28),
+      timeline.leadingAnchor.constraint(equalTo: leadingAnchor, constant: Tokens.HUD.bottomMargin),
+      timeline.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -Tokens.HUD.bottomMargin),
+      timeline.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -Tokens.HUD.timelineBottom),
+      timeline.heightAnchor.constraint(equalToConstant: Tokens.HUD.timelineHeight),
       timelineGlass.leadingAnchor.constraint(equalTo: timeline.leadingAnchor),
       timelineGlass.trailingAnchor.constraint(equalTo: timeline.trailingAnchor),
       timelineGlass.topAnchor.constraint(equalTo: timeline.topAnchor),
@@ -139,8 +140,8 @@ final class PlayerHUDView: NSView {
   override func layout() {
     super.layout()
     dimLayer.frame = bounds
-    let topHeight: CGFloat = min(140, bounds.height * 0.3)
-    let bottomHeight: CGFloat = min(220, bounds.height * 0.45)
+    let topHeight: CGFloat = min(Tokens.HUD.topShadeHeight, bounds.height * Tokens.HUD.topShadeFraction)
+    let bottomHeight: CGFloat = min(Tokens.HUD.bottomShadeHeight, bounds.height * Tokens.HUD.bottomShadeFraction)
     topShade.frame = CGRect(
       x: 0, y: bounds.height - topHeight,
       width: bounds.width, height: topHeight)
@@ -155,7 +156,7 @@ final class PlayerHUDView: NSView {
 
   private func updateDim() {
     let increase = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast
-    dimLayer.backgroundColor = NSColor.black.withAlphaComponent(increase ? 0.45 : 0.30).cgColor
+    dimLayer.backgroundColor = (increase ? Tokens.Palette.hudScrimIncreased : Tokens.Palette.hudScrim).nsColor.cgColor
   }
 
   /// Empty HUD space belongs to the video, not to the chrome.
@@ -173,6 +174,6 @@ final class PlayerHUDView: NSView {
   func updateForFullScreen(_ fullScreen: Bool) {
     guard isFullScreen != fullScreen else { return }
     isFullScreen = fullScreen
-    topLeadingConstraint.constant = fullScreen ? 24 : 84
+    topLeadingConstraint.constant = fullScreen ? Tokens.HUD.topLeadingFullScreen : Tokens.HUD.topLeadingWindow
   }
 }

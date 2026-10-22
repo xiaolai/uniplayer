@@ -8,8 +8,8 @@
 
 import Cocoa
 
-fileprivate let watchTableBackgroundColor = NSColor(red: 2.0/3, green: 2.0/3, blue: 2.0/3, alpha: 0.1)
-fileprivate let watchTableColumnHeaderColor = NSColor(red: 0.05, green: 0.05, blue: 0.05, alpha: 1)
+fileprivate let watchTableBackgroundColor = Tokens.Palette.inspectorWatchBackground.nsColor
+fileprivate let watchTableColumnHeaderColor = Tokens.Palette.inspectorWatchHeader.nsColor
 
 class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableViewDelegate, NSTableViewDataSource {
 
@@ -91,7 +91,7 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
     watchTableView.delegate = self
     watchTableView.dataSource = self
 
-    let headerFont = NSFont.boldSystemFont(ofSize: NSFont.smallSystemFontSize)
+    let headerFont = Tokens.Typography.captionStrong.nsFont
     for column in watchTableView.tableColumns {
       let headerCell = WatchTableColumnHeaderCell()
       // Use title from the XIB
@@ -413,7 +413,7 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
             textField.stringValue = value
           }
           textField.isSelectable = true
-          textField.textColor = .labelColor
+          textField.textColor = Tokens.Palette.textPrimary.nsColor
         } else {
           let errorString = NSLocalizedString("inspector.error", comment: "Error")
 
@@ -422,7 +422,7 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
 
           textField.attributedStringValue = NSMutableAttributedString(string: errorString, attributes: [.font: errorFont!])
           textField.isSelectable = false
-          textField.textColor = .disabledControlTextColor
+          textField.textColor = Tokens.Palette.textDisabled.nsColor
         }
       }
       return cell
@@ -435,7 +435,7 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
   func tableView(_ tableView: NSTableView, didAdd rowView: NSTableRowView, forRow row: Int) {
     /// The background color for a `NSTableRowView` will default to the parent's background color, which results in an
     /// unwanted additive effect for translucent backgrounds. Just make each row transparent.
-    rowView.backgroundColor = .clear
+    rowView.backgroundColor = Tokens.Palette.clear.nsColor
   }
 
   func tableViewSelectionDidChange(_ notification: Notification) {
@@ -544,7 +544,7 @@ class InspectorWindowController: NSWindowController, NSWindowDelegate, NSTableVi
   }
 
   private func setLabelColor(_ label: NSTextField, by state: Bool) {
-    label.textColor = state ? NSColor.labelColor : NSColor.disabledControlTextColor
+    label.textColor = state ? Tokens.Palette.textPrimary.nsColor : Tokens.Palette.textDisabled.nsColor
   }
 
   private func saveWatchList() {

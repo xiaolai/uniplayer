@@ -31,8 +31,8 @@ class InteractiveModeController: NSObject {
 
   private lazy var cropRectLabel: NSTextField = {
     let label = NSTextField(labelWithString: "")
-    label.font = .monospacedDigitSystemFont(ofSize: 11, weight: .regular)
-    label.textColor = .secondaryLabelColor
+    label.font = Tokens.Typography.numeric.nsFont
+    label.textColor = Tokens.Palette.textSecondary.nsColor
     return label
   }()
 
@@ -51,7 +51,7 @@ class InteractiveModeController: NSObject {
     let doneButton = ui.button("general.done", target: self, action: #selector(doneAction))
     let cancelButton = ui.button("general.cancel", target: self, action: #selector(cancelAction))
     return ui.vStack(
-      spacing: 8,
+      spacing: Tokens.Space.n8,
       cropRectLabel,
       ui.hStack(predefinedAspectSegment, ui.space(width: 8), cancelButton, doneButton)
     )
@@ -76,7 +76,7 @@ class InteractiveModeController: NSObject {
       return
     }
 
-    window.backgroundColor = .windowBackgroundColor
+    window.backgroundColor = Tokens.Palette.windowBackground.nsColor
     mainWindow.standardWindowButtons.forEach { $0.isEnabled = false }
 
     isPausedPriorToInteractiveMode = player.info.state == .paused
@@ -102,15 +102,15 @@ class InteractiveModeController: NSObject {
     ])
 
     let shadow = NSShadow()
-    shadow.shadowBlurRadius = 10
-    shadow.shadowColor = .black.withAlphaComponent(0.5)
+    shadow.shadowBlurRadius = Tokens.Blur.n10
+    shadow.shadowColor = Tokens.Palette.panelShadow.nsColor
     mainWindow.videoView.shadow = shadow
     mainWindow.videoView.needsLayout = true
     mainWindow.videoView.layoutSubtreeIfNeeded()
     mainWindow.forceDraw("interactive cropping")
 
     mainWindow.videoViewContainer.addSubview(controlBar)
-    controlBar.padding(.bottom(20)).center(.x)
+    controlBar.padding(.bottom(Tokens.Space.n20)).center(.x)
 
     let origVideoSize = NSSize(width: ow, height: oh)
     let selectedRect: NSRect = selectWholeVideoByDefault ? NSRect(origin: .zero, size: origVideoSize) : .zero
@@ -130,7 +130,7 @@ class InteractiveModeController: NSObject {
     cropBoxView.removeFromSuperview()
     controlBar.removeFromSuperview()
 
-    window.backgroundColor = .black
+    window.backgroundColor = Tokens.Palette.black.nsColor
     mainWindow.standardWindowButtons.forEach { $0.isEnabled = true }
 
     mainWindow.videoView.shadow = nil
@@ -227,8 +227,8 @@ class InteractiveModeController: NSObject {
 
 
 class CropBoxView: NSView {
-  private let boxStrokeColor = NSColor.controlAccentColor
-  private let boxFillColor = NSColor.cropBoxFill
+  private let boxStrokeColor = Tokens.Palette.accent.nsColor
+  private let boxFillColor = Tokens.Palette.cropBoxFill.nsColor
 
   var rectUpdatedCallback: (() -> Void)?
 
@@ -417,7 +417,7 @@ class CropBoxView: NSView {
     boxFillColor.setFill()
 
     let path = NSBezierPath(rect: boxRect)
-    path.lineWidth = 2
+    path.lineWidth = Tokens.Stroke.strong
     path.fill()
     path.stroke()
   }

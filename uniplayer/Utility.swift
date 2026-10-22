@@ -241,7 +241,7 @@ class Utility {
     panel.informativeText = NSLocalizedString(messageKey, comment: messageComment ?? messageKey)
 
     // accessory view
-    let input = NSTextField(frame: NSRect(x: 0, y: 0, width: 240, height: 16))
+    let input = NSTextField(frame: NSRect(x: 0, y: 0, width: Tokens.Size.n240, height: Tokens.Size.n16))
     input.translatesAutoresizingMaskIntoConstraints = false
     input.lineBreakMode = .byClipping
     input.usesSingleLineMode = true
@@ -252,7 +252,7 @@ class Utility {
     if let inputValue {
       input.stringValue = inputValue
     }
-    let stackView = NSStackView(frame: NSRect(x: 0, y: 0, width: 240, height: 32))
+    let stackView = NSStackView(frame: NSRect(x: 0, y: 0, width: Tokens.Size.n240, height: Tokens.Size.n32))
     stackView.orientation = .vertical
     stackView.alignment = .centerX
     stackView.addArrangedSubview(input)
@@ -266,10 +266,10 @@ class Utility {
     var observer: NSObjectProtocol?
     if let validator {
       let label = NSTextField(labelWithString: "label")
-      label.textColor = .secondaryLabelColor
-      label.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
+      label.textColor = Tokens.Palette.textSecondary.nsColor
+      label.font = Tokens.Typography.caption.nsFont
       stackView.addArrangedSubview(label)
-      stackView.frame = NSRect(x: 0, y: 0, width: 240, height: 54)
+      stackView.frame = NSRect(x: 0, y: 0, width: Tokens.Size.n240, height: Tokens.Size.n54)
 
       let validateInput = {
         switch validator(input.stringValue) {
@@ -326,9 +326,9 @@ class Utility {
    - Returns: Whether user dismissed the panel by clicking OK.
    */
   static func quickUsernamePasswordPanel(_ key: String, titleComment: String? = nil, messageComment: String? = nil, sheetWindow: NSWindow? = nil, callback: @escaping (String, String) -> Void) {
-    let quickLabel: (String, Int) -> NSTextField = { title, yPos in
-      let label = NSTextField(frame: NSRect(x: 0, y: yPos, width: 240, height: 14))
-      label.font = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+    let quickLabel: (String, CGFloat) -> NSTextField = { title, yPos in
+      let label = NSTextField(frame: NSRect(x: 0, y: yPos, width: Tokens.Size.n240, height: Tokens.Size.n14))
+      label.font = Tokens.Typography.caption.nsFont
       label.stringValue = title
       label.drawsBackground = false
       label.isBezeled = false
@@ -341,15 +341,15 @@ class Utility {
     let messageKey = "alert." + key + ".message"
     panel.messageText = NSLocalizedString(titleKey, comment: titleComment ?? titleKey)
     panel.informativeText = NSLocalizedString(messageKey, comment: messageComment ?? messageKey)
-    let view = NSView(frame: NSRect(x: 0, y: 0, width: 240, height: 82))
-    view.addSubview(quickLabel(NSLocalizedString("general.username", comment: "Username") + ":", 68))
-    let input = NSTextField(frame: NSRect(x: 0, y: 42, width: 240, height: 24))
+    let view = NSView(frame: NSRect(x: 0, y: 0, width: Tokens.Size.n240, height: Tokens.Size.n82))
+    view.addSubview(quickLabel(NSLocalizedString("general.username", comment: "Username") + ":", Tokens.Size.n68))
+    let input = NSTextField(frame: NSRect(x: 0, y: Tokens.Size.n42, width: Tokens.Size.n240, height: Tokens.Size.n24))
     input.lineBreakMode = .byClipping
     input.usesSingleLineMode = true
     input.cell?.isScrollable = true
     view.addSubview(input)
-    view.addSubview(quickLabel(NSLocalizedString("general.password", comment: "Password") + ":", 26))
-    let pwField = NSSecureTextField(frame: NSRect(x: 0, y: 0, width: 240, height: 24))
+    view.addSubview(quickLabel(NSLocalizedString("general.password", comment: "Password") + ":", Tokens.Size.n26))
+    let pwField = NSSecureTextField(frame: NSRect(x: 0, y: 0, width: Tokens.Size.n240, height: Tokens.Size.n24))
     view.addSubview(pwField)
     input.nextKeyView = pwField
     panel.accessoryView = view
@@ -619,21 +619,21 @@ class Utility {
         let a = NSMutableParagraphStyle()
         switch self.size {
         case .system:
-          s = NSFont.systemFontSize
+          s = Tokens.Typography.body.size
         case .small:
-          s = NSFont.systemFontSize(for: .small)
+          s = Tokens.Typography.caption.size
         case .mini:
-          s = NSFont.systemFontSize(for: .mini)
+          s = Tokens.Typography.badge.size
         case .pt(let point):
           s = CGFloat(point)
         }
         switch self.font {
         case .system:
-          f = NSFont.systemFont(ofSize: s)
+          f = Tokens.Typography.systemFont(size: s)
         case .systemBold:
-          f = NSFont.boldSystemFont(ofSize: s)
+          f = Tokens.Typography.systemFont(size: s, weight: .bold)
         case .name(let n):
-          f = NSFont(name: n, size: s)
+          f = Tokens.Typography.namedFont(name: n, size: s)
         }
         switch self.align {
         case .left:
@@ -644,7 +644,6 @@ class Utility {
           a.alignment = .right
         }
         if let f {
-          NSFont.systemFont(ofSize: NSFont.systemFontSize)
           return [
             .font: f,
             .paragraphStyle: a

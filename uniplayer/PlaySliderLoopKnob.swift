@@ -40,7 +40,7 @@ final class PlaySliderLoopKnob: NSView {
   /// Percentage of the height of the primary knob to use for the loop knobs when drawing.
   ///
   /// The height of loop knobs is reduced in order to give prominence to the slider's knob that controls the playback position.
-  private static let knobHeightAdjustment: CGFloat = 0.75
+  private static let knobHeightAdjustment = Tokens.Size.n0_75
 
   // The x coordinate of the last mouse location when dragging.
   private var lastDragLocation: CGFloat = 0
@@ -113,7 +113,7 @@ final class PlaySliderLoopKnob: NSView {
   // MARK:- Drawing
 
   private func knobColor() -> NSColor {
-    return NSColor.mainSliderLoopKnob
+    return Tokens.Palette.mainSliderLoopKnob.nsColor
   }
 
   /// Draw the knob.

@@ -479,7 +479,7 @@ class MenuController: NSObject, NSMenuDelegate {
       let menuItem = NSMenuItem(title: menuTitle, action: #selector(MainMenuActionHandler.menuChapterSwitch(_:)), keyEquivalent: "")
       menuItem.tag = index
       menuItem.state = isPlaying ? .on : .off
-      menuItem.attributedTitle = NSAttributedString(string: menuTitle, attributes: [.font: NSFont.monospacedDigitSystemFont(ofSize: 0, weight: .regular)])
+      menuItem.attributedTitle = NSAttributedString(string: menuTitle, attributes: [.font: Tokens.Typography.menuNumeric.nsFont])
       chapterMenu.addItem(menuItem)
     }
   }

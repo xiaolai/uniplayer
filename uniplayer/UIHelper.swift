@@ -33,7 +33,7 @@ class UIHelper {
     input.bezelStyle = .roundedBezel
     input.bind(.value, to: UserDefaults.standard, withKeyPath: key.rawValue)
     if isFixedSize {
-      input.size(width: 48, height: 25)
+      input.size(width: Tokens.Size.n48, height: Tokens.Size.n25)
     }
     if let range {
       let formatter = NumberFormatter()
@@ -47,11 +47,11 @@ class UIHelper {
     return input
   }
 
-  func textInput(value: String = "", width: CGFloat = 64) -> NSTextField {
+  func textInput(value: String = "", width: CGFloat = Tokens.Size.textInputWidth) -> NSTextField {
     let textField = NSTextField()
     textField.stringValue = value
     textField.controlSize = .small
-    textField.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
+    textField.font = Tokens.Typography.caption.nsFont
     textField.size(width: width)
     return textField
   }
@@ -65,10 +65,10 @@ class UIHelper {
     textField.translatesAutoresizingMaskIntoConstraints = false
     if isSmall {
       textField.controlSize = .small
-      textField.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
+      textField.font = Tokens.Typography.caption.nsFont
     }
     if isSecondary {
-      textField.textColor = .secondaryLabelColor
+      textField.textColor = Tokens.Palette.textSecondary.nsColor
     }
     if let font {
       textField.font = font
@@ -97,20 +97,20 @@ class UIHelper {
     if #available(macOS 13.0, *) {
       colorWell.colorWellStyle = .expanded
     } else {
-      colorWell.size(width: 30)
+      colorWell.size(width: Tokens.Size.n30)
     }
-    colorWell.size(height: 24)
+    colorWell.size(height: Tokens.Size.n24)
     colorWell.bind(.value, to: UserDefaults.standard,
                    withKeyPath: key.rawValue,
                    options: [.valueTransformer: MPVColorStringTransformer()])
     return colorWell
   }
 
-  func hStack(align: NSLayoutConstraint.Attribute = .centerY, spacing: CGFloat = 8, _ views: NSView...) -> NSStackView {
+  func hStack(align: NSLayoutConstraint.Attribute = .centerY, spacing: CGFloat = Tokens.Space.controlGap, _ views: NSView...) -> NSStackView {
     return hStack(align: align, spacing: LayoutValue(spacing), views)
   }
 
-  func hStack(align: NSLayoutConstraint.Attribute = .centerY, spacing: CGFloat = 8, _ views: [NSView]) -> NSStackView {
+  func hStack(align: NSLayoutConstraint.Attribute = .centerY, spacing: CGFloat = Tokens.Space.controlGap, _ views: [NSView]) -> NSStackView {
     return hStack(align: align, spacing: LayoutValue(spacing), views)
   }
 
@@ -129,11 +129,11 @@ class UIHelper {
     return stackView
   }
 
-  func vStack(align: NSLayoutConstraint.Attribute = .leading, spacing: CGFloat = 8, wantsToGrow: Bool = false, _ views: NSView...) -> NSStackView {
+  func vStack(align: NSLayoutConstraint.Attribute = .leading, spacing: CGFloat = Tokens.Space.controlGap, wantsToGrow: Bool = false, _ views: NSView...) -> NSStackView {
     return vStack(align: align, spacing: LayoutValue(spacing), wantsToGrow: wantsToGrow, views)
   }
 
-  func vStack(align: NSLayoutConstraint.Attribute = .leading, spacing: CGFloat = 8, wantsToGrow: Bool = false, _ views: [NSView]) -> NSStackView {
+  func vStack(align: NSLayoutConstraint.Attribute = .leading, spacing: CGFloat = Tokens.Space.controlGap, wantsToGrow: Bool = false, _ views: [NSView]) -> NSStackView {
     return vStack(align: align, spacing: LayoutValue(spacing), wantsToGrow: wantsToGrow, views)
   }
 
@@ -155,7 +155,7 @@ class UIHelper {
     return stackView
   }
 
-  func space(width: CGFloat = 0, height: CGFloat = 0) -> NSView {
+  func space(width: CGFloat = Tokens.Space.n0, height: CGFloat = Tokens.Space.n0) -> NSView {
     let view = NSView()
     view.size(width: width, height: height)
     return view
@@ -164,7 +164,7 @@ class UIHelper {
   func flexibleSpace(_ minWidth: CGFloat = 8) -> NSView {
     let view = NSView()
     view.translatesAutoresizingMaskIntoConstraints = false
-    view.size(height: 0)
+    view.size(height: Tokens.Size.n0)
     view.widthAnchor.constraint(greaterThanOrEqualToConstant: minWidth).isActive = true
     view.setContentHuggingPriority(.defaultLow, for: .horizontal)
     return view
@@ -177,7 +177,7 @@ class UIHelper {
     return box
   }
 
-  func image(_ symbol: String..., size: CGFloat = 16, width: CGFloat? = nil, height: CGFloat? = nil,
+  func image(_ symbol: String..., size: CGFloat = Tokens.Icon.n16, width: CGFloat? = nil, height: CGFloat? = nil,
              config: NSImage.SymbolConfiguration? = nil, scaleUp: Bool = false) -> NSImageView {
     image(
       .sf(symbol, withConfiguration: config) ?? NSImage(named: .init(symbol[0])),
@@ -185,7 +185,7 @@ class UIHelper {
     )
   }
 
-  func image(_ image: NSImage?, size: CGFloat = 16, width: CGFloat? = nil, height: CGFloat? = nil, scaleUp: Bool = true) -> NSImageView {
+  func image(_ image: NSImage?, size: CGFloat = Tokens.Icon.n16, width: CGFloat? = nil, height: CGFloat? = nil, scaleUp: Bool = true) -> NSImageView {
     let imageView = NSImageView(image: image ?? .sf("square.split.diagonal.2x2")!)
     imageView.imageScaling = scaleUp ? .scaleProportionallyUpOrDown : .scaleProportionallyDown
     imageView.size(width: width ?? size, height: height ?? size)

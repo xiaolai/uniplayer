@@ -65,7 +65,7 @@ class TextCriterion: Criterion {
 
 class TextFieldCriterion: Criterion, NSTextFieldDelegate, NSControlTextEditingDelegate {
 
-  private lazy var field = NSTextField(frame: NSRect(x: 0, y: 0, width: 50, height: 18))
+  private lazy var field = NSTextField(frame: NSRect(x: 0, y: 0, width: Tokens.Size.n50, height: Tokens.Size.n18))
 
   override var mpvCommandValue: String {
     get {
@@ -77,7 +77,7 @@ class TextFieldCriterion: Criterion, NSTextFieldDelegate, NSControlTextEditingDe
     field.delegate = self
     field.focusRingType = .none
     field.bezelStyle = .roundedBezel
-    field.font = NSFont.systemFont(ofSize: NSFont.systemFontSize(for: .small))
+    field.font = Tokens.Typography.caption.nsFont
     return field
   }
 

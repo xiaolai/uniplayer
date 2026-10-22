@@ -54,6 +54,7 @@ class PrefSubViewController: PreferenceViewController, PreferenceWindowEmbeddabl
 
   override func viewDidLoad() {
     super.viewDidLoad()
+    subOverrideLevelText.font = Tokens.Typography.codeSample.nsFont
 
 #if MACOS_13_AVAILABLE
     if #available(macOS 13.0, *) {
@@ -318,7 +319,7 @@ class ASSOverrideLevelTransformer: ValueTransformer {
   // Serializes an NSColor to an mpv-recognized string
   override func transformedValue(_ value: Any?) -> Any? {
     guard let mpvColorString = value as? NSString else { return nil }
-    return NSColor(mpvColorString: String(mpvColorString))
+    return NSColor(mpvColorString: String(mpvColorString)) // token-exempt: parses an mpv colour value, not a design value
   }
 
   override func reverseTransformedValue(_ value: Any?) -> Any? {

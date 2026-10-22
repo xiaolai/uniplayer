@@ -25,9 +25,9 @@ class SidebarSubtitlesPane: SidebarScrollView {
       spacing: .sidebarItemSpacing,
       wantsToGrow: true,
       ui.hStack(
-        spacing: 8,
-        ui.image("1.square.fill", size: 16, config: .sidebarIconConfig),
-        ui.label("sidebar.primary", font: .boldSystemFont(ofSize: 12)),
+        spacing: Tokens.Space.n8,
+        ui.image("1.square.fill", size: Tokens.Icon.n16, config: .sidebarIconConfig),
+        ui.label("sidebar.primary", font: Tokens.Typography.size12Strong.nsFont),
         ui.flexibleSpace(),
         VisibilitySwitch(player: player, isPrimary: true),
       ),
@@ -44,9 +44,9 @@ class SidebarSubtitlesPane: SidebarScrollView {
       spacing: .sidebarItemSpacing,
       wantsToGrow: true,
       ui.hStack(
-        spacing: 8,
-        ui.image("2.square.fill", size: 16, config: .sidebarIconConfig),
-        ui.label("sidebar.secondary", font: .boldSystemFont(ofSize: 12)),
+        spacing: Tokens.Space.n8,
+        ui.image("2.square.fill", size: Tokens.Icon.n16, config: .sidebarIconConfig),
+        ui.label("sidebar.secondary", font: Tokens.Typography.size12Strong.nsFont),
         ui.flexibleSpace(),
         VisibilitySwitch(player: player, isPrimary: false),
       ),
@@ -93,7 +93,7 @@ class SidebarSubtitlesPane: SidebarScrollView {
     stack.addArrangedSubview(assWarning)
 
     documentView!.addSubview(stack)
-    stack.padding(.horizontal(.sidebarMargin), .top(4), .bottom(.sidebarMargin))
+    stack.padding(.horizontal(.sidebarMargin), .top(Tokens.Space.n4), .bottom(.sidebarMargin))
 
     let block = { (_: Notification) in
       let tracks = ([.sub, .secondSub] as [MPVTrack.TrackType]).compactMap {
@@ -184,7 +184,7 @@ fileprivate class LoadSubtitleView: NSView {
     )
 
     let stack = ui.hStack(
-      spacing: 8,
+      spacing: Tokens.Space.n8,
       loadSubSegment,
       searchOnlineButton,
     )
@@ -336,9 +336,9 @@ fileprivate class SubPositionDelayView: NSView {
       ui.space(),
       delayView,
       ui.hStack(
-        spacing: 8,
-        ui.image("arrow.up.and.down", size: 16, config: .sidebarIconConfig),
-        ui.label("sidebar.position", font: .boldSystemFont(ofSize: 12)),
+        spacing: Tokens.Space.n8,
+        ui.image("arrow.up.and.down", size: Tokens.Icon.n16, config: .sidebarIconConfig),
+        ui.label("sidebar.position", font: Tokens.Typography.size12Strong.nsFont),
         ui.flexibleSpace(),
       ),
       positionSlider,
@@ -421,7 +421,7 @@ fileprivate class SubStyleView: NSView {
     for i in stride(from: 25, through: 75, by: 5) {
       fontSizePicker.addItem(withTitle: "\(i)")
     }
-    fontSizePicker.size(width: 60)
+    fontSizePicker.size(width: Tokens.Size.n60)
     fontSizePicker.target = self
     fontSizePicker.action = #selector(chooseSubFontSizeAction)
 
@@ -429,24 +429,24 @@ fileprivate class SubStyleView: NSView {
     borderSizePicker.addItems(withTitles: [
       "0", "0.25", "0.5", "1", "1.5", "2", "2.5", "3", "4", "5"
     ])
-    borderSizePicker.size(width: 60)
+    borderSizePicker.size(width: Tokens.Size.n60)
     borderSizePicker.target = self
     borderSizePicker.action = #selector(chooseSubBorderSizeAction)
 
     let scaleStack = ui.hStack(
-      spacing: 8,
-      ui.image("plus.magnifyingglass", size: 16, config: .sidebarIconConfig),
-      ui.label("sidebar.scale", font: .boldSystemFont(ofSize: 12)),
+      spacing: Tokens.Space.n8,
+      ui.image("plus.magnifyingglass", size: Tokens.Icon.n16, config: .sidebarIconConfig),
+      ui.label("sidebar.scale", font: Tokens.Typography.size12Strong.nsFont),
       scaleSlider,
       scaleResetButton,
     )
-    scaleStack.size(height: 30)
+    scaleStack.size(height: Tokens.Size.n30)
 
-    let fontStackLabel = ui.label("sidebar.font", font: .boldSystemFont(ofSize: 12))
+    let fontStackLabel = ui.label("sidebar.font", font: Tokens.Typography.size12Strong.nsFont)
     fontStackLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
     let fontStack = ui.hStack(
-      spacing: 8,
-      ui.image("textformat", size: 16, config: .sidebarIconConfig),
+      spacing: Tokens.Space.n8,
+      ui.image("textformat", size: Tokens.Icon.n16, config: .sidebarIconConfig),
       fontStackLabel,
       ui.flexibleSpace(),
       fontChooser,
@@ -458,24 +458,24 @@ fileprivate class SubStyleView: NSView {
       scaleStack,
       fontStack,
       ui.hStack(
-        spacing: 8,
-        ui.image("paintpalette.fill", size: 16, config: .sidebarIconConfig),
-        ui.label("sidebar.color", font: .boldSystemFont(ofSize: 12)),
+        spacing: Tokens.Space.n8,
+        ui.image("paintpalette.fill", size: Tokens.Icon.n16, config: .sidebarIconConfig),
+        ui.label("sidebar.color", font: Tokens.Typography.size12Strong.nsFont),
         ui.flexibleSpace(),
         createColorWell(\.textColorWell, tag: 1),
       ),
       ui.hStack(
-        spacing: 8,
-        ui.image("inset.filled.circle.dashed", "circle.dashed.inset.filled", "circle.dashed.inset.fill", size: 16, config: .sidebarIconConfig),
-        ui.label("sidebar.border", font: .boldSystemFont(ofSize: 12)),
+        spacing: Tokens.Space.n8,
+        ui.image("inset.filled.circle.dashed", "circle.dashed.inset.filled", "circle.dashed.inset.fill", size: Tokens.Icon.n16, config: .sidebarIconConfig),
+        ui.label("sidebar.border", font: Tokens.Typography.size12Strong.nsFont),
         ui.flexibleSpace(),
         borderSizePicker,
         createColorWell(\.borderColorWell, tag: 3),
       ),
       ui.hStack(
-        spacing: 8,
-        ui.image("shadow", size: 16, config: .sidebarIconConfig),
-        ui.label("sidebar.shadow", font: .boldSystemFont(ofSize: 12)),
+        spacing: Tokens.Space.n8,
+        ui.image("shadow", size: Tokens.Icon.n16, config: .sidebarIconConfig),
+        ui.label("sidebar.shadow", font: Tokens.Typography.size12Strong.nsFont),
         ui.flexibleSpace(),
         createColorWell(\.backgroundColorWell, tag: 2),
       )
@@ -502,9 +502,9 @@ fileprivate class SubStyleView: NSView {
     if #available(macOS 13.0, *) {
       colorWell.colorWellStyle = .expanded
     } else {
-      colorWell.size(width: 24)
+      colorWell.size(width: Tokens.Size.n24)
     }
-    colorWell.size(height: 24)
+    colorWell.size(height: Tokens.Size.n24)
     colorWell.target = self
     colorWell.action = #selector(colorAction)
     self[keyPath: keyPath] = colorWell
@@ -538,7 +538,7 @@ fileprivate class SubStyleView: NSView {
       (MPVOption.Subtitles.subOutlineColor, borderColorWell),
       (MPVOption.Subtitles.subBackColor, backgroundColorWell),
     ] {
-      if let colorString = player.mpv.getString(op), let color = NSColor(mpvColorString: colorString) {
+      if let colorString = player.mpv.getString(op), let color = NSColor(mpvColorString: colorString) { // token-exempt: parses an mpv colour value, not a design value
         colorWell?.color = color
       }
     }

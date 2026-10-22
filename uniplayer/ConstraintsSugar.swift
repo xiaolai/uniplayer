@@ -194,12 +194,12 @@ extension NSView {
   @discardableResult
   func size(width: LayoutValue? = nil, height: LayoutValue? = nil) -> Self {
     if let width {
-      let constraint = self.widthAnchor.constraint(equalToConstant: 0)
+      let constraint = self.widthAnchor.constraint(equalToConstant: Tokens.Size.n0)
       width.use { [weak constraint] in constraint?.constant = $0 }
       constraint.isActive = true
     }
     if let height {
-      let constraint = self.heightAnchor.constraint(equalToConstant: 0)
+      let constraint = self.heightAnchor.constraint(equalToConstant: Tokens.Size.n0)
       height.use { [weak constraint] in constraint?.constant = $0 }
       constraint.isActive = true
     }

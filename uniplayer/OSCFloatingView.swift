@@ -7,13 +7,13 @@
 //
 
 fileprivate extension LayoutValue {
-  static let oscPaddingTop = LayoutValue(14, 10)
-  static let oscPaddingBottom = LayoutValue(8, 5)
+  static let oscPaddingTop = LayoutValue(Tokens.Space.n14, Tokens.Space.n10)
+  static let oscPaddingBottom = LayoutValue(Tokens.Space.n8, Tokens.Space.n5)
 }
 
 
 class OSCFloatingView: TranslucentView {
-  private let width: CGFloat = 460
+  private let width: CGFloat = Tokens.Size.oscFloatingWidth
   weak var mainWindow: MainWindowController!
   private let prefObserver = Preference.Observer()
 
@@ -41,13 +41,13 @@ class OSCFloatingView: TranslucentView {
     self.oscTopView = NSStackView()
     oscTopView.translatesAutoresizingMaskIntoConstraints = false
     container.addSubview(oscTopView)
-    oscTopView.padding(.top(.oscPaddingTop), .horizontal(12))
+    oscTopView.padding(.top(.oscPaddingTop), .horizontal(Tokens.Space.n12))
 
     self.oscBottomView = TimeLabelOverflowedStackView()
     oscBottomView.translatesAutoresizingMaskIntoConstraints = false
     container.addSubview(oscBottomView)
-    oscBottomView.padding(.bottom(.oscPaddingBottom), .horizontal(8))
-      .spacing(.top(8), to: oscTopView)
+    oscBottomView.padding(.bottom(.oscPaddingBottom), .horizontal(Tokens.Space.n8))
+      .spacing(.top(Tokens.Space.n8), to: oscTopView)
 
     let widthConstraint = widthAnchor.constraint(equalToConstant: width)
     widthConstraint.priority = .init(300)
@@ -95,7 +95,7 @@ class OSCFloatingView: TranslucentView {
     let cph = Preference.float(for: .controlBarPositionHorizontal)
     let cpv = Preference.float(for: .controlBarPositionVertical)
 
-    let margin: CGFloat = 0
+    let margin = Tokens.Space.n0
     let minWindowWidth: CGFloat = width
     var xPos: CGFloat
 
@@ -114,8 +114,8 @@ class OSCFloatingView: TranslucentView {
     }
 
     var yPos = windowHeight * CGFloat(cpv)
-    let oscHeight: CGFloat = 67
-    let yMargin: CGFloat = 25
+    let oscHeight = Tokens.Size.n67
+    let yMargin = Tokens.Space.n25
 
     if yPos < 0 {
       yPos = 0

@@ -886,7 +886,7 @@ struct Preference {
       }
     }
 
-    private func makeSymbol(_ names: [String], size: CGFloat = 14) -> NSImage {
+    private func makeSymbol(_ names: [String], size: CGFloat = Tokens.Icon.n14) -> NSImage {
       let configuration = NSImage.SymbolConfiguration(pointSize: size, weight: .medium)
       return NSImage.sf(names, withConfiguration: configuration)!
     }
@@ -895,12 +895,12 @@ struct Preference {
       switch self {
       case .settings: return makeSymbol(["gearshape"])
       case .playlist: return makeSymbol(["list.bullet.rectangle", "list.bullet"])
-      case .pip: return makeSymbol(["pip.enter"], size: 13.5)
+      case .pip: return makeSymbol(["pip.enter"], size: Tokens.Icon.n13_5)
       case .fullScreen: return makeSymbol(["arrow.up.backward.and.arrow.down.forward.rectangle", "arrow.up.left.and.arrow.down.right"])
       case .musicMode: return makeSymbol(["microphone.dynamic.on.stand", "music.microphone", "music.mic"])
       case .subTrack: return makeSymbol(["captions.bubble.fill"])
       case .screenshot: return makeSymbol(["camera.shutter.button", "camera.fill"])
-      case .plugins: return makeSymbol(["puzzlepiece.extension", "puzzlepiece"], size: 13.5)
+      case .plugins: return makeSymbol(["puzzlepiece.extension", "puzzlepiece"], size: Tokens.Icon.n13_5)
       case .liveText: return makeSymbol(["document.viewfinder", "doc.viewfinder", "doc.text.viewfinder"])
       }
     }
@@ -909,9 +909,9 @@ struct Preference {
       switch self {
       case .settings: return makeSymbol(["gearshape.fill"])
       case .playlist: return makeSymbol(["list.bullet.rectangle.fill", "list.bullet"])
-      case .pip: return makeSymbol(["pip.exit"], size: 13.5)
+      case .pip: return makeSymbol(["pip.exit"], size: Tokens.Icon.n13_5)
       case .fullScreen: return makeSymbol(["arrow.down.forward.and.arrow.up.backward.rectangle", "arrow.down.right.and.arrow.up.left"])
-      case .plugins: return makeSymbol(["puzzlepiece.extension.fill", "puzzlepiece.fill"], size: 13.5)
+      case .plugins: return makeSymbol(["puzzlepiece.extension.fill", "puzzlepiece.fill"], size: Tokens.Icon.n13_5)
       case .liveText: return makeSymbol(["viewfinder.circle.fill"])
       default: return nil
       }
@@ -934,9 +934,9 @@ struct Preference {
     }
 
     // Width will be identical
-    static let frameSize: CGFloat = 24
+    static let frameSize = Tokens.Size.n24
     // Reduced size for floating OSC with five buttons
-    static let compactFrameWidth: CGFloat = 20
+    static let compactFrameWidth = Tokens.Size.n20
 
   }
 
@@ -1185,15 +1185,15 @@ struct Preference {
     .secondarySubOverrideLevel: SubOverrideLevel.scale.rawValue,
     .subTextFont: Constants.String.mpvDefaultFont,
     .subTextSize: Float(55),
-    .subTextColorString: NSColor.white.usingColorSpace(.deviceRGB)!.mpvColorString,
+    .subTextColorString: Tokens.Palette.white.nsColor.usingColorSpace(.deviceRGB)!.mpvColorString,
     .subBold: false,
     .subItalic: false,
     .subBlur: Float(0),
     .subSpacing: Float(0),
     .subBorderSize: Float(3),
-    .subBorderColorString: NSColor.black.usingColorSpace(.deviceRGB)!.mpvColorString,
+    .subBorderColorString: Tokens.Palette.black.nsColor.usingColorSpace(.deviceRGB)!.mpvColorString,
     .subShadowSize: Float(0),
-    .subShadowColorString: NSColor.clear.usingColorSpace(.deviceRGB)!.mpvColorString,
+    .subShadowColorString: Tokens.Palette.clear.nsColor.usingColorSpace(.deviceRGB)!.mpvColorString,
     .subBorderStyle: SubBorderStyle.outlineAndShadow.rawValue,
     .subAlignX: SubAlignX.center.rawValue,
     .subAlignY: SubAlignY.bottom.rawValue,

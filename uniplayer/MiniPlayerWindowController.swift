@@ -8,16 +8,15 @@
 
 import Cocoa
 
-fileprivate let DefaultPlaylistHeight: CGFloat = 300
+fileprivate let DefaultPlaylistHeight = Tokens.Size.n300
 fileprivate let AutoHidePlaylistThreshold: CGFloat = 200
-fileprivate let AnimationDurationShowControl: TimeInterval = 0.2
 
 
 fileprivate extension LayoutValue {
-  static let topPadding = LayoutValue(8, 4)
-  static let bottomPadding = LayoutValue(10, 8)
-  static let controlTopPadding = LayoutValue(4, 0)
-  static let titleSliderSpacing = LayoutValue(8, 6)
+  static let topPadding = LayoutValue(Tokens.Space.n8, Tokens.Space.n4)
+  static let bottomPadding = LayoutValue(Tokens.Space.n10, Tokens.Space.n8)
+  static let controlTopPadding = LayoutValue(Tokens.Space.n4, Tokens.Space.n0)
+  static let titleSliderSpacing = LayoutValue(Tokens.Space.n8, Tokens.Space.n6)
 }
 
 
@@ -128,9 +127,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 
     self.backgroundView = NSVisualEffectView()
     backgroundView.translatesAutoresizingMaskIntoConstraints = false
-    backgroundView.blendingMode = .behindWindow
-    backgroundView.material = .underWindowBackground
-    backgroundView.state = .active
+    backgroundView.apply(Tokens.Material.underWindowBackground)
     cv.addSubview(backgroundView)
     backgroundView.padding(.horizontal, .vertical(greaterThan: 0))
     self.videoWrapperViewBottomConstraint = backgroundView.topAnchor.constraint(equalTo: videoWrapperView.bottomAnchor)
@@ -139,24 +136,24 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     controlViewTopConstraint.isActive = false
 
     [leftLabel, rightLabel].forEach { label in
-      label!.textColor = .secondaryLabelColor
+      label!.textColor = Tokens.Palette.textSecondary.nsColor
       label!.font = .monospacedDigitFont(for: .mini)
       label!.widthAnchor.constraint(greaterThanOrEqualToConstant: 32).isActive = true
     }
 
     backgroundView.addSubview(leftLabel)
     leftLabel.alignment = .right
-    leftLabel.padding(.leading(6))
+    leftLabel.padding(.leading(Tokens.Space.n6))
     backgroundView.addSubview(rightLabel)
-    rightLabel.padding(.trailing(6))
+    rightLabel.padding(.trailing(Tokens.Space.n6))
     rightLabel.alignment = .left
     leftLabel.widthAnchor.constraint(equalTo: rightLabel.widthAnchor, multiplier: 1).isActive = true
 
     backgroundView.addSubview(playSlider)
     playSlider.padding(.bottom(.bottomPadding))
-    playSlider.spacing(.leading(6), to: leftLabel)
+    playSlider.spacing(.leading(Tokens.Space.n6), to: leftLabel)
     leftLabel.center(.y, with: playSlider)
-    rightLabel.spacing(.leading(6), to: playSlider)
+    rightLabel.spacing(.leading(Tokens.Space.n6), to: playSlider)
     rightLabel.center(.y, with: playSlider)
 
     self.mediaInfoView = NSView()
@@ -169,10 +166,10 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     titleLabel.translatesAutoresizingMaskIntoConstraints = false
     titleLabel.alignment = .center
     titleLabel.lineBreakMode = .byTruncatingMiddle
-    titleLabel.font = .boldSystemFont(ofSize: 13)
+    titleLabel.font = Tokens.Typography.bodyStrong.nsFont
     mediaInfoView.addSubview(titleLabel)
     titleLabel.padding(.horizontal(greaterThan: 24)).center(.x)
-    titleLabelTopConstraint = titleLabel.topAnchor.constraint(equalTo: mediaInfoView.topAnchor, constant: 6)
+    titleLabelTopConstraint = titleLabel.topAnchor.constraint(equalTo: mediaInfoView.topAnchor, constant: Tokens.Space.n6)
     titleLabelTopConstraint.isActive = true
 
     self.artistAlbumLabel = ScrollingTextField(labelWithString: "Artist - Album")
@@ -180,18 +177,18 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     artistAlbumLabel.wantsLayer = true
     artistAlbumLabel.controlSize = .small
     artistAlbumLabel.alignment = .center
-    artistAlbumLabel.font = .messageFont(ofSize: 11)
-    artistAlbumLabel.textColor = .secondaryLabelColor
+    artistAlbumLabel.font = Tokens.Typography.caption.nsFont
+    artistAlbumLabel.textColor = Tokens.Palette.textSecondary.nsColor
     artistAlbumLabel.lineBreakMode = .byClipping
     mediaInfoView.addSubview(artistAlbumLabel)
     artistAlbumLabel.padding(.horizontal(greaterThan: 24), .bottom)
-      .center(.x).spacing(.top(4), to: titleLabel)
+      .center(.x).spacing(.top(Tokens.Space.n4), to: titleLabel)
 
     self.controlView = NSView()
     controlView.translatesAutoresizingMaskIntoConstraints = false
     backgroundView.addSubview(controlView)
     controlView.padding(.horizontal, .top(.controlTopPadding))
-      .size(height: 48)
+      .size(height: Tokens.Size.n48)
 
     let prevBtn = NSButton(image: .nextl, target: self, action: #selector(prevBtnAction))
     let nextBtn = NSButton(image: .nextr, target: self, action: #selector(nextBtnAction))
@@ -211,11 +208,11 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
       controlView.addSubview(button)
     }
 
-    playButton.size(width: 28, height: 28)
-    nextBtn.size(width: 28, height: 28)
-    prevBtn.size(width: 28, height: 28)
-    togglePlaylistButton.size(width: 18, height: 18)
-    toggleAlbumArtButton.size(width: 18, height: 18)
+    playButton.size(width: Tokens.Size.n28, height: Tokens.Size.n28)
+    nextBtn.size(width: Tokens.Size.n28, height: Tokens.Size.n28)
+    prevBtn.size(width: Tokens.Size.n28, height: Tokens.Size.n28)
+    togglePlaylistButton.size(width: Tokens.Size.n18, height: Tokens.Size.n18)
+    toggleAlbumArtButton.size(width: Tokens.Size.n18, height: Tokens.Size.n18)
 
     // volume popover
 
@@ -225,60 +222,56 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 
     self.volumeControlBackground = NSVisualEffectView()
     volumeControlBackground.translatesAutoresizingMaskIntoConstraints = false
-    volumeControlBackground.material = .popover
-    volumeControlBackground.blendingMode = .withinWindow
-    volumeControlBackground.state = .active
-    volumeControlBackground.roundCorners(withRadius: 18)
+    volumeControlBackground.apply(Tokens.Material.popover)
+    volumeControlBackground.roundCorners(withRadius: Tokens.Radius.n18)
     volumeControlBackground.wantsLayer = true
-    volumeControlBackground.layer?.cornerRadius = 18
-    volumeControlBackground.layer?.borderWidth = 1
-    volumeControlBackground.layer?.borderColor = NSColor.sidebarContainerBorder.cgColor
+    volumeControlBackground.layer?.cornerRadius = Tokens.Radius.n18
+    volumeControlBackground.layer?.borderWidth = Tokens.Stroke.hairline
+    volumeControlBackground.layer?.borderColor = Tokens.Palette.sidebarContainerBorder.nsColor.cgColor
     let shadow = NSShadow()
-    shadow.shadowColor = .black.withAlphaComponent(0.5)
-    shadow.shadowBlurRadius = 2
+    shadow.shadowColor = Tokens.Palette.panelShadow.nsColor
+    shadow.shadowBlurRadius = Tokens.Blur.n2
     volumeControlBackground.shadow = shadow
     volumeControlContainer.addSubview(volumeControlBackground)
     volumeControlBackground.padding(.all)
 
     volumeControlContainer.addSubview(muteButton)
-    muteButton.padding(.leading(10)).center(.y)
+    muteButton.padding(.leading(Tokens.Space.n10)).center(.y)
     self.volumeContainerTrailingConstraint = volumeControlContainer
-      .trailingAnchor.constraint(equalTo: muteButton.trailingAnchor, constant: 10)
+      .trailingAnchor.constraint(equalTo: muteButton.trailingAnchor, constant: Tokens.Space.n10)
     volumeContainerTrailingConstraint.isActive = true
 
     volumeControlContainer.addSubview(volumeSlider)
     volumeSlider.maxValue = Double(Preference.integer(for: .maxVolume))
-    volumeSlider.size(width: 100)
-      .padding(.vertical(12), .leading(45))
+    volumeSlider.size(width: Tokens.Size.n100)
+      .padding(.vertical(Tokens.Space.n12), .leading(Tokens.Space.n45))
 
     volumeLabel.controlSize = .small
     volumeLabel.alignment = .center
-    volumeLabel.font = .messageFont(ofSize: 11)
+    volumeLabel.font = Tokens.Typography.caption.nsFont
     volumeControlContainer.addSubview(volumeLabel)
     volumeLabel.center(.y)
-      .spacing(.leading(8), to: volumeSlider)
+      .spacing(.leading(Tokens.Space.n8), to: volumeSlider)
 
     muteButton.centerYAnchor.constraint(equalTo: playButton.centerYAnchor).isActive = true
     prevBtn.center(.y, with: playButton)
-      .spacing(.leading(20), to: muteButton)
-    playButton.padding(.top(12)).center(.x, offset: 2)
-      .spacing(.leading(24), to: prevBtn)
+      .spacing(.leading(Tokens.Space.n20), to: muteButton)
+    playButton.padding(.top(Tokens.Space.n12)).center(.x, offset: 2)
+      .spacing(.leading(Tokens.Space.n24), to: prevBtn)
     nextBtn.center(.y, with: playButton)
-      .spacing(.leading(20), to: playButton)
+      .spacing(.leading(Tokens.Space.n20), to: playButton)
     togglePlaylistButton.center(.y, with: playButton)
-    togglePlaylistButton.spacing(.leading(20), to: nextBtn)
+    togglePlaylistButton.spacing(.leading(Tokens.Space.n20), to: nextBtn)
     toggleAlbumArtButton.center(.y, with: togglePlaylistButton)
-    toggleAlbumArtButton.spacing(.leading(16), to: togglePlaylistButton)
+    toggleAlbumArtButton.spacing(.leading(Tokens.Space.n16), to: togglePlaylistButton)
 
     // playlist wrapper view
 
     self.playlistWrapperView = NSVisualEffectView()
     playlistWrapperView.translatesAutoresizingMaskIntoConstraints = false
-    playlistWrapperView.blendingMode = .behindWindow
-    playlistWrapperView.material = .underWindowBackground
-    playlistWrapperView.state = .active
+    playlistWrapperView.apply(Tokens.Material.underWindowBackground)
     cv.addSubview(playlistWrapperView)
-    playlistWrapperView.size(width: 300)
+    playlistWrapperView.size(width: Tokens.Size.n300)
     playlistWrapperView.heightAnchor.constraint(greaterThanOrEqualToConstant: 200).isActive = true
     playlistWrapperView.padding(.horizontal).spacing(.top, to: backgroundView)
     let playlistWrapperBottomConstraint = cv.bottomAnchor.constraint(equalTo: playlistWrapperView.bottomAnchor)
@@ -296,17 +289,15 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     self.closeButtonView = NSView()
     closeButtonView.translatesAutoresizingMaskIntoConstraints = false
     cv.addSubview(closeButtonView)
-    closeButtonView.padding(.top(6), .leading(8))
+    closeButtonView.padding(.top(Tokens.Space.n6), .leading(Tokens.Space.n8))
 
     self.closeButtonBackground = NSVisualEffectView()
     closeButtonBackground.translatesAutoresizingMaskIntoConstraints = false
-    closeButtonBackground.blendingMode = .withinWindow
-    closeButtonBackground.material = .popover
-    closeButtonBackground.state = .active
+    closeButtonBackground.apply(Tokens.Material.popover)
     closeButtonBackground.clipsToBounds = true
-    closeButtonBackground.roundCorners(withRadius: 10)
+    closeButtonBackground.roundCorners(withRadius: Tokens.Radius.n10)
     closeButtonBackground.wantsLayer = true
-    closeButtonBackground.layer?.cornerRadius = 10
+    closeButtonBackground.layer?.cornerRadius = Tokens.Radius.n10
     closeButtonView.addSubview(closeButtonBackground)
     closeButtonBackground.padding(.all)
 
@@ -331,11 +322,11 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     }
 
     backButton.widthAnchor.constraint(equalTo: closeButton.widthAnchor, multiplier: 1).isActive = true
-    closeButtonSizeConstraint = closeButton.widthAnchor.constraint(equalToConstant: 12)
+    closeButtonSizeConstraint = closeButton.widthAnchor.constraint(equalToConstant: Tokens.Size.n12)
     closeButtonSizeConstraint.isActive = true
-    closeButton.padding(.top(3), .horizontal(3))
-    backButton.padding(.bottom(3), .horizontal(3))
-    closeButtonSpacingConstraint = backButton.topAnchor.constraint(equalTo: closeButton.bottomAnchor, constant: 4)
+    closeButton.padding(.top(Tokens.Space.n3), .horizontal(Tokens.Space.n3))
+    backButton.padding(.bottom(Tokens.Space.n3), .horizontal(Tokens.Space.n3))
+    closeButtonSpacingConstraint = backButton.topAnchor.constraint(equalTo: closeButton.bottomAnchor, constant: Tokens.Space.n4)
     closeButtonSpacingConstraint.isActive = true
 
     setToInitialWindowSize(display: false, animate: false)
@@ -457,7 +448,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 
   private func showControl() {
     NSAnimationContext.runAnimationGroup({ context in
-      context.duration = AnimationDurationShowControl
+      context.duration = Tokens.Motion.n20.appKitDuration
       closeButtonView.animator().alphaValue = 1
       controlView.animator().alphaValue = 1
       mediaInfoView.animator().alphaValue = 0
@@ -466,7 +457,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 
   private func hideControl() {
     NSAnimationContext.runAnimationGroup({ context in
-      context.duration = AnimationDurationShowControl
+      context.duration = Tokens.Motion.n20.appKitDuration
       closeButtonView.animator().alphaValue = 0
       controlView.animator().alphaValue = 0
       mediaInfoView.animator().alphaValue = 1
@@ -528,7 +519,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
       constraint.isActive = false
     }
     videoViewAspectConstraint = NSLayoutConstraint(item: videoView, attribute: .width, relatedBy: .equal,
-                                                   toItem: videoView, attribute: .height, multiplier: aspect, constant: 0)
+                                                   toItem: videoView, attribute: .height, multiplier: aspect, constant: Tokens.Space.n0)
     videoViewAspectConstraint?.isActive = true
   }
 
@@ -595,7 +586,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     isShowingVolumeControl = false
     if animated {
       NSAnimationContext.runAnimationGroup({ context in
-        context.duration = AnimationDurationShowControl
+        context.duration = Tokens.Motion.n20.appKitDuration
         volumeControlViews.forEach { $0?.animator().alphaValue = 0 }
       }) {
         self.volumeControlViews.forEach { $0?.isHidden = true }
@@ -616,7 +607,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
         $0?.isHidden = false
       }
       NSAnimationContext.runAnimationGroup({ context in
-        context.duration = AnimationDurationShowControl
+        context.duration = Tokens.Motion.n20.appKitDuration
         volumeControlViews.forEach { $0?.animator().alphaValue = 1 }
       }, completionHandler: {})
     } else {

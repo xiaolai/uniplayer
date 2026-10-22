@@ -640,8 +640,8 @@ extension URL {
 
 extension NSTextField {
   func setHTMLValue(_ html: String) {
-    let font = self.font ?? NSFont.systemFont(ofSize: NSFont.systemFontSize)
-    let color = self.textColor ?? NSColor.labelColor
+    let font = self.font ?? Tokens.Typography.body.nsFont
+    let color = self.textColor ?? Tokens.Palette.textPrimary.nsColor
     if let data = html.data(using: .utf8), let str = NSMutableAttributedString(html: data,
                                                                                options: [.textEncodingName: "utf8"],
                                                                                documentAttributes: nil) {
@@ -654,8 +654,13 @@ extension NSTextField {
 
 extension NSFont {
   static func monospacedDigitFont(for size: NSControl.ControlSize) -> NSFont {
-    let fontSize = NSFont.systemFontSize(for: size)
-    return NSFont.monospacedDigitSystemFont(ofSize: fontSize, weight: .regular)
+    let fontSize: CGFloat
+    switch size {
+    case .mini: fontSize = Tokens.Typography.badge.size
+    case .small: fontSize = Tokens.Typography.caption.size
+    default: fontSize = Tokens.Typography.body.size
+    }
+    return Tokens.Typography.numericFont(size: fontSize)
   }
 }
 
@@ -704,7 +709,7 @@ extension NSImage {
   static func maskImage(cornerRadius: CGFloat) -> NSImage {
     let image = NSImage(size: NSSize(width: cornerRadius * 2, height: cornerRadius * 2), flipped: false) { rectangle in
       let bezierPath = NSBezierPath(roundedRect: rectangle, xRadius: cornerRadius, yRadius: cornerRadius)
-      NSColor.black.setFill()
+      Tokens.Palette.black.nsColor.setFill()
       bezierPath.fill()
       return true
     }
@@ -779,7 +784,7 @@ extension NSVisualEffectView {
 
 extension NSBox {
   static func horizontalLine() -> NSBox {
-    let box = NSBox(frame: NSRect(origin: .zero, size: NSSize(width: 100, height: 1)))
+    let box = NSBox(frame: NSRect(origin: .zero, size: NSSize(width: Tokens.Size.n100, height: Tokens.Size.n1)))
     box.boxType = .separator
     return box
   }

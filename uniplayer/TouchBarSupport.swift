@@ -113,7 +113,7 @@ class TouchBarSupport: NSObject, NSTouchBarDelegate {
       let item = NSCustomTouchBarItem(identifier: identifier)
       let label = DurationDisplayTextField(labelWithString: "00:00")
       label.alignment = .center
-      label.font = .monospacedDigitSystemFont(ofSize: 0, weight: .regular)
+      label.font = Tokens.Typography.menuNumeric.nsFont
       label.mode = .current
       self.touchBarPosLabels.append(label)
       item.view = label
@@ -124,7 +124,7 @@ class TouchBarSupport: NSObject, NSTouchBarDelegate {
       let item = NSCustomTouchBarItem(identifier: identifier)
       let label = DurationDisplayTextField(labelWithString: "00:00")
       label.alignment = .center
-      label.font = .monospacedDigitSystemFont(ofSize: 0, weight: .regular)
+      label.font = Tokens.Typography.menuNumeric.nsFont
       label.mode = Preference.bool(for: .touchbarShowRemainingTime) ? .remaining : .duration
       // The baseWritingDirection must be changed from natural (the default) to leftToRight or the
       // minus sign will be drawn on the right side of the time string when displaying time
@@ -298,8 +298,8 @@ class TouchBarPlaySliderCell: NSSliderCell {
 
   var cachedThumbnailProgress: Double = -1
 
-  private let solidColor = NSColor.labelColor.withAlphaComponent(0.4)
-  private let knobWidthWithImage: CGFloat = 60
+  private let solidColor = Tokens.Palette.textPrimary.nsColor.withAlphaComponent(Tokens.Opacity.n40)
+  private let knobWidthWithImage = Tokens.Size.n60
 
   private var backgroundImage: NSImage?
 
@@ -328,7 +328,7 @@ class TouchBarPlaySliderCell: NSSliderCell {
   }
 
   override func barRect(flipped: Bool) -> NSRect {
-    self.controlView?.superview?.layer?.backgroundColor = .black
+    self.controlView?.superview?.layer?.backgroundColor = Tokens.Palette.black.nsColor.cgColor
     let rect = super.barRect(flipped: flipped)
     return NSRect(x: rect.origin.x,
                   y: 2,
@@ -365,25 +365,25 @@ class TouchBarPlaySliderCell: NSSliderCell {
     guard info.state.active else { return }
     if isTouching, let dur = info.videoDuration?.second, let tb = info.getThumbnail(forSecond: (doubleValue / 100) * dur), let image = tb.image {
       NSGraphicsContext.saveGraphicsState()
-      NSBezierPath(roundedRect: knobRect, xRadius: 3, yRadius: 3).setClip()
+      NSBezierPath(roundedRect: knobRect, xRadius: Tokens.Radius.n3, yRadius: Tokens.Radius.n3).setClip()
       let origSize = image.size.crop(withAspect: Aspect(size: knobRect.size))
       let origRect = NSRect(x: (image.size.width - origSize.width) / 2,
                             y: (image.size.height - origSize.height) / 2,
                             width: origSize.width,
                             height: origSize.height)
       image.draw(in: knobRect, from: origRect, operation: .copy, fraction: 1, respectFlipped: true, hints: nil)
-      NSColor.white.setStroke()
-      let outerBorder = NSBezierPath(roundedRect: knobRect.insetBy(dx: 1, dy: 1), xRadius: 3, yRadius: 3)
-      outerBorder.lineWidth = 1
+      Tokens.Palette.white.nsColor.setStroke()
+      let outerBorder = NSBezierPath(roundedRect: knobRect.insetBy(dx: 1, dy: 1), xRadius: Tokens.Radius.n3, yRadius: Tokens.Radius.n3)
+      outerBorder.lineWidth = Tokens.Stroke.hairline
       outerBorder.stroke()
-      NSColor.black.setStroke()
-      let innerBorder = NSBezierPath(roundedRect: knobRect.insetBy(dx: 2, dy: 2), xRadius: 2, yRadius: 2)
-      innerBorder.lineWidth = 1
+      Tokens.Palette.black.nsColor.setStroke()
+      let innerBorder = NSBezierPath(roundedRect: knobRect.insetBy(dx: 2, dy: 2), xRadius: Tokens.Radius.n2, yRadius: Tokens.Radius.n2)
+      innerBorder.lineWidth = Tokens.Stroke.hairline
       innerBorder.stroke()
       NSGraphicsContext.restoreGraphicsState()
     } else {
-      NSColor.labelColor.setFill()
-      let path = NSBezierPath(roundedRect: knobRect, xRadius: 2, yRadius: 2)
+      Tokens.Palette.textPrimary.nsColor.setFill()
+      let path = NSBezierPath(roundedRect: knobRect, xRadius: Tokens.Radius.n2, yRadius: Tokens.Radius.n2)
       path.fill()
     }
   }
@@ -401,14 +401,14 @@ class TouchBarPlaySliderCell: NSSliderCell {
       let image = NSImage(size: barRect.size)
       image.lockFocus()
       NSGraphicsContext.saveGraphicsState()
-      NSBezierPath(roundedRect: imageRect, xRadius: 2.5, yRadius: 2.5).setClip()
+      NSBezierPath(roundedRect: imageRect, xRadius: Tokens.Radius.n2_5, yRadius: Tokens.Radius.n2_5).setClip()
       let step: CGFloat = 3
       let end = imageRect.width
       var i: CGFloat = 0
       solidColor.setFill()
       while (i < end + step) {
         let percent = Double(i / end)
-        let dest = NSRect(x: i, y: 0, width: 2, height: imageRect.height)
+        let dest = NSRect(x: i, y: 0, width: Tokens.Size.n2, height: imageRect.height)
         if let dur = info.videoDuration?.second,
           let image = info.getThumbnail(forSecond: percent * dur)?.image,
           info.thumbnailsProgress >= percent {

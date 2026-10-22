@@ -380,7 +380,7 @@ class PreferenceWindowController: NSWindowController {
 
   private func getTitle(from view: NSView) -> String? {
     if let label = view as? NSTextField,
-      !label.isEditable, label.textColor == .labelColor, label.stringValue != "Label",
+      !label.isEditable, label.textColor == Tokens.Palette.textPrimary.nsColor, label.stringValue != "Label",
       !label.identifierStartsWith("AccessoryLabel"), !label.identifierStartsWith("Trigger") {
       return formSearchTerm(label.stringValue)
     } else if let button = view as? NSButton,
@@ -493,7 +493,7 @@ class PrefSearchResultMaskView: NSView {
   override static func defaultAnimation(forKey key: NSAnimatablePropertyKey) -> Any? {
     if key == "alphaValue" {
       let kfa = CAKeyframeAnimation(keyPath: "alphaValue")
-      kfa.duration = 1.5
+      kfa.duration = Tokens.Motion.pulse
       kfa.timingFunctions = [CAMediaTimingFunction(name: .default), CAMediaTimingFunction(name: .linear)]
       kfa.values = [1, 1, 0]
       kfa.keyTimes = [0, 0.75, 1.5]
@@ -507,11 +507,11 @@ class PrefSearchResultMaskView: NSView {
     guard let maskRect = maskRect else { return }
     NSGraphicsContext.saveGraphicsState()
     let framePath = NSBezierPath(rect: bounds)
-    let maskPath =  NSBezierPath(roundedRect: maskRect, xRadius: 6, yRadius: 6)
+    let maskPath =  NSBezierPath(roundedRect: maskRect, xRadius: Tokens.Radius.n6, yRadius: Tokens.Radius.n6)
     framePath.append(maskPath)
     framePath.windingRule = .evenOdd
     framePath.setClip()
-    NSColor.windowBackgroundColor.withSystemEffect(.pressed).setFill()
+    Tokens.Palette.windowBackground.nsColor.withSystemEffect(.pressed).setFill()
     dirtyRect.fill()
     NSGraphicsContext.restoreGraphicsState()
   }
@@ -541,9 +541,9 @@ class PrefTabTitleLabelCell: NSTextFieldCell {
   override var backgroundStyle: NSView.BackgroundStyle {
     didSet {
       if backgroundStyle == .emphasized {
-        self.textColor = NSColor.white
+        self.textColor = Tokens.Palette.white.nsColor
       } else {
-        self.textColor = NSColor.controlTextColor
+        self.textColor = Tokens.Palette.controlText.nsColor
       }
     }
   }

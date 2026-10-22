@@ -37,7 +37,7 @@ class SideBarContainer: TranslucentView {
       leadingBorder.translatesAutoresizingMaskIntoConstraints = false
       leadingBorder.boxType = .separator
       container.addSubview(leadingBorder)
-      leadingBorder.padding(.vertical, isLeading ? .trailing : .leading).size(width: 1)
+      leadingBorder.padding(.vertical, isLeading ? .trailing : .leading).size(width: Tokens.Size.n1)
       leadingBorder.isHidden = !Preference.isDocked
     }
     setShadow()
@@ -47,8 +47,8 @@ class SideBarContainer: TranslucentView {
     let showShadow = style == .visualEffect && !Preference.isDocked
     if showShadow {
       let shadow = NSShadow()
-      shadow.shadowColor = NSColor.black.withAlphaComponent(0.3)
-      shadow.shadowBlurRadius = 6
+      shadow.shadowColor = Tokens.Palette.black.nsColor.withAlphaComponent(Tokens.Opacity.n30)
+      shadow.shadowBlurRadius = Tokens.Blur.n6
       self.shadow = shadow
     } else {
       self.shadow = nil
@@ -134,7 +134,7 @@ class SidebarViewController: NSViewController {
     tabButtonsLeadingConstraint.isActive = true
     tabButtonsTrailingConstraint = view.trailingAnchor.constraint(equalTo: tabButtonsStackView.trailingAnchor)
     tabButtonsTrailingConstraint.isActive = true
-    tabButtonsHeightConstraint = tabButtonsStackView.heightAnchor.constraint(equalToConstant: 64)
+    tabButtonsHeightConstraint = tabButtonsStackView.heightAnchor.constraint(equalToConstant: Tokens.Size.n64)
     tabButtonsHeightConstraint.isActive = true
 
     if useTabView {
@@ -142,7 +142,7 @@ class SidebarViewController: NSViewController {
       view.addSubview(tabViewController.view)
 
       tabViewController.view.padding(.bottom, .horizontal)
-        .spacing(.top(1), to: tabButtonsStackView)
+        .spacing(.top(Tokens.Space.n1), to: tabButtonsStackView)
 
       tabViewController.tabView.padding(.all)
       tabViewController.tabView.wantsLayer = true
@@ -158,7 +158,7 @@ class SidebarViewController: NSViewController {
       target: self, action: #selector(dismissSidebar)
     )
     closeSidebarBtn.widthAnchor.constraint(equalTo: closeSidebarBtn.heightAnchor).isActive = true
-    closeSidebarBtnSizeConstraint = closeSidebarBtn.widthAnchor.constraint(equalToConstant: 28)
+    closeSidebarBtnSizeConstraint = closeSidebarBtn.widthAnchor.constraint(equalToConstant: Tokens.Size.n28)
     closeSidebarBtnSizeConstraint.isActive = true
     if #available(macOS 26.0, *) {
       if #available(macOS 27.0, *) {
@@ -215,7 +215,7 @@ class SidebarViewController: NSViewController {
         item.imageScaling = .scaleProportionallyUpOrDown
         item.imagePosition = .imageAbove
       }
-      item.font = .systemFont(ofSize: 11, weight: .regular)
+      item.font = Tokens.Typography.caption.nsFont
       item.tag = tag
       return item
     }
@@ -379,15 +379,15 @@ extension SidebarViewController {
     class Cell: NSButtonCell {
       override func draw(withFrame cellFrame: NSRect, in controlView: NSView) {
         if state == .on {
-          let frame = NSInsetRect(cellFrame, 0, -4)
-          let rect = NSBezierPath(roundedRect: frame, xRadius: 16, yRadius: 16)
+          let frame = NSInsetRect(cellFrame, Tokens.Space.n0, -Tokens.Space.n4)
+          let rect = NSBezierPath(roundedRect: frame, xRadius: Tokens.Radius.n16, yRadius: Tokens.Radius.n16)
 
-          if let gradient = NSGradient(starting: .gray.withAlphaComponent(0.1), ending: .gray.withAlphaComponent(0.2)) {
+          if let gradient = NSGradient(starting: .gray.withAlphaComponent(Tokens.Opacity.n10), ending: .gray.withAlphaComponent(Tokens.Opacity.n20)) {
             gradient.draw(in: rect, angle: 90)
           }
 
-          NSColor.sidebarTabBtnBorder.setStroke()
-          rect.lineWidth = 1
+          Tokens.Palette.sidebarTabButtonBorder.nsColor.setStroke()
+          rect.lineWidth = Tokens.Stroke.hairline
           rect.stroke()
         }
 

@@ -21,8 +21,8 @@ fileprivate class GrayHighlightRowView: NSTableRowView {
   override func drawSelection(in dirtyRect: NSRect) {
     if self.selectionHighlightStyle != .none {
       let selectionRect = NSInsetRect(self.bounds, 0, 0)
-      NSColor.initialWindowLastFileBackground.setFill()
-      let selectionPath = NSBezierPath.init(roundedRect: selectionRect, xRadius: 4, yRadius: 4)
+      Tokens.Palette.initialWindowLastFile.nsColor.setFill()
+      let selectionPath = NSBezierPath.init(roundedRect: selectionRect, xRadius: Tokens.Radius.n4, yRadius: Tokens.Radius.n4)
       selectionPath.fill()
     }
   }
@@ -84,7 +84,7 @@ class InitialWindowController: NSWindowController {
     let paddingH = CGFloat(30)
 
     let window = CommonWindow(
-      contentRect: NSRect(x: 0, y: 0, width: 560, height: 440),
+      contentRect: NSRect(x: 0, y: 0, width: Tokens.Size.n560, height: Tokens.Size.n440),
       styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
       backing: .buffered,
       defer: false
@@ -106,9 +106,7 @@ class InitialWindowController: NSWindowController {
 
     let visualEffectView = NSVisualEffectView()
     visualEffectView.translatesAutoresizingMaskIntoConstraints = false
-    visualEffectView.blendingMode = .behindWindow
-    visualEffectView.material = .underWindowBackground
-    visualEffectView.state = .active
+    visualEffectView.apply(Tokens.Material.underWindowBackground)
     mainView.addSubview(visualEffectView)
     visualEffectView.padding(.all)
 
@@ -126,23 +124,23 @@ class InitialWindowController: NSWindowController {
     infoButton.target = self
     infoButton.action = #selector(showBetaInfoPopover)
     mainView.addSubview(infoButton)
-    infoButton.padding(.trailing(16), .top(16))
+    infoButton.padding(.trailing(Tokens.Space.n16), .top(Tokens.Space.n16))
 
     // header
 
     let iconImage = NSWorkspace.shared.icon(forFile: Bundle.main.bundlePath)
-    let appIcon = ui.image(iconImage, size: 68)
+    let appIcon = ui.image(iconImage, size: Tokens.Icon.n68)
     appIcon.translatesAutoresizingMaskIntoConstraints = false
 
     let uniplayerLabel = NSTextField(labelWithString: "UniPlayer")
-    uniplayerLabel.font = .systemFont(ofSize: 20, weight: .bold)
+    uniplayerLabel.font = Tokens.Typography.appTitle.nsFont
     let versionLabel = NSTextField(labelWithString: "")
     versionLabel.translatesAutoresizingMaskIntoConstraints = false
-    versionLabel.textColor = .secondaryLabelColor
+    versionLabel.textColor = Tokens.Palette.textSecondary.nsColor
 
-    let header = ui.hStack(spacing: 12, appIcon, ui.vStack(spacing: 4, uniplayerLabel, versionLabel))
+    let header = ui.hStack(spacing: Tokens.Space.n12, appIcon, ui.vStack(spacing: Tokens.Space.n4, uniplayerLabel, versionLabel))
     mainView.addSubview(header)
-    header.padding(.top(48), .leading(paddingH - 6), .trailing(paddingH))
+    header.padding(.top(Tokens.Space.n48), .leading(paddingH - 6), .trailing(paddingH))
 
     // open button
 
@@ -152,16 +150,16 @@ class InitialWindowController: NSWindowController {
                                   action: #selector(AppDelegate.openURL(_:)))
     openFileButton.controlSize = .large
     openURLButton.controlSize = .large
-    let actions = ui.hStack(spacing: 12, openFileButton, openURLButton)
+    let actions = ui.hStack(spacing: Tokens.Space.n12, openFileButton, openURLButton)
     mainView.addSubview(actions)
-    actions.padding(.top(64), .trailing(paddingH))
+    actions.padding(.top(Tokens.Space.n64), .trailing(paddingH))
 
     // resume last file
 
     self.lastFileContainerView = InitialWindowViewActionButton()
     lastFileContainerView.translatesAutoresizingMaskIntoConstraints = false
-    lastFileContainerView.size(height: 32)
-    self.lastFileIcon = ui.image("clock.arrow.trianglehead.counterclockwise.rotate.90", "clock", size: 16)
+    lastFileContainerView.size(height: Tokens.Size.n32)
+    self.lastFileIcon = ui.image("clock.arrow.trianglehead.counterclockwise.rotate.90", "clock", size: Tokens.Icon.n16)
     let resumeLabel = ui.label("KWZ-BM-GBN.title", canCompress: false)
     self.lastFileNameLabel = NSTextField(labelWithString: "")
     lastFileNameLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -169,24 +167,24 @@ class InitialWindowController: NSWindowController {
     lastFileNameLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
     self.lastPositionLabel = NSTextField(labelWithString: "")
     lastPositionLabel.translatesAutoresizingMaskIntoConstraints = false
-    lastPositionLabel.textColor = .secondaryLabelColor
-    lastPositionLabel.font = .systemFont(ofSize: NSFont.smallSystemFontSize)
-    let lastFileRow = ui.hStack(spacing: 6,
+    lastPositionLabel.textColor = Tokens.Palette.textSecondary.nsColor
+    lastPositionLabel.font = Tokens.Typography.caption.nsFont
+    let lastFileRow = ui.hStack(spacing: Tokens.Space.n6,
                                 lastFileIcon, resumeLabel, lastFileNameLabel,
                                 ui.flexibleSpace(),
                                 lastPositionLabel)
     lastFileContainerView.addSubview(lastFileRow)
-    lastFileRow.padding(.horizontal(10), .vertical(6))
+    lastFileRow.padding(.horizontal(Tokens.Space.n10), .vertical(Tokens.Space.n6))
 
     mainView.addSubview(lastFileContainerView)
-    lastFileContainerView.spacing(.top(16), to: header).padding(.horizontal(paddingH))
+    lastFileContainerView.spacing(.top(Tokens.Space.n16), to: header).padding(.horizontal(paddingH))
 
     // table
 
     self.recentFilesTableView = NSTableView()
     recentFilesTableView.headerView = nil
-    recentFilesTableView.backgroundColor = .clear
-    recentFilesTableView.rowHeight = 28
+    recentFilesTableView.backgroundColor = Tokens.Palette.clear.nsColor
+    recentFilesTableView.rowHeight = Tokens.Size.n28
     recentFilesTableView.style = .plain
     recentFilesTableView.columnAutoresizingStyle = .lastColumnOnlyAutoresizingStyle
     recentFilesTableView.addTableColumn(NSTableColumn(identifier: .recentFile))
@@ -198,9 +196,9 @@ class InitialWindowController: NSWindowController {
     scrollView.documentView = recentFilesTableView
 
     mainView.addSubview(scrollView)
-    self.recentFilesTableTopConstraint = scrollView.topAnchor.constraint(equalTo: header.bottomAnchor, constant: 24)
+    self.recentFilesTableTopConstraint = scrollView.topAnchor.constraint(equalTo: header.bottomAnchor, constant: Tokens.Space.n24)
     recentFilesTableTopConstraint.isActive = true
-    scrollView.padding(.bottom(24), .horizontal(paddingH - 6))
+    scrollView.padding(.bottom(Tokens.Space.n24), .horizontal(paddingH - 6))
 
     self.window = window
     // make the content view the first responder, so key events are received by keyDown()
@@ -249,27 +247,27 @@ class InitialWindowController: NSWindowController {
       let label = ui.label(key, wrapping: true, canCompress: false)
       label.size(width: width)
       if index == 0 {
-        label.textColor = .secondaryLabelColor
-        label.font = NSFont.boldSystemFont(ofSize: NSFont.systemFontSize)
+        label.textColor = Tokens.Palette.textSecondary.nsColor
+        label.font = Tokens.Typography.bodyStrong.nsFont
       } else {
         label.font = if index % 2 == 1 {
-          NSFont.boldSystemFont(ofSize: NSFont.systemFontSize)
+          Tokens.Typography.bodyStrong.nsFont
         } else {
-          NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+          Tokens.Typography.caption.nsFont
         }
       }
       label.setHTMLValue(ui.localized(key))
       return label
     }
     let view = NSView()
-    let stackView = ui.vStack(spacing: 10, labels)
+    let stackView = ui.vStack(spacing: Tokens.Space.n10, labels)
     view.addSubview(stackView)
-    stackView.padding(.all(20))
+    stackView.padding(.all(Tokens.Space.n20))
     let popover = NSPopover()
     popover.behavior = .transient
     popover.contentViewController = NSViewController()
     popover.contentViewController?.view = view
-    popover.contentSize = NSSize(width: width + 20 * 2, height: 200)
+    popover.contentSize = NSSize(width: width + Tokens.Space.n40, height: Tokens.Size.n200)
     popover.show(relativeTo: sender.bounds, of: sender, preferredEdge: .maxY)
   }
 
@@ -287,8 +285,8 @@ class InitialWindowController: NSWindowController {
 
     let gradientLayer = CAGradientLayer()
     gradientLayer.colors = window.effectiveAppearance.isDark ?
-    [NSColor.black.withAlphaComponent(0.4).cgColor, NSColor.black.withAlphaComponent(0.1).cgColor] :
-      [NSColor.black.withAlphaComponent(0.1).cgColor, NSColor.black.withAlphaComponent(0).cgColor]
+    [Tokens.Palette.black.nsColor.withAlphaComponent(Tokens.Opacity.n40).cgColor, Tokens.Palette.black.nsColor.withAlphaComponent(Tokens.Opacity.n10).cgColor] :
+      [Tokens.Palette.black.nsColor.withAlphaComponent(Tokens.Opacity.n10).cgColor, Tokens.Palette.black.nsColor.withAlphaComponent(Tokens.Opacity.n00).cgColor]
     overlayView.wantsLayer = true
     overlayView.layer = gradientLayer
 
@@ -369,7 +367,7 @@ extension InitialWindowController: NSTableViewDelegate, NSTableViewDataSource {
     } else {
       cell = NSTableCellView()
       cell.identifier = .recentFile
-      let icon = ui.image(nil, size: 16)
+      let icon = ui.image(nil, size: Tokens.Icon.n16)
       icon.translatesAutoresizingMaskIntoConstraints = false
       let label = NSTextField(labelWithString: "")
       label.translatesAutoresizingMaskIntoConstraints = false
@@ -379,10 +377,10 @@ extension InitialWindowController: NSTableViewDelegate, NSTableViewDataSource {
       cell.textField = label
       cell.addSubview(icon)
       cell.addSubview(label)
-      icon.padding(.leading(8))
+      icon.padding(.leading(Tokens.Space.n8))
       icon.center(.y)
-      label.spacing(.leading(6), to: icon)
-      label.padding(.trailing(8))
+      label.spacing(.leading(Tokens.Space.n6), to: icon)
+      label.padding(.trailing(Tokens.Space.n8))
       label.center(.y)
     }
 
@@ -464,9 +462,9 @@ class InitialWindowContentView: NSView {
 
 
 class InitialWindowViewActionButton: NSView {
-  let normalBackground = NSColor.initialWindowLastFileBackground
-  let hoverBackground = NSColor.initialWindowLastFileBackgroundHover
-  let pressedBackground = NSColor.initialWindowLastFileBackgroundPressed
+  let normalBackground = Tokens.Palette.initialWindowLastFile.nsColor
+  let hoverBackground = Tokens.Palette.initialWindowLastFileHover.nsColor
+  let pressedBackground = Tokens.Palette.initialWindowLastFilePressed.nsColor
 
   override init(frame frameRect: NSRect) {
     super.init(frame: frameRect)
@@ -480,7 +478,7 @@ class InitialWindowViewActionButton: NSView {
 
   private func setup() {
     self.wantsLayer = true
-    self.layer?.cornerRadius = 8
+    self.layer?.cornerRadius = Tokens.Radius.n8
     self.addTrackingArea(NSTrackingArea(rect: .zero,
       options: [.activeInKeyWindow, .mouseEnteredAndExited, .inVisibleRect], owner: self, userInfo: nil))
   }

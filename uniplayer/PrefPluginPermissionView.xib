@@ -38,7 +38,7 @@
                             <textField verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" translatesAutoresizingMaskIntoConstraints="NO" id="USY-dY-n0h">
                                 <rect key="frame" x="6" y="6" width="237" height="14"/>
                                 <textFieldCell key="cell" controlSize="small" selectable="YES" title="Multiline Label" id="r9C-rP-J14">
-                                    <font key="font" metaFont="menu" size="11"/>
+                                    <font key="font" metaFont="smallSystem"/>
                                     <color key="textColor" name="secondaryLabelColor" catalog="System" colorSpace="catalog"/>
                                     <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
                                 </textFieldCell>

@@ -10,8 +10,8 @@ import Cocoa
 
 class RoundedTextFieldCell: NSTextFieldCell {
 
-  let paddingH: CGFloat = 4
-  let paddingV: CGFloat = 2
+  let paddingH = Tokens.Space.n4
+  let paddingV = Tokens.Space.n2
 
   override func awakeFromNib() {
     bezelStyle = .roundedBezel

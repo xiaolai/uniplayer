@@ -25,10 +25,11 @@ class SubChooseViewController: NSViewController {
 
   override func viewDidLoad() {
     super.viewDidLoad()
+    tableView.backgroundColor = Tokens.Palette.tableOverlay.nsColor
 
     if let scrollView = tableView.enclosingScrollView {
       scrollView.wantsLayer = true
-      scrollView.layer?.cornerRadius = 6
+      scrollView.layer?.cornerRadius = Tokens.Radius.n6
     }
 
     tableView.delegate = self

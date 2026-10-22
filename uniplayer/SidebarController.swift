@@ -8,7 +8,7 @@
 
 import Cocoa
 
-fileprivate let SideBarAnimationDuration = 0.24
+fileprivate let SideBarAnimationDuration = Tokens.Motion.n24.duration
 
 
 /// Owns the two side panels (left/right), the view controllers that can be embedded in them, and
@@ -130,13 +130,13 @@ class SidebarController: NSObject {
     contentView.addSubview(leadingSidebar.view)
     for panel in sideBars {
       panel.view.padding(.bottom(panel.visibleEdgeMargin), .top(panel.visibleEdgeMargin))
-      panel.widthConstraint = panel.view.widthAnchor.constraint(equalToConstant: 60)
+      panel.widthConstraint = panel.view.widthAnchor.constraint(equalToConstant: Tokens.Size.n60)
       panel.widthConstraint.isActive = true
       switch panel.side {
       case .leading:
-        panel.edgeConstraint = panel.view.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: -60)
+        panel.edgeConstraint = panel.view.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: -Tokens.Space.n60)
       case .trailing:
-        panel.edgeConstraint = contentView.trailingAnchor.constraint(equalTo: panel.view.trailingAnchor, constant: -60)
+        panel.edgeConstraint = contentView.trailingAnchor.constraint(equalTo: panel.view.trailingAnchor, constant: -Tokens.Space.n60)
       }
       panel.edgeConstraint.isActive = true
       panel.view.isHidden = true
@@ -245,7 +245,7 @@ class SidebarController: NSObject {
   func resizeHandleRect(for side: Side) -> NSRect {
     let sf = sideBar(for: side).view.frame
     let originX = visuallyOnLeft(side) ? sf.maxX : sf.minX - 4
-    return NSRect(x: originX, y: sf.minY, width: 4, height: sf.height)
+    return NSRect(x: originX, y: sf.minY, width: Tokens.Size.n4, height: sf.height)
   }
 
   private var sidebarMaxWidth: CGFloat {

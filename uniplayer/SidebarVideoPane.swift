@@ -47,7 +47,7 @@ class SidebarVideoPane: SidebarScrollView {
     })
 
     documentView!.addSubview(stack)
-    stack.padding(.horizontal(.sidebarMargin), .top(4), .bottom(.sidebarMargin))
+    stack.padding(.horizontal(.sidebarMargin), .top(Tokens.Space.n4), .bottom(.sidebarMargin))
   }
   
   required init?(coder: NSCoder) {
@@ -65,20 +65,20 @@ class SidebarVideoPane: SidebarScrollView {
       wantsToGrow: true,
       ui.hStack(
         align: .centerY,
-        ui.image("aspectratio", size: 16, config: .sidebarIconConfig),
-        ui.label("sidebar.aspect_ratio", font: .boldSystemFont(ofSize: 12))
+        ui.image("aspectratio", size: Tokens.Icon.n16, config: .sidebarIconConfig),
+        ui.label("sidebar.aspect_ratio", font: Tokens.Typography.size12Strong.nsFont)
       ),
       AspectRatioView(player: player),
       ui.hStack(
         align: .centerY,
-        ui.image("crop", size: 16, config: .sidebarIconConfig),
-        ui.label("sidebar.crop", font: .boldSystemFont(ofSize: 12))
+        ui.image("crop", size: Tokens.Icon.n16, config: .sidebarIconConfig),
+        ui.label("sidebar.crop", font: Tokens.Typography.size12Strong.nsFont)
       ),
       CropView(player: player),
       ui.hStack(
         align: .centerY,
-        ui.image("rotate.left", size: 16, config: .sidebarIconConfig),
-        ui.label("sidebar.rotation", font: .boldSystemFont(ofSize: 12))
+        ui.image("rotate.left", size: Tokens.Icon.n16, config: .sidebarIconConfig),
+        ui.label("sidebar.rotation", font: Tokens.Typography.size12Strong.nsFont)
       ),
       RotationView(player: player),
     )
@@ -101,8 +101,8 @@ class SidebarVideoPane: SidebarScrollView {
     hdrSwitch.action = #selector(hdrAction(_:))
 
     let hdrRow = ui.hStack(
-      spacing: 8,
-      ui.image("sun.max", size: 16, config: .sidebarIconConfig),
+      spacing: Tokens.Space.n8,
+      ui.image("sun.max", size: Tokens.Icon.n16, config: .sidebarIconConfig),
       ui.label("quicksetting.hdr"),
       ui.flexibleSpace(),
       hdrSwitch
@@ -123,8 +123,8 @@ class SidebarVideoPane: SidebarScrollView {
       spacing: .sidebarItemSpacing,
       wantsToGrow: true,
       ui.hStack(
-        spacing: 8,
-        ui.image("cpu", size: 16, config: .sidebarIconConfig),
+        spacing: Tokens.Space.n8,
+        ui.image("cpu", size: Tokens.Icon.n16, config: .sidebarIconConfig),
         ui.label("quicksetting.hwdec"),
         ui.flexibleSpace(),
         HwdecSwitch(player: player),
@@ -182,8 +182,8 @@ fileprivate class HorizontalScrollViewWithIndicator: NSView {
     indicator.bezelStyle = .smallSquare
     indicator.isBordered = false
     addSubview(indicator)
-    indicator.size(width: 8).padding(.trailing).center(.y)
-    scrollView.padding(.vertical, .leading).spacing(.trailing(4), to: indicator)
+    indicator.size(width: Tokens.Size.n8).padding(.trailing).center(.y)
+    scrollView.padding(.vertical, .leading).spacing(.trailing(Tokens.Space.n4), to: indicator)
   }
   
   required init?(coder: NSCoder) {
@@ -199,7 +199,7 @@ fileprivate class HorizontalScrollViewWithIndicator: NSView {
       NSPoint(x: 0, y: 0)
     }
     NSAnimationContext.runAnimationGroup({ context in
-      context.duration = 0.3
+      context.duration = Tokens.Motion.n30.appKitDuration
       scrollView.contentView.animator().setBoundsOrigin(point)
     })
   }
@@ -309,12 +309,12 @@ fileprivate class AspectRatioView: HorizontalScrollViewWithIndicator {
 
     self.input = NSTextField()
     input.usesSingleLineMode = true
-    input.size(width: 40, height: 24)
+    input.size(width: Tokens.Size.n40, height: Tokens.Size.n24)
     input.target = self
     input.action = #selector(aspectRatioAction)
 
     scrollView.documentView = ui.hStack(
-      spacing: 8, segmentControl, input
+      spacing: Tokens.Space.n8, segmentControl, input
     )
     size(height: 24)
 
@@ -667,7 +667,7 @@ fileprivate class EqualizerView: NSView {
       resetButton.tag = c.tag
 
       stack.addArrangedSubview(ui.hStack(
-        spacing: 8,
+        spacing: Tokens.Space.n8,
         label, slider, resetButton
       ))
 
@@ -679,7 +679,7 @@ fileprivate class EqualizerView: NSView {
     }
 
     addSubview(stack)
-    stack.padding(.horizontal(1), .vertical(2))
+    stack.padding(.horizontal(Tokens.Space.n1), .vertical(Tokens.Space.n2))
 
     player.observe(.iinaVideoEqualizerChanged) { [unowned self] _ in
       update()

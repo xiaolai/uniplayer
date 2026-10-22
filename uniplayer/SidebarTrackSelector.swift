@@ -24,14 +24,14 @@ class TrackSelector: NSScrollView, NSTableViewDelegate, NSTableViewDataSource {
 
     tableView.addTableColumn(NSTableColumn(identifier: .trackName))
     tableView.headerView = nil
-    tableView.backgroundColor = .clear
+    tableView.backgroundColor = Tokens.Palette.clear.nsColor
     tableView.gridStyleMask = [.solidHorizontalGridLineMask]
 
     translatesAutoresizingMaskIntoConstraints = false
     documentView = tableView
     drawsBackground = false
     wantsLayer = true
-    layer?.cornerRadius = 8
+    layer?.cornerRadius = Tokens.Radius.n8
     size(height: 98)
 
     player.observe(.iinaTracklistChanged) { [weak self] _ in
@@ -74,7 +74,7 @@ class TrackSelector: NSScrollView, NSTableViewDelegate, NSTableViewDataSource {
     let isChosen = track == selectedTrack
     switch columnID {
     case .trackName:
-      cell.textField?.textColor = row == 0 ? .secondaryLabelColor : .labelColor
+      cell.textField?.textColor = row == 0 ? Tokens.Palette.textSecondary.nsColor : Tokens.Palette.textPrimary.nsColor
       cell.textField?.stringValue = track?.readableString(includingLanguage: false) ?? Constants.String.trackNone
       cell.selectedIndicator.isHidden = !isChosen
       cell.setLanguage(track?.readableLanguage)
@@ -107,10 +107,10 @@ class TrackSelector: NSScrollView, NSTableViewDelegate, NSTableViewDataSource {
     var languageLabel: NSTextField
 
     override init(frame frameRect: NSRect) {
-      self.selectedIndicator = ColoredView(color: .controlAccentColor, cornerRadius: 2)
+      self.selectedIndicator = ColoredView(color: .controlAccentColor, cornerRadius: Tokens.Radius.n2)
       selectedIndicator.translatesAutoresizingMaskIntoConstraints = false
 
-      self.languageTag = ColoredView(color: .controlColor, cornerRadius: 3)
+      self.languageTag = ColoredView(color: .controlColor, cornerRadius: Tokens.Radius.n3)
       languageTag.translatesAutoresizingMaskIntoConstraints = false
 
       self.languageLabel = NSTextField(labelWithString: "")
@@ -124,17 +124,17 @@ class TrackSelector: NSScrollView, NSTableViewDelegate, NSTableViewDataSource {
       textField.lineBreakMode = .byTruncatingMiddle
       textField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
       addSubview(textField)
-      textField.padding(.leading(12)).center(.y)
+      textField.padding(.leading(Tokens.Space.n12)).center(.y)
       self.textField = textField
 
       addSubview(selectedIndicator)
-      selectedIndicator.padding(.leading, .vertical(5))
-        .size(width: 4)
+      selectedIndicator.padding(.leading, .vertical(Tokens.Space.n5))
+        .size(width: Tokens.Size.n4)
 
-      languageLabel.font = .systemFont(ofSize: 11)
+      languageLabel.font = Tokens.Typography.caption.nsFont
 
       languageTag.addSubview(languageLabel)
-      languageLabel.padding(.vertical(1), .horizontal(2))
+      languageLabel.padding(.vertical(Tokens.Space.n1), .horizontal(Tokens.Space.n2))
 
       addSubview(languageTag)
       languageTag.padding(.trailing)

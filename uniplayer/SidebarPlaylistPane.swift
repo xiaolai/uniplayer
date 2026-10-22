@@ -18,9 +18,9 @@ fileprivate let MenuItemTagDelete = 604
 fileprivate let ui = UIHelper.shared
 
 fileprivate extension LayoutValue {
-  static let toolbarPaddingVertical = LayoutValue(10, 6)
-  static let toolbarPaddingHorizontal = LayoutValue(12, 10)
-  static let tableRowHeight = LayoutValue(30, 26)
+  static let toolbarPaddingVertical = LayoutValue(Tokens.Space.n10, Tokens.Space.n6)
+  static let toolbarPaddingHorizontal = LayoutValue(Tokens.Space.n12, Tokens.Space.n10)
+  static let tableRowHeight = LayoutValue(Tokens.Space.n30, Tokens.Space.n26)
 }
 
 
@@ -77,8 +77,8 @@ class SidebarPlaylistPane: NSView, SidebarPane {
     deleteBtn = makeButton("delete", "trash", #selector(clearPlaylistBtnAction))
 
     totalLengthLabel = NSTextField(labelWithString: "")
-    totalLengthLabel.textColor = .secondaryLabelColor
-    totalLengthLabel.font = .controlContentFont(ofSize: 11)
+    totalLengthLabel.textColor = Tokens.Palette.textSecondary.nsColor
+    totalLengthLabel.font = Tokens.Typography.caption.nsFont
     totalLengthLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
 
     hideTotalLength()
@@ -122,7 +122,7 @@ class SidebarPlaylistPane: NSView, SidebarPane {
     let buttonContainer = NSView()
     buttonContainer.translatesAutoresizingMaskIntoConstraints = false
 
-    let buttonStack = ui.hStack(spacing: 8)
+    let buttonStack = ui.hStack(spacing: Tokens.Space.n8)
     buttonStack.distribution = .gravityAreas
 
     [loopBtn, shuffleBtn, sortBtn].forEach {
@@ -178,12 +178,12 @@ class SidebarPlaylistPane: NSView, SidebarPane {
     guard player.info.state.active else { return }
     let loopMode = player.getLoopMode()
     loopBtn.image = loopMode == .file ? .sf("repeat.1") : .sf("repeat")
-    loopBtn.contentTintColor = loopMode == .off ? nil : .controlAccentColor
+    loopBtn.contentTintColor = loopMode == .off ? nil : Tokens.Palette.accent.nsColor
   }
 
   func updateShuffleBtnStatus() {
     guard player.info.state.active else { return }
-    shuffleBtn.contentTintColor = player.info.isShuffled ? .controlAccentColor : nil
+    shuffleBtn.contentTintColor = player.info.isShuffled ? Tokens.Palette.accent.nsColor : nil
   }
 
   // MARK: - Total length
@@ -767,7 +767,7 @@ class PlaylistIsChosenCellView: NSTableCellView {
     label.translatesAutoresizingMaskIntoConstraints = false
     super.init(frame: frameRect)
     addSubview(label)
-    label.padding(.horizontal(2)).center(.y)
+    label.padding(.horizontal(Tokens.Space.n2)).center(.y)
   }
   
   required init?(coder: NSCoder) {
@@ -790,10 +790,10 @@ class PlaylistTrackCellView: NSTableCellView {
     self.trackNameLabel = ui.label("")
     trackNameLabel.lineBreakMode = .byTruncatingMiddle
     trackNameLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-    self.infoLabel = ui.label("", font: .boldSystemFont(ofSize: 11), isSecondary: true)
+    self.infoLabel = ui.label("", font: Tokens.Typography.captionStrong.nsFont, isSecondary: true)
     self.durationLabel = ui.label("", isSmall: true, isSecondary: true, canCompress: false)
     self.stackView = ui.hStack(
-      spacing: 4,
+      spacing: Tokens.Space.n4,
       prefixBtn,
       trackNameLabel,
       ui.flexibleSpace(),
@@ -803,7 +803,7 @@ class PlaylistTrackCellView: NSTableCellView {
     stackView.setCustomSpacing(0, after: prefixBtn)
 
     addSubview(stackView)
-    stackView.padding(.horizontal(2), .vertical)
+    stackView.padding(.horizontal(Tokens.Space.n2), .vertical)
   }
 
   required init?(coder: NSCoder) {
@@ -868,7 +868,7 @@ class PlaylistTrackCellView: NSTableCellView {
       setTitle(filename)
     }
     // playback progress and duration
-    durationLabel.font = NSFont.monospacedDigitSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
+    durationLabel.font = Tokens.Typography.numeric.nsFont
     durationLabel.stringValue = ""
     player.playlistQueue.async { [weak self] in
       guard let self else { return }
@@ -915,14 +915,14 @@ class PlaylistTrackCellView: NSTableCellView {
 
 class PlaylistRowView: NSTableRowView {
   var percentage: Double = 0
-  private static let barHeight: CGFloat = 3
+  private static let barHeight = Tokens.Size.n3
 
   override func draw(_ dirtyRect: NSRect) {
     super.draw(dirtyRect)
     let width = bounds.width * CGFloat(percentage)
     guard width > 0 else { return }
     let rect = NSRect(x: 0, y: bounds.height - Self.barHeight, width: width, height: Self.barHeight)
-    let fillColor = NSColor.controlAccentColor.blended(withFraction: 0.2, of: .white) ?? .controlAccentColor
+    let fillColor = Tokens.Palette.accentBlend.nsColor
     fillColor.setFill()
     NSBezierPath(rect: rect).fill()
   }
