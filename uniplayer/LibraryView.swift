@@ -108,7 +108,10 @@ struct LibraryTitlebarControls: View {
     Button {
       chrome.toggleSidebar()
     } label: {
-      iconLabel("sidebar.squares.leading")
+      Image(systemName: "sidebar.squares.leading")
+        .font(Tokens.Typography.titlebarIcon.font)
+        .frame(width: Tokens.Size.n30, height: Tokens.Size.n30)
+        .contentShape(Circle())
     }
     .buttonStyle(.plain)
     .foregroundStyle(Tokens.Palette.textPrimary.color)
@@ -119,18 +122,14 @@ struct LibraryTitlebarControls: View {
   private func iconButton(_ symbol: String, help: String,
                           action: @escaping () -> Void) -> some View {
     Button(action: action) {
-      iconLabel(symbol)
+      Image(systemName: symbol)
+        .font(Tokens.Typography.titlebarIcon.font)
+        .frame(width: Tokens.Size.n36, height: Tokens.Size.n30)
+        .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
     .foregroundStyle(Tokens.Palette.textPrimary.color)
     .help(help)
-  }
-
-  private func iconLabel(_ symbol: String) -> some View {
-    Image(systemName: symbol)
-      .font(Tokens.Typography.titlebarIcon.font)
-      .frame(width: Tokens.Size.n36, height: Tokens.Size.n36)
-      .contentShape(Rectangle())
   }
 }
 
