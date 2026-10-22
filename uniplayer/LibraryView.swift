@@ -19,6 +19,11 @@ private func LF(_ key: String, _ arguments: CVarArg...) -> String {
   String(format: NSLocalizedString(key, comment: ""), arguments: arguments)
 }
 
+enum LibrarySidebarItem: Hashable {
+  case section(LibrarySection)
+  case channel(String)
+}
+
 enum LibrarySection: String, CaseIterable, Identifiable {
   case home
   case search
@@ -56,9 +61,13 @@ struct LibraryRootView: View {
   private let openMany: ([URL]) -> Void
 
   @StateObject private var model: LibraryModel
-  @State private var selection: LibrarySection? = .home
+  @ObservedObject private var channels = ChannelStore.shared
+  @StateObject private var browser = ChannelBrowserModel()
+  @State private var selection: LibrarySidebarItem? = .section(.home)
   @State private var selectedItem: LibraryItem?
   @State private var dropTargeted = false
+  @State private var channelEditor: ChannelEditorSheet.Mode?
+  @State private var channelPendingDeletion: Channel?
 
   init(player: PlayerCore) {
     // Weak on purpose: PlayerCore owns the window that owns this view.
@@ -140,23 +149,74 @@ struct LibraryRootView: View {
     .onChange(of: selection) { _, _ in
       selectedItem = nil
     }
+    .sheet(item: $channelEditor) { mode in
+      ChannelEditorSheet(store: channels, mode: mode) { channel in
+        selection = .channel(channel.id)
+      }
+    }
+    .alert(L("Delete Channel?"), isPresented: isDeletingChannel) {
+      Button(L("Delete"), role: .destructive) {
+        if let channel = channelPendingDeletion {
+          deleteChannel(channel)
+        }
+      }
+      Button(L("Cancel"), role: .cancel) {}
+    } message: {
+      Text(channelPendingDeletion?.name ?? "")
+    }
+  }
+
+  private var isDeletingChannel: Binding<Bool> {
+    Binding(
+      get: { channelPendingDeletion != nil },
+      set: { if !$0 { channelPendingDeletion = nil } })
+  }
+
+  private func deleteChannel(_ channel: Channel) {
+    if case .channel(let id) = selection, id == channel.id {
+      selection = .section(.home)
+    }
+    channels.remove(id: channel.id)
+    channelPendingDeletion = nil
   }
 
   private var sidebar: some View {
     List(selection: $selection) {
       Section {
         Label(LibrarySection.home.title, systemImage: LibrarySection.home.symbol)
-          .tag(LibrarySection.home)
+          .tag(LibrarySidebarItem.section(.home))
         Label(LibrarySection.search.title, systemImage: LibrarySection.search.symbol)
-          .tag(LibrarySection.search)
+          .tag(LibrarySidebarItem.section(.search))
       }
       Section {
         Label(LibrarySection.recent.title, systemImage: LibrarySection.recent.symbol)
-          .tag(LibrarySection.recent)
+          .tag(LibrarySidebarItem.section(.recent))
         Label(LibrarySection.all.title, systemImage: LibrarySection.all.symbol)
-          .tag(LibrarySection.all)
+          .tag(LibrarySidebarItem.section(.all))
       } header: {
         Text(L("Library"))
+      }
+      Section {
+        ForEach(channels.channels) { channel in
+          Label(channel.name, systemImage: channel.symbol)
+            .tag(LibrarySidebarItem.channel(channel.id))
+            .contextMenu {
+              Button(L("Edit Channel…")) {
+                channelEditor = .edit(channel)
+              }
+              Button(L("Delete Channel"), role: .destructive) {
+                channelPendingDeletion = channel
+              }
+            }
+        }
+        Button {
+          channelEditor = .add
+        } label: {
+          Label(L("Add Channel…"), systemImage: "plus")
+        }
+        .buttonStyle(.plain)
+      } header: {
+        Text(L("Channels"))
       }
     }
     .listStyle(.sidebar)
@@ -184,36 +244,47 @@ struct LibraryRootView: View {
         play: { open(selectedItem.url) },
         back: { self.selectedItem = nil })
     } else {
-      switch selection ?? .home {
-      case .home:
+      switch selection ?? .section(.home) {
+      case .section(.home):
         HomeView(
           model: model,
           select: { selectedItem = $0 },
-          seeAll: { selection = $0 })
-      case .search:
+          seeAll: { selection = .section($0) })
+      case .section(.search):
         SearchView(model: model, select: { selectedItem = $0 })
-      case .continueWatching:
+      case .section(.continueWatching):
         LibraryGridView(
           title: LibrarySection.continueWatching.title,
           items: model.continueWatching,
           model: model,
           select: { selectedItem = $0 },
           emptyMessage: L("Open a video and it will appear here."),
-          onBack: { selection = .home })
-      case .recent:
+          onBack: { selection = .section(.home) })
+      case .section(.recent):
         LibraryGridView(
           title: LibrarySection.recent.title,
           items: model.recentlyAdded,
           model: model,
           select: { selectedItem = $0 },
           emptyMessage: L("Open a video to start your library."))
-      case .all:
+      case .section(.all):
         LibraryGridView(
           title: LibrarySection.all.title,
           items: model.allItems,
           model: model,
           select: { selectedItem = $0 },
           emptyMessage: L("Open a video to start your library."))
+      case .channel(let id):
+        if let channel = channels.channel(id: id) {
+          ChannelDetailView(browser: browser, channel: channel)
+        } else {
+          EmptyStateView(
+            symbol: "globe",
+            title: L("Channel not found"),
+            message: L("It may have been removed."))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Tokens.Palette.canvas.color)
+        }
       }
     }
   }

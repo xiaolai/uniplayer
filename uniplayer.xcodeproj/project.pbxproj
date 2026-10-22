@@ -211,6 +211,8 @@
 		AA1000000000000000000002 /* DesignTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1000000000000000000001 /* DesignTokens.swift */; };
 		AA2000000000000000000002 /* LibraryModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA2000000000000000000001 /* LibraryModel.swift */; };
 		AA3000000000000000000002 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA3000000000000000000001 /* LibraryView.swift */; };
+		CC2000000000000000000002 /* ChannelBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC2000000000000000000001 /* ChannelBrowserView.swift */; };
+		CC1000000000000000000002 /* Channel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1000000000000000000001 /* Channel.swift */; };
 		AA4000000000000000000002 /* LibraryWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA4000000000000000000001 /* LibraryWindowController.swift */; };
 		AA5000000000000000000002 /* LibraryMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA5000000000000000000001 /* LibraryMetadata.swift */; };
 		AA6000000000000000000002 /* PlayerHUDView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA6000000000000000000001 /* PlayerHUDView.swift */; };
@@ -1305,6 +1307,8 @@
 		AA1000000000000000000001 /* DesignTokens.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DesignTokens.swift; sourceTree = "<group>"; };
 		AA2000000000000000000001 /* LibraryModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LibraryModel.swift; sourceTree = "<group>"; };
 		AA3000000000000000000001 /* LibraryView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
+		CC2000000000000000000001 /* ChannelBrowserView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelBrowserView.swift; sourceTree = "<group>"; };
+		CC1000000000000000000001 /* Channel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Channel.swift; sourceTree = "<group>"; };
 		AA4000000000000000000001 /* LibraryWindowController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LibraryWindowController.swift; sourceTree = "<group>"; };
 		AA5000000000000000000001 /* LibraryMetadata.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = LibraryMetadata.swift; sourceTree = "<group>"; };
 		AA6000000000000000000001 /* PlayerHUDView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PlayerHUDView.swift; sourceTree = "<group>"; };
@@ -2148,6 +2152,8 @@
 				AA1000000000000000000001 /* DesignTokens.swift */,
 				AA2000000000000000000001 /* LibraryModel.swift */,
 				AA3000000000000000000001 /* LibraryView.swift */,
+				CC2000000000000000000001 /* ChannelBrowserView.swift */,
+				CC1000000000000000000001 /* Channel.swift */,
 				AA4000000000000000000001 /* LibraryWindowController.swift */,
 				AA5000000000000000000001 /* LibraryMetadata.swift */,
 				AA6000000000000000000001 /* PlayerHUDView.swift */,
@@ -2957,6 +2963,8 @@
 				AA1000000000000000000002 /* DesignTokens.swift in Sources */,
 				AA2000000000000000000002 /* LibraryModel.swift in Sources */,
 				AA3000000000000000000002 /* LibraryView.swift in Sources */,
+				CC2000000000000000000002 /* ChannelBrowserView.swift in Sources */,
+				CC1000000000000000000002 /* Channel.swift in Sources */,
 				AA4000000000000000000002 /* LibraryWindowController.swift in Sources */,
 				AA5000000000000000000002 /* LibraryMetadata.swift in Sources */,
 				AA6000000000000000000002 /* PlayerHUDView.swift in Sources */,

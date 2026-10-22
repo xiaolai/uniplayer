@@ -119,6 +119,47 @@ final class UniPlayerTests: XCTestCase {
     XCTAssertEqual(value as? String, "hello")
   }
 
+  // MARK: - Channels
+
+  func testChannelURLValidation() {
+    XCTAssertEqual(
+      Channel.validatedURL("example.com")?.absoluteString,
+      "https://example.com")
+    XCTAssertEqual(
+      Channel.validatedURL("https://example.com/watch?v=1")?.absoluteString,
+      "https://example.com/watch?v=1")
+    XCTAssertNil(Channel.validatedURL("javascript:alert(1)"))
+    XCTAssertNil(Channel.validatedURL("file:///tmp/movie.mkv"))
+    XCTAssertNil(Channel.validatedURL("ftp://example.com"))
+    XCTAssertNil(Channel.validatedURL("   "))
+  }
+
+  func testChannelStoreSeedsAndPersistsUserChannels() throws {
+    let directory = FileManager.default.temporaryDirectory
+      .appendingPathComponent("uniplayer-channels-\(UUID().uuidString)")
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let fileURL = directory.appendingPathComponent("channels.json")
+
+    let store = ChannelStore(fileURL: fileURL)
+    XCTAssertEqual(store.channels.map(\.id), ["amazon", "netflix"])
+
+    let added = try XCTUnwrap(store.add(name: "YouTube", urlString: "youtube.com"))
+    XCTAssertEqual(added.url.absoluteString, "https://youtube.com")
+
+    let reloaded = ChannelStore(fileURL: fileURL)
+    XCTAssertEqual(reloaded.channels.map(\.id), ["amazon", "netflix", added.id])
+
+    var edited = added
+    edited.name = "YouTube TV"
+    edited.url = try XCTUnwrap(Channel.validatedURL("https://www.youtube.com/tv"))
+    XCTAssertTrue(reloaded.update(edited))
+    XCTAssertEqual(ChannelStore(fileURL: fileURL).channel(id: added.id)?.name, "YouTube TV")
+
+    reloaded.remove(id: added.id)
+    XCTAssertEqual(ChannelStore(fileURL: fileURL).channels.map(\.id), ["amazon", "netflix"])
+  }
+
   // MARK: - Permission boundaries
 
   func testHostAllowlistMatchesExactAndWildcardDomains() {
