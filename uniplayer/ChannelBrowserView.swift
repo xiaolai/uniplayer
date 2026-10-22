@@ -107,7 +107,13 @@ extension ChannelBrowserModel: WKNavigationDelegate {
   }
 
   private func record(_ error: Error) {
-    if (error as NSError).code == NSURLErrorCancelled {
+    let nsError = error as NSError
+    if nsError.code == NSURLErrorCancelled {
+      return
+    }
+    // WebKit reports direct media documents as "Plug-in handled load" after
+    // it hands them to the media element; the page itself loaded correctly.
+    if nsError.domain == WKError.errorDomain, nsError.code == 204 {
       return
     }
     errorMessage = error.localizedDescription
@@ -158,14 +164,41 @@ extension ChannelBrowserModel: WKUIDelegate {
   }
 }
 
+/// Hosts the web view with an explicit frame and autoresizing.
+///
+/// WebKit's element fullscreen path breaks when the web view is pinned with
+/// Auto Layout constraints; the fullscreen surface then gets an invalid
+/// bounds and renders as a black window with a small video strip.
+private final class ChannelWebViewContainer: NSView {
+  let webView: WKWebView
+
+  init(webView: WKWebView) {
+    self.webView = webView
+    super.init(frame: .zero)
+    webView.translatesAutoresizingMaskIntoConstraints = true
+    webView.autoresizingMask = [.width, .height]
+    webView.frame = bounds
+    addSubview(webView)
+  }
+
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+
+  override func layout() {
+    super.layout()
+    webView.frame = bounds
+  }
+}
+
 private struct ChannelWebView: NSViewRepresentable {
   let webView: WKWebView
 
-  func makeNSView(context: Context) -> WKWebView {
-    webView
+  func makeNSView(context: Context) -> ChannelWebViewContainer {
+    ChannelWebViewContainer(webView: webView)
   }
 
-  func updateNSView(_ nsView: WKWebView, context: Context) {}
+  func updateNSView(_ nsView: ChannelWebViewContainer, context: Context) {}
 }
 
 struct ChannelDetailView: View {
