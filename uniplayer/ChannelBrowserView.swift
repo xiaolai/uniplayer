@@ -53,6 +53,11 @@ final class ChannelBrowserModel: NSObject, ObservableObject {
     webView.navigationDelegate = self
     webView.uiDelegate = self
     webView.allowsBackForwardNavigationGestures = true
+    // Keep fixed/sticky webpage controls below our draggable titlebar while
+    // the page's visual surface still extends behind it (public macOS 26 API).
+    webView.obscuredContentInsets = NSEdgeInsets(
+      top: Tokens.Library.titlebarHeight, left: Tokens.Space.n0,
+      bottom: Tokens.Space.n0, right: Tokens.Space.n0)
     webView.setValue(false, forKey: "drawsBackground")
     observations = [
       webView.observe(\.canGoBack, options: [.initial, .new]) { [weak self] view, _ in self?.canGoBack = view.canGoBack },
@@ -264,6 +269,8 @@ private struct ChannelWebView: NSViewRepresentable {
 }
 
 struct ChannelDetailView: View {
+  @ObservedObject var chrome: LibraryChrome
+  @State private var navigationPinned = false
   @ObservedObject var browser: ChannelBrowserModel
   let channel: Channel
   let onUseContext: (ChannelPageContext) -> Void
@@ -272,19 +279,68 @@ struct ChannelDetailView: View {
   @State private var contextStatus: String?
 
   var body: some View {
-    VStack(spacing: Tokens.Space.n0) {
+    ChannelWebView(webView: browser.webView)
+      .overlay(alignment: .topTrailing) {
+        Tokens.Palette.clear.color
+          .frame(width: Tokens.Size.n30, height: Tokens.Size.n30)
+          .popover(isPresented: $chrome.channelNavigationPresented, arrowEdge: .top) { navigationPanel }
+          .padding(.top, Tokens.Library.titlebarHeight)
+          .padding(.trailing, Tokens.Space.n16)
+      }
+      .overlay(alignment: .top) {
+        if navigationPinned {
+          navigationPanel
+            .glassEffect(.regular, in: .rect(cornerRadius: Tokens.Radius.n12))
+            .padding(.top, Tokens.Library.titlebarHeight)
+        }
+      }
+      .overlay(alignment: .topLeading) {
+        if browser.isLoading {
+          ProgressView(channelL("Loading channel…"))
+            .controlSize(.small).padding(Tokens.Space.n8)
+            .glassEffect(.regular, in: .capsule)
+            .padding(.top, Tokens.Library.titlebarHeight)
+        }
+      }
+      .overlay {
+        if let message = browser.errorMessage { errorView(message).background(Tokens.Palette.canvas.color) }
+      }
+      .overlay(alignment: .bottom) {
+        if let contextStatus {
+          HStack {
+            Text(contextStatus).font(Tokens.Typography.caption.font)
+            Button(channelL("Dismiss")) { self.contextStatus = nil }
+          }
+          .padding(Tokens.Space.n12)
+          .glassEffect(.regular, in: .capsule)
+          .padding(Tokens.Space.n16)
+        }
+      }
+      .background(Tokens.Palette.canvas.color)
+      .onAppear { chrome.channelSelected = true; browser.open(channel) }
+      .onChange(of: channel.id) { _, _ in contextStatus = nil; browser.open(channel) }
+      .onChange(of: channel.url) { _, _ in contextStatus = nil; browser.open(channel) }
+      .onDisappear { chrome.channelSelected = false; chrome.channelNavigationPresented = false; browser.stop() }
+  }
+
+  private var navigationPanel: some View {
+    VStack(alignment: .leading, spacing: Tokens.Space.n12) {
       HStack(spacing: Tokens.Space.n8) {
         navigationButton("chevron.left", title: "Back", action: browser.goBack).disabled(!browser.canGoBack)
         navigationButton("chevron.right", title: "Forward", action: browser.goForward).disabled(!browser.canGoForward)
         navigationButton("arrow.clockwise", title: "Reload", action: browser.reload)
         navigationButton("house", title: "Channel Home", action: browser.goHome)
-        Text(browser.pageURL?.host ?? channel.name)
-          .font(Tokens.Typography.body.font)
-          .foregroundStyle(Tokens.Palette.textSecondary.color)
-          .lineLimit(1)
-          .truncationMode(.middle)
-          .frame(maxWidth: .infinity, alignment: .leading)
         navigationButton("safari", title: "Open in Browser", action: browser.openInBrowser)
+        Spacer()
+        Button { navigationPinned.toggle(); chrome.channelNavigationPresented = false } label: {
+          Image(systemName: navigationPinned ? "pin.slash" : "pin")
+        }
+        .help(channelL(navigationPinned ? "Unpin Navigation" : "Pin Navigation"))
+        .accessibilityLabel(channelL(navigationPinned ? "Unpin Navigation" : "Pin Navigation"))
+      }
+      Text(browser.pageURL?.host ?? channel.name)
+        .font(Tokens.Typography.body.font)
+        .lineLimit(1).truncationMode(.middle)
         Button {
           capturing = true
           contextStatus = nil
@@ -302,38 +358,17 @@ struct ChannelDetailView: View {
         }
         .disabled(capturing || browser.isLoading)
         .help(channelL("Attach the page title and selected text to AI Assistant"))
-      }
-      .padding(Tokens.Space.n8)
-      .background(Tokens.Palette.surface.color)
-      Divider()
-      if browser.isLoading {
-        ProgressView(channelL("Loading channel…"))
-          .controlSize(.small)
-          .padding(Tokens.Space.n8)
-      }
-      if let contextStatus {
-        HStack {
-          Text(contextStatus).font(Tokens.Typography.caption.font)
-          Spacer()
-          Button(channelL("Dismiss")) { self.contextStatus = nil }
-        }
-        .padding(Tokens.Space.n8)
-        .background(Tokens.Palette.controlBackground.color)
-        .accessibilityElement(children: .combine)
-      }
-      if let errorMessage = browser.errorMessage { errorView(errorMessage) }
-      ChannelWebView(webView: browser.webView)
     }
-    .background(Tokens.Palette.canvas.color)
-    .onAppear { browser.open(channel) }
-    .onChange(of: channel.id) { _, _ in contextStatus = nil; browser.open(channel) }
-    .onChange(of: channel.url) { _, _ in contextStatus = nil; browser.open(channel) }
-    .onDisappear { browser.stop() }
+    .padding(Tokens.Space.n12)
+    .frame(width: Tokens.Inspector.idealWidth)
   }
 
   private func navigationButton(_ symbol: String, title: String,
                                 action: @escaping () -> Void) -> some View {
-    Button(action: action) {
+    Button {
+      action()
+      if !navigationPinned { chrome.channelNavigationPresented = false }
+    } label: {
       Image(systemName: symbol).frame(width: Tokens.Size.n30, height: Tokens.Size.n30)
     }
     .buttonStyle(.borderless)

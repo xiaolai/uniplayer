@@ -1268,3 +1268,27 @@
 "Videos you open appear here. Files stay in their original folders." = "Videos you open appear here. Files stay in their original folders.";
 "Back 15 Seconds" = "Back 15 Seconds";
 "Forward 15 Seconds" = "Forward 15 Seconds";
+
+"Channel Navigation" = "Channel Navigation";
+
+"Pin Navigation" = "Pin Navigation";
+
+"Unpin Navigation" = "Unpin Navigation";
+
+"Sidebar Width" = "Sidebar Width";
+
+"Inspector Width" = "Inspector Width";
+
+"Playback Options" = "Playback Options";
+
+"Floating Sidebar" = "Floating Sidebar";
+
+"Floating Inspector" = "Floating Inspector";
+
+"Pin Sidebar" = "Pin Sidebar";
+
+"Pin Inspector" = "Pin Inspector";
+
+"Pin when there is enough screen space" = "Pin when there is enough screen space";
+
+"Video Fullscreen" = "Video Fullscreen";

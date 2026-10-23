@@ -1,16 +1,38 @@
 # Release notes
 
-## Unreleased
+## 0.1.6 (build 7)
+
+- Full-height video and channel content behind a transparent, draggable native
+  titlebar. Playback Back moves into the titlebar; Info moves into transport.
+- Individual glass playback buttons without an enclosing panel or background.
+- Side panes expand outward while preserving the central viewport. The left
+  pane defaults to 280pt; widths are remembered. Panes float when screen space
+  cannot accommodate expansion. Central content has a 640pt minimum width.
+- Channel navigation is hidden until requested, with an optional floating panel.
+- Double-clicking video enters a separate video-only fullscreen presentation;
+  Escape, double-click, the fullscreen button or Command-W returns inline.
+- Focus mode and ordinary window fullscreen restore the intended pane layout
+  when used together.
+- Homebrew installation: `brew install --cask xiaolai/tap/uniplayer`.
+
+Validation: 62 native tests and 22 checker tests passed on the review source;
+Release build, token/browser/localization checks and live playback/geometry
+checks passed on validation-host. Intel binaries are built but have not been run
+on Intel hardware. Attended accessibility, HDR/DRM and multi-display hardware
+acceptance remain outside the tested scope. Builds are ad hoc signed and not
+notarized.
+
+## Earlier inline-player and assistant changes
 
 ### Inline player
 
 - Playing a local file from the library now happens in the detail column. The
   separate player window no longer opens for normal library playback.
 - A minimal auto-hiding control overlay replaces the floating HUD windows:
-  play/pause, ±10 seconds, timeline, volume, audio, subtitles, speed and
+  play/pause, ±15 seconds, timeline, volume, audio, subtitles, speed and
   fullscreen.
-- Double-click the video to enter fullscreen; Escape leaves it. Sidebar and
-  inspector hide during fullscreen and return afterwards.
+- Double-click the video for video-only fullscreen; Escape returns inline.
+  The library window and its panes retain their frame and state.
 - `⌘⇧F` toggles a windowed Focus mode that hides both panes without macOS
   fullscreen.
 - "Open in New Window" detaches playback to the player window. "Open in

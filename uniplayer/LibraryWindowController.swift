@@ -11,7 +11,7 @@ import AppKit
 import SwiftUI
 import WebKit
 
-final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToolbarDelegate {
+final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToolbarDelegate, NSToolbarItemValidation {
 
   /// macOS virtual key code for Escape.
   private static let escapeKeyCode: UInt16 = 53
@@ -22,7 +22,11 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
   private var sidebarShortcutMonitor: Any?
   private var inlineKeyMonitor: Any?
   private var menuActionHandler: MainMenuActionHandler?
-  private var sidebarHiddenForInspector = false
+  private var videoFullscreenWindow: NSWindow?
+  private var savedPresentationOptions: NSApplication.PresentationOptions?
+  var isVideoFullscreen: Bool { chrome.videoFullscreenPresented }
+  private var adjustingPaneFrame = false
+  private var fullscreenPanes: (NavigationSplitViewVisibility, Bool, Bool, Bool)?
   private let chrome: LibraryChrome
 
   private var savedColumnVisibility: NavigationSplitViewVisibility?
@@ -36,8 +40,10 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
   /// command presents into it.
   var inlineHost: InlinePlayerSurfaceHost { chrome.inlineHost }
 
+  var supportsFocusMode: Bool { player.isInline || chrome.channelSelected }
+
   var isWindowFullScreen: Bool {
-    window?.styleMask.contains(.fullScreen) ?? false
+    fullscreenPanes != nil || (window?.styleMask.contains(.fullScreen) ?? false)
   }
 
   init(playerCore: PlayerCore, chrome: LibraryChrome = LibraryChrome()) {
@@ -66,6 +72,7 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
     hosting.sizingOptions = []
     window.contentView = hosting
     installToolbar(in: window)
+    updateMinimumSize(window)
     window.delegate = self
     // Assigning the controller sets NSWindow's responder chain. Insert our
     // playback/menu responder afterwards so AppKit doesn't replace it.
@@ -85,12 +92,12 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
       defer: false,
       usesUnifiedToolbar: true)
     window.title = "UniPlayer"
-    window.titleVisibility = .visible
-    window.titlebarAppearsTransparent = false
+    window.titleVisibility = .hidden
+    window.titlebarAppearsTransparent = true
     window.titlebarSeparatorStyle = .none
     window.toolbarStyle = .unified
     window.minSize = Tokens.Window.minimumSize
-    window.isMovableByWindowBackground = true
+    window.isMovableByWindowBackground = false
     window.backgroundColor = Tokens.Palette.canvas.nsColor
     window.appearance = NSAppearance(uniplayerTheme: Preference.enum(for: .themeMaterial))
     if !window.setFrameUsingName("UniPlayerLibraryWindow") {
@@ -107,24 +114,29 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
     toolbar.allowsUserCustomization = true
     toolbar.autosavesConfiguration = true
     window.toolbar = toolbar
+    if !toolbar.items.contains(where: { $0.itemIdentifier.rawValue == "library.navigation" }) {
+      toolbar.insertItem(withItemIdentifier: .init("library.navigation"), at: toolbar.items.count)
+    }
   }
 
   func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-    toolbarDefaultItemIdentifiers(toolbar)
+    toolbarDefaultItemIdentifiers(toolbar) + [.init("library.back")]
   }
 
   func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
     [.init("library.sidebar"), .init("library.file"), .init("library.url"),
-     .flexibleSpace, .init("library.search"), .init("library.inspector")]
+     .flexibleSpace, .init("library.search"), .init("library.navigation"), .init("library.inspector")]
   }
 
   func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier id: NSToolbarItem.Identifier,
                willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
     let definitions: [String: (String, String, Selector)] = [
+      "library.back": ("Back", "chevron.left", #selector(playbackBack(_:))),
       "library.sidebar": ("Show or Hide Sidebar", "sidebar.left", #selector(toggleSidebar(_:))),
       "library.file": ("Open File…", "folder", #selector(toolbarOpenFile(_:))),
       "library.url": ("Open URL…", "link", #selector(toolbarOpenURL(_:))),
       "library.search": ("Search Library", "magnifyingglass", #selector(menuSearchLibrary(_:))),
+      "library.navigation": ("Channel Navigation", "safari", #selector(toggleChannelNavigation(_:))),
       "library.inspector": ("AI Assistant", "sidebar.right", #selector(menuToggleInspector(_:))),
     ]
     guard let (label, symbol, action) = definitions[id.rawValue] else { return nil }
@@ -136,6 +148,25 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
     item.target = self
     item.action = action
     return item
+  }
+
+  @objc private func playbackBack(_ sender: Any?) { chrome.backFromPlayback?() }
+
+  private func updatePlaybackToolbar() {
+    guard let toolbar = window?.toolbar else { return }
+    let index = toolbar.items.firstIndex { $0.itemIdentifier.rawValue == "library.back" }
+    if chrome.playbackPresented && index == nil {
+      toolbar.insertItem(withItemIdentifier: .init("library.back"), at: 0)
+    } else if !chrome.playbackPresented, let index { toolbar.removeItem(at: index) }
+  }
+
+  @objc private func toggleChannelNavigation(_ sender: Any?) {
+    guard chrome.channelSelected else { return }
+    chrome.channelNavigationPresented.toggle()
+  }
+
+  func validateToolbarItem(_ item: NSToolbarItem) -> Bool {
+    item.itemIdentifier.rawValue != "library.navigation" || chrome.channelSelected
   }
 
   @objc private func toolbarOpenFile(_ sender: Any?) { chrome.openFile?() }
@@ -168,22 +199,34 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
         self.toggleInspector()
         return nil
       }
-      if modifiers == [.command, .shift], character == "f", self.player.isInline {
+      if modifiers == [.command, .shift], character == "f", self.supportsFocusMode {
         self.toggleFocusMode()
         return nil
       }
       return event
     }
     inlineKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-      guard let self, event.window === self.window else { return event }
+      guard let self, event.window === self.window || event.window === self.videoFullscreenWindow else { return event }
+      if event.window === self.videoFullscreenWindow {
+        let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        if event.keyCode == Self.escapeKeyCode
+            || (modifiers == .command && event.charactersIgnoringModifiers?.lowercased() == "w") {
+          self.exitVideoFullscreen()
+          return nil
+        }
+      }
       return self.handleInlineKeyDown(event)
     }
   }
 
   private func wireChromeActions(window: NSWindow) {
+    chrome.playbackChromeChanged = { [weak self] in self?.updatePlaybackToolbar() }
+    chrome.pinPane = { [weak self] left in self?.pinPane(left: left) }
+    chrome.resizePane = { [weak self] left, width in self?.resizePane(left: left, width: width) }
     chrome.toggleFullscreen = { [weak self] in
-      self?.toggleWindowFullScreen()
+      self?.toggleVideoFullscreen()
     }
+    chrome.exitVideoFullscreen = { [weak self] in self?.exitVideoFullscreen() }
     chrome.toggleInspector = { [weak self] in
       self?.toggleInspector()
     }
@@ -208,12 +251,68 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
   }
 
   @IBAction func toggleSidebar(_ sender: Any?) {
-    if chrome.columnVisibility == .detailOnly, chrome.inspectorPresented,
-       LibraryLayout.shouldCollapseSidebar(width: window?.frame.width ?? 0, inspector: true) {
-      chrome.inspectorPresented = false
-    }
-    sidebarHiddenForInspector = false
-    chrome.toggleSidebar()
+    setPane(left: true, visible: chrome.columnVisibility == .detailOnly)
+  }
+
+  private func updateMinimumSize(_ window: NSWindow) {
+    let left = chrome.columnVisibility != .detailOnly && chrome.leftDocked ? chrome.sidebarWidth : 0
+    let right = chrome.inspectorPresented && chrome.rightDocked ? chrome.inspectorWidth : 0
+    let screenWidth = window.screen?.visibleFrame.width ?? window.frame.width
+    let fullscreen = isWindowFullScreen
+    chrome.canDockLeft = !fullscreen && window.frame.width + chrome.sidebarWidth <= screenWidth
+    chrome.canDockRight = !fullscreen && window.frame.width + chrome.inspectorWidth <= screenWidth
+    window.minSize = NSSize(width: LibraryLayout.minimumWidth(left: left, right: right),
+                            height: Tokens.Window.minimumSize.height)
+  }
+
+  private func setPane(left: Bool, visible: Bool) {
+    guard let window else { return }
+    let currentlyVisible = left ? chrome.columnVisibility != .detailOnly : chrome.inspectorPresented
+    guard visible != currentlyVisible else { return }
+    let docked = left ? chrome.leftDocked : chrome.rightDocked
+    let width = left ? chrome.sidebarWidth : chrome.inspectorWidth
+    let fullscreen = isWindowFullScreen
+    let screen = window.screen?.visibleFrame ?? window.frame
+    let delta = visible ? width : (docked ? -width : 0)
+    let target = fullscreen ? nil : LibraryLayout.paneFrame(frame: window.frame, screen: screen, delta: delta, left: left)
+    let willDock = visible && target != nil
+    adjustingPaneFrame = true
+    if left { chrome.leftDocked = willDock; chrome.columnVisibility = visible ? .all : .detailOnly }
+    else { chrome.rightDocked = willDock; chrome.inspectorPresented = visible }
+    updateMinimumSize(window)
+    if let target { window.setFrame(target, display: true) }
+    updateMinimumSize(window)
+    adjustingPaneFrame = false
+  }
+
+  private func pinPane(left: Bool) {
+    guard let window, !window.styleMask.contains(.fullScreen),
+          !(left ? chrome.leftDocked : chrome.rightDocked) else { return }
+    let width = left ? chrome.sidebarWidth : chrome.inspectorWidth
+    guard let frame = LibraryLayout.paneFrame(frame: window.frame,
+      screen: window.screen?.visibleFrame ?? window.frame, delta: width, left: left) else { return }
+    adjustingPaneFrame = true
+    if left { chrome.leftDocked = true } else { chrome.rightDocked = true }
+    window.setFrame(frame, display: true)
+    updateMinimumSize(window)
+    adjustingPaneFrame = false
+  }
+
+  private func resizePane(left: Bool, width: CGFloat) {
+    guard let window else { return }
+    let width = LibraryLayout.boundedPaneWidth(width, left: left)
+    let old = left ? chrome.sidebarWidth : chrome.inspectorWidth
+    let docked = left ? chrome.leftDocked : chrome.rightDocked
+    let target = LibraryLayout.paneFrame(frame: window.frame,
+      screen: window.screen?.visibleFrame ?? window.frame, delta: width - old, left: left)
+    if docked && target == nil { return }
+    adjustingPaneFrame = true
+    if left { chrome.sidebarWidth = width } else { chrome.inspectorWidth = width }
+    UserDefaults.standard.set(width, forKey: left ? "library.outwardSidebarWidth.v1" : "library.outwardInspectorWidth.v1")
+    updateMinimumSize(window)
+    if docked, let target { window.setFrame(target, display: true) }
+    updateMinimumSize(window)
+    adjustingPaneFrame = false
   }
 
   // MARK: - Inline keyboard
@@ -230,7 +329,7 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
     }
     // Editors, web content and focused controls own their keys, Escape
     // included.
-    if isEditingText {
+    if isEditingText(in: event.window) {
       return event
     }
     if event.keyCode == Self.escapeKeyCode {
@@ -247,8 +346,8 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
     return player.handleKeyBinding(binding) ? nil : event
   }
 
-  private var isEditingText: Bool {
-    guard let responder = window?.firstResponder else { return false }
+  private func isEditingText(in eventWindow: NSWindow?) -> Bool {
+    guard let responder = eventWindow?.firstResponder else { return false }
     if responder is NSTextView || responder is NSTextField {
       return true
     }
@@ -270,23 +369,66 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
   // MARK: - Inspector
 
   func toggleInspector() {
-    // The inspector is hidden in fullscreen; a titlebar click on the accessory
-    // must not bring it back over the video.
-    if window?.styleMask.contains(.fullScreen) == true { return }
-    if !chrome.inspectorPresented, let window,
-       LibraryLayout.shouldCollapseSidebar(width: window.frame.width, inspector: true) {
-      sidebarHiddenForInspector = chrome.columnVisibility != .detailOnly
-      chrome.columnVisibility = .detailOnly
-    }
-    chrome.inspectorPresented.toggle()
-    if !chrome.inspectorPresented, sidebarHiddenForInspector {
-      chrome.columnVisibility = .all
-      sidebarHiddenForInspector = false
-    }
+    setPane(left: false, visible: !chrome.inspectorPresented)
   }
 
   @objc func menuToggleInspector(_ sender: Any?) {
     toggleInspector()
+  }
+
+  // MARK: - Video-only fullscreen
+
+  /// A separate borderless presentation borrows the existing inline host.
+  /// The library's frame, panes and native fullscreen state are untouched.
+  func toggleVideoFullscreen() {
+    if chrome.videoFullscreenPresented { exitVideoFullscreen(); return }
+    guard player.isInline, player.info.state.active,
+          let screen = chrome.inlineHost.window?.screen ?? window?.screen else { return }
+    chrome.videoFullscreenPresented = true
+    DispatchQueue.main.async { [weak self] in
+      guard let self, self.chrome.videoFullscreenPresented,
+            let content = self.chrome.makeVideoFullscreenContent?() else {
+        self?.chrome.videoFullscreenPresented = false
+        return
+      }
+      let videoWindow = VideoFullscreenWindow(contentRect: screen.frame, styleMask: [.borderless, .closable],
+        backing: .buffered, defer: false)
+      videoWindow.title = NSLocalizedString("Video Fullscreen", comment: "Video-only window")
+      videoWindow.backgroundColor = Tokens.Palette.black.nsColor
+      videoWindow.appearance = self.window?.appearance
+      videoWindow.isReleasedWhenClosed = false
+      videoWindow.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+      videoWindow.onExit = { [weak self] in self?.exitVideoFullscreen() }
+      let hosting = NSHostingView(rootView: content)
+      hosting.sizingOptions = []
+      videoWindow.contentView = hosting
+      self.videoFullscreenWindow = videoWindow
+      self.installMenuHandler(in: videoWindow)
+      self.savedPresentationOptions = NSApp.presentationOptions
+      NSApp.presentationOptions = [.autoHideDock, .autoHideMenuBar]
+      videoWindow.makeKeyAndOrderFront(nil)
+      videoWindow.makeFirstResponder(self.chrome.inlineHost)
+      self.chrome.registerInlineActivity?()
+      self.player.mainWindow.videoView.updateDisplayLink()
+      self.player.mainWindow.videoView.refreshEdrMode()
+    }
+  }
+
+  func exitVideoFullscreen() {
+    guard chrome.videoFullscreenPresented || videoFullscreenWindow != nil else { return }
+    videoFullscreenWindow?.orderOut(nil)
+    videoFullscreenWindow?.contentView = nil
+    videoFullscreenWindow = nil
+    if let savedPresentationOptions { NSApp.presentationOptions = savedPresentationOptions }
+    savedPresentationOptions = nil
+    chrome.videoFullscreenPresented = false
+    window?.makeKeyAndOrderFront(nil)
+    DispatchQueue.main.async { [weak self] in
+      guard let self else { return }
+      self.window?.makeFirstResponder(self.chrome.inlineHost)
+      self.player.mainWindow.videoView.updateDisplayLink()
+      self.player.mainWindow.videoView.refreshEdrMode()
+    }
   }
 
   // MARK: - Fullscreen and focus
@@ -329,8 +471,8 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
     guard !isFocusMode else { return }
     isFocusMode = true
     savePanes()
-    chrome.columnVisibility = .detailOnly
-    chrome.inspectorPresented = false
+    setPane(left: false, visible: false)
+    setPane(left: true, visible: false)
     updateImmersiveState()
   }
 
@@ -338,7 +480,7 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
     guard isFocusMode else { return }
     isFocusMode = false
     // Fullscreen may still be immersive; only restore when it is not.
-    if !(window?.styleMask.contains(.fullScreen) ?? false) {
+    if !isWindowFullScreen {
       restorePanes()
     }
     updateImmersiveState()
@@ -358,10 +500,10 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
   private func restorePanes() {
     guard panesSaved else { return }
     if let savedColumnVisibility {
-      chrome.columnVisibility = savedColumnVisibility
+      setPane(left: true, visible: savedColumnVisibility != .detailOnly)
     }
     if let savedInspectorPresented {
-      chrome.inspectorPresented = savedInspectorPresented
+      setPane(left: false, visible: savedInspectorPresented)
     }
     savedColumnVisibility = nil
     savedInspectorPresented = nil
@@ -371,6 +513,7 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
   // MARK: - Inline window actions
 
   func openInNewWindow() {
+    exitVideoFullscreen()
     guard player.isInline else { return }
     player.endInlinePresentation(showWindow: true)
   }
@@ -378,28 +521,51 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
   // MARK: - NSWindowDelegate
 
   func windowWillEnterFullScreen(_ notification: Notification) {
-    savePanes()
-    chrome.columnVisibility = .detailOnly
-    chrome.inspectorPresented = false
+    fullscreenPanes = (chrome.columnVisibility, chrome.inspectorPresented, chrome.leftDocked, chrome.rightDocked)
+    // Fullscreen cannot expand outwards: visible panes float above the content.
+    chrome.leftDocked = false
+    chrome.rightDocked = false
     chrome.isImmersive = true
   }
 
   func windowDidExitFullScreen(_ notification: Notification) {
     updateImmersiveState()
-    // Focus mode may still hold the panes.
-    if !isFocusMode {
+    if let saved = fullscreenPanes {
+      chrome.columnVisibility = saved.0
+      chrome.inspectorPresented = saved.1
+      chrome.leftDocked = saved.2
+      chrome.rightDocked = saved.3
+    }
+    fullscreenPanes = nil
+    // The fullscreen snapshot predates any Focus toggles made in that Space.
+    // Reconcile the current intent after AppKit restores the ordinary frame.
+    if isFocusMode {
+      setPane(left: false, visible: false)
+      setPane(left: true, visible: false)
+    } else {
       restorePanes()
     }
+    if let window { updateMinimumSize(window) }
   }
 
   func windowDidResize(_ notification: Notification) {
-    guard let window, chrome.inspectorPresented,
-          LibraryLayout.shouldCollapseSidebar(width: window.frame.width, inspector: true) else { return }
-    sidebarHiddenForInspector = chrome.columnVisibility != .detailOnly || sidebarHiddenForInspector
-    chrome.columnVisibility = .detailOnly
+    guard !adjustingPaneFrame, let window else { return }
+    updateMinimumSize(window)
+    // Accessibility/programmatic resizing can bypass NSWindow.minSize, which
+    // otherwise constrains ordinary edge dragging. Enforce the same floor.
+    var frame = window.frame
+    let top = frame.maxY
+    frame.size.width = max(frame.width, window.minSize.width)
+    frame.size.height = max(frame.height, window.minSize.height)
+    frame.origin.y = top - frame.height
+    guard frame != window.frame else { return }
+    adjustingPaneFrame = true
+    window.setFrame(frame, display: true)
+    adjustingPaneFrame = false
   }
 
   func windowDidChangeScreen(_ notification: Notification) {
+    if let window { updateMinimumSize(window) }
     guard player.isInline else { return }
     // The surface now renders on the library window's display.
     player.mainWindow.videoView.updateDisplayLink()
@@ -413,6 +579,7 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
   }
 
   func windowWillClose(_ notification: Notification) {
+    exitVideoFullscreen()
     if player.isInline {
       // Closing the library releases the surface and stops its audio.
       player.stop()
@@ -430,4 +597,12 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
     reloadData()
   }
 
+}
+
+/// The playback fullscreen surface has no library chrome or draggable titlebar.
+private final class VideoFullscreenWindow: NSWindow {
+  var onExit: (() -> Void)?
+  override var canBecomeKey: Bool { true }
+  override var canBecomeMain: Bool { true }
+  override func performClose(_ sender: Any?) { onExit?() }
 }

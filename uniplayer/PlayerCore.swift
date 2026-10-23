@@ -1125,16 +1125,16 @@ class PlayerCore: NSObject {
       return handleUniPlayerCommand(command)
     }
 
-    // Inline fullscreen belongs to the library window; sending the command to
-    // mpv would fullscreen the hidden player window instead.
+    // Playback fullscreen presents just the stable video host; the library
+    // window and its panes keep their own independent window state.
     if isInline, keyBinding.rawAction.contains("fullscreen") {
       switch Self.fullscreenRequest(for: keyBinding.rawAction) {
       case .toggle:
-        initialWindow.toggleWindowFullScreen()
+        initialWindow.toggleVideoFullscreen()
         return true
       case .set(let target):
-        if target != initialWindow.isWindowFullScreen {
-          initialWindow.toggleWindowFullScreen()
+        if target != initialWindow.isVideoFullscreen {
+          initialWindow.toggleVideoFullscreen()
         }
         return true
       case .unsupported:
@@ -2663,8 +2663,8 @@ class PlayerCore: NSObject {
     guard mainWindow.loaded, info.state.active else { return }
     let fs = mpv.getFlag(MPVOption.Window.fullscreen)
     if isInline {
-      // Inline fullscreen belongs to the library window. Keep mpv's own
-      // fullscreen flag off so it cannot resize the hidden player window.
+      // Video-only fullscreen keeps the renderer inline. mpv must not resize
+      // the hidden detached player window.
       if fs {
         mpv.setFlag(MPVOption.Window.fullscreen, false, level: .verbose)
       }

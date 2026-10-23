@@ -513,7 +513,7 @@ extension MainMenuActionHandler {
       return !player.isInline && player.info.state.active
     case #selector(menuToggleLibraryFocus(_:)):
       menuItem.state = player.initialWindow.isFocusMode ? .on : .off
-      return player.isInline
+      return player.initialWindow.supportsFocusMode
     default:
       break
     }

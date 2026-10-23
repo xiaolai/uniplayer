@@ -40,7 +40,7 @@ player.
 Window-only work — the OSC, the HUD, window resizing and `fsState` — is gated on
 the presentation. While inline, the player window is loaded but hidden, OSD
 messages go to the inline chrome instead of floating panels, and fullscreen
-belongs to the library window. Inline and mini player never hand the surface
+uses a dedicated video-only presentation window. Inline and mini player never hand the surface
 directly to each other; the surface returns to the player window first.
 
 ## License

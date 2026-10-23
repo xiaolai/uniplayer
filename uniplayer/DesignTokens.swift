@@ -1258,6 +1258,22 @@ enum Tokens {
 
   /// Library-specific geometry that is not part of the global scale.
   enum Library {
+    /// Minimum width of the central video or webpage, excluding docked panes.
+    static let contentMinimumWidth: CGFloat = 640
+    /// Initial width of the outward-opening library sidebar.
+    static let outwardSidebarWidth: CGFloat = 280
+    /// Smallest remembered outward sidebar width.
+    static let outwardSidebarMinimum: CGFloat = 240
+    /// Largest remembered outward sidebar width.
+    static let outwardSidebarMaximum: CGFloat = 420
+    /// Transparent top strip reserved for window dragging and titlebar controls.
+    static let titlebarHeight: CGFloat = 52
+    /// Maximum width of floating playback transport.
+    static let transportMaximumWidth: CGFloat = 720
+    /// Individual glass playback button diameter.
+    static let glassControlSize: CGFloat = 36
+    /// Draggable pane separator hit width.
+    static let paneResizeWidth: CGFloat = 8
     /// Diameter of the inline player's primary transport control.
     static let playControlSize: CGFloat = 44
     /// Maximum height of the Home overview artwork.

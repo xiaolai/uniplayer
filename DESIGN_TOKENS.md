@@ -631,6 +631,14 @@ motion that honours Reduce Motion and the app's own animation setting.
 
 | Token | Declaration | Purpose |
 |---|---|---|
+| `contentMinimumWidth` | `static let contentMinimumWidth: CGFloat = 640` | Minimum width of the central video or webpage, excluding docked panes. |
+| `outwardSidebarWidth` | `static let outwardSidebarWidth: CGFloat = 280` | Initial width of the outward-opening library sidebar. |
+| `outwardSidebarMinimum` | `static let outwardSidebarMinimum: CGFloat = 240` | Smallest remembered outward sidebar width. |
+| `outwardSidebarMaximum` | `static let outwardSidebarMaximum: CGFloat = 420` | Largest remembered outward sidebar width. |
+| `titlebarHeight` | `static let titlebarHeight: CGFloat = 52` | Transparent top strip reserved for window dragging and titlebar controls. |
+| `transportMaximumWidth` | `static let transportMaximumWidth: CGFloat = 720` | Maximum width of floating playback transport. |
+| `glassControlSize` | `static let glassControlSize: CGFloat = 36` | Individual glass playback button diameter. |
+| `paneResizeWidth` | `static let paneResizeWidth: CGFloat = 8` | Draggable pane separator hit width. |
 | `playControlSize` | `static let playControlSize: CGFloat = 44` | Diameter of the inline player's primary transport control. |
 | `heroMaximumHeight` | `static let heroMaximumHeight: CGFloat = 280` | Maximum height of the Home overview artwork. |
 | `playerReservedHeight` | `static let playerReservedHeight: CGFloat = 240` | The space reserved around a viewport-bounded player. |

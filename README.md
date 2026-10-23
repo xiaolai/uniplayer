@@ -9,8 +9,18 @@ for its author's own machines; there is no support commitment, no roadmap, and
 no promise that a change will suit anyone else's setup. Issues and pull
 requests may go unanswered.
 
-The current version is 0.1.5 (build 6). Builds are ad hoc signed unless a
+The current version is 0.1.6 (build 7). Builds are ad hoc signed unless a
 development team is configured.
+
+## Install
+
+```sh
+brew install --cask xiaolai/tap/uniplayer
+```
+
+Requires macOS 27 or later. The universal build contains Apple silicon and
+Intel binaries. This personal build is ad hoc signed and is not notarized;
+macOS may require Privacy & Security → Open Anyway on first launch.
 
 ## Relationship to IINA
 

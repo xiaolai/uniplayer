@@ -537,10 +537,30 @@ final class LibraryRemediationTests: XCTestCase {
     XCTAssertGreaterThan(LibraryLayout.videoHeight(width: 900, viewportHeight: 720), 200)
   }
 
-  func testInspectorPolicyKeepsUsefulDetailWidth() {
-    XCTAssertTrue(LibraryLayout.shouldCollapseSidebar(width: 900, inspector: true))
-    XCTAssertFalse(LibraryLayout.shouldCollapseSidebar(width: 1220, inspector: true))
-    XCTAssertFalse(LibraryLayout.shouldCollapseSidebar(width: 900, inspector: false))
+  func testPanesExpandOutwardsAndCloseReversibly() {
+    let frame = NSRect(x: 500, y: 100, width: 800, height: 600)
+    let screen = NSRect(x: 0, y: 0, width: 2200, height: 1000)
+    let left = LibraryLayout.paneFrame(frame: frame, screen: screen, delta: 280, left: true)
+    XCTAssertEqual(left, NSRect(x: 220, y: 100, width: 1080, height: 600))
+    XCTAssertEqual(LibraryLayout.paneFrame(frame: left!, screen: screen, delta: -280, left: true), frame)
+    let right = LibraryLayout.paneFrame(frame: frame, screen: screen, delta: 360, left: false)
+    XCTAssertEqual(right, NSRect(x: 500, y: 100, width: 1160, height: 600))
+  }
+
+  func testPaneExpansionRepositionsAtScreenEdgeAndOverlaysWhenTooWide() {
+    let screen = NSRect(x: -1600, y: 0, width: 1600, height: 900)
+    let frame = NSRect(x: -1600, y: 30, width: 900, height: 700)
+    let result = LibraryLayout.paneFrame(frame: frame, screen: screen, delta: 280, left: true)
+    XCTAssertEqual(result?.minX, screen.minX)
+    XCTAssertEqual(result?.width, 1180)
+    XCTAssertNil(LibraryLayout.paneFrame(frame: frame, screen: screen, delta: 800, left: false))
+  }
+
+  func testContentMinimumIncludesOnlyDockedPanes() {
+    XCTAssertEqual(LibraryLayout.minimumWidth(left: 280, right: 360), 1280)
+    XCTAssertEqual(LibraryLayout.minimumWidth(left: 0, right: 0), 640)
+    XCTAssertEqual(LibraryLayout.boundedPaneWidth(20, left: true), 240)
+    XCTAssertEqual(LibraryLayout.boundedPaneWidth(900, left: true), 420)
   }
 
   func testLibrarySortAndFiltersPreserveMissingItems() {
@@ -596,6 +616,61 @@ final class AssistantRemediationTests: XCTestCase {
 
 @MainActor
 final class LibraryMenuRoutingTests: XCTestCase {
+  func testProgrammaticResizeCannotShrinkTheCentralViewportBelowItsMinimum() throws {
+    let controller = LibraryWindowController(playerCore: PlayerCore.first)
+    controller.showWindow(nil)
+    defer { controller.close() }
+    let window = try XCTUnwrap(controller.window)
+    var frame = window.frame
+    frame.size.width = 700
+    window.setFrame(frame, display: false)
+    controller.windowDidResize(Notification(name: NSWindow.didResizeNotification, object: window))
+    XCTAssertGreaterThanOrEqual(window.frame.width, window.minSize.width)
+    XCTAssertGreaterThanOrEqual(window.frame.width,
+      Tokens.Library.contentMinimumWidth + Tokens.Library.outwardSidebarMinimum)
+  }
+
+  func testLeavingWindowFullscreenKeepsActiveFocusModePanesHidden() throws {
+    let chrome = LibraryChrome()
+    let controller = LibraryWindowController(playerCore: PlayerCore.first, chrome: chrome)
+    controller.showWindow(nil)
+    defer { controller.close() }
+    let window = try XCTUnwrap(controller.window)
+    window.setFrame(NSRect(x: 100, y: 100, width: 1220, height: 760), display: false)
+    let original = window.frame
+    controller.windowWillEnterFullScreen(Notification(name: NSWindow.willEnterFullScreenNotification, object: window))
+    controller.toggleFocusMode()
+    window.setFrame(original, display: false)
+    controller.windowDidExitFullScreen(Notification(name: NSWindow.didExitFullScreenNotification, object: window))
+    XCTAssertTrue(controller.isFocusMode)
+    XCTAssertEqual(chrome.columnVisibility, .detailOnly)
+    XCTAssertFalse(chrome.inspectorPresented)
+    XCTAssertEqual(window.frame.width, original.width - chrome.sidebarWidth, accuracy: 1)
+    controller.toggleFocusMode()
+    XCTAssertEqual(chrome.columnVisibility, .all)
+    XCTAssertEqual(window.frame.width, original.width, accuracy: 1)
+  }
+
+  func testFocusModeEndedInsideWindowFullscreenRestoresPanesOnExit() throws {
+    let chrome = LibraryChrome()
+    let controller = LibraryWindowController(playerCore: PlayerCore.first, chrome: chrome)
+    controller.showWindow(nil)
+    defer { controller.close() }
+    let window = try XCTUnwrap(controller.window)
+    window.setFrame(NSRect(x: 100, y: 100, width: 1220, height: 760), display: false)
+    let original = window.frame
+    controller.toggleFocusMode()
+    let focusedFrame = window.frame
+    controller.windowWillEnterFullScreen(Notification(name: NSWindow.willEnterFullScreenNotification, object: window))
+    controller.toggleFocusMode()
+    window.setFrame(focusedFrame, display: false)
+    controller.windowDidExitFullScreen(Notification(name: NSWindow.didExitFullScreenNotification, object: window))
+    XCTAssertFalse(controller.isFocusMode)
+    XCTAssertEqual(chrome.columnVisibility, .all)
+    XCTAssertTrue(chrome.leftDocked)
+    XCTAssertEqual(window.frame.width, original.width, accuracy: 1)
+  }
+
   func testLibraryWindowDispatchesMenuCommandsThroughItsResponderChain() throws {
     let controller = LibraryWindowController(playerCore: PlayerCore.first)
     controller.showWindow(nil)
@@ -603,5 +678,36 @@ final class LibraryMenuRoutingTests: XCTestCase {
     let window = try XCTUnwrap(controller.window)
     XCTAssertTrue(window.tryToPerform(#selector(MainMenuActionHandler.menuSearchLibrary(_:)), with: nil))
     XCTAssertTrue(window.nextResponder?.responds(to: #selector(MainMenuActionHandler.menuTogglePause(_:))) == true)
+  }
+}
+
+@MainActor
+final class VideoFullscreenHostTests: XCTestCase {
+  func testMovingStableHostToFullscreenAndBackDoesNotLoseSurface() {
+    let host = InlinePlayerSurfaceHost()
+    let surface = NSView()
+    let mover = PlayerSurfaceMover(surface: surface)
+    mover.attach(to: host)
+    let inline = InlinePlayerWrapperView(host: host)
+    let fullscreen = InlinePlayerWrapperView(host: host)
+    inline.detachHost() // SwiftUI dismantles the old inline wrapper later.
+    XCTAssertTrue(host.superview === fullscreen)
+    XCTAssertTrue(surface.superview === host)
+    inline.attachHost()
+    fullscreen.detachHost() // Late fullscreen teardown must not steal it back.
+    XCTAssertTrue(host.superview === inline)
+    XCTAssertTrue(surface.superview === host)
+  }
+
+  func testOnlyDoubleLeftMouseUpRequestsVideoFullscreen() {
+    let host = InlinePlayerSurfaceHost()
+    var count = 0
+    host.onDoubleClick = { count += 1 }
+    for (kind, clicks) in [(NSEvent.EventType.leftMouseUp, 1), (.rightMouseUp, 2), (.leftMouseDown, 2), (.leftMouseUp, 2)] {
+      let event = NSEvent.mouseEvent(with: kind, location: .zero, modifierFlags: [], timestamp: 0,
+        windowNumber: 0, context: nil, eventNumber: 0, clickCount: clicks, pressure: 0)!
+      host.handleSurfaceEvent(event)
+    }
+    XCTAssertEqual(count, 1)
   }
 }

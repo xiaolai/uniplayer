@@ -60,8 +60,23 @@ enum LibraryLayout {
         max(Tokens.Library.playerMinimumHeight, viewportHeight - Tokens.Library.playerReservedHeight))
   }
 
-  static func shouldCollapseSidebar(width: CGFloat, inspector: Bool) -> Bool {
-    inspector && width < Tokens.Library.inspectorCollapseWidth
+  /// Nil means the requested pane must overlay: never steal central width.
+  static func paneFrame(frame: NSRect, screen: NSRect, delta: CGFloat, left: Bool) -> NSRect? {
+    var result = frame
+    result.size.width += delta
+    if left { result.origin.x -= delta }
+    guard result.width <= screen.width else { return nil }
+    result.origin.x = min(max(result.minX, screen.minX), screen.maxX - result.width)
+    return result
+  }
+
+  static func minimumWidth(left: CGFloat, right: CGFloat) -> CGFloat {
+    Tokens.Library.contentMinimumWidth + left + right
+  }
+
+  static func boundedPaneWidth(_ width: CGFloat, left: Bool) -> CGFloat {
+    min(max(width, left ? Tokens.Library.outwardSidebarMinimum : Tokens.Inspector.minimumWidth),
+        left ? Tokens.Library.outwardSidebarMaximum : Tokens.Inspector.maximumWidth)
   }
 }
 

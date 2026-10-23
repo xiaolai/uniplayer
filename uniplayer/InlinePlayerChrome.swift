@@ -234,8 +234,11 @@ final class InlinePlayerModel: ObservableObject {
 
 struct InlinePlayerChrome: View {
   @ObservedObject var model: InlinePlayerModel
+  var details: AnyView? = nil
+  @State private var detailsPresented = false
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+  @State private var volumePresented = false
   @FocusState private var focusedControl: Bool
   @AccessibilityFocusState private var accessibleControl: Bool
   @State private var scrubbing = false
@@ -247,9 +250,6 @@ struct InlinePlayerChrome: View {
 
   var body: some View {
     ZStack {
-      if model.controlsVisible || model.message != nil {
-        backdrop
-      }
       VStack(spacing: Tokens.Space.n0) {
         if let message = model.message {
           messageChip(message)
@@ -269,19 +269,10 @@ struct InlinePlayerChrome: View {
       model.holdControlsForMenu(true)
     }
     .onReceive(NotificationCenter.default.publisher(for: NSMenu.didEndTrackingNotification)) { _ in
-      model.holdControlsForMenu(false)
+      model.holdControlsForMenu(volumePresented || detailsPresented)
     }
     .onChange(of: focusedControl) { _, focused in model.holdControlsForFocus(focused || accessibleControl) }
     .onChange(of: accessibleControl) { _, focused in model.holdControlsForFocus(focused || focusedControl) }
-  }
-
-  private var backdrop: some View {
-    LinearGradient(
-      colors: [Tokens.Palette.clear.color,
-               Tokens.Palette.hudBottomShade.color.opacity(Tokens.Opacity.n55)],
-      startPoint: .center,
-      endPoint: .bottom)
-      .allowsHitTesting(false)
   }
 
   private var controls: some View {
@@ -292,11 +283,10 @@ struct InlinePlayerChrome: View {
     .padding(.horizontal, Tokens.HUD.bottomMargin)
     .padding(.vertical, Tokens.HUD.controlSpacing)
     .padding(.bottom, Tokens.HUD.timelineBottom)
-    .background {
-      RoundedRectangle(cornerRadius: Tokens.HUD.timelineCorner, style: .continuous)
-        .fill(Tokens.Library.transportBacking.color)
-    }
+    .frame(maxWidth: Tokens.Library.transportMaximumWidth)
     .padding(.horizontal, Tokens.Space.n16)
+    .onChange(of: volumePresented) { _, _ in model.holdControlsForMenu(volumePresented || detailsPresented) }
+    .onChange(of: detailsPresented) { _, _ in model.holdControlsForMenu(volumePresented || detailsPresented) }
     // Only the controls themselves hold the pointer; hovering the video must
     // still let the bar auto-hide.
     .onHover { model.setPointerOverControls($0) }
@@ -310,6 +300,7 @@ struct InlinePlayerChrome: View {
         .font(Tokens.Typography.numeric.font)
         .foregroundStyle(Tokens.Palette.onMediaSecondary.color)
         .monospacedDigit()
+        .shadow(color: Tokens.Palette.black.color, radius: Tokens.Space.n2)
 
       InlineSlider(
         value: Binding(
@@ -330,6 +321,7 @@ struct InlinePlayerChrome: View {
         .font(Tokens.Typography.numeric.font)
         .foregroundStyle(Tokens.Palette.onMediaSecondary.color)
         .monospacedDigit()
+        .shadow(color: Tokens.Palette.black.color, radius: Tokens.Space.n2)
     }
     .padding(.horizontal, Tokens.HUD.timelineHeight)
   }
@@ -337,17 +329,17 @@ struct InlinePlayerChrome: View {
   // MARK: Transport
 
   private var transport: some View {
-    ViewThatFits(in: .horizontal) {
-      HStack(spacing: Tokens.Space.n12) {
-        playbackButtons
-        Spacer(minLength: Tokens.Space.n8)
-        utilityButtons
+    ZStack {
+      playbackButtons
+      HStack {
         volumeControl
+        Spacer(minLength: Tokens.Space.n8)
+        if let details {
+          controlButton("info.circle", label: inlineL("Details")) { detailsPresented.toggle() }
+            .popover(isPresented: $detailsPresented) { details }
+        }
+        utilityButtons
         fullscreenButton
-      }
-      VStack(spacing: Tokens.Space.n8) {
-        HStack { playbackButtons; Spacer(minLength: Tokens.Space.n8); fullscreenButton }
-        HStack { utilityButtons; Spacer(minLength: Tokens.Space.n8); volumeControl }
       }
     }
     .padding(.horizontal, Tokens.Space.n8)
@@ -362,8 +354,8 @@ struct InlinePlayerChrome: View {
           .frame(width: Tokens.Library.playControlSize, height: Tokens.Library.playControlSize)
       }
       .buttonStyle(.plain)
-      .foregroundStyle(Tokens.Palette.black.color)
-      .background(Tokens.Palette.white.color, in: Circle())
+      .glassEffect(.regular.interactive(), in: .circle)
+      .foregroundStyle(Tokens.Palette.onMedia.color)
       .accessibilityLabel(model.isPaused ? inlineL("Play") : inlineL("Pause"))
       .help(model.isPaused ? inlineL("Play") : inlineL("Pause"))
       .focused($focusedControl)
@@ -373,20 +365,47 @@ struct InlinePlayerChrome: View {
   }
 
   private var utilityButtons: some View {
-    HStack(spacing: Tokens.Space.n8) { audioMenu; subtitleMenu; speedMenu }
-      .tint(Tokens.Palette.onMedia.color)
+    Menu {
+      audioMenu
+      subtitleMenu
+      speedMenu
+      Button(inlineL("Open in New Window")) { model.onOpenInNewWindow?() }
+    } label: {
+      Image(systemName: "ellipsis")
+        .frame(width: Tokens.Library.glassControlSize, height: Tokens.Library.glassControlSize)
+    }
+    .menuStyle(.borderlessButton)
+    .menuIndicator(.hidden)
+    .frame(width: Tokens.Library.glassControlSize, height: Tokens.Library.glassControlSize)
+    .glassEffect(.regular.interactive(), in: .circle)
+    .foregroundStyle(Tokens.Palette.onMedia.color)
+    .tint(Tokens.Palette.onMedia.color)
+    .accessibilityLabel(inlineL("Playback Options"))
+    .help(inlineL("Playback Options"))
+    .focused($focusedControl)
+    .accessibilityFocused($accessibleControl)
   }
 
   private var volumeControl: some View {
-    HStack(spacing: Tokens.Space.n4) {
-      controlButton(model.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill",
-                    label: model.isMuted ? inlineL("Unmute") : inlineL("Mute")) { model.toggleMute() }
-      InlineSlider(value: Binding(get: { model.volume }, set: { model.setVolume($0) }),
-                   range: 0...Double(Preference.integer(for: .maxVolume)), label: inlineL("Volume"),
-                   onFocusChanged: { model.holdControlsForFocus($0) })
-        .frame(width: Tokens.Size.n70)
-        .focused($focusedControl)
-        .accessibilityFocused($accessibleControl)
+    Button { volumePresented.toggle() } label: {
+      Image(systemName: model.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+        .frame(width: Tokens.Library.glassControlSize, height: Tokens.Library.glassControlSize)
+    }
+    .buttonStyle(.plain)
+    .glassEffect(.regular.interactive(), in: .circle)
+    .foregroundStyle(Tokens.Palette.onMedia.color)
+    .accessibilityLabel(inlineL("Volume"))
+    .help(inlineL("Volume"))
+    .focused($focusedControl)
+    .accessibilityFocused($accessibleControl)
+    .popover(isPresented: $volumePresented) {
+      HStack(spacing: Tokens.Space.n12) {
+        Button(model.isMuted ? inlineL("Unmute") : inlineL("Mute")) { model.toggleMute() }
+        InlineSlider(value: Binding(get: { model.volume }, set: { model.setVolume($0) }),
+          range: 0...Double(Preference.integer(for: .maxVolume)), label: inlineL("Volume"),
+          onFocusChanged: { model.holdControlsForFocus($0) })
+          .frame(width: Tokens.Size.n180)
+      }.padding(Tokens.Space.n16)
     }
   }
 
@@ -402,10 +421,11 @@ struct InlinePlayerChrome: View {
     Button(action: action) {
       Image(systemName: symbol)
         .font(Tokens.Typography.body.font)
-        .frame(width: Tokens.Size.n30, height: Tokens.Size.n30)
+        .frame(width: Tokens.Library.glassControlSize, height: Tokens.Library.glassControlSize)
         .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
+    .glassEffect(.regular.interactive(), in: .circle)
     .foregroundStyle(Tokens.Palette.onMedia.color)
     .accessibilityLabel(label)
     .help(label)

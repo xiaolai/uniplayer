@@ -68,8 +68,29 @@ enum LibrarySection: String, CaseIterable, Identifiable {
 final class LibraryChrome: ObservableObject {
   @Published var columnVisibility: NavigationSplitViewVisibility = .all
   @Published var inspectorPresented = false
+  @Published var leftDocked = true
+  @Published var rightDocked = true
+  @Published var canDockLeft = false
+  @Published var canDockRight = false
+  var pinPane: ((Bool) -> Void)?
+  @Published var sidebarWidth = LibraryLayout.boundedPaneWidth(
+    UserDefaults.standard.object(forKey: "library.outwardSidebarWidth.v1") as? Double ?? Tokens.Library.outwardSidebarWidth, left: true)
+  @Published var inspectorWidth = LibraryLayout.boundedPaneWidth(
+    UserDefaults.standard.object(forKey: "library.outwardInspectorWidth.v1") as? Double ?? Tokens.Inspector.idealWidth, left: false)
+  @Published var playbackPresented = false {
+    didSet { if playbackPresented != oldValue { playbackChromeChanged?() } }
+  }
+  var playbackChromeChanged: (() -> Void)?
+  var backFromPlayback: (() -> Void)?
+  @Published var channelSelected = false
+  @Published var channelNavigationPresented = false
+  var resizePane: ((Bool, CGFloat) -> Void)?
+
   /// True while the library window is in macOS fullscreen or Focus mode.
   @Published var isImmersive = false
+  @Published var videoFullscreenPresented = false
+  var makeVideoFullscreenContent: (() -> AnyView?)?
+  var exitVideoFullscreen: (() -> Void)?
   /// The one inline surface host for this window, created with the window and
   /// kept for its whole lifetime.
   let inlineHost = InlinePlayerSurfaceHost()
@@ -148,26 +169,27 @@ struct LibraryRootView: View {
   }
 
   var body: some View {
-    NavigationSplitView(columnVisibility: $chrome.columnVisibility) {
-      sidebar
-        .frame(minWidth: Tokens.Size.sidebarWidth * preferredTextScale,
-               idealWidth: Tokens.Size.sidebarWidth * preferredTextScale,
-               maxWidth: Tokens.Library.sidebarMaximum * preferredTextScale)
-        .toolbar(removing: .sidebarToggle)
-    } detail: {
+    HStack(spacing: Tokens.Space.n0) {
+      if chrome.columnVisibility != .detailOnly && chrome.leftDocked {
+        sidebarPane
+      }
       detail
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Tokens.Palette.canvas.color)
-        .inspector(isPresented: $chrome.inspectorPresented) {
-          AIInspectorView(model: assistant)
-            .inspectorColumnWidth(
-              min: Tokens.Inspector.minimumWidth,
-              ideal: Tokens.Inspector.idealWidth,
-              max: Tokens.Inspector.maximumWidth)
-        }
-        .ignoresSafeArea(.container, edges: .top)
+      if chrome.inspectorPresented && chrome.rightDocked {
+        inspectorPane
+      }
     }
-    .navigationSplitViewStyle(.balanced)
+    .overlay(alignment: .leading) {
+      if chrome.columnVisibility != .detailOnly && !chrome.leftDocked { sidebarPane }
+    }
+    .overlay(alignment: .trailing) {
+      if chrome.inspectorPresented && !chrome.rightDocked { inspectorPane }
+    }
+    .overlay(alignment: .top) {
+      WindowDragRegion().frame(height: Tokens.Library.titlebarHeight)
+    }
+    .ignoresSafeArea(.container, edges: .top)
     .environmentObject(model)
     .environment(\.libraryTextScale, preferredTextScale)
     .tint(Tokens.Palette.accent.color)
@@ -212,11 +234,19 @@ struct LibraryRootView: View {
       inlinePlayer.refresh()
       handleInlineActiveChange(inlinePlayer.isActive)
     }
-    .onChange(of: selection) { _, _ in
+    .onChange(of: chrome.videoFullscreenPresented) { _, _ in
+      inlinePlayer.refresh()
+      inlinePlayer.registerActivity()
+    }
+    .onChange(of: selectedItem?.url) { _, _ in updatePlaybackChrome() }
+    .onChange(of: selection) { _, value in
+      if case .channel = value { chrome.channelSelected = true }
+      else { chrome.channelSelected = false; chrome.channelNavigationPresented = false }
       handleSelectionChange()
     }
     .onChange(of: inlinePlayer.isActive) { _, active in
       handleInlineActiveChange(active)
+      if !active { chrome.exitVideoFullscreen?() }
     }
     .onChange(of: inlinePlayer.currentURL) { _, url in
       handleInlineURLChange(url)
@@ -239,9 +269,69 @@ struct LibraryRootView: View {
   }
 
 
+  private var sidebarPane: some View {
+    VStack(spacing: Tokens.Space.n0) {
+      if !chrome.leftDocked { floatingPaneHeader(left: true) }
+      sidebar
+    }
+      .padding(.top, Tokens.Library.titlebarHeight)
+      .frame(width: chrome.sidebarWidth)
+      .frame(maxHeight: .infinity)
+      .background(Tokens.Palette.sidebar.color)
+      .overlay(alignment: .trailing) {
+        PaneResizeHandle(width: chrome.sidebarWidth) { chrome.resizePane?(true, $0) }
+      }
+  }
+
+  private var inspectorPane: some View {
+    VStack(spacing: Tokens.Space.n0) {
+      if !chrome.rightDocked { floatingPaneHeader(left: false) }
+      AIInspectorView(model: assistant)
+    }
+      .padding(.top, Tokens.Library.titlebarHeight)
+      .frame(width: chrome.inspectorWidth)
+      .frame(maxHeight: .infinity)
+      .background(Tokens.Palette.canvas.color)
+      .overlay(alignment: .leading) {
+        PaneResizeHandle(width: chrome.inspectorWidth, direction: -1) { chrome.resizePane?(false, $0) }
+      }
+  }
+
+  private func floatingPaneHeader(left: Bool) -> some View {
+    HStack {
+      Text(L(left ? "Floating Sidebar" : "Floating Inspector"))
+        .font(Tokens.Typography.caption.font)
+      Spacer()
+      Button { chrome.pinPane?(left) } label: {
+        Label(L(left ? "Pin Sidebar" : "Pin Inspector"), systemImage: "pin")
+      }
+      .disabled(left ? !chrome.canDockLeft : !chrome.canDockRight)
+      .help(L("Pin when there is enough screen space"))
+    }
+    .padding(Tokens.Space.n8)
+  }
+
+  private func updatePlaybackChrome() {
+    chrome.playbackPresented = selectedItem != nil && inlinePlayer.isActive
+      && selectedItem?.url == inlinePlayer.currentURL
+  }
+
   /// Wires the models to the window controller's actions. Called once when
   /// the view appears; all captures are weak or unowned by construction.
   private func configureCallbacks() {
+    chrome.makeVideoFullscreenContent = {
+      guard let selectedItem else { return nil }
+      return AnyView(DetailView(
+        item: model.allItems.first(where: { $0.id == selectedItem.id }) ?? selectedItem,
+        inlinePlayer: inlinePlayer, host: chrome.inlineHost,
+        play: { model.open(selectedItem) },
+        openInNewWindow: { inlinePlayer.onOpenInNewWindow?() },
+        back: {}, immersive: true, pausesOnDisappear: false)
+        .environmentObject(model)
+        .environment(\.libraryTextScale, preferredTextScale))
+    }
+    chrome.backFromPlayback = { selectedItem = nil }
+
     inlinePlayer.onToggleFullscreen = { [weak chrome] in
       chrome?.toggleFullscreen?()
     }
@@ -263,7 +353,7 @@ struct LibraryRootView: View {
       inlinePlayer?.registerActivity()
     }
     inlinePlayer.fullscreenProvider = { [weak chrome] in
-      chrome?.isFullscreen?() ?? false
+      chrome?.videoFullscreenPresented ?? false
     }
     chrome.inlineHost.onDoubleClick = { [weak inlinePlayer] in
       inlinePlayer?.toggleFullscreen()
@@ -311,6 +401,7 @@ struct LibraryRootView: View {
       // context is no longer what the user is looking at.
       assistant.setChannelContext(nil)
     }
+    updatePlaybackChrome()
     assistant.refreshContext()
   }
 
@@ -318,6 +409,7 @@ struct LibraryRootView: View {
     if inlinePlayer.isActive, let url, selectedItem?.url != url {
       selectedItem = libraryItem(for: url)
     }
+    updatePlaybackChrome()
     assistant.refreshContext()
   }
 
@@ -381,10 +473,7 @@ struct LibraryRootView: View {
     .font(Tokens.Typography.body.scaledFont(preferredTextScale))
     .scrollContentBackground(.hidden)
     .background(Tokens.Palette.sidebar.color)
-    .navigationSplitViewColumnWidth(
-      min: Tokens.Library.sidebarMinimum * preferredTextScale,
-      ideal: Tokens.Size.sidebarWidth * preferredTextScale,
-      max: Tokens.Library.sidebarMaximum * preferredTextScale)
+
 
   }
 
@@ -413,7 +502,8 @@ struct LibraryRootView: View {
           inlinePlayer.onOpenInNewWindow?()
         },
         back: { self.selectedItem = nil },
-        immersive: chrome.isImmersive)
+        immersive: chrome.isImmersive,
+        coveredByVideoFullscreen: chrome.videoFullscreenPresented)
     } else {
       switch selection ?? .section(.home) {
       case .section(.home):
@@ -451,7 +541,7 @@ struct LibraryRootView: View {
           emptyMessage: L("Videos you open appear here. Files stay in their original folders."))
       case .channel(let id):
         if let channel = channels.channel(id: id) {
-          ChannelDetailView(browser: browser, channel: channel) { context in
+          ChannelDetailView(chrome: chrome, browser: browser, channel: channel) { context in
             // The button's task can finish after the user navigated away.
             guard case .channel(let currentID) = selection, currentID == channel.id else {
               return
@@ -949,6 +1039,8 @@ private struct DetailView: View {
   /// Fullscreen or Focus mode: the surface fills the window and the page
   /// chrome, metadata and actions step out of the way.
   let immersive: Bool
+  var coveredByVideoFullscreen = false
+  var pausesOnDisappear = true
 
   @Environment(\.colorSchemeContrast) private var contrast
   @EnvironmentObject private var library: LibraryModel
@@ -961,8 +1053,10 @@ private struct DetailView: View {
   }
 
   var body: some View {
-    Group {
-      if immersive && isPlayingHere {
+    ZStack {
+      if coveredByVideoFullscreen {
+        Tokens.Palette.black.color
+      } else if isPlayingHere {
         immersiveSurface
       } else {
         page
@@ -972,7 +1066,7 @@ private struct DetailView: View {
     // immersive layout must not pause and resume playback.
     .onAppear { inlinePlayer.refresh() }
     .onDisappear {
-      inlinePlayer.pauseForNavigation()
+      if pausesOnDisappear { inlinePlayer.pauseForNavigation() }
     }
   }
 
@@ -1107,10 +1201,21 @@ private struct DetailView: View {
     ZStack {
       Tokens.Palette.black.color
       InlinePlayerView(host: host)
-      InlinePlayerChrome(model: inlinePlayer)
+      InlinePlayerChrome(model: inlinePlayer, details: AnyView(detailsPanel))
     }
     .background(Tokens.Palette.black.color)
     .ignoresSafeArea()
+  }
+
+  private var detailsPanel: some View {
+    ScrollView {
+      VStack(alignment: .leading, spacing: Tokens.Space.n16) {
+        metadata
+        secondaryActions
+        primaryAction
+      }.padding(Tokens.Space.n20)
+    }
+    .frame(width: Tokens.Inspector.idealWidth, height: Tokens.Size.n420)
   }
 
   private var liveSurface: some View {
@@ -1461,5 +1566,43 @@ private struct NativeLibrarySearchField: NSViewRepresentable {
     func controlTextDidChange(_ obj: Notification) {
       if let field = obj.object as? NSSearchField { parent.query = field.stringValue }
     }
+  }
+}
+
+/// The content under the native titlebar is visual only: its top strip belongs
+/// to window interaction, including over a channel's WKWebView.
+private struct WindowDragRegion: NSViewRepresentable {
+  func makeNSView(context: Context) -> NSView { DragView() }
+  func updateNSView(_ view: NSView, context: Context) {}
+  private final class DragView: NSView {
+    override var mouseDownCanMoveWindow: Bool { true }
+    override func mouseDown(with event: NSEvent) {
+      guard let window else { return }
+      if event.clickCount == 2 {
+        let action = UserDefaults.standard.string(forKey: "AppleActionOnDoubleClick")
+        if action == "Minimize" { window.performMiniaturize(nil) }
+        else if action != "None" { window.performZoom(nil) }
+      } else { window.performDrag(with: event) }
+    }
+  }
+}
+
+private struct PaneResizeHandle: View {
+  let width: CGFloat
+  var direction: CGFloat = 1
+  let resize: (CGFloat) -> Void
+  @State private var initialWidth: CGFloat?
+  var body: some View {
+    Tokens.Palette.clear.color
+      .frame(width: Tokens.Library.paneResizeWidth)
+      .contentShape(Rectangle())
+      .gesture(DragGesture().onChanged { value in
+        if initialWidth == nil { initialWidth = width }
+        resize((initialWidth ?? width) + direction * value.translation.width)
+      }.onEnded { _ in initialWidth = nil })
+      .accessibilityLabel(direction > 0 ? L("Sidebar Width") : L("Inspector Width"))
+      .accessibilityAdjustableAction { adjustment in
+        resize(width + (adjustment == .increment ? Tokens.Space.n20 : -Tokens.Space.n20))
+      }
   }
 }
