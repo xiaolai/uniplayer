@@ -1,5 +1,13 @@
 # Release notes
 
+## 0.1.7 (build 8)
+
+- Developer ID signing, hardened runtime, Apple notarization and stapled tickets
+  replace the ad hoc signed distribution used in 0.1.6.
+- The release pipeline now verifies Gatekeeper acceptance for the app and DMG
+  before producing a distributable package.
+- Homebrew users can update with `brew update && brew upgrade --cask uniplayer`.
+
 ## 0.1.6 (build 7)
 
 - Full-height video and channel content behind a transparent, draggable native

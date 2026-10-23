@@ -9,8 +9,8 @@ for its author's own machines; there is no support commitment, no roadmap, and
 no promise that a change will suit anyone else's setup. Issues and pull
 requests may go unanswered.
 
-The current version is 0.1.6 (build 7). Builds are ad hoc signed unless a
-development team is configured.
+The current version is 0.1.7 (build 8). Release builds use Developer ID signing
+and Apple notarization.
 
 ## Install
 
@@ -19,8 +19,7 @@ brew install --cask xiaolai/tap/uniplayer
 ```
 
 Requires macOS 27 or later. The universal build contains Apple silicon and
-Intel binaries. This personal build is ad hoc signed and is not notarized;
-macOS may require Privacy & Security → Open Anyway on first launch.
+Intel binaries. Release builds are Developer ID signed and notarized, with stapled tickets.
 
 ## Relationship to IINA
 
@@ -39,3 +38,12 @@ in [`uniplayer/Credits.rtf`](uniplayer/Credits.rtf) are retained.
 **GPL-3.0-or-later.** See [LICENSE](LICENSE). UniPlayer is derived from IINA,
 copyright Collider LI and contributors. If you distribute a build, you must
 publish the corresponding source under the GPL.
+
+## Release
+
+From the workspace root, run `./scripts/release.sh`. It loads the local `.env`
+into a notarytool keychain profile without passing credentials into build logs,
+then calls `main/scripts/release-macos.py`. The pipeline builds both CPU slices,
+signs nested code with hardened runtime and secure timestamps, notarizes and
+staples the app and DMG, and requires Gatekeeper acceptance before producing
+checksums. It does not publish automatically.
