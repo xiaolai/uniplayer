@@ -19,17 +19,18 @@ def run(*args, **kwargs):
     return subprocess.run([str(a) for a in args], check=True, **kwargs)
 
 
-def notarize(path, profile, log, staple=None):
+def notarize(path, profile, log, staple=None, keychain=None):
+    keychain_options = ['--keychain', str(keychain)] if keychain else []
     result = subprocess.run(['xcrun', 'notarytool', 'submit', str(path),
                              '--keychain-profile', profile, '--wait',
-                             '--timeout', '20m', '--output-format', 'json'],
+                             '--timeout', '20m', '--output-format', 'json'] + keychain_options,
                             text=True, capture_output=True)
     log.write_text(result.stdout)
     if result.returncode:
         raise RuntimeError(f'Notary submission failed; inspect {log}: {result.stderr}')
     report = json.loads(result.stdout)
     issues_log = log.with_suffix('.issues.json')
-    run('xcrun', 'notarytool', 'log', report['id'], '--keychain-profile', profile, issues_log)
+    run('xcrun', 'notarytool', 'log', report['id'], '--keychain-profile', profile, *keychain_options, issues_log)
     if report.get('status') != 'Accepted':
         raise RuntimeError(f'Notarization status: {report.get("status")}; inspect {issues_log}')
     if json.loads(issues_log.read_text()).get('issues'):
@@ -43,6 +44,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--build', required=True, type=int)
     parser.add_argument('--profile', required=True)
+    parser.add_argument('--keychain', type=Path, help='Explicit keychain containing the notary profile')
     parser.add_argument('--identity', default=os.environ.get('UNIPLAYER_SIGN_IDENTITY'))
     parser.add_argument('--output', type=Path)
     parser.add_argument('--skip-build', action='store_true', help='Resume from the existing Release build')
@@ -88,25 +90,44 @@ def main():
     extension_entitlements = root/'OpenInUniPlayer/OpenInUniPlayer.entitlements'
 
     def sign(path, entitlements=None):
-        command = ['codesign', '--force', '--sign', args.identity, '--timestamp', '--options', 'runtime']
+        command = ['codesign', '--force', '--sign', args.identity, '--timestamp=http://timestamp.apple.com/ts01', '--options', 'runtime']
         if entitlements:
             command += ['--entitlements', str(entitlements)]
-        run(*command, path)
+        command.append(str(path))
+        for attempt in range(3):
+            result = subprocess.run(command, text=True, capture_output=True)
+            print(result.stdout, result.stderr, end='', flush=True)
+            if result.returncode == 0:
+                return
+            if 'timestamp' not in result.stderr.lower() or attempt == 2:
+                raise subprocess.CalledProcessError(result.returncode, command)
+            print('Retrying Apple timestamp request', attempt + 1, flush=True)
 
     # Sign nested code from the inside out, without --deep signing or copying
     # app entitlements onto shared libraries. Bundle signing comes afterwards.
+    bundles = [p for p in app.rglob('*') if p.is_dir() and not p.is_symlink()
+               and p.suffix in {'.framework', '.xpc', '.appex', '.app'}]
+    # Signing a bundle's main executable implicitly signs its whole bundle.
+    # Defer those entry points until all child bundles have been signed.
+    entrypoints = set()
+    for bundle in [app] + bundles:
+        for metadata in [bundle/'Contents/Info.plist', bundle/'Resources/Info.plist']:
+            if metadata.exists():
+                executable = plistlib.loads(metadata.read_bytes()).get('CFBundleExecutable')
+                if executable:
+                    entrypoints.add((bundle/'Contents/MacOS'/executable).resolve())
+                    entrypoints.add((bundle/executable).resolve())
+                break
     magic = {bytes.fromhex(v) for v in ['feedface', 'cefaedfe', 'feedfacf', 'cffaedfe',
                                       'cafebabe', 'bebafeca', 'cafebabf', 'bfbafeca']}
     for path in sorted(app.rglob('*')):
-        if not path.is_file() or path.is_symlink():
+        if not path.is_file() or path.is_symlink() or path.resolve() in entrypoints:
             continue
         with path.open('rb') as stream:
             if stream.read(4) not in magic:
                 continue
         header = subprocess.check_output(['otool', '-hv', str(path)], text=True)
         sign(path, app_entitlements if 'EXECUTE' in header else None)
-    bundles = [p for p in app.rglob('*') if p.is_dir() and not p.is_symlink()
-               and p.suffix in {'.framework', '.xpc', '.appex', '.app'}]
     for bundle in sorted(bundles, key=lambda p: len(p.parts), reverse=True):
         sign(bundle, extension_entitlements if bundle.suffix == '.appex' else
              app_entitlements if bundle.suffix in {'.app', '.xpc'} else None)
@@ -115,7 +136,7 @@ def main():
     archive = output/'UniPlayer-notary.zip'
     archive.unlink(missing_ok=True)
     run('ditto', '-c', '-k', '--keepParent', app, archive)
-    notarize(archive, args.profile, output/'app-notary.json', staple=app)
+    notarize(archive, args.profile, output/'app-notary.json', staple=app, keychain=args.keychain)
     # ZIP submissions notarize the enclosed app; tickets staple to that app.
     # The ZIP itself cannot carry a stapled ticket.
     run('spctl', '--assess', '--type', 'execute', '--verbose=2', app)
@@ -127,7 +148,7 @@ def main():
     run('hdiutil', 'create', '-volname', f'UniPlayer {version}', '-srcfolder', stage,
         '-format', 'UDZO', dmg)
     sign(dmg)
-    notarize(dmg, args.profile, output/'dmg-notary.json')
+    notarize(dmg, args.profile, output/'dmg-notary.json', keychain=args.keychain)
     run('spctl', '--assess', '--type', 'open', '--context', 'context:primary-signature', '--verbose=2', dmg)
     digest = hashlib.sha256(dmg.read_bytes()).hexdigest()
     (output/'SHA256SUMS.txt').write_text(f'{digest}  {dmg.name}\n')
