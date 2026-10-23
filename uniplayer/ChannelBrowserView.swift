@@ -24,10 +24,57 @@ enum ChannelNavigationFailure {
   }
 }
 
+/// Operational limits, independent of visual animation timing.
+enum EmbeddedPageLoadingPolicy {
+  static let slowNoticeDelay: TimeInterval = 8
+  static let connectionTimeout: TimeInterval = 30
+}
+
+struct ChannelConnectionIssue {
+  let title: String
+  let explanation: String
+  let symbol: String
+
+  init(error: Error) {
+    let error = error as NSError
+    switch (error.domain, error.code) {
+    case (NSURLErrorDomain, NSURLErrorNotConnectedToInternet):
+      title = channelL("You’re offline")
+      explanation = channelL("Check your internet connection, then try again.")
+      symbol = "wifi.slash"
+    case (NSURLErrorDomain, NSURLErrorTimedOut):
+      title = channelL("The website took too long to respond")
+      explanation = channelL("The connection timed out. You can try again or open the website in your browser.")
+      symbol = "clock.arrow.circlepath"
+    case (NSURLErrorDomain, NSURLErrorSecureConnectionFailed),
+         (NSURLErrorDomain, NSURLErrorServerCertificateUntrusted),
+         (NSURLErrorDomain, NSURLErrorServerCertificateHasBadDate),
+         (NSURLErrorDomain, NSURLErrorServerCertificateHasUnknownRoot),
+         (NSURLErrorDomain, NSURLErrorServerCertificateNotYetValid):
+      title = channelL("A secure connection couldn’t be established")
+      explanation = channelL("The website could not establish a secure connection. Try again later or check it in your browser.")
+      symbol = "lock.trianglebadge.exclamationmark"
+    default:
+      title = channelL("Couldn’t connect")
+      explanation = channelL("The website may be unavailable, or the connection may be interrupted. Try again or open it in your browser.")
+      symbol = "network.slash"
+    }
+  }
+}
+
 @MainActor
 final class ChannelBrowserModel: NSObject, ObservableObject {
   @Published private(set) var isLoading = false
   @Published private(set) var errorMessage: String?
+  @Published private(set) var connectionIssue: ChannelConnectionIssue?
+  @Published private(set) var hasDocument = false
+  @Published private(set) var isSlow = false
+  @Published private(set) var estimatedProgress = 0.0
+  private var activeNavigation: WKNavigation?
+  private var slowNoticeTask: Task<Void, Never>?
+  private var timeoutTask: Task<Void, Never>?
+  private var lastRequestedURL: URL?
+
   @Published private(set) var canGoBack = false
   @Published private(set) var canGoForward = false
   @Published private(set) var pageURL: URL?
@@ -62,31 +109,78 @@ final class ChannelBrowserModel: NSObject, ObservableObject {
     observations = [
       webView.observe(\.canGoBack, options: [.initial, .new]) { [weak self] view, _ in self?.canGoBack = view.canGoBack },
       webView.observe(\.canGoForward, options: [.initial, .new]) { [weak self] view, _ in self?.canGoForward = view.canGoForward },
+      webView.observe(\.estimatedProgress, options: [.initial, .new]) { [weak self] view, _ in self?.estimatedProgress = view.estimatedProgress },
       webView.observe(\.url, options: [.initial, .new]) { [weak self] view, _ in self?.pageURL = view.url },
     ]
   }
 
   func open(_ channel: Channel) {
-    if self.channel?.id == channel.id, self.channel?.url == channel.url, webView.url != nil {
-      return
-    }
+    if self.channel?.id == channel.id, self.channel?.url == channel.url,
+       isLoading || (hasDocument && errorMessage == nil) { return }
+    finishLoading()
+    activeNavigation = nil
+    webView.stopLoading()
     self.channel = channel
-    errorMessage = nil
-    webView.load(URLRequest(url: channel.url))
+    hasDocument = false
+    navigate(to: channel.url)
   }
 
-  func goBack() { webView.goBack() }
-  func goForward() { webView.goForward() }
+  private func navigate(to url: URL) {
+    lastRequestedURL = url
+    beginLoading()
+    var request = URLRequest(url: url)
+    request.timeoutInterval = EmbeddedPageLoadingPolicy.connectionTimeout
+    activeNavigation = webView.load(request)
+  }
+
+  private func beginLoading() {
+    finishLoading()
+    isLoading = true
+    errorMessage = nil
+    connectionIssue = nil
+    slowNoticeTask = Task { [weak self] in
+      try? await Task.sleep(for: .seconds(EmbeddedPageLoadingPolicy.slowNoticeDelay))
+      guard !Task.isCancelled, let self, self.isLoading else { return }
+      self.isSlow = true
+    }
+    timeoutTask = Task { [weak self] in
+      try? await Task.sleep(for: .seconds(EmbeddedPageLoadingPolicy.connectionTimeout))
+      guard !Task.isCancelled, let self, self.isLoading, !self.hasDocument else { return }
+      self.activeNavigation = nil
+      self.finishLoading()
+      self.webView.stopLoading()
+      self.record(URLError(.timedOut))
+    }
+  }
+
+  private func finishLoading() {
+    slowNoticeTask?.cancel()
+    timeoutTask?.cancel()
+    slowNoticeTask = nil
+    timeoutTask = nil
+    isLoading = false
+    isSlow = false
+  }
+
+  private func isCurrent(_ navigation: WKNavigation?) -> Bool {
+    guard let activeNavigation else { return false }
+    return navigation === activeNavigation
+  }
+
+  func goBack() { activeNavigation = webView.goBack() }
+  func goForward() { activeNavigation = webView.goForward() }
   func goHome() {
     guard let channel else { return }
-    webView.load(URLRequest(url: channel.url))
+    navigate(to: channel.url)
   }
   func openInBrowser() {
-    guard let url = webView.url ?? channel?.url else { return }
+    guard let url = lastRequestedURL ?? channel?.url else { return }
     NSWorkspace.shared.open(url)
   }
 
   func stop() {
+    finishLoading()
+    activeNavigation = nil
     webView.evaluateJavaScript(
       "document.querySelectorAll('video,audio').forEach((element) => element.pause())",
       completionHandler: nil)
@@ -94,8 +188,15 @@ final class ChannelBrowserModel: NSObject, ObservableObject {
   }
 
   func reload() {
-    errorMessage = nil
-    webView.reload()
+    if errorMessage == nil, hasDocument, let navigation = webView.reload() {
+      beginLoading()
+      activeNavigation = navigation
+      return
+    }
+    // A failed provisional load has no document for WKWebView.reload().
+    // Issue a fresh request so the first-connection Retry always does work.
+    guard let url = lastRequestedURL ?? channel?.url else { return }
+    navigate(to: url)
   }
 
   /// Reads the page title, URL and the user's current selection. This runs
@@ -137,6 +238,7 @@ extension ChannelBrowserModel: WKNavigationDelegate {
       decisionHandler(.cancel)
       return
     }
+    if navigationAction.targetFrame?.isMainFrame == true { lastRequestedURL = url }
     switch url.scheme?.lowercased() {
     case "http", "https", "about", "blob", "data":
       decisionHandler(.allow)
@@ -147,35 +249,51 @@ extension ChannelBrowserModel: WKNavigationDelegate {
   }
 
   func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
-    isLoading = true
-    errorMessage = nil
+    activeNavigation = navigation
+    beginLoading()
+  }
+
+  func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+    guard isCurrent(navigation) else { return }
+    hasDocument = true
   }
 
   func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-    isLoading = false
+    guard isCurrent(navigation) else { return }
+    hasDocument = true
+    finishLoading()
   }
 
   func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-    isLoading = false
+    guard isCurrent(navigation) else { return }
+    finishLoading()
     record(error)
   }
 
   func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!,
                withError error: Error) {
-    isLoading = false
+    guard isCurrent(navigation) else { return }
+    finishLoading()
     record(error)
   }
 
   func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
-    isLoading = false
+    finishLoading()
+    hasDocument = false
+    connectionIssue = ChannelConnectionIssue(error: WKError(.webContentProcessTerminated))
     errorMessage = channelL("The web content process stopped. Reload the channel to continue.")
   }
 
   private func record(_ error: Error) {
     let nsError = error as NSError
-    guard !ChannelNavigationFailure.isExpectedHandoff(nsError) else { return }
+    guard !ChannelNavigationFailure.isExpectedHandoff(nsError) else {
+      if nsError.domain != NSURLErrorDomain && nsError.code == 204 { hasDocument = true }
+      return
+    }
+    connectionIssue = ChannelConnectionIssue(error: error)
     errorMessage = error.localizedDescription
   }
+
 }
 
 extension ChannelBrowserModel: WKUIDelegate {
@@ -269,6 +387,7 @@ private struct ChannelWebView: NSViewRepresentable {
 }
 
 struct ChannelDetailView: View {
+  @Environment(\.libraryTextScale) private var textScale
   @ObservedObject var chrome: LibraryChrome
   @State private var navigationPinned = false
   @ObservedObject var browser: ChannelBrowserModel
@@ -294,16 +413,33 @@ struct ChannelDetailView: View {
             .padding(.top, Tokens.Library.titlebarHeight)
         }
       }
-      .overlay(alignment: .topLeading) {
-        if browser.isLoading {
-          ProgressView(channelL("Loading channel…"))
-            .controlSize(.small).padding(Tokens.Space.n8)
-            .glassEffect(.regular, in: .capsule)
+      .overlay {
+        if !browser.hasDocument {
+          connectionState
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Tokens.Palette.canvas.color)
+        }
+      }
+      .overlay(alignment: .top) {
+        if browser.hasDocument && browser.isLoading {
+          ProgressView(value: browser.estimatedProgress)
+            .progressViewStyle(.linear)
+            .accessibilityLabel(channelL("Loading channel…"))
             .padding(.top, Tokens.Library.titlebarHeight)
         }
       }
-      .overlay {
-        if let message = browser.errorMessage { errorView(message).background(Tokens.Palette.canvas.color) }
+      .overlay(alignment: .bottom) {
+        if browser.hasDocument, browser.errorMessage != nil {
+          HStack(spacing: Tokens.Space.n12) {
+            Label(channelL("The page couldn’t finish loading"), systemImage: "exclamationmark.circle")
+            Spacer()
+            Button(channelL("Try Again"), action: browser.reload)
+            Button(channelL("Open in Browser"), action: browser.openInBrowser)
+          }
+          .font(Tokens.Typography.caption.font)
+          .padding(Tokens.Space.n16)
+          .background(Tokens.Palette.controlBackground.color)
+        }
       }
       .overlay(alignment: .bottom) {
         if let contextStatus {
@@ -376,23 +512,81 @@ struct ChannelDetailView: View {
     .accessibilityLabel(channelL(title))
   }
 
-  private func errorView(_ message: String) -> some View {
-    VStack(alignment: .leading, spacing: Tokens.Space.n8) {
-      Text(channelL("This channel could not be loaded."))
-        .font(Tokens.Typography.bodyStrong.font)
-      Text(message)
-        .font(Tokens.Typography.caption.font)
-        .foregroundStyle(Tokens.Palette.textSecondary.color)
-        .fixedSize(horizontal: false, vertical: true)
-      Button(channelL("Try Again")) {
-        browser.reload()
+  private var connectionState: some View {
+    GeometryReader { geometry in
+      ScrollView {
+        connectionStateContent
+          .frame(maxWidth: .infinity, minHeight: geometry.size.height)
       }
     }
-    .padding(Tokens.Space.n16)
-    .background(Tokens.Palette.controlBackground.color)
-    .clipShape(RoundedRectangle(cornerRadius: Tokens.Radius.n8))
-    .padding(Tokens.Space.n16)
   }
+
+  private var connectionStateContent: some View {
+    VStack(spacing: Tokens.Space.n20) {
+      Image(systemName: browser.connectionIssue?.symbol ?? channel.symbol)
+        .font(Tokens.Typography.channelStateIcon.scaledFont(textScale))
+        .foregroundStyle(Tokens.Palette.textSecondary.color)
+        .accessibilityHidden(true)
+      VStack(spacing: Tokens.Space.n8) {
+        Text(browser.connectionIssue?.title ?? channel.name)
+          .font(Tokens.Typography.pageTitle.scaledFont(textScale))
+        Text(browser.connectionIssue == nil ? (channel.url.host ?? channel.name) :
+          "\(channel.name) · \(channel.url.host ?? channel.name)")
+          .font(Tokens.Typography.body.scaledFont(textScale))
+          .foregroundStyle(Tokens.Palette.textSecondary.color)
+          .textSelection(.enabled)
+      }
+      if let issue = browser.connectionIssue {
+        Text(issue.explanation)
+          .font(Tokens.Typography.body.scaledFont(textScale))
+          .foregroundStyle(Tokens.Palette.textSecondary.color)
+        recoveryActions
+        if let message = browser.errorMessage {
+          DisclosureGroup(channelL("Technical Details")) {
+            Text(message)
+              .font(Tokens.Typography.caption.scaledFont(textScale))
+              .foregroundStyle(Tokens.Palette.textSecondary.color)
+              .textSelection(.enabled)
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .padding(.top, Tokens.Space.n8)
+          }
+          .font(Tokens.Typography.caption.scaledFont(textScale))
+        }
+      } else if browser.isLoading {
+        HStack(spacing: Tokens.Space.n12) {
+          ProgressView().controlSize(.small)
+          Text(channelL(browser.isSlow ? "This is taking longer than expected…" : "Connecting to the website…"))
+            .font(Tokens.Typography.body.scaledFont(textScale))
+            .foregroundStyle(Tokens.Palette.textSecondary.color)
+        }
+        if browser.isSlow { recoveryActions }
+      } else {
+        Text(channelL("The connection was stopped."))
+          .font(Tokens.Typography.body.scaledFont(textScale))
+          .foregroundStyle(Tokens.Palette.textSecondary.color)
+        recoveryActions
+      }
+    }
+    .multilineTextAlignment(.center)
+    .frame(maxWidth: Tokens.Library.channelStateMaximumWidth * textScale)
+    .padding(Tokens.Space.n32)
+    .padding(.top, Tokens.Library.titlebarHeight)
+  }
+
+  private var recoveryActions: some View {
+    ViewThatFits(in: .horizontal) {
+      HStack(spacing: Tokens.Space.n12) { recoveryButtons }.fixedSize()
+      VStack(spacing: Tokens.Space.n8) { recoveryButtons }
+    }
+    .font(Tokens.Typography.body.scaledFont(textScale))
+  }
+
+  @ViewBuilder
+  private var recoveryButtons: some View {
+    Button(channelL("Try Again"), action: browser.reload).buttonStyle(.borderedProminent)
+    Button(channelL("Open in Browser"), action: browser.openInBrowser).buttonStyle(.bordered)
+  }
+
 }
 
 struct ChannelEditorSheet: View {

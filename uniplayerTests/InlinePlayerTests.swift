@@ -4,6 +4,9 @@
 //
 
 import AppKit
+import Combine
+import SwiftUI
+import WebKit
 import XCTest
 @testable import UniPlayer
 
@@ -709,5 +712,269 @@ final class VideoFullscreenHostTests: XCTestCase {
       host.handleSurfaceEvent(event)
     }
     XCTAssertEqual(count, 1)
+  }
+}
+
+@MainActor
+final class ChannelConnectionTests: XCTestCase {
+  func testRetryAfterAnInitialConnectionFailureStartsAFreshNavigation() async throws {
+    let browser = ChannelBrowserModel()
+    let failure = expectation(description: "Initial connection refused")
+    let observation = browser.$errorMessage.compactMap { $0 }.prefix(1).sink { _ in failure.fulfill() }
+    defer { observation.cancel(); browser.stop() }
+    browser.open(Channel(id: "connection-test", name: "Test Channel",
+      url: URL(string: "http://127.0.0.1:1/")!, symbol: "globe"))
+    await fulfillment(of: [failure], timeout: 5)
+    XCTAssertNotNil(browser.errorMessage)
+    browser.reload()
+    XCTAssertTrue(browser.isLoading)
+    XCTAssertNil(browser.errorMessage)
+  }
+
+  func testConnectionGuidanceDistinguishesOfflineAndCertificateFailures() {
+    let offline = ChannelConnectionIssue(error: URLError(.notConnectedToInternet))
+    let certificate = ChannelConnectionIssue(error: URLError(.serverCertificateUntrusted))
+    XCTAssertEqual(offline.title, "You’re offline")
+    XCTAssertEqual(certificate.title, "A secure connection couldn’t be established")
+    XCTAssertNotEqual(offline.explanation, certificate.explanation)
+  }
+}
+
+private final class RecoveryAssistantProvider: AssistantProvider {
+  let identifier = "recovery-fixture"
+  var requests: [AssistantRequest] = []
+  func stream(_ request: AssistantRequest, configuration: AssistantConfiguration)
+    -> AsyncThrowingStream<AssistantStreamEvent, Error> {
+    requests.append(request)
+    let first = requests.count == 1
+    return AsyncThrowingStream { continuation in
+      continuation.yield(.text(first ? "Partial answer" : "Recovered answer"))
+      continuation.finish(throwing: first ? AssistantError.offline : nil)
+    }
+  }
+}
+
+@MainActor
+final class AssistantRecoveryTests: XCTestCase {
+  private final class Executor: AssistantToolExecuting {
+    func seek(to seconds: Double) -> Bool { false }
+    func currentSubtitle() -> String? { nil }
+    func relatedItems(matching query: String) -> [String] { [] }
+    func rangeDescription(start: Double, end: Double) -> String { "" }
+  }
+  private func model(_ provider: RecoveryAssistantProvider) -> AssistantViewModel {
+    AssistantViewModel(toolExecutor: Executor(), service: AssistantService { _ in provider },
+      configurationProvider: { AssistantConfiguration(provider: .openAICompatible,
+        endpoint: "http://localhost/v1/chat/completions", model: "fixture", apiKey: nil) })
+  }
+  private func waitFor(_ condition: () -> Bool) async {
+    for _ in 0..<100 {
+      if condition() { return }
+      try? await Task.sleep(for: .milliseconds(20))
+    }
+  }
+  func testRetryPreservesPartialAnswerWithoutDuplicatingTheQuestion() async {
+    let provider = RecoveryAssistantProvider()
+    let model = model(provider)
+    model.send("Explain this timestamp")
+    await waitFor { model.errorMessage != nil }
+    XCTAssertTrue(model.canRetry)
+    XCTAssertEqual(model.responseAnnouncement, "Assistant request failed.")
+    model.retry()
+    await waitFor { model.transcript.last?.text == "Recovered answer" && !model.isStreaming }
+    XCTAssertNil(model.errorMessage)
+    XCTAssertEqual(provider.requests.count, 2)
+    XCTAssertEqual(provider.requests.last?.messages.filter { $0.role == .user }.count, 1)
+    XCTAssertEqual(model.transcript.filter { $0.kind == .user }.count, 1)
+    XCTAssertTrue(model.transcript.contains { $0.text == "Partial answer" && $0.isPartial })
+  }
+  func testDismissingFailurePreservesConversation() async {
+    let model = model(RecoveryAssistantProvider())
+    model.send("Keep this question")
+    await waitFor { model.errorMessage != nil }
+    model.dismissError()
+    XCTAssertNil(model.errorMessage)
+    XCTAssertFalse(model.canRetry)
+    XCTAssertTrue(model.transcript.contains { $0.text == "Keep this question" })
+  }
+  func testRecoveryRoutesCredentialFailuresToSettings() {
+    XCTAssertTrue(AssistantError.unauthorized.needsSettingsCorrection)
+    XCTAssertTrue(AssistantError.missingAPIKey.needsSettingsCorrection)
+    XCTAssertFalse(AssistantError.offline.needsSettingsCorrection)
+  }
+}
+
+private final class CaptureAssistantProvider: AssistantProvider {
+  let identifier = "capture-fixture"
+  private var calls = 0
+  func stream(_ request: AssistantRequest, configuration: AssistantConfiguration)
+    -> AsyncThrowingStream<AssistantStreamEvent, Error> {
+    calls += 1
+    let fail = calls == 1
+    return AsyncThrowingStream { continuation in
+      let task = Task {
+        if fail {
+          try? await Task.sleep(for: .seconds(5))
+          guard !Task.isCancelled else { return }
+          continuation.finish(throwing: AssistantError.offline)
+        } else {
+          continuation.yield(.text("The connection recovered. Your original question is still here."))
+          continuation.finish()
+        }
+      }
+      continuation.onTermination = { _ in task.cancel() }
+    }
+  }
+}
+
+@MainActor
+final class UISweepCaptureTests: XCTestCase {
+  private final class Executor: AssistantToolExecuting {
+    func seek(to seconds: Double) -> Bool { false }
+    func currentSubtitle() -> String? { nil }
+    func relatedItems(matching query: String) -> [String] { [] }
+    func rangeDescription(start: Double, end: Double) -> String { "" }
+  }
+  private let output = URL(fileURLWithPath: "/tmp/uniplayer-ui-sweep-evidence")
+  private func enabled() throws {
+    guard FileManager.default.fileExists(atPath: "/tmp/uniplayer-ui-sweep-capture.enabled") else {
+      throw XCTSkip("Opt-in native capture on the E2E Mac")
+    }
+    try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
+    NSApp.setActivationPolicy(.regular)
+  }
+  private func capture(_ window: NSWindow, _ name: String) async throws {
+    if let parent = window.sheetParent { parent.makeKeyAndOrderFront(nil) }
+    else { window.makeKeyAndOrderFront(nil) }
+    NSApp.activate(ignoringOtherApps: true)
+    try await Task.sleep(for: .milliseconds(400))
+    window.displayIfNeeded()
+    let request = output.appendingPathComponent("capture-request.json")
+    let response = output.appendingPathComponent("capture-response.json")
+    try? FileManager.default.removeItem(at: response)
+    let payload: [String: Any] = ["window": window.windowNumber, "name": name,
+      "visible": window.isVisible, "pid": ProcessInfo.processInfo.processIdentifier]
+    try JSONSerialization.data(withJSONObject: payload).write(to: request, options: .atomic)
+    for _ in 0..<100 {
+      if FileManager.default.fileExists(atPath: response.path) {
+        let result = try JSONSerialization.jsonObject(with: Data(contentsOf: response)) as? [String: Any]
+        XCTAssertEqual(result?["success"] as? Bool, true, "External E2E capture failed")
+        return
+      }
+      try await Task.sleep(for: .milliseconds(100))
+    }
+    XCTFail("External E2E capture worker did not respond")
+  }
+
+  private func descendants(_ view: NSView) -> [NSView] {
+    view.subviews.flatMap { [$0] + descendants($0) }
+  }
+  func testAssistantNativeRecoveryCaptures() async throws {
+    try enabled()
+    let provider = CaptureAssistantProvider()
+    let model = AssistantViewModel(toolExecutor: Executor(), service: AssistantService { _ in provider },
+      configurationProvider: { AssistantConfiguration(provider: .openAICompatible,
+        endpoint: "http://localhost/v1/chat/completions", model: "fixture", apiKey: nil) })
+    let window = NSWindow(contentRect: NSRect(x: 300, y: 100, width: 360, height: 760),
+      styleMask: [.titled, .closable], backing: .buffered, defer: false)
+    window.isReleasedWhenClosed = false
+    window.title = "Assistant review"
+    window.appearance = NSAppearance(named: .aqua)
+    let host = NSHostingView(rootView: AIInspectorView(model: model).environment(\.libraryTextScale, 1))
+    host.sizingOptions = []
+    window.contentView = host
+    defer { model.stop(); window.close() }
+    model.send("Explain the attached context")
+    try await capture(window, "assistant-waiting")
+    for _ in 0..<100 {
+      if model.errorMessage != nil { break }
+      try await Task.sleep(for: .milliseconds(100))
+    }
+    XCTAssertNotNil(model.errorMessage)
+    try await capture(window, "assistant-failure")
+    host.rootView = AIInspectorView(model: model).environment(\.libraryTextScale, 2)
+    window.setContentSize(NSSize(width: 260, height: 508))
+    try await capture(window, "assistant-failure-200")
+    model.retry()
+    for _ in 0..<100 {
+      if !model.isStreaming { break }
+      try await Task.sleep(for: .milliseconds(20))
+    }
+    XCTAssertNil(model.errorMessage)
+    XCTAssertEqual(model.transcript.filter { $0.kind == .user }.count, 1)
+    host.rootView = AIInspectorView(model: model).environment(\.libraryTextScale, 1)
+    window.setContentSize(NSSize(width: 360, height: 760))
+    try await capture(window, "assistant-recovered")
+    window.contentView = NSHostingView(rootView: ZStack {
+      Tokens.Palette.black.color
+      InlineLoadingIndicator(message: "Opening video…")
+    })
+    window.setContentSize(NSSize(width: 640, height: 360))
+    try await capture(window, "inline-opening")
+  }
+  func testPluginNativeRecoveryCaptures() async throws {
+    try enabled()
+    let root = output.appendingPathComponent("plugin-fixture.iinaplugin")
+    try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+    let manifest: [String: Any] = ["name": "Recovery Preview — a deliberately long plugin name", "identifier": "org.uniplayer.ui-sweep",
+      "author": ["name": "Local fixture"], "version": "1.0", "entry": "main.js", "helpPage": "help.html", "preferenceDefaults": [:]]
+    try JSONSerialization.data(withJSONObject: manifest).write(to: root.appendingPathComponent("Info.json"))
+    try Data().write(to: root.appendingPathComponent("main.js"))
+    let help = root.appendingPathComponent("help.html")
+    try Data("<title>Help</title>".utf8).write(to: help)
+    let plugin = try XCTUnwrap(JavascriptPlugin(filename: root.lastPathComponent, externalURL: root))
+    let parent = NSWindow()
+    parent.isReleasedWhenClosed = false
+    let window = PluginDetailsWindow(plugin: plugin, window: parent)
+    window.isReleasedWhenClosed = false
+    window.appearance = NSAppearance(named: .aqua)
+    parent.setContentSize(NSSize(width: 800, height: 650))
+    parent.makeKeyAndOrderFront(nil)
+    parent.beginSheet(window, completionHandler: nil)
+    defer {
+      parent.endSheet(window)
+      window.close(); parent.close()
+      try? FileManager.default.removeItem(at: Utility.pluginsURL.appendingPathComponent(".preferences/org.uniplayer.ui-sweep.plist"))
+    }
+    try await capture(window, "plugin-no-settings")
+    try FileManager.default.removeItem(at: help)
+    let segment = try XCTUnwrap(descendants(try XCTUnwrap(window.contentView)).compactMap { $0 as? NSSegmentedControl }.first)
+    let nameLabel = try XCTUnwrap(descendants(window.contentView!).compactMap { $0 as? NSTextField }.first { $0.stringValue == plugin.name })
+    XCTAssertLessThanOrEqual(nameLabel.frame.maxX, segment.frame.minX)
+    segment.selectedSegment = 2
+    NSApp.sendAction(try XCTUnwrap(segment.action), to: segment.target, from: segment)
+    for _ in 0..<100 {
+      if descendants(window.contentView!).compactMap({ $0 as? NSTextField }).contains(where: { $0.stringValue == "Couldn’t load the plugin page" }) { break }
+      try await Task.sleep(for: .milliseconds(30))
+    }
+    let retry = try XCTUnwrap(descendants(window.contentView!).compactMap { $0 as? NSButton }.first { $0.title == "Try Again" })
+    XCTAssertFalse(retry.isHidden)
+    try await capture(window, "plugin-failure")
+    try Data("<title>Recovered help</title><h1>Plugin help is ready</h1>".utf8).write(to: help)
+    retry.performClick(nil)
+    let webView = try XCTUnwrap(descendants(window.contentView!).compactMap { $0 as? WKWebView }.first)
+    for _ in 0..<100 {
+      if !webView.isLoading, webView.url == help { break }
+      try await Task.sleep(for: .milliseconds(30))
+    }
+    let title = try await webView.evaluateJavaScript("document.title") as? String
+    XCTAssertEqual(title, "Recovered help")
+    try await capture(window, "plugin-recovered")
+  }
+}
+
+final class RecoveryPresentationTests: XCTestCase {
+  func testInlineLoadingStatusTracksOpeningAndRespectsBufferingPreference() {
+    XCTAssertEqual(InlineLoadingStatus.message(state: .loading, pausedForCache: false, showBuffering: false), "Opening video…")
+    XCTAssertEqual(InlineLoadingStatus.message(state: .playing, pausedForCache: true, showBuffering: true), "Buffering…")
+    XCTAssertNil(InlineLoadingStatus.message(state: .playing, pausedForCache: true, showBuffering: false))
+    XCTAssertNil(InlineLoadingStatus.message(state: .idle, pausedForCache: true, showBuffering: true))
+  }
+  func testPluginInstallAlertDoesNotEmbedUnboundedProcessOutput() {
+    let diagnostic = String(repeating: "process diagnostic line\n", count: 2000)
+    let error = JavascriptPlugin.PluginError.cannotDownload(diagnostic, diagnostic)
+    let message = PluginInstallErrorMessage.message(for: error)
+    XCTAssertLessThan(message.count, 500)
+    XCTAssertFalse(message.contains("process diagnostic line"))
   }
 }

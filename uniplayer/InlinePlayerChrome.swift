@@ -14,6 +14,31 @@ private func inlineL(_ key: String) -> String {
   NSLocalizedString(key, comment: "")
 }
 
+enum InlineLoadingStatus {
+  static func message(state: PlayerState, pausedForCache: Bool, showBuffering: Bool) -> String? {
+    guard state.active else { return nil }
+    if state == .loading || state == .starting { return inlineL("Opening video…") }
+    if pausedForCache && showBuffering { return inlineL("Buffering…") }
+    return nil
+  }
+}
+
+struct InlineLoadingIndicator: View {
+  let message: String
+  var body: some View {
+    VStack(spacing: Tokens.Space.n8) {
+      ProgressView().progressViewStyle(.circular).controlSize(.small)
+        .environment(\.colorScheme, Tokens.Library.mediaOverlayColorScheme)
+      Text(message).font(Tokens.Typography.caption.font)
+        .shadow(color: Tokens.Palette.black.color, radius: Tokens.Space.n2)
+    }
+    .foregroundStyle(Tokens.Palette.onMedia.color)
+    .allowsHitTesting(false)
+    .accessibilityElement(children: .combine)
+    .accessibilityLabel(message)
+  }
+}
+
 // MARK: - Model
 
 /// Published state for the inline controls. It reads `PlayerCore` and forwards
@@ -35,8 +60,9 @@ final class InlinePlayerModel: ObservableObject {
   @Published private(set) var message: String?
   @Published private(set) var isFullscreen = false
   @Published private(set) var controlsVisible = true
+  @Published private(set) var loadingMessage: String?
 
-  /// Toggles the library window's fullscreen. Set by the library view.
+  /// Toggles the video-only fullscreen presentation. Set by the library view.
   var onToggleFullscreen: (() -> Void)?
   /// Opens playback in the detached player window.
   var onOpenInNewWindow: (() -> Void)?
@@ -80,6 +106,8 @@ final class InlinePlayerModel: ObservableObject {
 
   func refresh() {
     let info = player.info
+    loadingMessage = InlineLoadingStatus.message(state: info.state,
+      pausedForCache: info.pausedForCache, showBuffering: Preference.bool(for: .showBufferingThrobber))
     isActive = player.isInline && info.state.active
     let nowPaused = info.state == .paused
     if nowPaused != isPaused {
@@ -108,7 +136,7 @@ final class InlinePlayerModel: ObservableObject {
     }
   }
 
-  /// The library window reports its own fullscreen state.
+  /// Reports the video-only fullscreen presentation state.
   var fullscreenProvider: (() -> Bool)?
 
   // MARK: Visibility
@@ -250,6 +278,7 @@ struct InlinePlayerChrome: View {
 
   var body: some View {
     ZStack {
+      if let message = model.loadingMessage { InlineLoadingIndicator(message: message) }
       VStack(spacing: Tokens.Space.n0) {
         if let message = model.message {
           messageChip(message)

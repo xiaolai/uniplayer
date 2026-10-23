@@ -1258,3 +1258,60 @@
 "Pin when there is enough screen space" = "Pin when there is enough screen space";
 
 "Video Fullscreen" = "Video Fullscreen";
+
+/* Channel connection and recovery */
+"You’re offline" = "You’re offline";
+"Check your internet connection, then try again." = "Check your internet connection, then try again.";
+"The website took too long to respond" = "The website took too long to respond";
+"The connection timed out. You can try again or open the website in your browser." = "The connection timed out. You can try again or open the website in your browser.";
+"A secure connection couldn’t be established" = "A secure connection couldn’t be established";
+"The website could not establish a secure connection. Try again later or check it in your browser." = "The website could not establish a secure connection. Try again later or check it in your browser.";
+"Couldn’t connect" = "Couldn’t connect";
+"The website may be unavailable, or the connection may be interrupted. Try again or open it in your browser." = "The website may be unavailable, or the connection may be interrupted. Try again or open it in your browser.";
+"The page couldn’t finish loading" = "The page couldn’t finish loading";
+"Technical Details" = "Technical Details";
+"This is taking longer than expected…" = "This is taking longer than expected…";
+"Connecting to the website…" = "Connecting to the website…";
+
+/* UI recovery sweep */
+"Assistant request failed." = "Assistant request failed.";
+"Assistant stopped." = "Assistant stopped.";
+"Check assistant settings" = "Check assistant settings";
+"Check the provider, endpoint, model and API key in Settings." = "Check the provider, endpoint, model and API key in Settings.";
+"Check your connection and make sure your provider is running, then try again." = "Check your connection and make sure your provider is running, then try again.";
+"Clear Search" = "Clear Search";
+"Couldn’t check for updates. Check your connection and try again." = "Couldn’t check for updates. Check your connection and try again.";
+"Couldn’t load the plugin page" = "Couldn’t load the plugin page";
+"Couldn’t reach the assistant" = "Couldn’t reach the assistant";
+"Loading plugin page…" = "Loading plugin page…";
+"No help page included" = "No help page included";
+"No matching videos" = "No matching videos";
+"No plugin settings" = "No plugin settings";
+"No visible videos" = "No visible videos";
+"Playback action needs confirmation." = "Playback action needs confirmation.";
+"Reload the page to continue." = "Reload the page to continue.";
+"Restore hidden videos to show them in your library again." = "Restore hidden videos to show them in your library again.";
+"Show All Videos" = "Show All Videos";
+"The assistant request failed" = "The assistant request failed";
+"The assistant took too long to respond" = "The assistant took too long to respond";
+"The connection was stopped." = "The connection was stopped.";
+"The plugin page stopped" = "The plugin page stopped";
+"The plugin page took too long to respond" = "The plugin page took too long to respond";
+"This plugin does not include a settings page. You can inspect its installed files." = "This plugin does not include a settings page. You can inspect its installed files.";
+"Try again, or use the alternative below to access this plugin’s information." = "Try again, or use the alternative below to access this plugin’s information.";
+"Visit the plugin’s website or inspect its installed files for more information." = "Visit the plugin’s website or inspect its installed files for more information.";
+"Waiting for a response…" = "Waiting for a response…";
+"Your conversation is still here. Try again, or check your provider settings if the problem continues." = "Your conversation is still here. Try again, or check your provider settings if the problem continues.";
+"Your conversation is still here. Try the request again when the provider is available." = "Your conversation is still here. Try the request again when the provider is available.";
+
+/* Additional recovery states */
+"Buffering…" = "Buffering…";
+"Check your connection and provider." = "Check your connection and provider.";
+"Message…" = "Message…";
+"No Audio Tracks" = "No Audio Tracks";
+"No context attached" = "No context attached";
+"Open a video or a channel to add context." = "Open a video or a channel to add context.";
+"Opening video…" = "Opening video…";
+"Playback position" = "Playback position";
+"The plugin could not be downloaded. Check the URL and your connection, then try again." = "The plugin could not be downloaded. Check the URL and your connection, then try again.";
+"The plugin package could not be extracted. Download a fresh copy or choose another package." = "The plugin package could not be extracted. Download a fresh copy or choose another package.";

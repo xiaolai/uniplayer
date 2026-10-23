@@ -277,7 +277,7 @@ struct LibraryRootView: View {
       .padding(.top, Tokens.Library.titlebarHeight)
       .frame(width: chrome.sidebarWidth)
       .frame(maxHeight: .infinity)
-      .background(Tokens.Palette.sidebar.color)
+      .background(LibrarySidebarMaterial())
       .overlay(alignment: .trailing) {
         PaneResizeHandle(width: chrome.sidebarWidth) { chrome.resizePane?(true, $0) }
       }
@@ -472,8 +472,6 @@ struct LibraryRootView: View {
     .environment(\.defaultMinListRowHeight, Tokens.Size.n30 * preferredTextScale)
     .font(Tokens.Typography.body.scaledFont(preferredTextScale))
     .scrollContentBackground(.hidden)
-    .background(Tokens.Palette.sidebar.color)
-
 
   }
 
@@ -482,6 +480,7 @@ struct LibraryRootView: View {
       Image(systemName: symbol)
         .accessibilityHidden(true)
         .font(Tokens.Typography.body.scaledFont(preferredTextScale))
+        .frame(width: Tokens.Size.n20 * preferredTextScale)
       Text(title)
         .font(Tokens.Typography.body.scaledFont(preferredTextScale))
         .lineLimit(1)
@@ -606,8 +605,7 @@ private struct HomeView: View {
           .font(Tokens.Typography.body.scaledFont(textScale))
           .foregroundStyle(Tokens.Palette.textSecondary.color)
         if !model.hasLoaded {
-          ProgressView(L("Loading videos…"))
-            .frame(maxWidth: .infinity, minHeight: Tokens.Size.n70)
+          LibraryLoadingState()
         }
         if let hero = model.hero {
           HeroView(item: hero) {
@@ -632,10 +630,11 @@ private struct HomeView: View {
         if model.hasLoaded && model.allItems.isEmpty {
           EmptyStateView(
             symbol: "play.rectangle.on.rectangle",
-            title: L("No videos yet"),
-            message: L("Videos you open appear here. Files stay in their original folders."),
-            actionTitle: L("Open File…")) {
-              model.openFilePanel()
+            title: model.hiddenCount > 0 ? L("No visible videos") : L("No videos yet"),
+            message: model.hiddenCount > 0 ? L("Restore hidden videos to show them in your library again.") :
+              L("Videos you open appear here. Files stay in their original folders."),
+            actionTitle: model.hiddenCount > 0 ? L("Restore Hidden Videos") : L("Open File…")) {
+              if model.hiddenCount > 0 { model.restoreHiddenItems() } else { model.openFilePanel() }
             }
           .frame(minHeight: Tokens.Library.emptyStateMinimum)
         }
@@ -875,14 +874,14 @@ private struct LibraryGridView: View {
         }
 
         if !model.hasLoaded {
-          ProgressView(L("Loading videos…"))
+          LibraryLoadingState()
         } else if items.isEmpty {
           EmptyStateView(
             symbol: "play.rectangle.on.rectangle",
-            title: L("No videos yet"),
-            message: emptyMessage,
-            actionTitle: L("Open File…")) {
-              model.openFilePanel()
+            title: model.hiddenCount > 0 ? L("No visible videos") : L("No videos yet"),
+            message: model.hiddenCount > 0 ? L("Restore hidden videos to show them in your library again.") : emptyMessage,
+            actionTitle: model.hiddenCount > 0 ? L("Restore Hidden Videos") : L("Open File…")) {
+              if model.hiddenCount > 0 { model.restoreHiddenItems() } else { model.openFilePanel() }
             }
           .frame(minHeight: Tokens.Library.gridEmptyStateMinimum)
         } else {
@@ -997,7 +996,7 @@ private struct SearchView: View {
         .padding(.top, Tokens.Library.searchTop)
 
       if !model.hasLoaded {
-        ProgressView(L("Loading videos…"))
+        LibraryLoadingState()
       } else if model.query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
         EmptyStateView(
           symbol: "magnifyingglass",
@@ -1008,7 +1007,8 @@ private struct SearchView: View {
         EmptyStateView(
           symbol: "magnifyingglass",
           title: L("No Results"),
-          message: LF("Nothing matches “%@”.", model.query))
+          message: LF("Nothing matches “%@”.", model.query),
+          actionTitle: L("Clear Search")) { model.query = "" }
           .frame(maxHeight: .infinity)
       } else {
         ScrollView {
@@ -1470,8 +1470,9 @@ private struct LibraryCollectionView: View {
           .buttonStyle(.borderless)
       }
       if visible.isEmpty {
-        Text(L("No videos match this filter."))
-          .foregroundStyle(Tokens.Palette.textSecondary.color)
+        EmptyStateView(symbol: "line.3.horizontal.decrease", title: L("No matching videos"),
+          message: L("No videos match this filter."), actionTitle: L("Show All Videos")) { filter = .all }
+          .frame(minHeight: Tokens.Library.gridEmptyStateMinimum)
       } else if listView {
         LazyVStack(spacing: Tokens.Space.n8) {
           ForEach(visible) { item in
@@ -1604,5 +1605,30 @@ private struct PaneResizeHandle: View {
       .accessibilityAdjustableAction { adjustment in
         resize(width + (adjustment == .increment ? Tokens.Space.n20 : -Tokens.Space.n20))
       }
+  }
+}
+
+private struct LibrarySidebarMaterial: NSViewRepresentable {
+  func makeNSView(context: Context) -> NSVisualEffectView {
+    let view = NSVisualEffectView()
+    view.apply(Tokens.Material.librarySidebar)
+    return view
+  }
+  func updateNSView(_ view: NSVisualEffectView, context: Context) {
+    view.apply(Tokens.Material.librarySidebar)
+  }
+}
+
+private struct LibraryLoadingState: View {
+  @Environment(\.libraryTextScale) private var textScale
+  var body: some View {
+    VStack(spacing: Tokens.Space.n12) {
+      ProgressView().controlSize(.regular)
+      Text(L("Loading videos…"))
+        .font(Tokens.Typography.body.scaledFont(textScale))
+        .foregroundStyle(Tokens.Palette.textSecondary.color)
+    }
+    .frame(maxWidth: .infinity, minHeight: Tokens.Library.emptyStateMinimum)
+    .accessibilityElement(children: .combine)
   }
 }

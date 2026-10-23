@@ -115,6 +115,35 @@ final class AssistantViewModel: ObservableObject {
     return nil
   }
 
+  var canRetry: Bool {
+    guard case .failed = state, pendingTool == nil else { return false }
+    return providerMessages.contains { $0.role == .user }
+  }
+
+  func retry() {
+    guard canRetry else { return }
+    refreshConfiguration()
+    // Reuse the original question and its explicit context. Do not append
+    // another user turn or reset the tool budget/media confirmation target.
+    startStream()
+  }
+
+  func dismissError() {
+    guard case .failed = state else { return }
+    requestGeneration += 1
+    service.cancel()
+    state = .idle
+  }
+
+  var responseAnnouncement: String {
+    if case .failed = state { return aiL("Assistant request failed.") }
+    if pendingTool != nil { return aiL("Playback action needs confirmation.") }
+    if transcript.last?.kind == .notice, transcript.last?.text == aiL("Stopped.") {
+      return aiL("Assistant stopped.")
+    }
+    return aiL("Assistant response ready.")
+  }
+
   var contextDisclosure: String? {
     if let channelContext { return channelContext.disclosure }
     return playerContext?.disclosure
@@ -514,6 +543,7 @@ struct AIInspectorView: View {
   @State private var disclosureExpanded = false
   @State private var followingLatest = true
   @State private var userScrolling = false
+  @State private var errorDetailsExpanded = false
   private let contextTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
   var body: some View {
@@ -547,10 +577,11 @@ struct AIInspectorView: View {
     .onChange(of: model.isStreaming) { wasStreaming, streaming in
       if wasStreaming && !streaming {
         NSAccessibility.post(element: NSApp as Any, notification: .announcementRequested,
-          userInfo: [.announcement: aiL("Assistant response ready."),
+          userInfo: [.announcement: model.responseAnnouncement,
                      .priority: NSAccessibilityPriorityLevel.medium.rawValue])
       }
     }
+    .onChange(of: model.errorMessage) { _, _ in errorDetailsExpanded = false }
     .onReceive(contextTimer) { _ in
       // Keep the preview honest: what is shown is what Send will attach.
       model.refreshContext()
@@ -561,7 +592,7 @@ struct AIInspectorView: View {
 
   private var header: some View {
     HStack(spacing: Tokens.Space.n8) {
-      Text(aiL("AI Assistant"))
+      Text(aiL("Assistant"))
         .font(Tokens.Typography.sectionTitle.scaledFont(textScale))
         .foregroundStyle(Tokens.Palette.textPrimary.color)
       Spacer()
@@ -585,9 +616,11 @@ struct AIInspectorView: View {
   @ViewBuilder
   private var transcript: some View {
     if model.transcript.isEmpty {
-      ScrollView {
-        emptyState
-          .frame(maxWidth: .infinity)
+      GeometryReader { geometry in
+        ScrollView {
+          emptyState
+            .frame(maxWidth: .infinity, minHeight: geometry.size.height)
+        }
       }
     } else {
       ScrollViewReader { proxy in
@@ -694,15 +727,22 @@ struct AIInspectorView: View {
         HStack {
           Text(aiL("Assistant")).font(Tokens.Typography.captionStrong.scaledFont(textScale))
           Spacer()
-          Button(aiL("Copy")) {
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(item.text, forType: .string)
+          if !item.text.isEmpty {
+            Button(aiL("Copy")) {
+              NSPasteboard.general.clearContents()
+              NSPasteboard.general.setString(item.text, forType: .string)
+            }
+            .buttonStyle(.borderless)
           }
-          .buttonStyle(.borderless)
         }
-        AssistantMessageText(text: item.text, onSeek: { seconds in
-          model.onSeek?(seconds)
-        })
+        if item.text.isEmpty && model.isStreaming {
+          ProgressView(aiL("Waiting for a response…"))
+            .controlSize(.small)
+            .font(Tokens.Typography.caption.scaledFont(textScale))
+            .padding(.vertical, Tokens.Space.n8)
+        } else {
+          AssistantMessageText(text: item.text, onSeek: { seconds in model.onSeek?(seconds) })
+        }
         if item.isPartial, !model.isStreaming {
           Text(aiL("Stopped — partial answer"))
             .font(Tokens.Typography.caption.scaledFont(textScale))
@@ -771,28 +811,65 @@ struct AIInspectorView: View {
 
   @ViewBuilder
   private var errorBanner: some View {
-    if let error = model.errorMessage {
-      HStack(alignment: .top, spacing: Tokens.Space.n8) {
-        Image(systemName: "exclamationmark.triangle")
-          .foregroundStyle(Tokens.Palette.systemOrange.color)
-        VStack(alignment: .leading, spacing: Tokens.Space.n4) {
-          Text(error)
-            .font(Tokens.Typography.caption.scaledFont(textScale))
-            .foregroundStyle(Tokens.Palette.textPrimary.color)
-          if case .failed(.notConfigured) = model.state {
-            Button(aiL("Open Settings")) {
-              SettingsWindow.default.show()
-              SettingsWindow.default.navigateTo(page: "assistant")
-            }
-            .buttonStyle(.link)
-            .controlSize(.small)
-          }
+    if case .failed(let error) = model.state {
+      ViewThatFits(in: .vertical) {
+        errorContent(error).fixedSize(horizontal: false, vertical: true)
+        ScrollView { errorContent(error) }
+      }
+      .frame(maxHeight: Tokens.Inspector.errorBannerMaximumHeight)
+    }
+  }
+
+  private func errorContent(_ error: AssistantError) -> some View {
+      VStack(alignment: .leading, spacing: Tokens.Space.n8) {
+        Label(error.recoveryTitle, systemImage: "exclamationmark.circle")
+          .font(Tokens.Typography.captionStrong.scaledFont(textScale))
+        Text(error.recoveryGuidance)
+          .font(Tokens.Typography.caption.scaledFont(textScale))
+          .foregroundStyle(Tokens.Palette.textSecondary.color)
+          .lineLimit(2)
+        ViewThatFits(in: .horizontal) {
+          HStack(spacing: Tokens.Space.n12) { errorActions(error) }.fixedSize()
+          VStack(alignment: .leading, spacing: Tokens.Space.n8) { errorActions(error) }
         }
-        Spacer(minLength: Tokens.Space.n0)
+        .font(Tokens.Typography.caption.scaledFont(textScale))
+        .controlSize(.small)
+        DisclosureGroup(aiL("Technical Details"), isExpanded: $errorDetailsExpanded) {
+          ScrollView {
+            Text(error.recoveryGuidance + "\n\n" + (error.errorDescription ?? ""))
+              .font(Tokens.Typography.caption.scaledFont(textScale))
+              .foregroundStyle(Tokens.Palette.textSecondary.color)
+              .textSelection(.enabled)
+              .frame(maxWidth: .infinity, alignment: .leading)
+          }
+          .frame(maxHeight: Tokens.Inspector.errorDetailsMaximumHeight)
+        }
+        .font(Tokens.Typography.caption.scaledFont(textScale))
       }
       .padding(Tokens.Space.n12)
+      .frame(maxWidth: .infinity, alignment: .leading)
       .background(Tokens.Palette.controlBackground.color)
+  }
+
+  private func errorActionLabel(_ title: String) -> some View {
+    Text(aiL(title)).font(Tokens.Typography.caption.scaledFont(textScale))
+  }
+
+  @ViewBuilder
+  private func errorActions(_ error: AssistantError) -> some View {
+    if error.needsSettingsCorrection {
+      Button(action: openAssistantSettings) { errorActionLabel("Open Settings") }.buttonStyle(.borderedProminent)
+      if model.canRetry { Button(action: model.retry) { errorActionLabel("Try Again") }.buttonStyle(.bordered) }
+    } else {
+      if model.canRetry { Button(action: model.retry) { errorActionLabel("Try Again") }.buttonStyle(.borderedProminent) }
+      Button(action: openAssistantSettings) { errorActionLabel("Open Settings") }.buttonStyle(.bordered)
     }
+    Button(action: model.dismissError) { errorActionLabel("Dismiss") }.buttonStyle(.borderless)
+  }
+
+  private func openAssistantSettings() {
+    SettingsWindow.default.show()
+    SettingsWindow.default.navigateTo(page: "assistant")
   }
 
   // MARK: Context
@@ -829,7 +906,8 @@ struct AIInspectorView: View {
           .frame(height: Tokens.Inspector.contextPreviewHeight)
         }
       } else {
-        Text(aiL("No context yet. Open a video or a channel to add context."))
+        Text(aiL("No context attached"))
+          .help(aiL("Open a video or a channel to add context."))
           .font(Tokens.Typography.caption.scaledFont(textScale))
           .foregroundStyle(Tokens.Palette.textTertiary.color)
       }
@@ -893,7 +971,7 @@ struct AIInspectorView: View {
 
   private var inputBar: some View {
     HStack(alignment: .bottom, spacing: Tokens.Space.n8) {
-      TextField(aiL("Message your assistant…"), text: $model.draft, axis: .vertical)
+      TextField(aiL("Message…"), text: $model.draft, axis: .vertical)
         .textFieldStyle(.plain)
         .font(Tokens.Typography.body.scaledFont(textScale))
         .lineLimit(1...4)

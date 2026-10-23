@@ -207,6 +207,7 @@ motion that honours Reduce Motion and the app's own animation setting.
 | `heroBody` | `static let heroBody = FontToken(size: 15, weight: .regular)` | A hero's supporting line. |
 | `sectionTitle` | `static let sectionTitle = FontToken(size: 17, weight: .semibold)` | A page or section heading. |
 | `pageTitle` | `static let pageTitle = FontToken(size: 26, weight: .bold)` | A page title above a grid. |
+| `channelStateIcon` | `static let channelStateIcon = FontToken(size: 48, weight: .regular)` | Channel identity and connection-state symbol. |
 | `cardTitle` | `static let cardTitle = FontToken(size: 13, weight: .semibold)` | A card's title. |
 | `titlebarIcon` | `static let titlebarIcon = FontToken(size: 16, weight: .regular)` | A titlebar icon glyph, matching the reference app's toolbar symbols. |
 | `body` | `static let body = FontToken(size: NSFont.systemFontSize, weight: .regular)` | Body copy. |
@@ -441,6 +442,7 @@ motion that honours Reduce Motion and the app's own animation setting.
 | `n92` | `static let n92: CGFloat = 0.92` | 0.92. |
 | `n96` | `static let n96: CGFloat = 0.96` | 0.96. |
 | `n98` | `static let n98: CGFloat = 0.98` | 0.98. |
+| `opaque` | `static let opaque: CGFloat = 1` | Fully visible content. |
 | `disabled` | `static let disabled = n40` | A disabled control's opacity. |
 | `border` | `static let border = n08` | A resting border. |
 | `borderHover` | `static let borderHover = n28` | A hover border. |
@@ -608,6 +610,7 @@ motion that honours Reduce Motion and the app's own animation setting.
 |---|---|---|
 | `popover` | `static let popover = VisualEffect(material: .popover, blending: .withinWindow, state: .active)` | A popover-style within-window material. |
 | `sidebar` | `static let sidebar = VisualEffect(material: .sidebar, blending: .withinWindow, state: .active)` | A sidebar material. |
+| `librarySidebar` | `static let librarySidebar = VisualEffect(material: .sidebar, blending: .behindWindow, state: .followsWindowActiveState)` | Library sidebar vibrancy, tracking the window's active state. |
 | `titlebar` | `static let titlebar = VisualEffect(material: .titlebar, blending: .withinWindow, state: .active)` | A titlebar material. |
 | `underWindowBackground` | `static let underWindowBackground = VisualEffect(material: .underWindowBackground, blending: .behindWindow, state: .active)` | A window-background material behind the content. |
 | `windowBackground` | `static let windowBackground = VisualEffect(material: .windowBackground, blending: .withinWindow, state: .active)` | A window-background material for footers. |
@@ -636,6 +639,8 @@ motion that honours Reduce Motion and the app's own animation setting.
 | `outwardSidebarMinimum` | `static let outwardSidebarMinimum: CGFloat = 240` | Smallest remembered outward sidebar width. |
 | `outwardSidebarMaximum` | `static let outwardSidebarMaximum: CGFloat = 420` | Largest remembered outward sidebar width. |
 | `titlebarHeight` | `static let titlebarHeight: CGFloat = 52` | Transparent top strip reserved for window dragging and titlebar controls. |
+| `channelStateMaximumWidth` | `static let channelStateMaximumWidth: CGFloat = 420` | Readable width of the channel connection and recovery state. |
+| `mediaOverlayColorScheme` | `static let mediaOverlayColorScheme: ColorScheme = .dark` | Media overlays use dark control rendering against the video surface. |
 | `transportMaximumWidth` | `static let transportMaximumWidth: CGFloat = 720` | Maximum width of floating playback transport. |
 | `glassControlSize` | `static let glassControlSize: CGFloat = 36` | Individual glass playback button diameter. |
 | `paneResizeWidth` | `static let paneResizeWidth: CGFloat = 8` | Draggable pane separator hit width. |
@@ -689,6 +694,8 @@ motion that honours Reduce Motion and the app's own animation setting.
 
 | Token | Declaration | Purpose |
 |---|---|---|
+| `errorBannerMaximumHeight` | `static let errorBannerMaximumHeight: CGFloat = 240` | Caps recovery content so the assistant composer remains reachable. |
+| `errorDetailsMaximumHeight` | `static let errorDetailsMaximumHeight: CGFloat = 100` | Bounds long provider diagnostics inside the recovery banner. |
 | `contextPreviewHeight` | `static let contextPreviewHeight: CGFloat = 180` | Height reserved for the scrollable attachment preview. |
 | `minimumWidth` | `static let minimumWidth: CGFloat = Size.n260` | The narrowest useful transcript column. |
 | `idealWidth` | `static let idealWidth: CGFloat = Size.n360` | The default column width beside a 16:9 surface. |

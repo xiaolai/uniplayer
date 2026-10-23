@@ -6,6 +6,21 @@
 //  Copyright © 2026 lhc. All rights reserved.
 //
 
+enum PluginInstallErrorMessage {
+  static func message(for error: Error) -> String {
+    guard let error = error as? JavascriptPlugin.PluginError else { return error.localizedDescription }
+    switch error {
+    case .fileNotFound: return NSLocalizedString("plugin.install_error.file_not_found", comment: "")
+    case .invalidURL: return NSLocalizedString("plugin.install_error.invalid_url", comment: "")
+    case .cannotDownload:
+      return NSLocalizedString("The plugin could not be downloaded. Check the URL and your connection, then try again.", comment: "Plugin recovery")
+    case .cannotUnpackage:
+      return NSLocalizedString("The plugin package could not be extracted. Download a fresh copy or choose another package.", comment: "Plugin recovery")
+    case .cannotLoadPlugin: return NSLocalizedString("plugin.install_error.cannot_load", comment: "")
+    }
+  }
+}
+
 class PluginManager {
   enum Result {
     case installed, reinstalled, cancelled, noUpdate
@@ -101,30 +116,10 @@ class PluginManager {
 
   @MainActor
   func handleInstallationError(_ error: Error) {
-    let message: String
-    if let pluginError = error as? JavascriptPlugin.PluginError {
-      switch pluginError {
-      case .fileNotFound(let url):
-        Logger.log("Plugin install error: file not found: \"\(url)\"", level: .error)
-        message = NSLocalizedString("plugin.install_error.file_not_found", comment: "")
-      case .invalidURL(let url):
-        Logger.log("Plugin install error: URL is invalid: \"\(url)\"", level: .error)
-        message = NSLocalizedString("plugin.install_error.invalid_url", comment: "")
-      case .cannotDownload(let out, let err):
-        Logger.log("Plugin install error: cannot download", level: .error)
-        Logger.log("\nSTDOUT_BEGIN\(out)\nSTDOUT_END", level: .debug)
-        Logger.log("\nSTDERR_BEGIN\(err)\nSTDERR_END", level: .error)
-        let str = NSLocalizedString("plugin.install_error.cannot_download", comment: "")
-        message = String(format: str, err)
-      case .cannotUnpackage(_, let err):
-        let str = NSLocalizedString("plugin.install_error.cannot_unpackage", comment: "")
-        message = String(format: str, err)
-      case .cannotLoadPlugin:
-        message = NSLocalizedString("plugin.install_error.cannot_load", comment: "")
-      }
-    } else {
-      message = error.localizedDescription
-    }
+    let message = PluginInstallErrorMessage.message(for: error)
+    // Keep process stderr out of the alert. A subprocess diagnostic can be
+    // thousands of lines; the recovery message stays readable and bounded.
+    Logger.log("Plugin installation failed: \(message)", level: .error)
     if Thread.isMainThread {
       Utility.showAlert("plugin.install_error", arguments: [message], sheetWindow: window)
     } else {

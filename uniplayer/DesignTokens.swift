@@ -460,6 +460,8 @@ enum Tokens {
     static let sectionTitle = FontToken(size: 17, weight: .semibold)
     /// A page title above a grid.
     static let pageTitle = FontToken(size: 26, weight: .bold)
+    /// Channel identity and connection-state symbol.
+    static let channelStateIcon = FontToken(size: 48, weight: .regular)
     /// A card's title.
     static let cardTitle = FontToken(size: 13, weight: .semibold)
     /// A titlebar icon glyph, matching the reference app's toolbar symbols.
@@ -883,6 +885,8 @@ enum Tokens {
     /// 0.98.
     static let n98: CGFloat = 0.98
 
+    /// Fully visible content.
+    static let opaque: CGFloat = 1
     /// A disabled control's opacity.
     static let disabled = n40
     /// A resting border.
@@ -1219,6 +1223,8 @@ enum Tokens {
     static let popover = VisualEffect(material: .popover, blending: .withinWindow, state: .active)
     /// A sidebar material.
     static let sidebar = VisualEffect(material: .sidebar, blending: .withinWindow, state: .active)
+    /// Library sidebar vibrancy, tracking the window's active state.
+    static let librarySidebar = VisualEffect(material: .sidebar, blending: .behindWindow, state: .followsWindowActiveState)
     /// A titlebar material.
     static let titlebar = VisualEffect(material: .titlebar, blending: .withinWindow, state: .active)
     /// A window-background material behind the content.
@@ -1268,6 +1274,10 @@ enum Tokens {
     static let outwardSidebarMaximum: CGFloat = 420
     /// Transparent top strip reserved for window dragging and titlebar controls.
     static let titlebarHeight: CGFloat = 52
+    /// Readable width of the channel connection and recovery state.
+    static let channelStateMaximumWidth: CGFloat = 420
+    /// Media overlays use dark control rendering against the video surface.
+    static let mediaOverlayColorScheme: ColorScheme = .dark
     /// Maximum width of floating playback transport.
     static let transportMaximumWidth: CGFloat = 720
     /// Individual glass playback button diameter.
@@ -1375,6 +1385,10 @@ enum Tokens {
 
   /// The AI inspector's column widths.
   enum Inspector {
+    /// Caps recovery content so the assistant composer remains reachable.
+    static let errorBannerMaximumHeight: CGFloat = 240
+    /// Bounds long provider diagnostics inside the recovery banner.
+    static let errorDetailsMaximumHeight: CGFloat = 100
     /// Height reserved for the scrollable attachment preview.
     static let contextPreviewHeight: CGFloat = 180
     /// The narrowest useful transcript column.

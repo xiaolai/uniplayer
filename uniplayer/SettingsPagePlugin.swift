@@ -30,7 +30,7 @@ class SettingsPagePlugin: SettingsPage {
   }
 
   override var sectionSpacing: CGFloat {
-    8
+    Tokens.Space.n8
   }
   
   override var showSubSections: Bool { false }
@@ -177,9 +177,11 @@ fileprivate class PluginUpdateView: SettingsContainer {
   }
 
   func update(_ status: Status) {
+    checkUpdateButton.isHidden = false
+    checkUpdateButton.isEnabled = true
     switch status {
     case .error:
-      checkUpdateLabel.stringValue = "Error checking for updates."
+      checkUpdateLabel.stringValue = NSLocalizedString("Couldn’t check for updates. Check your connection and try again.", comment: "Plugin status")
       checkUpdateButton.isHidden = false
     case .foundUpdate(let numOfUpdates):
       if numOfUpdates == 0 {
@@ -190,7 +192,7 @@ fileprivate class PluginUpdateView: SettingsContainer {
       checkUpdateButton.isHidden = false
     case .refreshing:
       checkUpdateLabel.stringValue = "Checking for updates…"
-      checkUpdateButton.isHidden = true
+      checkUpdateButton.isEnabled = false
     }
   }
 }
@@ -519,13 +521,20 @@ extension PluginListView {
 }
 
 
-fileprivate class PluginDetailsWindow: NSWindow {
+final class PluginDetailsWindow: NSWindow {
   private unowned let plugin: JavascriptPlugin
   private let okButton: NSButton
   private var webView: WKWebView!
   private let segControl: NSSegmentedControl
   private let loadingIndicator: NSProgressIndicator
   private let loadingFailedView: NSTextField
+  private var loadingStateView: NSStackView!
+  private var recoveryView: NSStackView!
+  private var recoveryMessage: NSTextField!
+  private var retryButton: NSButton!
+  private var fallbackButton: NSButton!
+  private var activeNavigation: WKNavigation?
+  private var pageDeadline: DispatchWorkItem?
   private var currentTab: Tab = .about
 
   unowned let window: NSWindow
@@ -603,6 +612,13 @@ fileprivate class PluginDetailsWindow: NSWindow {
     versionLabel.spacing(.top(Tokens.Space.n4), to: nameLabel).spacing(.leading(Tokens.Space.n8), to: iconView)
     contentView.addSubview(segControl)
     segControl.padding(.top(Tokens.Space.n16), .trailing(Tokens.Space.n16))
+    for label in [nameLabel, versionLabel] {
+      label.lineBreakMode = .byTruncatingTail
+      label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+      label.trailingAnchor.constraint(lessThanOrEqualTo: segControl.leadingAnchor,
+        constant: -Tokens.Space.n12).isActive = true
+    }
+    nameLabel.toolTip = plugin.name
     contentView.addSubview(okButton)
     okButton.padding(.bottom(Tokens.Space.n16), .trailing(Tokens.Space.n16))
 
@@ -613,14 +629,46 @@ fileprivate class PluginDetailsWindow: NSWindow {
       .spacing(.bottom(Tokens.Space.n16), to: okButton)
 
     loadingIndicator.style = .spinning
-    loadingIndicator.isHidden = true
-    contentView.addSubview(loadingIndicator)
-    loadingIndicator.center(.x, with: contentView).padding(.top(Tokens.Space.n80))
+    let loadingCaption = NSTextField(labelWithString: NSLocalizedString("Loading plugin page…", comment: "Plugin status"))
+    loadingCaption.font = Tokens.Typography.body.nsFont
+    loadingCaption.textColor = Tokens.Palette.textSecondary.nsColor
+    loadingStateView = NSStackView(views: [loadingIndicator, loadingCaption])
+    loadingStateView.orientation = .vertical
+    loadingStateView.alignment = .centerX
+    loadingStateView.spacing = Tokens.Space.n12
+    loadingStateView.translatesAutoresizingMaskIntoConstraints = false
+    loadingStateView.isHidden = true
+    contentView.addSubview(loadingStateView)
+    loadingStateView.center(.x, with: contentView)
+    loadingStateView.center(.y, with: contentView)
 
-    loadingFailedView.textColor = Tokens.Palette.destructive.nsColor
-    loadingFailedView.isHidden = true
-    contentView.addSubview(loadingFailedView)
-    loadingFailedView.center(.x, with: contentView).padding(.top(Tokens.Space.n80))
+    loadingFailedView.font = Tokens.Typography.sectionTitle.nsFont
+    loadingFailedView.textColor = Tokens.Palette.textPrimary.nsColor
+    loadingFailedView.alignment = .center
+    loadingFailedView.maximumNumberOfLines = 0
+    loadingFailedView.lineBreakMode = .byWordWrapping
+    recoveryMessage = NSTextField(wrappingLabelWithString: "")
+    recoveryMessage.font = Tokens.Typography.body.nsFont
+    recoveryMessage.textColor = Tokens.Palette.textSecondary.nsColor
+    recoveryMessage.alignment = .center
+    retryButton = NSButton(title: NSLocalizedString("Try Again", comment: "Plugin recovery"),
+      target: self, action: #selector(retryPage))
+    fallbackButton = NSButton(title: NSLocalizedString("Open in Browser", comment: "Plugin recovery"),
+      target: self, action: #selector(openPageFallback))
+    let actions = NSStackView(views: [retryButton, fallbackButton])
+    actions.spacing = Tokens.Space.n12
+    recoveryView = NSStackView(views: [loadingFailedView, recoveryMessage, actions])
+    recoveryView.orientation = .vertical
+    recoveryView.alignment = .centerX
+    recoveryView.spacing = Tokens.Space.n12
+    recoveryView.translatesAutoresizingMaskIntoConstraints = false
+    recoveryView.isHidden = true
+    contentView.addSubview(recoveryView)
+    recoveryView.center(.x, with: contentView)
+    recoveryView.center(.y, with: contentView)
+    recoveryView.widthAnchor.constraint(equalToConstant: Tokens.Size.n360).isActive = true
+    recoveryMessage.widthAnchor.constraint(equalTo: recoveryView.widthAnchor).isActive = true
+    loadingFailedView.widthAnchor.constraint(equalTo: recoveryView.widthAnchor).isActive = true
 
     // select settings tab by default
     segControl.selectedSegment = 0
@@ -632,6 +680,9 @@ fileprivate class PluginDetailsWindow: NSWindow {
     // save settings to disk on tab change; it's fast so no need to check current tab
     plugin.syncPreferences()
 
+    pageDeadline?.cancel()
+    activeNavigation = nil
+    webView.stopLoading()
     currentTab = .init(rawValue: sender.selectedSegment)!
 
     switch segControl.selectedSegment {
@@ -667,10 +718,12 @@ fileprivate class PluginDetailsWindow: NSWindow {
 
   private func generateSettingsPage() {
     guard let prefURL = plugin.preferencesPageURL else {
-      webView.loadHTMLString(generateHTML(body: "This plugin does not have a settings page."), baseURL: nil)
+      showPageIssue(title: NSLocalizedString("No plugin settings", comment: "Plugin state"),
+        message: NSLocalizedString("This plugin does not include a settings page. You can inspect its installed files.", comment: "Plugin state"),
+        allowRetry: false)
       return
     }
-    webView.loadFileURL(prefURL, allowingReadAccessTo: plugin.root)
+    activeNavigation = webView.loadFileURL(prefURL, allowingReadAccessTo: plugin.root)
   }
 
   private func generateAboutPage() {
@@ -712,18 +765,22 @@ fileprivate class PluginDetailsWindow: NSWindow {
         }.joined()
   )
 
-    webView.loadHTMLString(generateHTML(body: body), baseURL: nil)
+    activeNavigation = webView.loadHTMLString(generateHTML(body: body), baseURL: nil)
   }
 
   private func generateHelpPage() {
     if let helpURL = plugin.helpPageURL {
       if helpURL.isFileURL {
-        webView.loadFileURL(helpURL, allowingReadAccessTo: plugin.root)
+        activeNavigation = webView.loadFileURL(helpURL, allowingReadAccessTo: plugin.root)
       } else {
-        webView.load(URLRequest(url: helpURL))
+        var request = URLRequest(url: helpURL)
+        request.timeoutInterval = EmbeddedPageLoadingPolicy.connectionTimeout
+        activeNavigation = webView.load(request)
       }
     } else {
-      webView.loadHTMLString(generateHTML(body: "This plugin does not have a help page."), baseURL: nil)
+      showPageIssue(title: NSLocalizedString("No help page included", comment: "Plugin state"),
+        message: NSLocalizedString("Visit the plugin’s website or inspect its installed files for more information.", comment: "Plugin state"),
+        allowRetry: false)
     }
   }
 
@@ -741,7 +798,46 @@ fileprivate class PluginDetailsWindow: NSWindow {
     """
   }
 
+  private var fallbackURL: URL? {
+    guard currentTab == .help else { return nil }
+    let candidate = plugin.helpPageURL?.isFileURL == false ? plugin.helpPageURL :
+      (plugin.githubURLString ?? plugin.authorURL).flatMap(URL.init(string:))
+    guard let candidate, ["https", "http"].contains(candidate.scheme?.lowercased() ?? "") else { return nil }
+    return candidate
+  }
+
+  @objc private func retryPage() {
+    pageDeadline?.cancel()
+    activeNavigation = nil
+    webView.stopLoading()
+    switch currentTab {
+    case .settings: generateSettingsPage()
+    case .about: generateAboutPage()
+    case .help: generateHelpPage()
+    }
+  }
+
+  @objc private func openPageFallback() {
+    if let url = fallbackURL { NSWorkspace.shared.open(url) }
+    else { NSWorkspace.shared.activateFileViewerSelecting([plugin.root]) }
+  }
+
+  private func showPageIssue(title: String, message: String, allowRetry: Bool = true) {
+    pageDeadline?.cancel()
+    loadingIndicator.stopAnimation(self)
+    loadingStateView.isHidden = true
+    webView.alphaValue = Tokens.Opacity.n00
+    loadingFailedView.stringValue = title
+    recoveryMessage.stringValue = message
+    retryButton.isHidden = !allowRetry
+    fallbackButton.title = NSLocalizedString(fallbackURL == nil ? "Open Plugin Folder" : "Open in Browser", comment: "Plugin recovery")
+    recoveryView.isHidden = false
+  }
+
   @objc func dismissSheet() {
+    pageDeadline?.cancel()
+    activeNavigation = nil
+    webView.stopLoading()
     plugin.syncPreferences()
     window.endSheet(self)
   }
@@ -752,6 +848,7 @@ extension PluginDetailsWindow: WKScriptMessageHandler, WKNavigationDelegate {
     // don't allow remote pages in settings or about tab
     if currentTab != .help {
       guard let url = navigationAction.request.url else {
+        decisionHandler(.cancel)
         return
       }
       // open local pages
@@ -774,32 +871,65 @@ extension PluginDetailsWindow: WKScriptMessageHandler, WKNavigationDelegate {
   }
 
   func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
-    webView.alphaValue = 0
-    loadingFailedView.isHidden = true
-    if let scheme = webView.url?.scheme, scheme.starts(with: "http") {
-      loadingIndicator.isHidden = false
-      loadingIndicator.startAnimation(self)
+    activeNavigation = navigation
+    pageDeadline?.cancel()
+    webView.alphaValue = Tokens.Opacity.n00
+    recoveryView.isHidden = true
+    loadingStateView.isHidden = false
+    loadingIndicator.startAnimation(self)
+    let expectedNavigation = navigation
+    let deadline = DispatchWorkItem { [weak self] in
+      guard let self, self.activeNavigation === expectedNavigation else { return }
+      self.activeNavigation = nil
+      self.webView.stopLoading()
+      self.showPageIssue(title: NSLocalizedString("The plugin page took too long to respond", comment: "Plugin recovery"),
+        message: NSLocalizedString("Try again, or use the alternative below to access this plugin’s information.", comment: "Plugin recovery"))
     }
+    pageDeadline = deadline
+    DispatchQueue.main.asyncAfter(deadline: .now() + EmbeddedPageLoadingPolicy.connectionTimeout, execute: deadline)
+  }
+
+  func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+    guard activeNavigation === navigation else { return }
+    pageDeadline?.cancel()
+    loadingStateView.isHidden = true
+    webView.alphaValue = Tokens.Opacity.opaque
   }
 
   func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+    guard activeNavigation === navigation else { return }
+    pageDeadline?.cancel()
     loadingIndicator.stopAnimation(self)
-    loadingIndicator.isHidden = true
-    webView.alphaValue = 1
+    loadingStateView.isHidden = true
+    webView.alphaValue = Tokens.Opacity.opaque
   }
 
   func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-    failedLoadingWebViewPage()
+    guard activeNavigation === navigation else { return }
+    failedLoadingWebViewPage(error)
   }
 
   func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-    failedLoadingWebViewPage()
+    guard activeNavigation === navigation else { return }
+    failedLoadingWebViewPage(error)
   }
 
-  private func failedLoadingWebViewPage() {
-    loadingFailedView.isHidden = false
+  private func failedLoadingWebViewPage(_ error: Error) {
+    pageDeadline?.cancel()
     loadingIndicator.stopAnimation(self)
-    loadingIndicator.isHidden = true
+    loadingStateView.isHidden = true
+    guard !ChannelNavigationFailure.isExpectedHandoff(error as NSError) else {
+      webView.alphaValue = Tokens.Opacity.opaque
+      return
+    }
+    showPageIssue(title: NSLocalizedString("Couldn’t load the plugin page", comment: "Plugin recovery"),
+      message: NSLocalizedString("Try again, or use the alternative below to access this plugin’s information.", comment: "Plugin recovery"))
+  }
+
+  func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+    activeNavigation = nil
+    showPageIssue(title: NSLocalizedString("The plugin page stopped", comment: "Plugin recovery"),
+      message: NSLocalizedString("Reload the page to continue.", comment: "Plugin recovery"))
   }
 
   func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {

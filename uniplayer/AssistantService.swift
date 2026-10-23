@@ -115,6 +115,36 @@ enum AssistantError: LocalizedError, Equatable {
   case cancelled
   case provider(String)
 
+  var needsSettingsCorrection: Bool {
+    switch self {
+    case .notConfigured, .invalidEndpoint, .missingAPIKey, .unauthorized: return true
+    default: return false
+    }
+  }
+
+  var recoveryTitle: String {
+    if needsSettingsCorrection { return NSLocalizedString("Check assistant settings", comment: "Assistant recovery") }
+    switch self {
+    case .offline: return NSLocalizedString("Couldn’t reach the assistant", comment: "Assistant recovery")
+    case .timedOut: return NSLocalizedString("The assistant took too long to respond", comment: "Assistant recovery")
+    default: return NSLocalizedString("The assistant request failed", comment: "Assistant recovery")
+    }
+  }
+
+  var recoveryGuidance: String {
+    if needsSettingsCorrection {
+      return NSLocalizedString("Check the provider, endpoint, model and API key in Settings.", comment: "Assistant recovery")
+    }
+    switch self {
+    case .offline:
+      return NSLocalizedString("Check your connection and provider.", comment: "Assistant recovery")
+    case .timedOut:
+      return NSLocalizedString("Your conversation is still here. Try the request again when the provider is available.", comment: "Assistant recovery")
+    default:
+      return NSLocalizedString("Your conversation is still here. Try again, or check your provider settings if the problem continues.", comment: "Assistant recovery")
+    }
+  }
+
   var errorDescription: String? {
     switch self {
     case .notConfigured:
