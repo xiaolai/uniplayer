@@ -113,8 +113,10 @@ def remote_state(plan, client):
     local_tag = git(plan.root, 'rev-parse', '--verify', '--quiet', f'refs/tags/{plan.tag}^{{commit}}', optional=True)
     if local_tag and local_tag != plan.source:
         raise ReleaseError('Local version tag points at another commit; bump the version instead of moving it')
-    remote = client.api(f'repos/{client.repository}/commits/{plan.tag}', missing=True)
-    if remote and remote['sha'] != plan.source:
+    # Missing commit refs return 422, while the Git refs endpoint returns 404.
+    # Probe existence there, then resolve a present annotated/lightweight tag.
+    remote = client.api(f'repos/{client.repository}/git/ref/tags/{plan.tag}', missing=True)
+    if remote and client.tag_commit(plan.tag) != plan.source:
         raise ReleaseError('Remote version tag points at another commit; use --resume TAG or bump the version')
     value = client.release(plan.tag)
     if value and value['prerelease']:

@@ -46,8 +46,10 @@ class LocalReleaseTests(unittest.TestCase):
     def api(self, path, **kwargs):
         if '/git/ref/heads/main' in path:
             return {'object': {'sha': self.source}}
-        if '/commits/' in path:
+        if '/git/ref/tags/' in path:
             return None
+        if '/commits/' in path:
+            raise release.APIError(422)
         return {'permissions': {'push': True}}
 
     def test_source_requires_clean_main_and_never_commits_or_stashes(self):
@@ -93,9 +95,21 @@ class LocalReleaseTests(unittest.TestCase):
     def test_remote_tag_change_blocks_a_new_release(self):
         self.assertFalse(local.remote_state(self.plan, self.hub))
         original = self.hub.api
-        self.hub.api = lambda path, **kw: {'sha': 'c' * 40} if '/commits/' in path else original(path, **kw)
+        self.hub.api = lambda path, **kw: {'object': {'type': 'tag', 'sha': 'b' * 40}} if '/git/ref/tags/' in path else original(path, **kw)
+        self.hub.source = 'c' * 40
         with self.assertRaisesRegex(release.ReleaseError, 'Remote version tag'):
             local.remote_state(self.plan, self.hub)
+
+    def test_new_version_uses_missing_git_ref_not_the_422_commit_endpoint(self):
+        paths = []
+        original = self.hub.api
+        def record(path, **kwargs):
+            paths.append(path)
+            return original(path, **kwargs)
+        self.hub.api = record
+        self.assertFalse(local.remote_state(self.plan, self.hub))
+        self.assertTrue(any('/git/ref/tags/v0.2.0' in path for path in paths))
+        self.assertFalse(any('/commits/' in path for path in paths))
 
     def test_dependency_cache_is_copied_and_hashed_without_downloading(self):
         source, cache = Path(self.temporary.name) / 'source', self.root
