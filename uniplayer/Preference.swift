@@ -435,28 +435,15 @@ struct Preference {
 
   enum Theme: Int, InitializingFromKey, CaseIterable {
     case dark = 0
-    // case ultraDark // 1
-    case light = 2
-    // case mediumLight // 3
-    case system = 4
 
-    static var defaultValue = Theme.system
+    static var defaultValue = Theme.dark
 
     init?(key: Key) {
-      let value = Preference.integer(for: key)
-      if value == 1 || value == 3 {
-        return nil
-      }
-      self.init(rawValue: Preference.integer(for: key))
+      // Saved light/system values resolve to the sole supported appearance.
+      self = .dark
     }
 
-    var description: String {
-      switch self {
-      case .dark: "dark"
-      case .light: "light"
-      case .system: "system"
-      }
-    }
+    var description: String { "dark" }
   }
 
   enum OSCPosition: Int, InitializingFromKey, CaseIterable {
@@ -988,7 +975,7 @@ struct Preference {
     .leadingSidebarWidth: 360,
     .trailingSidebarWidth: 360,
     .prefetchPlaylistVideoDuration: true,
-    .themeMaterial: Theme.system.rawValue,
+    .themeMaterial: Theme.dark.rawValue,
     .assistantProvider: AssistantProviderKind.openAICompatible.rawValue,
     .assistantEndpoint: AssistantProviderKind.openAICompatible.defaultEndpoint,
     .assistantModel: AssistantProviderKind.openAICompatible.defaultModel,

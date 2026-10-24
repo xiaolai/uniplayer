@@ -3,15 +3,15 @@
 //  uniplayer
 //
 //  The window that shows the library. It owns the standard window chrome and a
-//  real toolbar; the content is SwiftUI, and the only thing crossing the
-//  boundary is PlayerCore opening a URL.
+//  real toolbar; the content is SwiftUI. LibraryChrome bridges window actions
+//  and presentation state while PlayerCore retains playback ownership.
 //
 
 import AppKit
 import SwiftUI
 import WebKit
 
-final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToolbarDelegate, NSToolbarItemValidation {
+final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToolbarDelegate, NSToolbarItemValidation, NSSearchFieldDelegate {
 
   /// macOS virtual key code for Escape.
   private static let escapeKeyCode: UInt16 = 53
@@ -28,6 +28,31 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
   private var adjustingPaneFrame = false
   private var fullscreenPanes: (NavigationSplitViewVisibility, Bool, Bool, Bool)?
   private let chrome: LibraryChrome
+  private let toolbarIdentifier: NSToolbar.Identifier
+  private let savesToolbarConfiguration: Bool
+  private var temporarySearchItem = false
+  private var searchToolbarAutosavesConfiguration = false
+  private(set) lazy var searchToolbarItem: NSSearchToolbarItem = {
+    let item = NSSearchToolbarItem(itemIdentifier: .init("library.search"))
+    item.label = NSLocalizedString("Search Library", comment: "Library toolbar")
+    item.paletteLabel = item.label
+    item.toolTip = item.label
+    item.preferredWidthForSearchField = Tokens.Size.searchFieldWidth
+    item.resignsFirstResponderWithCancel = false
+    let field = LibraryToolbarSearchField()
+    field.placeholderString = NSLocalizedString("Search titles and folders", comment: "Library search")
+    field.setAccessibilityLabel(item.label)
+    field.setAccessibilityIdentifier("library.titlebarSearch")
+    field.sendsSearchStringImmediately = true
+    field.delegate = self
+    field.onFocus = { [weak self] in
+      guard let self, !self.chrome.searchPresented else { return }
+      self.chrome.searchLibrary?()
+    }
+    // AppKit owns the field's control metrics, font, bezel and focus ring.
+    item.searchField = field
+    return item
+  }()
 
   private var savedColumnVisibility: NavigationSplitViewVisibility?
   private var savedInspectorPresented: Bool?
@@ -46,9 +71,13 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
     fullscreenPanes != nil || (window?.styleMask.contains(.fullScreen) ?? false)
   }
 
-  init(playerCore: PlayerCore, chrome: LibraryChrome = LibraryChrome()) {
+  init(playerCore: PlayerCore, chrome: LibraryChrome = LibraryChrome(),
+       toolbarIdentifier: NSToolbar.Identifier = "UniPlayerLibraryToolbar",
+       savesToolbarConfiguration: Bool = true) {
     self.player = playerCore
     self.chrome = chrome
+    self.toolbarIdentifier = toolbarIdentifier
+    self.savesToolbarConfiguration = savesToolbarConfiguration
     super.init(window: nil)
   }
 
@@ -108,11 +137,11 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
   }
 
   private func installToolbar(in window: NSWindow) {
-    let toolbar = NSToolbar(identifier: "UniPlayerLibraryToolbar")
+    let toolbar = NSToolbar(identifier: toolbarIdentifier)
     toolbar.delegate = self
     toolbar.displayMode = .iconOnly
     toolbar.allowsUserCustomization = true
-    toolbar.autosavesConfiguration = true
+    toolbar.autosavesConfiguration = savesToolbarConfiguration
     window.toolbar = toolbar
     if !toolbar.items.contains(where: { $0.itemIdentifier.rawValue == "library.navigation" }) {
       toolbar.insertItem(withItemIdentifier: .init("library.navigation"), at: toolbar.items.count)
@@ -132,13 +161,13 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
 
   func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier id: NSToolbarItem.Identifier,
                willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
+    if id.rawValue == "library.search" { return searchToolbarItem }
     let definitions: [String: (String, String, Selector)] = [
       "library.back": ("Back", "chevron.left", #selector(navigateBack(_:))),
       "library.forward": ("Forward", "chevron.right", #selector(navigateForward(_:))),
       "library.sidebar": ("Show or Hide Sidebar", "sidebar.left", #selector(toggleSidebar(_:))),
       "library.file": ("Open File…", "folder", #selector(toolbarOpenFile(_:))),
       "library.url": ("Open URL…", "link", #selector(toolbarOpenURL(_:))),
-      "library.search": ("Search Library", "magnifyingglass", #selector(menuSearchLibrary(_:))),
       "library.add": ("Add Source…", "plus", #selector(toolbarAddSource(_:))),
       "library.navigation": ("Channel Navigation", "safari", #selector(toggleChannelNavigation(_:))),
       "library.inspector": ("AI Assistant", "sidebar.right", #selector(menuToggleInspector(_:))),
@@ -178,7 +207,47 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
 
   @objc private func toolbarOpenFile(_ sender: Any?) { chrome.openFile?() }
   @objc private func toolbarOpenURL(_ sender: Any?) { chrome.openURL?() }
-  @objc func menuSearchLibrary(_ sender: Any?) { chrome.searchLibrary?() }
+  @objc func menuSearchLibrary(_ sender: Any?) {
+    chrome.searchLibrary?()
+    searchToolbarItem.beginSearchInteraction()
+  }
+
+  func controlTextDidChange(_ notification: Notification) {
+    guard let field = notification.object as? NSSearchField,
+          field === searchToolbarItem.searchField else { return }
+    if !chrome.searchPresented { chrome.searchLibrary?() }
+    chrome.searchTextChanged?(field.stringValue)
+  }
+
+  private func updateSearchText() {
+    let text = chrome.searchText?() ?? ""
+    if searchToolbarItem.searchField.stringValue != text {
+      searchToolbarItem.searchField.stringValue = text
+    }
+  }
+
+  private func updateSearchPresentation() {
+    if chrome.searchPresented {
+      if let toolbar = window?.toolbar,
+         !toolbar.items.contains(where: { $0.itemIdentifier == searchToolbarItem.itemIdentifier }) {
+        temporarySearchItem = true
+        searchToolbarAutosavesConfiguration = toolbar.autosavesConfiguration
+        toolbar.autosavesConfiguration = false
+        toolbar.insertItem(withItemIdentifier: searchToolbarItem.itemIdentifier, at: toolbar.items.count)
+      }
+      updateSearchText()
+      searchToolbarItem.beginSearchInteraction()
+    } else {
+      searchToolbarItem.endSearchInteraction()
+      if temporarySearchItem, let toolbar = window?.toolbar {
+        if let index = toolbar.items.firstIndex(where: { $0.itemIdentifier == searchToolbarItem.itemIdentifier }) {
+          toolbar.removeItem(at: index)
+        }
+        toolbar.autosavesConfiguration = searchToolbarAutosavesConfiguration
+      }
+      temporarySearchItem = false
+    }
+  }
 
   private func installMenuHandler(in window: NSWindow) {
     // Playback menu items are dispatched through the key window's responder
@@ -250,6 +319,8 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
 
   private func wireChromeActions(window: NSWindow) {
     chrome.playbackChromeChanged = { [weak self] in self?.updatePlaybackToolbar() }
+    chrome.searchPresentationChanged = { [weak self] in self?.updateSearchPresentation() }
+    chrome.searchQueryChanged = { [weak self] in self?.updateSearchText() }
     chrome.pinPane = { [weak self] left in self?.pinPane(left: left) }
     chrome.resizePane = { [weak self] left, width in self?.resizePane(left: left, width: width) }
     chrome.toggleFullscreen = { [weak self] in
@@ -631,6 +702,15 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
     reloadData()
   }
 
+}
+
+private final class LibraryToolbarSearchField: NSSearchField {
+  var onFocus: (() -> Void)?
+  override func becomeFirstResponder() -> Bool {
+    let focused = super.becomeFirstResponder()
+    if focused { onFocus?() }
+    return focused
+  }
 }
 
 /// The playback fullscreen surface has no library chrome or draggable titlebar.

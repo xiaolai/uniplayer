@@ -822,14 +822,7 @@ extension NSUserInterfaceItemIdentifier {
 
 extension NSAppearance {
   convenience init?(uniplayerTheme theme: Preference.Theme) {
-    switch theme {
-    case .dark:
-      self.init(named: .darkAqua)
-    case .light:
-      self.init(named: .aqua)
-    default:
-      return nil
-    }
+    self.init(named: Tokens.Appearance.name)
   }
 
   var isDark: Bool {

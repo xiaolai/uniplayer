@@ -71,6 +71,13 @@ enum LibrarySection: String, CaseIterable, Identifiable {
 
 /// The library window's column state and the actions its toolbar invokes.
 final class LibraryChrome: ObservableObject {
+  @Published var searchPresented = false {
+    didSet { if searchPresented != oldValue { searchPresentationChanged?() } }
+  }
+  var searchPresentationChanged: (() -> Void)?
+  var searchQueryChanged: (() -> Void)?
+  var searchText: (() -> String)?
+  var searchTextChanged: ((String) -> Void)?
   @Published var columnVisibility: NavigationSplitViewVisibility = .all
   @Published var inspectorPresented = false
   @Published var leftDocked = true
@@ -188,7 +195,7 @@ struct LibraryRootView: View {
     }
   }
 
-  var body: some View {
+  private var libraryContent: some View {
     HStack(spacing: Tokens.Space.n0) {
       if chrome.columnVisibility != .detailOnly && chrome.leftDocked {
         sidebarPane
@@ -248,15 +255,22 @@ struct LibraryRootView: View {
     } message: {
       Text(mediaSources.startupError ?? "")
     }
+  }
+
+  var body: some View {
+    libraryContent
     .onChange(of: chrome.videoFullscreenPresented) { _, _ in handleVideoFullscreenChange() }
     .onChange(of: selectedItem?.url) { _, _ in updatePlaybackChrome() }
-    .onChange(of: selectedItem?.id) { _, _ in updateNavigationChrome() }
-    .onChange(of: catalogDetailID) { _, _ in updateNavigationChrome() }
-    .onChange(of: sourcePropertiesID) { _, _ in updateNavigationChrome() }
+    .onChange(of: selectedItem?.id) { _, _ in updateNavigationChrome(); updateSearchChrome() }
+    .onChange(of: catalogDetailID) { _, _ in updateNavigationChrome(); updateSearchChrome() }
+    .onChange(of: sourcePropertiesID) { _, _ in updateNavigationChrome(); updateSearchChrome() }
+    .onChange(of: model.query) { _, _ in chrome.searchQueryChanged?() }
+    .onChange(of: chrome.playbackPresented) { _, _ in updateSearchChrome() }
     .onChange(of: selection) { _, value in
       if case .channel = value { chrome.channelSelected = true }
       else { chrome.channelSelected = false; chrome.channelNavigationPresented = false }
       handleSelectionChange()
+      updateSearchChrome()
     }
     .onChange(of: inlinePlayer.isActive) { _, active in
       handleInlineActiveChange(active)
@@ -318,6 +332,7 @@ struct LibraryRootView: View {
     configureCallbacks()
     inlinePlayer.refresh()
     handleInlineActiveChange(inlinePlayer.isActive)
+    updateSearchChrome()
   }
 
   private func handleAddRequest() {
@@ -401,6 +416,11 @@ struct LibraryRootView: View {
     .padding(Tokens.Space.n8)
   }
 
+  private func updateSearchChrome() {
+    chrome.searchPresented = selection == .section(.search) && selectedItem == nil
+      && catalogDetailID == nil && sourcePropertiesID == nil && !chrome.playbackPresented
+  }
+
   private func updatePlaybackChrome() {
     chrome.playbackPresented = inlinePlayer.isActive
       && (selectedItem?.url == inlinePlayer.currentURL || catalogDetailID != nil)
@@ -478,11 +498,20 @@ struct LibraryRootView: View {
     let detailSelection = $selectedItem
     let sidebarSelection = $selection
     let searchIdentity = $searchID
-    chrome.searchLibrary = {
+    let catalogSelection = $catalogDetailID
+    let propertiesSelection = $sourcePropertiesID
+    chrome.searchText = { [weak model] in model?.query ?? "" }
+    chrome.searchTextChanged = { [weak model] in model?.query = $0 }
+    chrome.searchLibrary = { [weak chrome] in
       detailSelection.wrappedValue = nil
+      catalogSelection.wrappedValue = nil
+      propertiesSelection.wrappedValue = nil
       sidebarSelection.wrappedValue = .section(.search)
       searchIdentity.wrappedValue = UUID()
+      chrome?.playbackPresented = false
+      chrome?.searchPresented = true
     }
+    chrome.searchQueryChanged?()
     chrome.registerInlineActivity = { [weak inlinePlayer] in
       inlinePlayer?.registerActivity()
     }
@@ -772,7 +801,7 @@ struct LibraryRootView: View {
           seeAll: { selection = .section($0) })
       case .section(.search):
         if let catalog = mediaSources.catalog {
-          CatalogSearchView(catalog: catalog,
+          CatalogSearchView(catalog: catalog, query: $model.query,
                             onOpenMedia: { mediaID, intent in
                               openCatalogMedia(mediaID, intent: intent)
                             })
@@ -1421,16 +1450,9 @@ private struct SearchView: View {
   @Environment(\.libraryTextScale) private var textScale
   @ObservedObject var model: LibraryModel
   let select: (LibraryItem) -> Void
-  @FocusState private var focused: Bool
 
   var body: some View {
     VStack(spacing: Tokens.Space.n28) {
-      NativeLibrarySearchField(query: $model.query)
-        .frame(maxWidth: Tokens.Size.searchFieldWidth)
-        .frame(height: Tokens.Size.n30)
-        .padding(.horizontal, Tokens.Space.n16)
-        .padding(.top, Tokens.Library.searchTop)
-
       if !model.hasLoaded {
         LibraryLoadingState()
       } else if model.query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -1450,15 +1472,13 @@ private struct SearchView: View {
         ScrollView {
           LibraryCollectionView(items: model.searchResults, select: select)
             .padding(.horizontal, Tokens.Space.pageMargin)
+            .padding(.top, Tokens.Library.titlebarHeight + Tokens.Space.n28)
             .padding(.bottom, Tokens.Space.pageBottom)
         }
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .background(Tokens.Palette.canvas.color)
-    .onAppear {
-      focused = true
-    }
   }
 }
 

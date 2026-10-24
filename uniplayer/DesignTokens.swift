@@ -186,6 +186,12 @@ struct ShadowToken {
 
 enum Tokens {
 
+  /// UniPlayer supports one appearance, independent of macOS's light/dark choice.
+  enum Appearance {
+    /// The application and all native window chrome use dark Aqua.
+    static let name: NSAppearance.Name = .darkAqua
+  }
+
   // MARK: Palette
 
   /// Every colour in the app. System semantic colours are preferred because

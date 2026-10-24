@@ -58,9 +58,6 @@ class SettingsPageUI: SettingsPage {
       SettingsList(title: .text_Appearance) {
         SettingsItem.Custom().view(textSizeControl())
 
-        SettingsItem.PopupButton()
-          .image(name: "moonphase.first.quarter")
-          .bindTo(.themeMaterial, ofType: Preference.Theme.self)
         SettingsItem.General(title: .general("sidebar.liquid_glass"))
           .image(name: ["capsule.on.rectangle.liquid.glass", "liquid.glass"])
           .withExpandingDetailView {

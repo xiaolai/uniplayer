@@ -649,9 +649,9 @@ struct CatalogLibraryView: View {
 struct CatalogSearchView: View {
   @Environment(\.libraryTextScale) private var textScale
   let catalog: MediaCatalog
+  @Binding var query: String
   let onOpenMedia: (UUID, PlaybackIntent) -> Void
 
-  @State private var query = ""
   @State private var results: [CatalogMedia] = []
   @State private var loading = false
   @State private var searchError: String?
@@ -659,14 +659,6 @@ struct CatalogSearchView: View {
 
   var body: some View {
     VStack(spacing: Tokens.Space.n20) {
-      NativeLibrarySearchField(
-        query: $query,
-        placeholder: L("Search titles and folders"),
-        accessibilityLabel: L("Search Library"))
-        .frame(maxWidth: Tokens.Size.searchFieldWidth)
-        .frame(height: Tokens.Size.n30)
-        .padding(.horizontal, Tokens.Space.n16)
-        .padding(.top, Tokens.Library.searchTop)
       if query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
         EmptyStateView(
           symbol: "magnifyingglass",
@@ -699,12 +691,14 @@ struct CatalogSearchView: View {
             }
           }
           .padding(.horizontal, Tokens.Space.pageMargin)
+          .padding(.top, Tokens.Library.titlebarHeight + Tokens.Space.n28)
           .padding(.bottom, Tokens.Space.pageBottom)
         }
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .background(Tokens.Palette.canvas.color)
+    .onAppear { scheduleSearch(query) }
     .onChange(of: query) { _, value in scheduleSearch(value) }
     .onDisappear { searchTask?.cancel() }
   }

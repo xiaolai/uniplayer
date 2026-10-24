@@ -34,15 +34,7 @@ class SidebarLayoutPane: SidebarScrollView {
 
     let stack = ui.vStack(spacing: .sidebarStackViewSpacing)
 
-    themeSettingStack = ui.vStack(
-      spacing: .sidebarItemSpacing,
-      ui.hStack(
-        ui.image("circle.lefthalf.filled", "circle.lefthalf.fill", size: Tokens.Icon.n20, config: .sidebarIconConfig),
-        ui.label("settings.themeMaterial.desc"),
-        ui.flexibleSpace(),
-        ThemeSwitch(.themeMaterial),
-      )
-    )
+    themeSettingStack = ui.vStack(spacing: .sidebarItemSpacing)
 
     themeSettingStack.addArrangedSubview(ui.vStack(
       spacing: .sidebarItemSpacing,
@@ -374,38 +366,6 @@ fileprivate class OSCLayoutSelector: NSBox {
     item.contentView = content
     content.padding(.all(Tokens.Space.n12))
     return item
-  }
-}
-
-
-fileprivate class ThemeSwitch: NSSegmentedControl {
-  private let key: Preference.Key
-  let prefObserver = Preference.Observer()
-
-  init(_ key: Preference.Key) {
-    self.key = key
-    super.init(frame: .zero)
-
-    segmentCount = 3
-    setTag(0, forSegment: 0)
-    setTag(2, forSegment: 1)
-    setTag(4, forSegment: 2)
-    setLabel(ui.localized("settings.themeMaterial.items.0"), forSegment: 0)
-    setLabel(ui.localized("settings.themeMaterial.items.2"), forSegment: 1)
-    setLabel(ui.localized("general.auto"), forSegment: 2)
-
-    prefObserver.add(key, runNow: true) { [unowned self] _ in
-      selectSegment(withTag: Preference.integer(for: key))
-    }
-  }
-
-  override func sendAction(_ action: Selector?, to target: Any?) -> Bool {
-    Preference.set(selectedTag(), for: key)
-    return true
-  }
-
-  required init?(coder: NSCoder) {
-    fatalError("init(coder:) has not been implemented")
   }
 }
 

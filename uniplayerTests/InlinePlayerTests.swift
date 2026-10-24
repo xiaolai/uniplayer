@@ -11,6 +11,105 @@ import XCTest
 @testable import UniPlayer
 
 @MainActor
+final class LibrarySearchToolbarTests: XCTestCase {
+  func testSearchUsesANativeToolbarSearchItem() throws {
+    let controller = LibraryWindowController(playerCore: PlayerCore.first)
+    let toolbar = NSToolbar(identifier: "OwnedSearchFixture." + UUID().uuidString)
+    let item = try XCTUnwrap(controller.toolbar(toolbar,
+      itemForItemIdentifier: .init("library.search"), willBeInsertedIntoToolbar: true))
+    XCTAssertTrue(item is NSSearchToolbarItem)
+  }
+
+  func testNativeSizingFocusAndQuerySynchronization() async throws {
+    let chrome = LibraryChrome()
+    let controller = LibraryWindowController(playerCore: PlayerCore.first, chrome: chrome,
+      toolbarIdentifier: "OwnedNativeSearch." + UUID().uuidString, savesToolbarConfiguration: false)
+    controller.showWindow(nil)
+    defer { controller.close() }
+    try await Task.sleep(for: .milliseconds(50))
+    var query = "saved query"
+    chrome.searchLibrary = { chrome.searchPresented = true }
+    chrome.searchText = { query }
+    chrome.searchTextChanged = { query = $0 }
+    controller.menuSearchLibrary(nil)
+    try await Task.sleep(for: .milliseconds(50))
+    let window = try XCTUnwrap(controller.window)
+    window.contentView?.superview?.layoutSubtreeIfNeeded()
+    let field = controller.searchToolbarItem.searchField
+    let inline = NSSearchField()
+    inline.controlSize = .large
+    XCTAssertGreaterThan(field.intrinsicContentSize.height, inline.intrinsicContentSize.height)
+    XCTAssertEqual(field.frame.height, field.intrinsicContentSize.height, accuracy: 0.5)
+    XCTAssertEqual(field.stringValue, query)
+    XCTAssertTrue(window.firstResponder === field.currentEditor())
+    field.stringValue = "new query"
+    controller.controlTextDidChange(Notification(name: NSControl.textDidChangeNotification, object: field))
+    XCTAssertEqual(query, "new query")
+    query = ""
+    chrome.searchQueryChanged?()
+    XCTAssertEqual(field.stringValue, "")
+    XCTAssertTrue(window.titlebarAppearsTransparent)
+    XCTAssertTrue(window.contentView!.effectiveAppearance.isDark)
+  }
+
+  func testSearchDoesNotPermanentlyAlterACustomToolbar() async throws {
+    let identifier = NSToolbar.Identifier("OwnedCustomSearch." + UUID().uuidString)
+    let chrome = LibraryChrome()
+    let controller = LibraryWindowController(playerCore: PlayerCore.first, chrome: chrome,
+      toolbarIdentifier: identifier, savesToolbarConfiguration: false)
+    controller.showWindow(nil)
+    defer {
+      controller.close()
+      UserDefaults.standard.removeObject(forKey: "NSToolbar Configuration " + identifier)
+    }
+    try await Task.sleep(for: .milliseconds(50))
+    let toolbar = try XCTUnwrap(controller.window?.toolbar)
+    let index = try XCTUnwrap(toolbar.items.firstIndex { $0.itemIdentifier.rawValue == "library.search" })
+    toolbar.removeItem(at: index)
+    let custom = toolbar.items.map(\.itemIdentifier)
+    chrome.searchText = { "" }
+    toolbar.autosavesConfiguration = true
+    chrome.searchPresented = true
+    XCTAssertTrue(toolbar.items.contains { $0 === controller.searchToolbarItem })
+    XCTAssertFalse(toolbar.autosavesConfiguration)
+    chrome.searchPresented = false
+    XCTAssertEqual(toolbar.items.map(\.itemIdentifier), custom)
+    XCTAssertTrue(toolbar.autosavesConfiguration)
+  }
+}
+
+@MainActor
+final class DarkAppearanceTests: XCTestCase {
+  func testOnlyDarkIsExposedAndRegisteredAsDefault() {
+    XCTAssertEqual(Preference.Theme.allCases, [.dark])
+    XCTAssertEqual(Preference.Theme.defaultValue, .dark)
+    XCTAssertEqual(Preference.defaultPreference[.themeMaterial] as? Int, 0)
+  }
+
+  func testLegacySavedAppearanceValuesResolveToDark() {
+    let key = Preference.Key("OwnedDarkAppearanceFixture." + UUID().uuidString)
+    defer { UserDefaults.standard.removeObject(forKey: key.rawValue) }
+    for value in [0, 1, 2, 3, 4, 99] {
+      UserDefaults.standard.set(value, forKey: key.rawValue)
+      XCTAssertEqual(Preference.Theme(key: key), .dark, "Legacy value: \(value)")
+    }
+  }
+
+  func testApplicationAndNativeTitlebarUseDarkAppearance() throws {
+    XCTAssertEqual(NSApp.appearance?.name, .darkAqua)
+    let window = MainWindow(contentRect: NSRect(x: 0, y: 0, width: 900, height: 600),
+      styleMask: [.titled, .closable, .resizable, .fullSizeContentView],
+      backing: .buffered, defer: false)
+    defer { window.close() }
+    window.configureFloatingPlayerTitlebar(windowed: true)
+    let close = try XCTUnwrap(window.standardWindowButton(.closeButton))
+    XCTAssertTrue(close.effectiveAppearance.isDark)
+    XCTAssertTrue(window.contentView!.effectiveAppearance.isDark)
+    XCTAssertTrue(try XCTUnwrap(NSAppearance(uniplayerTheme: .dark)).isDark)
+  }
+}
+
+@MainActor
 final class PlayerHUDLayoutTests: XCTestCase {
   private func makePlayerWindow() -> (MainWindow, PlayerHUDView, NSView) {
     let window = MainWindow(

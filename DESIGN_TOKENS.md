@@ -53,6 +53,12 @@ motion that honours Reduce Motion and the app's own animation setting.
 | `Aspect` | Media aspect ratios |
 | `Library`, `HUD`, `Settings`, `Window` | Component geometry |
 
+## - Tokens
+
+| Token | Declaration | Purpose |
+|---|---|---|
+| `name` | `static let name: NSAppearance.Name = .darkAqua` | The application and all native window chrome use dark Aqua. |
+
 ## Palette · System
 
 | Token | Declaration | Purpose |

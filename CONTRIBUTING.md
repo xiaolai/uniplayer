@@ -27,6 +27,14 @@ pull requests in this repository instead.
    ```
 3. Open one pull request per logical change.
 
+## UI architecture
+
+Follow [UI_RULES.md](UI_RULES.md): SwiftUI-first for new or redesigned UI,
+system components first in either framework, and incremental adoption around
+the existing native player/window infrastructure. Preserve accepted geometry
+and behavior; verify affected surfaces on the E2E Mac rather than automatically
+running a full UI sweep.
+
 ## Presentation model
 
 `PlayerCore` owns the one `VideoView`. `PlayerPresentation` records where that
@@ -52,11 +60,12 @@ the license of this project.
 
 Every appearance value is a token in [`uniplayer/DesignTokens.swift`](uniplayer/DesignTokens.swift).
 Do not hand-roll a colour, font, spacing, radius, stroke, opacity, size, shadow,
-material or animation duration in a view; read the token instead. The values
-follow the macOS 27 Human Interface Guidelines: system semantic colours that
-adapt to appearance, Increase Contrast and Reduce Transparency; the system
-font; Liquid Glass with an opaque visual-effect fallback; and motion that
-honours Reduce Motion.
+material or animation duration in a view; read the token instead. Prefer system
+semantic styles and intrinsic control metrics before introducing custom values.
+Tokens encode UniPlayer's design choices; their numeric values are not all
+Apple-specified metrics. Use semantic colours, system fonts, appropriate
+materials and motion that respect accessibility settings within the app's
+dark-only appearance.
 
 [`DESIGN_TOKENS.md`](DESIGN_TOKENS.md) is the generated ledger. Run
 `python3 scripts/check-design-tokens.py --ledger` before opening a pull request;
