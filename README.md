@@ -41,9 +41,12 @@ publish the corresponding source under the GPL.
 
 ## Release
 
-From the workspace root, run `./scripts/release.sh`. It loads the local `.env`
-into a notarytool keychain profile without passing credentials into build logs,
-then calls `main/scripts/release-macos.py`. The pipeline builds both CPU slices,
-signs nested code with hardened runtime and secure timestamps, notarizes and
-staples the app and DMG, and requires Gatekeeper acceptance before producing
-checksums. It does not publish automatically.
+Push a stable version tag to run the GitHub **Release macOS** workflow. After
+tests, universal build, Developer ID signing, notarization and Gatekeeper checks,
+it publishes the DMG/checksum, updates Homebrew, and removes older published
+releases only after the replacement and cask are verified. Git tags are retained.
+See [RELEASING.md](RELEASING.md) for required secrets, triggers and recovery.
+
+The workspace's `./scripts/release.sh` remains a local packaging fallback. It
+loads notarization credentials without exposing them to build logs and produces
+a verified app/DMG; it does not publish or update Homebrew.
