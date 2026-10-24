@@ -23,19 +23,11 @@ jobs:
       - name: Test the design-token checker
         run: python3 -m unittest scripts/test_check_design_tokens.py
 
-      - name: Test release automation without credentials
-        run: python3 -m unittest scripts/test_github_release.py scripts/test_release_local.py
-
       - name: Validate browser extensions
         run: python3 scripts/validate-browser-extensions.py
 
       - name: Install dependencies
-        run: |
-          if [[ -n "$DOWNLOAD_LIBS_ARGS" ]]; then
-            ./other/download_libs.sh "$DOWNLOAD_LIBS_ARGS"
-          else
-            ./other/download_libs.sh
-          fi
+        run: ./other/download_libs.sh $DOWNLOAD_LIBS_ARGS
         env:
           DOWNLOAD_LIBS_ARGS: ${{ github.event_name == 'pull_request' && '--skip-plugins' || '' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
