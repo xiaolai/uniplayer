@@ -304,6 +304,14 @@ class ReleaseTests(unittest.TestCase):
         self.assertNotIn('APP_SPECIFIC_PASSWORD', kwargs['env'])
         self.assertNotIn('shell', kwargs)
 
+    def test_local_auth_uses_saved_gh_login_without_exporting_a_token(self):
+        hub = release.GitHub('xiaolai/uniplayer', cli_auth=True)
+        with patch.object(release.subprocess, 'run', return_value=SimpleNamespace(returncode=0, stdout='{}')) as run:
+            hub.api('repos/xiaolai/homebrew-tap', tap=True)
+        self.assertNotIn('GH_TOKEN', run.call_args.kwargs['env'])
+        self.assertNotIn('GITHUB_TOKEN', run.call_args.kwargs['env'])
+        self.assertEqual(run.call_args.args[0][:2], ['gh', 'api'])
+
     def test_tag_checkout_must_be_clean_and_on_main(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

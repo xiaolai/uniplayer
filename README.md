@@ -41,12 +41,12 @@ publish the corresponding source under the GPL.
 
 ## Release
 
-Push a stable version tag to run the GitHub **Release macOS** workflow. After
-tests, universal build, Developer ID signing, notarization and Gatekeeper checks,
-it publishes the DMG/checksum, updates Homebrew, and removes older published
-releases only after the replacement and cask are verified. Git tags are retained.
-See [RELEASING.md](RELEASING.md) for required secrets, triggers and recovery.
+Run `python3 scripts/release_local.py --check` from the main checkout to check
+readiness, then `python3 scripts/release_local.py` to release using this Mac's
+Keychain and saved GitHub login. The command builds and verifies a signed,
+notarized universal package, pushes its source/tag, publishes it, updates
+Homebrew, and removes older published releases after verification. Git tags
+are retained. No GitHub release Action or cloud signing secrets are needed.
 
-The workspace's `./scripts/release.sh` remains a local packaging fallback. It
-loads notarization credentials without exposing them to build logs and produces
-a verified app/DMG; it does not publish or update Homebrew.
+See [RELEASING.md](RELEASING.md) for setup, artifact paths and recovery. The
+workspace's `./scripts/release.sh` remains a package-only fallback.

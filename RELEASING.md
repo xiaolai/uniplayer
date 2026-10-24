@@ -1,139 +1,110 @@
-# GitHub releases and Homebrew
+# Manual local releases
 
-`.github/workflows/release.yml` releases a stable tag on GitHub's hosted
-`xcode-27` runner. It uses Xcode 27.1 and the macOS 27 SDK, builds both CPU
-slices, and calls the existing `scripts/release-macos.py` signing/notarization
-pipeline. It does not require the workspace's `.env` or `scripts/release.sh`.
+Releases run from this Mac using its existing Developer ID identity,
+notarization profile and `gh` login. No GitHub release Action, cloud signing
+certificate, repository secrets or separate tap token are required.
 
-## One-time configuration
-
-In `xiaolai/uniplayer` → Settings → Secrets and variables → Actions, configure:
-
-| Secret | Value |
-|---|---|
-| `MACOS_CERTIFICATE_P12_BASE64` | Base64 of a password-protected `.p12` containing the Developer ID Application certificate **and its private key** |
-| `MACOS_CERTIFICATE_PASSWORD` | Password used when exporting that `.p12` |
-| `APPLE_ID` | Apple ID authorized for notarization |
-| `APP_SPECIFIC_PASSWORD` | Its app-specific password, not the account password |
-| `TEAM_ID` | Apple Developer team matching the signing certificate |
-| `HOMEBREW_TAP_TOKEN` | Fine-grained token for `xiaolai/homebrew-tap`, with **Contents: read and write** |
-
-Export the signing identity through Keychain Access. To upload its Base64 without
-printing it, use your own exported file:
+From the main checkout:
 
 ```sh
-base64 -i /path/to/DeveloperID.p12 | gh secret set MACOS_CERTIFICATE_P12_BASE64 --repo xiaolai/uniplayer
+python3 scripts/release_local.py --check  # readiness only; no publication
+python3 scripts/release_local.py          # complete release
 ```
 
-The other secrets can be entered through Settings or the interactive
-`gh secret set NAME --repo xiaolai/uniplayer` prompt. Do not commit them.
-The workflow's automatic `GITHUB_TOKEN` handles releases in `xiaolai/uniplayer`;
-the tap needs its separate token because it is a different repository.
+From the workspace root, prefix the path with `main/`.
 
-No repository secrets were populated by this implementation. Certificate export
-and secret configuration are one-time owner setup, not part of a version bump.
+## What the release command does
 
-The runner's default developer directory is
-`/Applications/Xcode_27.1.app/Contents/Developer`. If the hosted image layout
-changes, set the repository variable `RELEASE_DEVELOPER_DIR` to a supported
-Xcode directory. Preflight requires Xcode 27.1+ and macOS SDK 27+; it does not
-silently lower the deployment target. The public preview label and Xcode paths
-are documented in [GitHub's runner image](https://github.com/actions/runner-images/blob/main/images/macos/xcode-27-arm64-Readme.md).
+1. Require clean `main`, matching version/build/notes, the intended GitHub origin,
+   write access to UniPlayer and its tap, and no newer release/cask or moved tag.
+   It does not stash, commit, reset, force-push or include pending source edits.
+2. Verify Xcode 27.1+, macOS SDK 27+, an unlocked Developer ID Application
+   signing identity, and a working local notarytool profile.
+3. Clone the captured commit into a private build snapshot under
+   `release-artifacts/<version>/<commit>/source`. Later working-copy edits do not
+   enter that build. Copy hash-verified dependencies from the local cache, or
+   download and verify them against the universal lock.
+4. Run token, script, browser and application tests. Build both CPU slices;
+   sign, notarize and staple the app and DMG; verify signatures and Gatekeeper.
+   Save a manifest with the full source SHA, build, asset sizes and checksums.
+5. Recheck that main is still clean and at the captured commit. Push that exact
+   commit to `origin/main`, create its stable version tag and push only that tag.
+   Git hooks remain active; no force push or tag replacement is used.
+6. Upload/verify a draft's DMG, checksum and manifest, then publish it as latest.
+7. Update Homebrew's version and checksum, read back the cask, and only then
+   delete older published releases/assets. Keep the current release, all Git
+   tags/source history and unpublished drafts.
 
-## Start a release
+An exclusive local repository lock prevents two release commands from running
+at once across its worktrees. Remote latest/cask checks also protect retention.
+The command does not install or replace `/Applications/UniPlayer.app`.
 
-1. Commit the version/build in `Configs/Deployment.xcconfig`, update README and
-   release notes, and push the intended release source to `main`.
-2. Create and push its matching stable tag. For the current development version:
+## Existing local setup
 
-   ```sh
-   git tag v0.2.0
-   git push origin v0.2.0
-   ```
+- `gh auth login` must be signed into an account with write access to
+  `xiaolai/uniplayer` and `xiaolai/homebrew-tap`. The helper uses that saved login;
+  it never extracts the token with `gh auth token`.
+- The signing certificate and private key stay in the local Keychain. With more
+  than one identity, select a Developer ID Application name through
+  `UNIPLAYER_SIGN_IDENTITY`.
+- The default notary profile is `uniplayer-notary` in the login keychain.
+  Override with `--profile NAME`, `--keychain PATH`, or
+  `UNIPLAYER_NOTARY_KEYCHAIN`.
+- If the profile is unavailable during a full release, the existing workspace
+  `scripts/release.sh --profile-only` credential loader prepares it. That loader
+  alone reads the workspace `.env`; the release helper never reads or prints its
+  values. Its output is captured, and credentials do not propagate into build
+  subprocesses. A standalone clone can supply `--credential-loader PATH` or
+  prepare its notarytool profile manually once.
+- `--check` only probes readiness. It does not provision profiles, build, push,
+  create tags, publish, change Homebrew or delete releases.
+- Python 3.11+, GitHub CLI and Node are needed. Existing local Xcode/dependencies
+  are reused; no hosted-runner setup is involved.
 
-   Use a tag pointing to the intended committed release source, not an unmerged
-   topic branch. Tag, config version, build manifest and source SHA are checked.
-3. Watch **Actions → Release macOS**. The workflow tests the tagged application,
-   builds/signs/notarizes/staples the app and DMG, and requires Gatekeeper checks.
+## Failure and recovery
 
-Only stable `vMAJOR.MINOR.PATCH` tags are accepted. Builds and tags must not move
-backwards from the current stable release or Homebrew cask. No version is created
-or bumped by the workflow itself.
+Builds, logs and verified candidates are kept locally under the commit-specific
+artifact directory. `--output PATH` chooses another directory. A changed or dirty
+candidate snapshot is refused rather than reset or deleted.
 
-The published assets are:
+- Before publication, build/signing/push failures leave the previous release and
+  Homebrew download available.
+- If main changes during the build, publication stops. The snapshot/candidate
+  stays available; retry from the intended clean main.
+- If a verified candidate manifest already exists for the same source, its DMG
+  is checked with Gatekeeper and reused rather than re-signed.
+- If publication succeeds but Homebrew fails, older releases remain. Finish an
+  already published release without a build or source push:
 
-- `UniPlayer-<version>-universal.dmg`
-- `SHA256SUMS.txt`
-- `release-manifest.json` containing source SHA, build, sizes and hashes
+  ```sh
+  python3 scripts/release_local.py --resume v0.2.0
+  ```
 
-Only these files are uploaded as a one-day Actions artifact. Signing archives,
-keychains, notarization credentials and build logs are not release assets.
+  Recovery reads version/build from the original remote tag, downloads and
+  validates its existing manifest/assets, and finishes the tap and retention.
+  The ordinary command also takes this path if its current version/source is
+  already published. A different checksum for an existing version is refused.
+- Pruning failure can be retried. A changed latest release or cask stops further
+  deletion. Old DMG URLs disappear only after successful retention; Git tags stay.
+- Legacy manual releases without a manifest are not silently adopted.
 
-## Publication and retention order
+## Scope and verification
 
-The entire release workflow has one concurrency group with
-`cancel-in-progress: false`. It does not interrupt a running publication.
-
-1. Validate tag ancestry, version, existing release and tap state.
-2. Validate signing secrets, run gates/tests, build, sign, notarize, staple and
-   verify. Signing secrets are step-scoped and absent from Xcode's environment.
-3. Restore the original keychain search list and delete the temporary keychain
-   and imported certificate. Cleanup also runs after a partial signing failure.
-4. Create/resume a draft, upload the assets and verify their server digests (or
-   download and hash them if GitHub does not supply a digest).
-5. Publish the verified release as latest.
-6. Update only the cask's version and SHA-256, using a revision-checked Contents
-   API update, then read it back. Concurrent unrelated cask edits are preserved.
-7. Remove older **published** releases and their assets, including older
-   prereleases. Preserve Git tags/source history and unpublished drafts. A newer
-   version or a changed latest release stops cleanup.
-
-Thus one latest published release remains after a successful run. Old releases
-are never removed before the replacement and Homebrew update are verified.
-The workflow does not install or replace an application on the developer's Mac.
-
-## Retry and recovery
-
-Rerun a failed Actions run, or dispatch the workflow with its existing tag:
-
-```sh
-gh workflow run release.yml --repo xiaolai/uniplayer -f tag=v0.2.0
-```
-
-- Before publication, a failure leaves the existing stable release and tap
-  available. An interrupted draft can be completed on retry.
-- If publication succeeds but the tap update fails, older releases remain so the
-  existing cask URL still works. Fix the token/permission and rerun.
-- On a published-tag retry, skip rebuilding/signing. Download and validate that
-  release's existing manifest/assets, finish the tap update and retention. Never
-  overwrite published assets with a newly signed binary of the same version.
-- If pruning fails partway, rerun; the current release and cask remain available.
-- A different checksum for the same cask version, a moved tag, a newer release,
-  or a newer cask fails closed. Resolve the discrepancy; do not force an overwrite.
-
-Recovery applies to releases produced by this workflow. Older manual releases
-without a manifest are not silently adopted. After successful retention, older
-DMG download URLs no longer exist; their Git tags remain.
-
-## Local checks
+`.github/workflows/release.yml` and its temporary CI keychain importer were
+removed. The ordinary CI still tests the release helpers without credentials;
+no release runs automatically when a tag is pushed.
 
 ```sh
-python3 -m unittest scripts/test_github_release.py scripts/test_release_signing.py
-actionlint -ignore 'label "xcode-27" is unknown' .github/workflows/release.yml .github/workflows/ci.yml
+python3 -m unittest scripts/test_github_release.py scripts/test_release_local.py
+python3 -m py_compile scripts/github_release.py scripts/release_local.py
 git diff --check
 ```
 
-The actionlint exception is limited to the public-preview runner label, verified
-against GitHub's official image inventory; actionlint 1.7.12 has not added it to
-its built-in list. All other syntax, context and shell checks remain active.
-The helpers use Python 3.11+ and the GitHub CLI, both present on that image.
+Tests use synthetic assets, fake GitHub services and isolated Git repositories.
+They cover immutable snapshots, source/tag guards, locking, cache hashes, secret
+scoping, check-mode side effects, exact non-force pushes, recovery, Homebrew
+failure/read-back/conflicts and retention ordering. App runtime acceptance and a
+real publication are separate from these helper checks.
 
-Tests use fake GitHub services, synthetic assets and isolated Git/keychain
-fixtures. They cover publication ordering, tap failure/read-back/conflict,
-retry immutability, tag ancestry, checksum corruption, pagination, retention
-guards, secret scoping and partial signing cleanup. They do not establish an
-actual hosted signing/notarization/publication run; that needs the secrets above
-and an explicitly pushed release tag.
-
-The local workspace fallback remains `./scripts/release.sh` from the workspace
-root. It produces a verified package without publishing or changing Homebrew.
+The old workspace `./scripts/release.sh` still offers package-only operation.
+The new tracked `main/scripts/release_local.py` is the complete manual publisher.

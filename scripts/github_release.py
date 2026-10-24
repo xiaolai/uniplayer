@@ -127,18 +127,20 @@ class Bundle:
 
 class GitHub:
     """CLI transport: token only in the child environment; no shell interpolation."""
-    def __init__(self, repository, token, tap_repository='xiaolai/homebrew-tap', tap_token=None):
+    def __init__(self, repository, token=None, tap_repository='xiaolai/homebrew-tap', tap_token=None, cli_auth=False):
         for value in [repository, tap_repository]:
             if not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', value):
                 raise ReleaseError('Invalid repository name')
-        if not token or not tap_token:
+        if not cli_auth and (not token or not tap_token):
             raise ReleaseError('GH_TOKEN and HOMEBREW_TAP_TOKEN are required')
         self.repository, self.token = repository, token
         self.tap_repository, self.tap_token = tap_repository, tap_token
 
     def command(self, args, token=None, data=None):
-        env = {key: os.environ[key] for key in ['PATH', 'HOME', 'TMPDIR', 'LANG'] if key in os.environ}
-        env.update(GH_TOKEN=token or self.token, GH_HOST='github.com', GH_PROMPT_DISABLED='1')
+        env = {key: os.environ[key] for key in ['PATH', 'HOME', 'TMPDIR', 'LANG', 'GH_CONFIG_DIR', 'XDG_CONFIG_HOME'] if key in os.environ}
+        env.update(GH_HOST='github.com', GH_PROMPT_DISABLED='1')
+        if token or self.token:
+            env['GH_TOKEN'] = token or self.token
         result = subprocess.run(['gh', *args], input=data, text=True, capture_output=True, env=env)
         if result.returncode:
             match = re.search(r'HTTP (\d+)', result.stderr)
@@ -312,6 +314,20 @@ def notes_for(version, root=ROOT):
     return match[1].strip()
 
 
+def write_manifest(output, tag, source, version, build):
+    output = Path(output)
+    for kind in ['app', 'dmg']:
+        report = json.loads((output / f'{kind}-notary.json').read_text())
+        issues = json.loads((output / f'{kind}-notary.issues.json').read_text())
+        if report.get('status') != 'Accepted' or issues.get('issues'):
+            raise ReleaseError('Notarization evidence is not accepted and issue-free')
+    names = [f'UniPlayer-{version}-universal.dmg', 'SHA256SUMS.txt']
+    manifest = {'schema': 1, 'tag': tag, 'version': version, 'build': build, 'source_sha': source,
+                'assets': {n: {'sha256': digest(output / n), 'size': (output / n).stat().st_size} for n in names}}
+    (output / MANIFEST).write_text(json.dumps(manifest, indent=2) + '\n')
+    return Bundle.load(output, tag, source, version, build)
+
+
 def checkout(tag, root=ROOT):
     version, build = configuration(root)
     if tag != 'v' + version:
@@ -341,20 +357,10 @@ def main():
         parser.error('--directory is required')
     version, build, source = checkout(args.tag)
     if args.command == 'manifest':
-        output = args.directory
-        for kind in ['app', 'dmg']:
-            report = json.loads((output / f'{kind}-notary.json').read_text())
-            issues = json.loads((output / f'{kind}-notary.issues.json').read_text())
-            if report.get('status') != 'Accepted' or issues.get('issues'):
-                raise ReleaseError('Notarization evidence is not accepted and issue-free')
-        names = [f'UniPlayer-{version}-universal.dmg', 'SHA256SUMS.txt']
-        manifest = {'schema': 1, 'tag': args.tag, 'version': version, 'build': build, 'source_sha': source,
-                    'assets': {n: {'sha256': digest(output / n), 'size': (output / n).stat().st_size} for n in names}}
-        (output / MANIFEST).write_text(json.dumps(manifest, indent=2) + '\n')
-        Bundle.load(output, args.tag, source, version, build)
+        write_manifest(args.directory, args.tag, source, version, build)
         return
     client = GitHub(args.repository, os.environ.get('GH_TOKEN'), args.tap_repository,
-                    os.environ.get('HOMEBREW_TAP_TOKEN'))
+                    os.environ.get('HOMEBREW_TAP_TOKEN'), cli_auth=True)
     assert_not_older(args.tag, client.latest())
     if client.tag_commit(args.tag) != source:
         raise ReleaseError('Remote tag does not match checkout')
