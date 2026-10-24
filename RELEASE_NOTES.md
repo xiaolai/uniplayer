@@ -1,6 +1,6 @@
 # Release notes
 
-## 0.2.0 (build 15, unreleased)
+## 0.2.0 (build 15)
 
 - Saved local and mounted-share media sources, with folder browsing, indexed
   search, collections, favorites, progress and explicit relinking. Enable the
