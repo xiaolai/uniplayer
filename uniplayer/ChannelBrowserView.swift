@@ -82,6 +82,7 @@ final class ChannelBrowserModel: NSObject, ObservableObject {
 
   private(set) var channel: Channel?
   let webView: WKWebView
+  let netflixRatings = NetflixRatingsBridge()
 
   override init() {
     let configuration = WKWebViewConfiguration()
@@ -94,9 +95,11 @@ final class ChannelBrowserModel: NSObject, ObservableObject {
     configuration.preferences.isElementFullscreenEnabled = true
     configuration.applicationNameForUserAgent = "Version/27.0 Safari/605.1.15"
 
+    netflixRatings.install(in: configuration)
     webView = WKWebView(frame: .zero, configuration: configuration)
     super.init()
 
+    netflixRatings.attach(to: webView)
     webView.navigationDelegate = self
     webView.uiDelegate = self
     webView.allowsBackForwardNavigationGestures = true
@@ -124,6 +127,8 @@ final class ChannelBrowserModel: NSObject, ObservableObject {
     hasDocument = false
     navigate(to: channel.url)
   }
+
+  func openIMDbTitle(_ url: URL) { navigate(to: url) }
 
   private func navigate(to url: URL) {
     lastRequestedURL = url
@@ -249,6 +254,7 @@ extension ChannelBrowserModel: WKNavigationDelegate {
   }
 
   func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+    netflixRatings.navigationStarted()
     activeNavigation = navigation
     beginLoading()
   }

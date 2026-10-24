@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AF8500000000000000000014 /* NetflixRatingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8500000000000000000004 /* NetflixRatingsTests.swift */; };
+		AF8500000000000000000013 /* NetflixRatings.js in Resources */ = {isa = PBXBuildFile; fileRef = AF8500000000000000000003 /* NetflixRatings.js */; };
+		AF8500000000000000000012 /* NetflixRatingsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8500000000000000000002 /* NetflixRatingsSettingsView.swift */; };
+		AF8500000000000000000011 /* NetflixRatings.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8500000000000000000001 /* NetflixRatings.swift */; };
 		D5003874ABFD7498C782D445 /* MediaScannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D400CE02736597E0453F845B /* MediaScannerTests.swift */; };
 		D5002E1B27B409416AB33AD5 /* PlaybackStateBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D400C34321E1797879B0546F /* PlaybackStateBridgeTests.swift */; };
 		D5001CA61386C9BCC1C6C5B6 /* MediaRelinkTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D40039ECFDDAF3983F610805 /* MediaRelinkTests.swift */; };
@@ -619,6 +623,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		AF8500000000000000000004 /* NetflixRatingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetflixRatingsTests.swift; sourceTree = "<group>"; };
+		AF8500000000000000000003 /* NetflixRatings.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = NetflixRatings.js; sourceTree = "<group>"; };
+		AF8500000000000000000002 /* NetflixRatingsSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetflixRatingsSettingsView.swift; sourceTree = "<group>"; };
+		AF8500000000000000000001 /* NetflixRatings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetflixRatings.swift; sourceTree = "<group>"; };
 		D400CE02736597E0453F845B /* MediaScannerTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MediaScannerTests.swift; sourceTree = "<group>"; };
 		D400C34321E1797879B0546F /* PlaybackStateBridgeTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PlaybackStateBridgeTests.swift; sourceTree = "<group>"; };
 		D40039ECFDDAF3983F610805 /* MediaRelinkTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MediaRelinkTests.swift; sourceTree = "<group>"; };
@@ -2089,6 +2097,7 @@
 				D400DAD7E8BD684EBCAAB875 /* MediaMigrationTests.swift */,
 				A10000000000000000000004 /* UniPlayerTests.swift */,
 				BB9000000000000000000001 /* InlinePlayerTests.swift */,
+				AF8500000000000000000004 /* NetflixRatingsTests.swift */,
 				DD9000000000000000000001 /* SubtitleTranslationTests.swift */,
 				DDE000000000000000000001 /* LiveTranslationSettingsTests.swift */,
 				DDF300000000000000000001 /* LiveTranslationLanguageTests.swift */,
@@ -2338,6 +2347,9 @@
 				AA2000000000000000000001 /* LibraryModel.swift */,
 				AA3000000000000000000001 /* LibraryView.swift */,
 				CC2000000000000000000001 /* ChannelBrowserView.swift */,
+				AF8500000000000000000001 /* NetflixRatings.swift */,
+				AF8500000000000000000002 /* NetflixRatingsSettingsView.swift */,
+				AF8500000000000000000003 /* NetflixRatings.js */,
 				CC1000000000000000000001 /* Channel.swift */,
 				AA4000000000000000000001 /* LibraryWindowController.swift */,
 				AA5000000000000000000001 /* LibraryMetadata.swift */,
@@ -3068,6 +3080,7 @@
 				8F49C36E213EFB7E0076C4F9 /* MiniPlayerWindowController.xib in Resources */,
 				348F33CA30650FDA0091E0C1 /* uniplayer_nightly.icon in Resources */,
 				84A0BA951D2F9E9600BC8DA1 /* MainMenu.xib in Resources */,
+				AF8500000000000000000013 /* NetflixRatings.js in Resources */,
 				8400D5D81E1AB31B006785F5 /* AboutWindowController.xib in Resources */,
 				E3AD62772FF4C9BE00D2CAC5 /* VerbatimStrings.strings in Resources */,
 				8400D5F31E1AB348006785F5 /* PrefSubViewController.xib in Resources */,
@@ -3176,6 +3189,7 @@
 				D5003EF1CE9142CDF2105124 /* MediaMigrationTests.swift in Sources */,
 				A10000000000000000000005 /* UniPlayerTests.swift in Sources */,
 				BB9000000000000000000002 /* InlinePlayerTests.swift in Sources */,
+				AF8500000000000000000014 /* NetflixRatingsTests.swift in Sources */,
 				DD9000000000000000000002 /* SubtitleTranslationTests.swift in Sources */,
 				DDE000000000000000000002 /* LiveTranslationSettingsTests.swift in Sources */,
 				DDF300000000000000000002 /* LiveTranslationLanguageTests.swift in Sources */,
@@ -3220,6 +3234,8 @@
 				AA2000000000000000000002 /* LibraryModel.swift in Sources */,
 				AA3000000000000000000002 /* LibraryView.swift in Sources */,
 				CC2000000000000000000002 /* ChannelBrowserView.swift in Sources */,
+				AF8500000000000000000011 /* NetflixRatings.swift in Sources */,
+				AF8500000000000000000012 /* NetflixRatingsSettingsView.swift in Sources */,
 				CC1000000000000000000002 /* Channel.swift in Sources */,
 				AA4000000000000000000002 /* LibraryWindowController.swift in Sources */,
 				AA5000000000000000000002 /* LibraryMetadata.swift in Sources */,

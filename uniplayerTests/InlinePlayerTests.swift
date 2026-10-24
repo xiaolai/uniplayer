@@ -11,6 +11,21 @@ import XCTest
 @testable import UniPlayer
 
 @MainActor
+final class ChannelRatingIntegrationTests: XCTestCase {
+  func testProductionChannelsInstallTheBundledRatingScript() throws {
+    let source = try String(contentsOf: XCTUnwrap(Bundle.main.url(forResource: "NetflixRatings", withExtension: "js")), encoding: .utf8)
+    XCTAssertTrue(source.contains("MutationObserver"))
+    let browser = ChannelBrowserModel()
+    let script = try XCTUnwrap(browser.webView.configuration.userContentController.userScripts.first {
+      $0.source.contains("uniPlayerRatingCSS") && $0.source.contains("uniPlayerRatings")
+    })
+    XCTAssertTrue(script.isForMainFrameOnly)
+    XCTAssertEqual(script.injectionTime, .atDocumentEnd)
+    XCTAssertTrue(script.source.contains("uniplayer-imdb-rating"))
+  }
+}
+
+@MainActor
 final class LibrarySearchToolbarTests: XCTestCase {
   func testSearchUsesANativeToolbarSearchItem() throws {
     let controller = LibraryWindowController(playerCore: PlayerCore.first)

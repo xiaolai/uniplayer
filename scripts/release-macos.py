@@ -84,6 +84,8 @@ def main():
     info = plistlib.loads((app/'Contents/Info.plist').read_bytes())
     assert info['CFBundleShortVersionString'] == version
     assert info['CFBundleVersion'] == str(args.build)
+    rating_script = app/'Contents/Resources/NetflixRatings.js'
+    assert rating_script.is_file() and 'uniPlayerRatings' in rating_script.read_text(), 'Netflix rating script missing from release'
     architectures = subprocess.check_output(['lipo', '-archs', str(app/'Contents/MacOS/UniPlayer')], text=True).split()
     assert set(architectures) == {'arm64', 'x86_64'}, architectures
     app_entitlements = root/'uniplayer/UniPlayer.entitlements'

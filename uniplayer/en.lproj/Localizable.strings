@@ -1494,3 +1494,14 @@
 "settings.liveTranslation.note" = "Speech models and translation packs are on-device system assets and work without Apple Intelligence. Audio never leaves the Mac. Recognized text stays on this Mac only when on-device translation is used and AI repair is off; AI repair (on by default) sends flagged lines, and the AI fallback sends every translated line, to your configured provider.";
 
 "An OpenSubtitles application API key has not been configured." = "An OpenSubtitles application API key has not been configured.";
+
+/* Netflix IMDb ratings */
+"Netflix Ratings" = "Netflix Ratings";
+"Show IMDb ratings on Netflix cards" = "Show IMDb ratings on Netflix cards";
+"Displays scores and vote counts, for example 9.3 (12K). Visible Netflix titles are sent to OMDb for matching. Your API key is stored in the Keychain and is never shared with Netflix." = "Displays scores and vote counts, for example 9.3 (12K). Visible Netflix titles are sent to OMDb for matching. Your API key is stored in the Keychain and is never shared with Netflix.";
+"OMDb API Key" = "OMDb API Key";
+"Get an OMDb Key…" = "Get an OMDb Key…";
+"A key is stored. Ratings appear as you browse Netflix." = "A key is stored. Ratings appear as you browse Netflix.";
+"No OMDb key stored." = "No OMDb key stored.";
+"Couldn’t save the key in the Keychain." = "Couldn’t save the key in the Keychain.";
+"Couldn’t remove the key from the Keychain." = "Couldn’t remove the key from the Keychain.";

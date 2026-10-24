@@ -329,6 +329,19 @@ struct LibraryRootView: View {
     mediaSources.startIfEnabled()
     if mediaSources.consumeAddRequest() { presentAddSource() }
     model.reload()
+    let ratingSelection = $selection
+    let ratingChannels = channels
+    browser.netflixRatings.openIMDb = { [weak browser = browser] url in
+      guard let browser else { return }
+      if let imdb = ratingChannels.channels.first(where: { channel in
+        let host = channel.url.host?.lowercased() ?? ""
+        return host == "imdb.com" || host.hasSuffix(".imdb.com")
+      }) {
+        ratingSelection.wrappedValue = .channel(imdb.id)
+        browser.open(imdb)
+      }
+      browser.openIMDbTitle(url)
+    }
     configureCallbacks()
     inlinePlayer.refresh()
     handleInlineActiveChange(inlinePlayer.isActive)

@@ -1,5 +1,16 @@
 # Release notes
 
+## 0.2.2 (build 17)
+
+- Restore Netflix IMDb rating badges, which were missing from the release
+  branch. Keep the score/vote ribbons, match status, hover previews and saved
+  IMDb corrections, using the existing OMDb key in Keychain.
+- Restore the Netflix Ratings section in Settings > General for enabling badges
+  and managing a personal OMDb key. Credentials stay outside the webpage.
+- Check production-channel script registration in tests and require the rating
+  script in release packages. Retain the dark appearance, native search and HUD
+  alignment fixes from 0.2.1.
+
 ## 0.2.1 (build 16)
 
 - Enforce dark appearance across native windows and titlebars, including older

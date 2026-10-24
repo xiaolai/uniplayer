@@ -30,6 +30,11 @@ class SettingsPageGeneral: SettingsPage {
   override func content() -> [SettingsSection] {
     return sections {
       sectionBehavior()
+      section {
+        SettingsList(title: SettingsLocalization.Key("Netflix Ratings")) {
+          SettingsItem.Custom().view(NetflixRatingsSettingsView())
+        }
+      }
       sectionHistory()
       sectionPlayList()
       sectionScreenshots()
