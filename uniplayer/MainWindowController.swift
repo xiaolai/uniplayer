@@ -850,7 +850,7 @@ class MainWindowController: PlayerWindowController {
     guard let window else { return }
 
     if oscPosition == .floating {
-      window.toolbar = nil
+      window.configureFloatingPlayerTitlebar(windowed: fsState == .windowed)
       return
     }
 
@@ -1271,8 +1271,7 @@ class MainWindowController: PlayerWindowController {
       hudView.isHidden = false
       hideSpeedLabels()
       hudView.center.addView(oscPlayControlView, in: .center)
-      hudView.timeline.addSubview(oscSliderView)
-      oscSliderView.padding(.horizontal(Tokens.Space.n10), from: hudView.timeline)
+      hudView.installTimelineContent(oscSliderView)
     case .top:
       currentControlBar = nil
       hideSpeedLabels()

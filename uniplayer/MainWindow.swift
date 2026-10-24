@@ -8,6 +8,22 @@
 
 import Cocoa
 
+extension NSWindow {
+  /// Let AppKit place the native window buttons in the regular toolbar row.
+  /// The transparent titlebar still overlays the full-height video surface.
+  func configureFloatingPlayerTitlebar(windowed: Bool) {
+    guard windowed else {
+      toolbar = nil
+      return
+    }
+    if toolbar == nil { toolbar = NSToolbar(identifier: "UniPlayerFloatingToolbar") }
+    toolbarStyle = .unified
+    toolbar?.displayMode = .iconOnly
+    titlebarAppearsTransparent = true
+    titlebarSeparatorStyle = .none
+  }
+}
+
 class MainWindow: CommonWindow {
   var forceKeyAndMain = false
 

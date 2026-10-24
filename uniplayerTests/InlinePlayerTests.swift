@@ -10,6 +10,83 @@ import WebKit
 import XCTest
 @testable import UniPlayer
 
+@MainActor
+final class PlayerHUDLayoutTests: XCTestCase {
+  private func makePlayerWindow() -> (MainWindow, PlayerHUDView, NSView) {
+    let window = MainWindow(
+      contentRect: NSRect(x: 0, y: 0, width: 1220, height: 610),
+      styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
+      backing: .buffered, defer: false)
+    window.titleVisibility = .hidden
+    window.configureFloatingPlayerTitlebar(windowed: true)
+    let hud = PlayerHUDView()
+    window.contentView!.addSubview(hud)
+    hud.padding(.all)
+    for (stack, height) in [(hud.topLeading, 24.0), (hud.topTrailing, 20.0)] {
+      let button = NSButton(title: "Control", target: nil, action: nil)
+      button.translatesAutoresizingMaskIntoConstraints = false
+      button.size(width: 80, height: height)
+      stack.addArrangedSubview(HUDCapsuleView(content: button))
+    }
+    let timelineContent = NSView()
+    timelineContent.translatesAutoresizingMaskIntoConstraints = false
+    timelineContent.heightAnchor.constraint(equalToConstant: 20).isActive = true
+    hud.installTimelineContent(timelineContent)
+    return (window, hud, timelineContent)
+  }
+
+  private func settle(_ window: NSWindow, hud: PlayerHUDView) {
+    // Native titlebar layout and the HUD's measured alignment need to settle.
+    for _ in 0..<3 {
+      window.contentView!.superview!.layoutSubtreeIfNeeded()
+      hud.needsLayout = true
+      hud.layoutSubtreeIfNeeded()
+    }
+  }
+
+  func testWindowedControlsShareNativeButtonCenterAndTimelineIsCentered() {
+    let (window, hud, timelineContent) = makePlayerWindow()
+    defer { window.close() }
+    for size in [NSSize(width: 1220, height: 610), NSSize(width: 640, height: 360),
+                 NSSize(width: 900, height: 700)] {
+      window.setContentSize(size)
+      settle(window, hud: hud)
+      let close = window.standardWindowButton(.closeButton)!
+      let native = hud.convert(close.bounds, from: close)
+      XCTAssertEqual(hud.topLeading.frame.midY, native.midY, accuracy: 0.5)
+      XCTAssertEqual(hud.topTrailing.frame.midY, native.midY, accuracy: 0.5)
+      XCTAssertEqual(timelineContent.frame.midY, hud.timeline.bounds.midY, accuracy: 0.5)
+      XCTAssertEqual(hud.frame, window.contentView!.bounds, "Video/HUD must retain full window height")
+      XCTAssertEqual(window.toolbarStyle, .unified)
+      XCTAssertTrue(window.titlebarAppearsTransparent)
+      XCTAssertGreaterThan(native.minX, 9, "Use the native toolbar inset, not the plain titlebar inset")
+      let buttons = [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton]
+        .compactMap { window.standardWindowButton($0) }
+        .map { hud.convert($0.bounds, from: $0) }
+        .reduce(CGRect.null) { $0.union($1) }
+      XCTAssertEqual(hud.topLeading.frame.minX - buttons.maxX,
+                     buttons.minX - hud.bounds.minX, accuracy: 0.5,
+                     "Traffic lights need equal space before and after the group")
+    }
+  }
+
+  func testFullscreenLayoutAndReturnRestoreNativeAlignment() {
+    let (window, hud, _) = makePlayerWindow()
+    defer { window.close() }
+    window.configureFloatingPlayerTitlebar(windowed: false)
+    hud.updateForFullScreen(true)
+    settle(window, hud: hud)
+    XCTAssertNil(window.toolbar)
+    XCTAssertEqual(hud.bounds.maxY - hud.topLeading.frame.maxY, Tokens.HUD.topMargin, accuracy: 0.5)
+    XCTAssertEqual(hud.topLeading.frame.midY, hud.topTrailing.frame.midY, accuracy: 0.5)
+    window.configureFloatingPlayerTitlebar(windowed: true)
+    hud.updateForFullScreen(false)
+    settle(window, hud: hud)
+    let close = window.standardWindowButton(.closeButton)!
+    XCTAssertEqual(hud.topLeading.frame.midY, hud.convert(close.bounds, from: close).midY, accuracy: 0.5)
+  }
+}
+
 final class PresentationStateTests: XCTestCase {
 
   func testStartsInWindow() {

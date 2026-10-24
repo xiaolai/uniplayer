@@ -46,10 +46,11 @@ final class PlayerHUDView: NSView {
   private let bottomShade = CAGradientLayer()
 
   private var topLeadingConstraint: NSLayoutConstraint!
+  private var topControlsCenterConstraint: NSLayoutConstraint!
   private var isFullScreen = false
   private var accessibilityObserver: NSObjectProtocol?
 
-  init(mainWindow: MainWindowController) {
+  init(mainWindow: MainWindowController? = nil) {
     self.mainWindow = mainWindow
     super.init(frame: .zero)
 
@@ -110,10 +111,11 @@ final class PlayerHUDView: NSView {
     addSubview(timeline)
 
     topLeadingConstraint = topLeading.leadingAnchor.constraint(equalTo: leadingAnchor, constant: Tokens.HUD.topLeadingWindow)
+    topControlsCenterConstraint = topLeading.centerYAnchor.constraint(equalTo: topAnchor, constant: Tokens.HUD.topMargin)
 
     NSLayoutConstraint.activate([
       topLeadingConstraint,
-      topLeading.topAnchor.constraint(equalTo: topAnchor, constant: Tokens.HUD.topMargin),
+      topControlsCenterConstraint,
       topTrailing.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -Tokens.HUD.topMargin),
       topTrailing.centerYAnchor.constraint(equalTo: topLeading.centerYAnchor),
 
@@ -147,6 +149,26 @@ final class PlayerHUDView: NSView {
 
   override func layout() {
     super.layout()
+    // The system owns window-button positioning. Measure that native row rather
+    // than independently guessing an offset for each of the HUD's top groups.
+    let topControlsCenter: CGFloat
+    if !isFullScreen, let close = window?.standardWindowButton(.closeButton) {
+      topControlsCenter = bounds.maxY - convert(close.bounds, from: close).midY
+      let buttonFrames = [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton]
+        .compactMap { window?.standardWindowButton($0) }
+        .map { convert($0.bounds, from: $0) }
+      let buttonGroup = buttonFrames.reduce(CGRect.null) { $0.union($1) }
+      // Match the gap after the traffic lights to their native window-edge inset.
+      let leading = buttonGroup.maxX + (buttonGroup.minX - bounds.minX) - bounds.minX
+      if topLeadingConstraint.constant != leading {
+        topLeadingConstraint.constant = leading
+      }
+    } else {
+      topControlsCenter = Tokens.HUD.topMargin + topLeading.fittingSize.height / 2
+    }
+    if topControlsCenterConstraint.constant != topControlsCenter {
+      topControlsCenterConstraint.constant = topControlsCenter
+    }
     dimLayer.frame = bounds
     let topHeight: CGFloat = min(Tokens.HUD.topShadeHeight, bounds.height * Tokens.HUD.topShadeFraction)
     let bottomHeight: CGFloat = min(Tokens.HUD.bottomShadeHeight, bounds.height * Tokens.HUD.bottomShadeFraction)
@@ -179,9 +201,16 @@ final class PlayerHUDView: NSView {
     subtitleLabel.isHidden = subtitle.isEmpty
   }
 
+  func installTimelineContent(_ content: NSView) {
+    timeline.addSubview(content)
+    content.padding(.horizontal(Tokens.Space.n10), from: timeline)
+      .center(.y, with: timeline)
+  }
+
   func updateForFullScreen(_ fullScreen: Bool) {
     guard isFullScreen != fullScreen else { return }
     isFullScreen = fullScreen
     topLeadingConstraint.constant = fullScreen ? Tokens.HUD.topLeadingFullScreen : Tokens.HUD.topLeadingWindow
+    needsLayout = true
   }
 }
