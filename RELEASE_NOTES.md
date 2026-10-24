@@ -1,5 +1,17 @@
 # Release notes
 
+## 0.2.0 (build 15, unreleased)
+
+- Saved local and mounted-share media sources, with folder browsing, indexed
+  search, collections, favorites, progress and explicit relinking. Enable the
+  preview from the Sources menu; macOS owns share mounting and authentication.
+- AI translation for existing text subtitles, plus on-device speech recognition
+  and live translation when subtitles are unavailable. Settings exposes language
+  packs, audio-capture permission, translation strategy and optional AI repair.
+- Media-source and translation features share the existing player and preserve
+  catalog resume behavior. Signed runtime, real NAS, audio-permission and
+  attended accessibility acceptance remain separate from automated checks.
+
 ## 0.1.7 (build 8)
 
 - Developer ID signing, hardened runtime, Apple notarization and stapled tickets
