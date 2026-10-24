@@ -30,6 +30,8 @@ private func LF(_ key: String, _ arguments: CVarArg...) -> String {
 enum LibrarySidebarItem: Hashable {
   case section(LibrarySection)
   case channel(String)
+  case source(UUID)
+  case collection(UUID)
 }
 
 enum LibrarySection: String, CaseIterable, Identifiable {
@@ -38,6 +40,7 @@ enum LibrarySection: String, CaseIterable, Identifiable {
   case continueWatching
   case recent
   case all
+  case favorites
 
   var id: String { rawValue }
 
@@ -48,6 +51,7 @@ enum LibrarySection: String, CaseIterable, Identifiable {
     case .continueWatching: return L("Continue Watching")
     case .recent: return L("Recently Played")
     case .all: return L("All Videos")
+    case .favorites: return L("Favorites")
     }
   }
 
@@ -58,6 +62,7 @@ enum LibrarySection: String, CaseIterable, Identifiable {
     case .continueWatching: return "play.circle"
     case .recent: return "clock"
     case .all: return "rectangle.stack"
+    case .favorites: return "star"
     }
   }
 }
@@ -82,6 +87,11 @@ final class LibraryChrome: ObservableObject {
   }
   var playbackChromeChanged: (() -> Void)?
   var backFromPlayback: (() -> Void)?
+  @Published var canNavigateBack = false
+  @Published var canNavigateForward = false
+  var navigateBack: (() -> Void)?
+  var navigateForward: (() -> Void)?
+  var addSource: (() -> Void)?
   @Published var channelSelected = false
   @Published var channelNavigationPresented = false
   var resizePane: ((Bool, CGFloat) -> Void)?
@@ -124,11 +134,21 @@ struct LibraryRootView: View {
   @StateObject private var assistant: AssistantViewModel
   @ObservedObject private var chrome: LibraryChrome
   @ObservedObject private var channels = ChannelStore.shared
+  @ObservedObject private var mediaSources = MediaSourcesEnvironment.shared
   @StateObject private var browser = ChannelBrowserModel()
   @State private var selection: LibrarySidebarItem? = .section(.home)
   @AppStorage("interface.textScale.v1") private var preferredTextScale = 1.0
   @State private var searchID = UUID()
   @State private var selectedItem: LibraryItem?
+  @State private var catalogDetailID: UUID?
+  @State private var sourcePropertiesID: UUID?
+  @State private var retainedBrowser: SourceBrowserModel?
+  /// The catalog the retained browser was built against. A startup retry
+  /// replaces the catalog; reusing the model would keep the closed one.
+  @State private var retainedBrowserCatalog: MediaCatalog?
+  @State private var playbackRequestID = UUID()
+  @State private var sourceError: String?
+  @State private var playbackLease: SourceAccessLease?
   @State private var dropTargeted = false
   @State private var channelEditor: ChannelEditorSheet.Mode?
   @State private var channelPendingDeletion: Channel?
@@ -200,45 +220,39 @@ struct LibraryRootView: View {
       }
     }
     .onDrop(of: [UTType.fileURL.identifier], isTargeted: $dropTargeted) { providers in
-      let lock = NSLock()
-      var urls = Array<URL?>(repeating: nil, count: providers.count)
-      let group = DispatchGroup()
-      for (index, provider) in providers.enumerated() {
-        group.enter()
-        _ = provider.loadObject(ofClass: URL.self) { url, _ in
-          if let url, url.isFileURL {
-            // Provider callbacks arrive on different queues; an array is not
-            // safe to mutate concurrently even at distinct indices.
-            lock.lock()
-            urls[index] = url
-            lock.unlock()
-          }
-          group.leave()
-        }
-      }
-      group.notify(queue: .main) {
-        lock.lock()
-        let resolved = urls.compactMap { $0 }
-        lock.unlock()
-        if resolved.count == 1 {
-          open(resolved[0])
-        } else {
-          openMany(resolved)
-        }
-      }
-      return true
+      handleDrop(providers)
     }
-    .onAppear {
-      model.reload()
-      configureCallbacks()
-      inlinePlayer.refresh()
-      handleInlineActiveChange(inlinePlayer.isActive)
+    .onAppear { viewDidAppear() }
+    .onReceive(NotificationCenter.default.publisher(for: .mediaSourcesAddRequested)) { _ in
+      handleAddRequest()
     }
-    .onChange(of: chrome.videoFullscreenPresented) { _, _ in
-      inlinePlayer.refresh()
-      inlinePlayer.registerActivity()
+    .onReceive(NotificationCenter.default.publisher(for: .mediaSourcesShowRequested)) { _ in
+      handleShowSources()
     }
+    .onReceive(NotificationCenter.default.publisher(for: .mediaSourcesEnabledDidChange)) { _ in
+      handleSourcesEnabledChange()
+    }
+    .alert(L("Source Error"), isPresented: Binding(
+      get: { sourceError != nil },
+      set: { if !$0 { sourceError = nil } })) {
+      Button(L("OK")) { sourceError = nil }
+    } message: {
+      Text(sourceError ?? "")
+    }
+    .alert(L("Media Library Error"), isPresented: Binding(
+      get: { mediaSources.startupError != nil },
+      set: { if !$0 { mediaSources.dismissStartupError() } })) {
+      Button(L("Try Again")) { mediaSources.retryStartup() }
+      Button(L("Show Library Folder")) { showMediaLibraryFolder() }
+      Button(L("Close"), role: .cancel) { mediaSources.dismissStartupError() }
+    } message: {
+      Text(mediaSources.startupError ?? "")
+    }
+    .onChange(of: chrome.videoFullscreenPresented) { _, _ in handleVideoFullscreenChange() }
     .onChange(of: selectedItem?.url) { _, _ in updatePlaybackChrome() }
+    .onChange(of: selectedItem?.id) { _, _ in updateNavigationChrome() }
+    .onChange(of: catalogDetailID) { _, _ in updateNavigationChrome() }
+    .onChange(of: sourcePropertiesID) { _, _ in updateNavigationChrome() }
     .onChange(of: selection) { _, value in
       if case .channel = value { chrome.channelSelected = true }
       else { chrome.channelSelected = false; chrome.channelNavigationPresented = false }
@@ -268,6 +282,82 @@ struct LibraryRootView: View {
     }
   }
 
+
+  private func handleDrop(_ providers: [NSItemProvider]) -> Bool {
+    let lock = NSLock()
+    var urls = Array<URL?>(repeating: nil, count: providers.count)
+    let group = DispatchGroup()
+    for (index, provider) in providers.enumerated() {
+      group.enter()
+      _ = provider.loadObject(ofClass: URL.self) { url, _ in
+        if let url, url.isFileURL {
+          lock.lock()
+          urls[index] = url
+          lock.unlock()
+        }
+        group.leave()
+      }
+    }
+    group.notify(queue: .main) {
+      lock.lock()
+      let resolved = urls.compactMap { $0 }
+      lock.unlock()
+      if resolved.count == 1 {
+        open(resolved[0])
+      } else {
+        openMany(resolved)
+      }
+    }
+    return true
+  }
+
+  private func viewDidAppear() {
+    mediaSources.startIfEnabled()
+    if mediaSources.consumeAddRequest() { presentAddSource() }
+    model.reload()
+    configureCallbacks()
+    inlinePlayer.refresh()
+    handleInlineActiveChange(inlinePlayer.isActive)
+  }
+
+  private func handleAddRequest() {
+    if mediaSources.consumeAddRequest() { presentAddSource() }
+  }
+
+  private func handleShowSources() {
+    if let root = mediaSources.coordinator?.roots.first {
+      selection = .source(root.id)
+    } else {
+      presentAddSource()
+    }
+  }
+
+  private func handleSourcesEnabledChange() {
+    if MediaSourcesFeature.isEnabled {
+      mediaSources.startIfEnabled()
+    } else {
+      mediaSources.stop()
+      // The retained browser holds the closed catalog and its old coordinator;
+      // reusing it after a re-enable would skip the fresh initial load.
+      retainedBrowser = nil
+      retainedBrowserCatalog = nil
+      if case .source = selection ?? .section(.home) {
+        selection = .section(.home)
+      } else if case .collection = selection ?? .section(.home) {
+        selection = .section(.home)
+      }
+    }
+  }
+
+  private func handleVideoFullscreenChange() {
+    inlinePlayer.refresh()
+    inlinePlayer.registerActivity()
+  }
+
+  private func showMediaLibraryFolder() {
+    NSWorkspace.shared.open(Utility.appSupportDirUrl
+      .appendingPathComponent("MediaLibrary", isDirectory: true))
+  }
 
   private var sidebarPane: some View {
     VStack(spacing: Tokens.Space.n0) {
@@ -312,14 +402,46 @@ struct LibraryRootView: View {
   }
 
   private func updatePlaybackChrome() {
-    chrome.playbackPresented = selectedItem != nil && inlinePlayer.isActive
-      && selectedItem?.url == inlinePlayer.currentURL
+    chrome.playbackPresented = inlinePlayer.isActive
+      && (selectedItem?.url == inlinePlayer.currentURL || catalogDetailID != nil)
+  }
+
+  private func updateNavigationChrome() {
+    chrome.canNavigateBack = catalogDetailID != nil || sourcePropertiesID != nil
+      || selectedItem != nil
+    chrome.canNavigateForward = false
+    // Restore the detail-route back behavior after a source browser has
+    // borrowed the toolbar's navigation slots.
+    chrome.navigateBack = {
+      if catalogDetailID != nil {
+        catalogDetailID = nil
+      } else if sourcePropertiesID != nil {
+        sourcePropertiesID = nil
+      } else if selectedItem != nil {
+        selectedItem = nil
+      } else {
+        chrome.backFromPlayback?()
+      }
+      updateNavigationChrome()
+    }
+    chrome.navigateForward = {
+      updateNavigationChrome()
+    }
   }
 
   /// Wires the models to the window controller's actions. Called once when
   /// the view appears; all captures are weak or unowned by construction.
   private func configureCallbacks() {
     chrome.makeVideoFullscreenContent = {
+      if catalogDetailID != nil, inlinePlayer.isActive {
+        return AnyView(
+          ZStack {
+            Tokens.Palette.black.color
+            InlinePlayerView(host: chrome.inlineHost)
+            InlinePlayerChrome(model: inlinePlayer)
+          }
+          .background(Tokens.Palette.black.color))
+      }
       guard let selectedItem else { return nil }
       return AnyView(DetailView(
         item: model.allItems.first(where: { $0.id == selectedItem.id }) ?? selectedItem,
@@ -330,7 +452,22 @@ struct LibraryRootView: View {
         .environmentObject(model)
         .environment(\.libraryTextScale, preferredTextScale))
     }
-    chrome.backFromPlayback = { selectedItem = nil }
+    chrome.backFromPlayback = {
+      selectedItem = nil
+      catalogDetailID = nil
+      sourcePropertiesID = nil
+    }
+    chrome.addSource = {
+      guard let coordinator = MediaSourcesEnvironment.shared.coordinator else { return }
+      AddSourceSupport.present(coordinator: coordinator, window: NSApp.keyWindow,
+                               onCreated: { root in
+        selection = .source(root.id)
+        catalogDetailID = nil
+        sourcePropertiesID = nil
+      }, onError: { sourceError = $0 })
+    }
+    // Navigation closures are owned by updateNavigationChrome().
+    updateNavigationChrome()
 
     inlinePlayer.onToggleFullscreen = { [weak chrome] in
       chrome?.toggleFullscreen?()
@@ -385,17 +522,29 @@ struct LibraryRootView: View {
     // Navigating away pauses the inline player and keeps its position; the
     // detail keeps it paused until the user explicitly resumes.
     inlinePlayer.pauseForNavigation()
+    playbackRequestID = UUID()
     selectedItem = nil
+    catalogDetailID = nil
+    sourcePropertiesID = nil
     assistant.setChannelContext(nil)
     assistant.refreshContext()
+    updateNavigationChrome()
   }
 
   private func handleInlineActiveChange(_ active: Bool) {
+    if !active {
+      playbackLease = nil
+      // A catalog open may still be resolving. Stopping playback must cancel
+      // that intent, or the late completion would restart it.
+      playbackRequestID = UUID()
+    }
     // Playback started from a drop, the URL panel or the hero: make sure a
     // detail exists, or the surface would render into no visible view.
     if active, let url = inlinePlayer.currentURL {
-      if selectedItem?.url != url {
-        selectedItem = libraryItem(for: url)
+      if catalogDetailID == nil {
+        if selectedItem?.url != url {
+          selectedItem = libraryItem(for: url)
+        }
       }
       // Playback replaced whatever page was showing, so a channel page's
       // context is no longer what the user is looking at.
@@ -406,11 +555,40 @@ struct LibraryRootView: View {
   }
 
   private func handleInlineURLChange(_ url: URL?) {
-    if inlinePlayer.isActive, let url, selectedItem?.url != url {
-      selectedItem = libraryItem(for: url)
+    if inlinePlayer.isActive, let url {
+      if let detailID = catalogDetailID {
+        reconcileDetailIfNeeded(playing: url, detailID: detailID)
+      } else if selectedItem?.url != url {
+        selectedItem = libraryItem(for: url)
+      }
     }
     updatePlaybackChrome()
     assistant.refreshContext()
+  }
+
+  /// A new URL can arrive while a catalog detail is open (drop, URL panel,
+  /// playlist advance). The detail and its lease belong to the item opened
+  /// here; when the new locator maps to another row, switch to the playing
+  /// item's page so the inline surface stays mounted, and release the lease.
+  private func reconcileDetailIfNeeded(playing url: URL, detailID: UUID) {
+    guard let catalog = mediaSources.catalog else { return }
+    Task { @MainActor in
+      let kind = url.isFileURL ? "filePath" : "url"
+      let value = url.isFileURL ? url.standardizedFileURL.path : url.absoluteString
+      let owner = try? await catalog.resolveAlias(kind: kind, value: value)
+      guard inlinePlayer.currentURL == url, catalogDetailID == detailID else { return }
+      if let owner {
+        let target = (try? await catalog.resolveRedirect(id: owner)) ?? owner
+        let detail = (try? await catalog.resolveRedirect(id: detailID)) ?? detailID
+        guard inlinePlayer.currentURL == url, catalogDetailID == detailID else { return }
+        if target == detail { return }
+      }
+      guard inlinePlayer.currentURL == url, catalogDetailID == detailID else { return }
+      catalogDetailID = nil
+      playbackLease = nil
+      selectedItem = libraryItem(for: url)
+      updatePlaybackChrome()
+    }
   }
 
   private var isDeletingChannel: Binding<Bool> {
@@ -442,8 +620,41 @@ struct LibraryRootView: View {
           .tag(LibrarySidebarItem.section(.recent))
         sidebarLabel(LibrarySection.all.title, symbol: LibrarySection.all.symbol)
           .tag(LibrarySidebarItem.section(.all))
+        if mediaSources.isRunning {
+          sidebarLabel(LibrarySection.favorites.title, symbol: LibrarySection.favorites.symbol)
+            .tag(LibrarySidebarItem.section(.favorites))
+        }
       } header: {
         Text(L("Library")).font(Tokens.Typography.captionStrong.scaledFont(preferredTextScale))
+      }
+      if let coordinator = mediaSources.coordinator {
+        Section {
+          ForEach(coordinator.roots) { root in
+            sidebarLabel(root.displayName, symbol: root.kind.symbolName)
+              .tag(LibrarySidebarItem.source(root.id))
+              .contextMenu {
+                Button(L("Source Settings…")) { sourcePropertiesID = root.id }
+              }
+          }
+          Button {
+            presentAddSource()
+          } label: {
+            sidebarLabel(L("Add Source…"), symbol: "plus")
+          }
+          .buttonStyle(.plain)
+        } header: {
+          Text(L("Sources")).font(Tokens.Typography.captionStrong.scaledFont(preferredTextScale))
+        }
+        if !coordinator.collections.isEmpty {
+          Section {
+            ForEach(coordinator.collections) { collection in
+              sidebarLabel(collection.name, symbol: "rectangle.stack")
+                .tag(LibrarySidebarItem.collection(collection.id))
+            }
+          } header: {
+            Text(L("Collections")).font(Tokens.Typography.captionStrong.scaledFont(preferredTextScale))
+          }
+        }
       }
       Section {
         ForEach(channels.channels) { channel in
@@ -491,7 +702,39 @@ struct LibraryRootView: View {
 
   @ViewBuilder
   private var detail: some View {
-    if let selectedItem {
+    if let mediaID = catalogDetailID,
+       let catalog = mediaSources.catalog,
+       let coordinator = mediaSources.coordinator {
+      CatalogDetailView(
+        mediaID: mediaID,
+        catalog: catalog,
+        coordinator: coordinator,
+        inlinePlayer: inlinePlayer,
+        host: chrome.inlineHost,
+        onPlay: { intent in openCatalogMedia(mediaID, intent: intent) },
+        onBack: {
+          catalogDetailID = nil
+          selectedItem = nil
+        },
+        onRelink: { presentRelink($0) },
+        onShowProperties: {
+          catalogDetailID = nil
+          sourcePropertiesID = $0
+        },
+        onShowInFinder: { NSWorkspace.shared.activateFileViewerSelecting([$0]) },
+        videoFullscreenPresented: chrome.videoFullscreenPresented)
+    } else if let rootID = sourcePropertiesID, let coordinator = mediaSources.coordinator {
+      SourcePropertiesView(
+        coordinator: coordinator,
+        rootID: rootID,
+        onBack: {
+          if coordinator.root(id: rootID) == nil {
+            selection = .section(.home)
+          }
+          sourcePropertiesID = nil
+        },
+        onShowInFinder: { NSWorkspace.shared.activateFileViewerSelecting([$0]) })
+    } else if let selectedItem {
       DetailView(
         item: model.allItems.first(where: { $0.id == selectedItem.id }) ?? selectedItem,
         inlinePlayer: inlinePlayer,
@@ -515,7 +758,15 @@ struct LibraryRootView: View {
           },
           seeAll: { selection = .section($0) })
       case .section(.search):
-        SearchView(model: model, select: { selectedItem = $0 }).id(searchID)
+        if let catalog = mediaSources.catalog {
+          CatalogSearchView(catalog: catalog,
+                            onOpenMedia: { mediaID, intent in
+                              openCatalogMedia(mediaID, intent: intent)
+                            })
+            .id(searchID)
+        } else {
+          SearchView(model: model, select: { selectedItem = $0 }).id(searchID)
+        }
       case .section(.continueWatching):
         LibraryGridView(
           title: LibrarySection.continueWatching.title,
@@ -532,12 +783,87 @@ struct LibraryRootView: View {
           select: { selectedItem = $0 },
           emptyMessage: L("Videos you open appear here. Files stay in their original folders."))
       case .section(.all):
-        LibraryGridView(
-          title: LibrarySection.all.title,
-          items: model.allItems,
-          model: model,
-          select: { selectedItem = $0 },
-          emptyMessage: L("Videos you open appear here. Files stay in their original folders."))
+        if let catalog = mediaSources.catalog {
+          CatalogLibraryView(
+            catalog: catalog,
+            title: LibrarySection.all.title,
+            onOpenMedia: { mediaID, intent in
+              openCatalogMedia(mediaID, intent: intent)
+            })
+        } else {
+          LibraryGridView(
+            title: LibrarySection.all.title,
+            items: model.allItems,
+            model: model,
+            select: { selectedItem = $0 },
+            emptyMessage: L("Videos you open appear here. Files stay in their original folders."))
+        }
+      case .section(.favorites):
+        if let catalog = mediaSources.catalog {
+          FavoritesView(catalog: catalog,
+                        onOpenMedia: { mediaID, intent in
+                          openCatalogMedia(mediaID, intent: intent)
+                        })
+        } else {
+          EmptyStateView(
+            symbol: "star",
+            title: L("Favorites"),
+            message: L("Enable Media Sources to organize favorites."))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+      case .source(let id):
+        if let catalog = mediaSources.catalog, let coordinator = mediaSources.coordinator {
+          SourceBrowserView(
+            rootID: id, coordinator: coordinator, catalog: catalog,
+            chrome: chrome,
+            existingModel: retainedBrowser?.rootID == id
+              && retainedBrowserCatalog === catalog ? retainedBrowser : nil,
+            onOpenMedia: { mediaID, intent in openCatalogMedia(mediaID, intent: intent) },
+            onSelectSource: { sourceID in
+              selection = .source(sourceID)
+              catalogDetailID = nil
+              sourcePropertiesID = nil
+            },
+            onSourceRemoved: {
+              retainedBrowser = nil
+              retainedBrowserCatalog = nil
+              selection = .section(.home)
+              catalogDetailID = nil
+              sourcePropertiesID = nil
+            },
+            onShowProperties: {
+              catalogDetailID = nil
+              sourcePropertiesID = $0
+            },
+            onRelink: { presentRelink($0) },
+            onShowInFinder: { NSWorkspace.shared.activateFileViewerSelecting([$0]) },
+            onModelReady: {
+              retainedBrowser = $0
+              retainedBrowserCatalog = catalog
+            })
+            .id(id)
+        } else {
+          EmptyStateView(
+            symbol: "externaldrive",
+            title: L("Source Unavailable"),
+            message: L("Enable Media Sources to browse saved folders."))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+      case .collection(let id):
+        if let catalog = mediaSources.catalog,
+           let coordinator = mediaSources.coordinator,
+           let collection = coordinator.collections.first(where: { $0.id == id }) {
+          CollectionDetailView(
+            collection: collection, catalog: catalog, coordinator: coordinator,
+            onOpenMedia: { mediaID, intent in openCatalogMedia(mediaID, intent: intent) },
+            onBack: { selection = .section(.home) })
+        } else {
+          EmptyStateView(
+            symbol: "rectangle.stack",
+            title: L("Collection Not Found"),
+            message: L("It may have been removed."))
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
       case .channel(let id):
         if let channel = channels.channel(id: id) {
           ChannelDetailView(chrome: chrome, browser: browser, channel: channel) { context in
@@ -562,10 +888,107 @@ struct LibraryRootView: View {
     }
   }
 
+  private func presentAddSource() {
+    guard let coordinator = mediaSources.coordinator else { return }
+    AddSourceSupport.present(
+      coordinator: coordinator,
+      window: NSApp.keyWindow,
+      onCreated: { root in
+        selection = .source(root.id)
+        catalogDetailID = nil
+        sourcePropertiesID = nil
+      },
+      onError: { sourceError = $0 })
+  }
+
+  private func openCatalogMedia(_ mediaID: UUID, intent: PlaybackIntent) {
+    guard let catalog = mediaSources.catalog,
+          let coordinator = mediaSources.coordinator else { return }
+    let host = chrome.inlineHost
+    let request = UUID()
+    playbackRequestID = request
+    Task { @MainActor [weak player] in
+      guard let player else { return }
+      do {
+        guard let media = try await catalog.media(id: mediaID) else {
+          throw MediaSourceError.notFound
+        }
+        let (url, lease) = try await coordinator.resolvePlaybackURL(mediaID: mediaID)
+        guard playbackRequestID == request else { return }
+        let plan = MediaPlaybackResolver.plan(
+          for: media, url: url, intent: intent,
+          resumePreference: Preference.bool(for: .resumeLastPosition))
+        playbackLease = lease
+        selectedItem = nil
+        sourcePropertiesID = nil
+        catalogDetailID = mediaID
+        player.presentInline(in: host)
+        player.open(plan: plan)
+      } catch {
+        guard playbackRequestID == request else { return }
+        sourceError = (error as? MediaSourceError)?.userMessage
+          ?? NSLocalizedString("This item could not be opened.", comment: "")
+      }
+    }
+  }
+
+  private func presentRelink(_ mediaID: UUID) {
+    guard let coordinator = mediaSources.coordinator,
+          let catalog = mediaSources.catalog else { return }
+    let panel = NSOpenPanel()
+    panel.canChooseFiles = true
+    panel.canChooseDirectories = false
+    panel.allowsMultipleSelection = false
+    panel.message = NSLocalizedString(
+      "Choose the file at its new location. Its progress and organization are kept.",
+      comment: "Relink")
+    panel.prompt = NSLocalizedString("Relink", comment: "Relink")
+    let handler: (NSApplication.ModalResponse) -> Void = { response in
+      guard response == .OK, let url = panel.url else { return }
+      Task { @MainActor in
+        do {
+          let resolved = try await coordinator.relink(mediaID: mediaID, to: url)
+          catalogDetailID = resolved
+          await model.reload()
+        } catch MediaSourceError.possibleAlias(let existingID) {
+          let existingName = (try? await catalog.media(id: existingID))?.name
+            ?? NSLocalizedString("another item", comment: "Relink")
+          let alert = NSAlert()
+          alert.messageText = NSLocalizedString("Merge Items?", comment: "Relink")
+          alert.informativeText = String(
+            format: NSLocalizedString(
+              "This file is already known as “%@”. Merging keeps the older item’s identity and combines progress and organization. This cannot be undone automatically if playback changes afterwards.",
+              comment: "Relink"),
+            existingName)
+          alert.addButton(withTitle: NSLocalizedString("Merge", comment: "Relink"))
+          alert.addButton(withTitle: NSLocalizedString("Cancel", comment: "Relink"))
+          guard alert.runModal() == .alertFirstButtonReturn else { return }
+          do {
+            let merged = try await coordinator.relink(
+              mediaID: mediaID, to: url, confirmMerge: true)
+            catalogDetailID = merged
+            await model.reload()
+          } catch {
+            // A confirmed merge can still be refused; do not swallow that.
+            sourceError = (error as? MediaSourceError)?.userMessage
+              ?? NSLocalizedString("The file could not be relinked.", comment: "")
+          }
+        } catch {
+          sourceError = (error as? MediaSourceError)?.userMessage
+            ?? NSLocalizedString("The file could not be relinked.", comment: "")
+        }
+      }
+    }
+    if let window = NSApp.keyWindow {
+      panel.beginSheetModal(for: window, completionHandler: handler)
+    } else {
+      panel.begin(completionHandler: handler)
+    }
+  }
+
   /// A detail item for a URL the library has not indexed yet (a drop, or a URL
   /// opened from the toolbar). The metadata parser works on the file name.
-  private func libraryItem(for url: URL) -> LibraryItem {
-    if let existing = model.allItems.first(where: { $0.url == url }) {
+  private func libraryItem(for url: URL) -> LibraryItem {    if let existing = model.allItems.first(where: { $0.url == url }) {
       return existing
     }
     let fileName = url.isFileURL ? url.lastPathComponent : (url.host ?? url.absoluteString)
@@ -1315,7 +1738,7 @@ private struct ProgressBar: View {
   }
 }
 
-private struct PosterImage: View {
+struct PosterImage: View {
   @Environment(\.libraryTextScale) private var textScale
   let url: URL
 
@@ -1373,7 +1796,7 @@ private struct PlaceholderArt: View {
   }
 }
 
-private struct EmptyStateView: View {
+struct EmptyStateView: View {
   @Environment(\.libraryTextScale) private var textScale
   let symbol: String
   let title: String
@@ -1545,13 +1968,15 @@ private struct LibraryItemActions: View {
   }
 }
 
-private struct NativeLibrarySearchField: NSViewRepresentable {
+struct NativeLibrarySearchField: NSViewRepresentable {
   @Binding var query: String
+  var placeholder: String? = nil
+  var accessibilityLabel: String? = nil
   func makeCoordinator() -> Coordinator { Coordinator(self) }
   func makeNSView(context: Context) -> NSSearchField {
     let field = NSSearchField()
-    field.placeholderString = L("Search titles and folders")
-    field.setAccessibilityLabel(L("Search Library"))
+    field.placeholderString = placeholder ?? L("Search titles and folders")
+    field.setAccessibilityLabel(accessibilityLabel ?? L("Search Library"))
     field.sendsSearchStringImmediately = true
     field.delegate = context.coordinator
     DispatchQueue.main.async { field.window?.makeFirstResponder(field) }
@@ -1619,7 +2044,7 @@ private struct LibrarySidebarMaterial: NSViewRepresentable {
   }
 }
 
-private struct LibraryLoadingState: View {
+struct LibraryLoadingState: View {
   @Environment(\.libraryTextScale) private var textScale
   var body: some View {
     VStack(spacing: Tokens.Space.n12) {

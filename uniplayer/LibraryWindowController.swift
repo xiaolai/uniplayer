@@ -120,22 +120,26 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
   }
 
   func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-    toolbarDefaultItemIdentifiers(toolbar) + [.init("library.back")]
+    toolbarDefaultItemIdentifiers(toolbar)
   }
 
   func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-    [.init("library.sidebar"), .init("library.file"), .init("library.url"),
-     .flexibleSpace, .init("library.search"), .init("library.navigation"), .init("library.inspector")]
+    [.init("library.sidebar"), .init("library.back"), .init("library.forward"),
+     .init("library.file"), .init("library.url"),
+     .flexibleSpace, .init("library.search"), .init("library.add"),
+     .init("library.navigation"), .init("library.inspector")]
   }
 
   func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier id: NSToolbarItem.Identifier,
                willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
     let definitions: [String: (String, String, Selector)] = [
-      "library.back": ("Back", "chevron.left", #selector(playbackBack(_:))),
+      "library.back": ("Back", "chevron.left", #selector(navigateBack(_:))),
+      "library.forward": ("Forward", "chevron.right", #selector(navigateForward(_:))),
       "library.sidebar": ("Show or Hide Sidebar", "sidebar.left", #selector(toggleSidebar(_:))),
       "library.file": ("Open File…", "folder", #selector(toolbarOpenFile(_:))),
       "library.url": ("Open URL…", "link", #selector(toolbarOpenURL(_:))),
       "library.search": ("Search Library", "magnifyingglass", #selector(menuSearchLibrary(_:))),
+      "library.add": ("Add Source…", "plus", #selector(toolbarAddSource(_:))),
       "library.navigation": ("Channel Navigation", "safari", #selector(toggleChannelNavigation(_:))),
       "library.inspector": ("AI Assistant", "sidebar.right", #selector(menuToggleInspector(_:))),
     ]
@@ -150,14 +154,12 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
     return item
   }
 
-  @objc private func playbackBack(_ sender: Any?) { chrome.backFromPlayback?() }
+  @objc private func navigateBack(_ sender: Any?) { chrome.navigateBack?() }
+  @objc private func navigateForward(_ sender: Any?) { chrome.navigateForward?() }
+  @objc private func toolbarAddSource(_ sender: Any?) { chrome.addSource?() }
 
   private func updatePlaybackToolbar() {
-    guard let toolbar = window?.toolbar else { return }
-    let index = toolbar.items.firstIndex { $0.itemIdentifier.rawValue == "library.back" }
-    if chrome.playbackPresented && index == nil {
-      toolbar.insertItem(withItemIdentifier: .init("library.back"), at: 0)
-    } else if !chrome.playbackPresented, let index { toolbar.removeItem(at: index) }
+    window?.toolbar?.validateVisibleItems()
   }
 
   @objc private func toggleChannelNavigation(_ sender: Any?) {
@@ -166,7 +168,12 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
   }
 
   func validateToolbarItem(_ item: NSToolbarItem) -> Bool {
-    item.itemIdentifier.rawValue != "library.navigation" || chrome.channelSelected
+    switch item.itemIdentifier.rawValue {
+    case "library.back": return chrome.canNavigateBack || chrome.playbackPresented
+    case "library.forward": return chrome.canNavigateForward
+    case "library.navigation": return chrome.channelSelected
+    default: return true
+    }
   }
 
   @objc private func toolbarOpenFile(_ sender: Any?) { chrome.openFile?() }
@@ -202,6 +209,28 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
       if modifiers == [.command, .shift], character == "f", self.supportsFocusMode {
         self.toggleFocusMode()
         return nil
+      }
+      if modifiers == [.command], character == "[" {
+        self.chrome.navigateBack?()
+        return nil
+      }
+      if modifiers == [.command], character == "]" {
+        self.chrome.navigateForward?()
+        return nil
+      }
+      if !self.isTextEditor(in: event.window), modifiers == [.command] {
+        switch event.keyCode {
+        case 126:
+          NotificationCenter.default.post(name: .mediaSourcesGoUpRequested,
+                                          object: self.window)
+          return nil
+        case 125:
+          NotificationCenter.default.post(name: .mediaSourcesOpenSelectionRequested,
+                                          object: self.window)
+          return nil
+        default:
+          break
+        }
       }
       return event
     }
@@ -344,6 +373,11 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
     let normalized = KeyCodeHelper.normalizeMpv(keyCode)
     guard let binding = PlayerCore.keyBindings[normalized] else { return event }
     return player.handleKeyBinding(binding) ? nil : event
+  }
+
+  private func isTextEditor(in eventWindow: NSWindow?) -> Bool {
+    guard let responder = eventWindow?.firstResponder else { return false }
+    return responder is NSTextView || responder is NSTextField
   }
 
   private func isEditingText(in eventWindow: NSWindow?) -> Bool {

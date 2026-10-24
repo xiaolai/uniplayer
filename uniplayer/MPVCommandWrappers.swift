@@ -11,8 +11,12 @@ extension MPVController {
     command(.loadfile, args: [path, "insert-at", index.description], level: .verbose)
   }
 
-  func playlistAppend(_ path: String) {
-    command(.loadfile, args: [path, "append"], level: .verbose)
+  func playlistAppend(_ path: String, options: String? = nil) {
+    var args = [path, "append"]
+    if let options {
+      args += ["0", options]
+    }
+    command(.loadfile, args: args, level: .verbose)
   }
 
   func playlistMove(_ from: Int, to: Int) {

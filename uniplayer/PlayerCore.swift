@@ -430,6 +430,17 @@ class PlayerCore: NSObject {
   /// Remaining files from an open request whose first file was deferred.
   private var pendingPlaylistURLs: [URL] = []
 
+  /// Plans for the deferred playlist tail, keyed by the URL that will be
+  /// appended once the stop command finishes.
+  private var pendingPlaylistPlans: [URL: PlaybackLoadPlan] = [:]
+
+  /// A catalog plan waiting for the next load. It survives a deferred stop the
+  /// same way `pendingUrl` does, so a plan cannot attach to the wrong file.
+  var pendingPlaybackPlan: PlaybackLoadPlan?
+
+  /// The plan active for the file mpv currently has loaded.
+  var activePlaybackPlan: PlaybackLoadPlan?
+
   let playerNumber: Int
 
   static var keyBindings: [String: KeyMapping] = [:]
@@ -506,7 +517,8 @@ class PlayerCore: NSObject {
 
   /// - Returns: `true` when the open was deferred until a stop finishes.
   @discardableResult
-  private func open(_ url: URL?, shouldAutoLoad: Bool = false) -> Bool {
+  private func open(_ url: URL?, shouldAutoLoad: Bool = false,
+                    plan: PlaybackLoadPlan? = nil) -> Bool {
     guard let url else {
       log("empty file path or url", level: .error)
       return false
@@ -519,6 +531,7 @@ class PlayerCore: NSObject {
       log("Waiting for stop command to finish before opening: \(url.absoluteString)")
       pendingAutoLoad = shouldAutoLoad
       pendingUrl = url
+      pendingPlaybackPlan = plan
       return true
     }
     let isNetwork = !url.isFileURL || url.pathExtension.starts(with: "m3u")
@@ -530,6 +543,7 @@ class PlayerCore: NSObject {
       log("Closing window before opening: \(url.absoluteString)")
       pendingAutoLoad = shouldAutoLoad
       pendingUrl = url
+      pendingPlaybackPlan = plan
       currentWindow.close()
       return true
     }
@@ -539,7 +553,7 @@ class PlayerCore: NSObject {
     }
     info.hdrEnabled = Preference.bool(for: .enableHdrSupport)
     let path = url.isFileURL ? url.path : url.absoluteString
-    openMainWindow(path: path, url: url, isNetwork: isNetwork)
+    openMainWindow(path: path, url: url, isNetwork: isNetwork, plan: plan)
     return false
   }
 
@@ -551,9 +565,15 @@ class PlayerCore: NSObject {
    count of playable files.
    */
   @discardableResult
-  func openURLs(_ urls: [URL], shouldAutoLoad autoLoad: Bool = true) -> Int? {
+  func openURLs(_ urls: [URL], shouldAutoLoad autoLoad: Bool = true,
+                plans: [PlaybackLoadPlan]? = nil) -> Int? {
     guard !urls.isEmpty else { return 0 }
-    let urls = Utility.resolveURLs(urls)
+    // A catalog plan already carries the canonical URL; resolving it again
+    // would probe the filesystem on the main thread for no change.
+    let fullyPlanned = plans.map { plans in
+      plans.count == urls.count && zip(plans, urls).allSatisfy { $0.url == $1 }
+    } ?? false
+    let urls = fullyPlanned ? urls : Utility.resolveURLs(urls)
 
     // Handle folder URL (to support mpv shuffle, etc), BD folders and m3u / m3u8 files first.
     // For these cases, mpv will load/build the playlist and notify UniPlayer when it can be retrieved.
@@ -563,7 +583,13 @@ class PlayerCore: NSObject {
       if isBDFolder(url)
           || Utility.playlistFileExt.contains(url.absoluteString.lowercasedPathExtension) {
         info.shouldAutoLoadFiles = false
-        open(url)
+        open(url, plan: plans?.first.map { plan in
+          plan.url == url ? plan : PlaybackLoadPlan(
+            entryID: plan.entryID, mediaID: plan.mediaID, url: url,
+            intent: plan.intent, startPosition: plan.startPosition,
+            suppressWatchLater: plan.suppressWatchLater,
+            knownDuration: plan.knownDuration)
+        })
         return nil
       }
     }
@@ -582,15 +608,35 @@ class PlayerCore: NSObject {
       info.shouldAutoLoadFiles = (count == 1)
     }
 
+    // Resolve the first playable URL before attaching the plan. `resolveURLs`
+    // and `getPlayableFiles` may canonicalize a path; a plan must carry the
+    // exact URL the engine will report at file-loaded.
+    let firstURL = playableFiles[0]
+    let plan = plans?.first.map { plan in
+      plan.url == firstURL ? plan : PlaybackLoadPlan(
+        entryID: plan.entryID, mediaID: plan.mediaID, url: firstURL,
+        intent: plan.intent, startPosition: plan.startPosition,
+        suppressWatchLater: plan.suppressWatchLater,
+        knownDuration: plan.knownDuration)
+    }
+
     // Open the first file. If that waits for a stop to finish, the playlist
     // tail must wait with it; appending now would be discarded by the load.
-    let deferred = open(playableFiles[0])
+    let deferred = open(firstURL, plan: plan)
     if deferred {
       pendingPlaylistURLs = Array(playableFiles[1..<count])
+      pendingPlaylistPlans = Dictionary(uniqueKeysWithValues:
+        playableFiles[1..<count].compactMap { url in
+          guard let plan = plans?.first(where: { $0.url == url }) else { return nil }
+          return (url, plan)
+        })
     } else {
       pendingPlaylistURLs = []
+      pendingPlaylistPlans = [:]
       playableFiles[1..<count].forEach { url in
-        mpv.playlistAppend(url.isFileURL ? url.path : url.absoluteString)
+        let tailPlan = plans?.first { $0.url == url }
+        mpv.playlistAppend(url.isFileURL ? url.path : url.absoluteString,
+                           options: PlaybackEngineOptions.loadfileOptions(for: tailPlan))
       }
       postNotification(.iinaPlaylistChanged)
       if count > 1 {
@@ -600,8 +646,14 @@ class PlayerCore: NSObject {
     return count
   }
 
-  func openURL(_ url: URL, shouldAutoLoad: Bool = true) {
-    openURLs([url], shouldAutoLoad: shouldAutoLoad)
+  func openURL(_ url: URL, shouldAutoLoad: Bool = true,
+               plan: PlaybackLoadPlan? = nil) {
+    openURLs([url], shouldAutoLoad: shouldAutoLoad, plans: plan.map { [$0] })
+  }
+
+  /// Open one catalog item with the plan resolved by the library.
+  func open(plan: PlaybackLoadPlan) {
+    openURL(plan.url, plan: plan)
   }
 
   func openURLString(_ str: String) {
@@ -634,8 +686,13 @@ class PlayerCore: NSObject {
   ///   - path: Path to the media to open.
   ///   - url: URL of the media to open.
   ///   - isNetwork: Whether the media must be streamed over the network.
-  private func openMainWindow(path: String, url: URL, isNetwork: Bool) {
+  private func openMainWindow(path: String, url: URL, isNetwork: Bool,
+                              plan: PlaybackLoadPlan? = nil) {
     log("Opening \(path) in main window")
+    MainActor.assumeIsolated {
+      MediaPlaybackService.shared.beginLoad(player: self)
+    }
+    pendingPlaybackPlan = plan
     if isInline {
       // A new file in the same surface is a new inline session.
       inlineSessionID += 1
@@ -692,7 +749,11 @@ class PlayerCore: NSObject {
     // Send load file command
     info.justOpenedFile = true
     info.state = .loading
-    mpv.command(.loadfile, args: [path], level: .verbose)
+    // A catalog-linked load owns the start position. The file-local options
+    // suppress mpv's watch-later resume and apply the catalog position on
+    // load, so there is exactly one authority and no post-load seek race.
+    let loadArguments = PlaybackEngineOptions.loadfileArguments(path: path, plan: plan)
+    mpv.command(.loadfile, args: loadArguments, level: .verbose)
 
     if Preference.bool(for: .autoRepeat) {
        let loopMode = Preference.DefaultRepeatMode(rawValue: Preference.integer(for: .defaultRepeatMode))
@@ -1265,6 +1326,9 @@ class PlayerCore: NSObject {
   ///     running when the mpv core is shutdown it may call into mpv triggering a crash.
   func stop() {
     guard info.state != .shutDown else { return }
+    MainActor.assumeIsolated {
+      MediaPlaybackService.shared.saveCurrent(player: self)
+    }
     savePlaybackPosition()
 
     // The player may already be stopped in which case the state must not be set to stopping.
@@ -2496,6 +2560,9 @@ class PlayerCore: NSObject {
     loadLoadedMediaMetadata()
     refreshUIAfterFileLoad()
     recordHistoryEntry()
+    MainActor.assumeIsolated {
+      MediaPlaybackService.shared.fileLoaded(player: self)
+    }
 
     postNotification(.iinaFileLoaded)
     events.emit(.fileLoaded, data: info.currentURL?.absoluteString ?? "")
@@ -2577,6 +2644,9 @@ class PlayerCore: NSObject {
   }
 
   func fileEnded(_ dueToStopCommand: Bool) {
+    MainActor.assumeIsolated {
+      MediaPlaybackService.shared.fileEnded(player: self)
+    }
     // if receive end-file when loading file, might be error
     // wait for idle
     if info.state == .loading || info.state == .starting {
@@ -2711,17 +2781,26 @@ class PlayerCore: NSObject {
     }
     if info.state != .loading {
       log("Playback has stopped")
+      MainActor.assumeIsolated {
+        MediaPlaybackService.shared.playerStopped(player: self)
+      }
       info.state = .idle
       postNotification(.iinaPlayerStopped)
       if let pendingUrl {
         self.pendingUrl = nil
+        let plan = pendingPlaybackPlan
+        pendingPlaybackPlan = nil
         log("Processing pending open")
-        open(pendingUrl, shouldAutoLoad: pendingAutoLoad)
+        open(pendingUrl, shouldAutoLoad: pendingAutoLoad, plan: plan)
         if !pendingPlaylistURLs.isEmpty {
           let tail = pendingPlaylistURLs
+          let tailPlans = pendingPlaylistPlans
           pendingPlaylistURLs = []
+          pendingPlaylistPlans = [:]
           tail.forEach { url in
-            mpv.playlistAppend(url.isFileURL ? url.path : url.absoluteString)
+            mpv.playlistAppend(url.isFileURL ? url.path : url.absoluteString,
+                               options: PlaybackEngineOptions.loadfileOptions(
+                                 for: tailPlans[url]))
           }
           postNotification(.iinaPlaylistChanged)
           sendOSD(.addToPlaylist(tail.count + 1))

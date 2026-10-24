@@ -123,18 +123,42 @@ class HistoryController: NSObject {
   }
 
   /// Updates the remembered location without deleting a file or losing its progress.
+  /// An immutable copy for readers that leave the main thread. The stored
+  /// entries are mutable and owned by the writer.
+  func historySnapshot() -> [PlaybackHistorySnapshot] {
+    $history.withLock { $0.map(\.snapshot) }
+  }
+
   func relocate(from oldURL: URL, to newURL: URL) {
+    var movedMd5: (String, String)?
     $history.withLock { history in
+      let newMd5 = Utility.mpvWatchLaterMd5(newURL, false)
       if let entry = history.first(where: { $0.url == oldURL }) {
+        let oldMd5 = entry.mpvMd5
         entry.url = newURL
         entry.name = newURL.lastPathComponent
-        entry.mpvMd5 = Utility.mpvWatchLaterMd5(newURL, false)
+        entry.mpvMd5 = newMd5
+        if oldMd5 != newMd5 { movedMd5 = (oldMd5, newMd5) }
       } else {
         history.insert(PlaybackHistory(url: newURL, duration: 0, title: nil,
-                                      mpvMd5: Utility.mpvWatchLaterMd5(newURL, false)), at: 0)
+                                      mpvMd5: newMd5), at: 0)
       }
     }
+    if let (oldMd5, newMd5) = movedMd5 {
+      Self.moveWatchLater(from: oldMd5, to: newMd5)
+    }
     save()
+  }
+
+  /// mpv names watch-later state by the URL's md5, so a relocated file needs
+  /// its state moved; otherwise the next legacy open resumes nothing.
+  private static func moveWatchLater(from oldMd5: String, to newMd5: String) {
+    let directory = Utility.watchLaterURL
+    let oldFile = directory.appendingPathComponent(oldMd5)
+    let newFile = directory.appendingPathComponent(newMd5)
+    guard FileManager.default.fileExists(atPath: oldFile.path) else { return }
+    try? FileManager.default.removeItem(at: newFile)
+    try? FileManager.default.moveItem(at: oldFile, to: newFile)
   }
 
   func remove(_ entries: [PlaybackHistory]) {
@@ -146,13 +170,23 @@ class HistoryController: NSObject {
   }
 
   func removeAll() {
-    $history.withLock { history in
-      log("Removing all playback history entries")
-      history = []
-    }
-    save()
-    DispatchQueue.main.async {
-      NotificationCenter.default.post(name: .libraryShouldReload, object: nil)
+    $tasksOutstanding.withLock { $0 += 1 }
+    // Serialize the clear behind any queued additions so an older add cannot
+    // resurrect history after the person cleared it.
+    queue.async { [self] in
+      $history.withLock { history in
+        log("Removing all playback history entries")
+        history = []
+      }
+      save()
+      $tasksOutstanding.withLock { tasksOutstanding in
+        tasksOutstanding -= 1
+      }
+      NotificationCenter.default.post(Notification(name: .iinaHistoryTaskFinished))
+      DispatchQueue.main.async {
+        NotificationCenter.default.post(name: .iinaPlaybackHistoryCleared, object: nil)
+        NotificationCenter.default.post(name: .libraryShouldReload, object: nil)
+      }
     }
   }
 

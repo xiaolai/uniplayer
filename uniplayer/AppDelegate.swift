@@ -355,6 +355,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     NSWindow.allowsAutomaticWindowTabbing = false
 
     JavascriptPlugin.loadGlobalInstances()
+    MainActor.assumeIsolated {
+      MediaSourcesEnvironment.shared.startIfEnabled()
+    }
 
     let mpv = PlayerCore.active.mpv!
     Logger.log("Configuration when building mpv: \(mpv.getString(MPVProperty.mpvConfiguration)!)", level: .verbose)
@@ -538,10 +541,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       Logger.log("Waiting for saving of playback history to complete")
     }
 
+    /// The catalog is flushed only at the final reply. A player's stop and
+    /// end-file callbacks enqueue their last observations asynchronously, so a
+    /// flush taken before players shut down would miss them.
+    func flushCatalog() {
+      guard let catalog = MainActor.assumeIsolated({
+        MediaSourcesEnvironment.shared.catalog
+      }) else { return }
+      if !catalog.flushForTermination(timeout: 1.0) {
+        Logger.log("Media catalog did not flush within one second; keeping the last commit",
+                   level: .warning)
+      }
+    }
+
     // If the user pressed Q and mpv initiated the termination then players will already be
     // shutdown and it may be possible to proceed with termination.
     if canTerminateNow {
       Logger.log("Proceeding with application termination")
+      flushCatalog()
       // Tell Cocoa that it is ok to immediately proceed with termination.
       return .terminateNow
     }
@@ -578,6 +595,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                    level: .warning)
       }
       Logger.log("Proceeding with application termination due to time out", level: .warning)
+      flushCatalog()
       // Tell Cocoa to proceed with termination.
       NSApp.reply(toApplicationShouldTerminate: true)
     }
@@ -644,6 +662,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
       }
       // Tell AppKit to proceed with termination.
+      flushCatalog()
       NSApp.reply(toApplicationShouldTerminate: true)
     }
 
@@ -749,6 +768,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // if launched from command line, should ignore openFile once
     if shouldIgnoreOpenFile {
       shouldIgnoreOpenFile = false
+      pendingFilesForOpenFile.removeAll()
+      openFileTimer?.invalidate()
       return
     }
     let urls = pendingFilesForOpenFile.map { URL(fileURLWithPath: $0) }
@@ -943,6 +964,44 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     openURLWindow.isAlternativeAction = sender.tag == AlternativeMenuItemTag
     openURLWindow.showWindow(nil)
     openURLWindow.resetWindowState()
+  }
+
+  @IBAction func addMediaSource(_ sender: Any?) {
+    MainActor.assumeIsolated {
+      if !MediaSourcesFeature.isEnabled {
+        let alert = NSAlert()
+        alert.messageText = NSLocalizedString("Enable Media Sources (Beta)?", comment: "Sources")
+        alert.informativeText = NSLocalizedString(
+          "Media Sources creates a local index of folders you choose. It never uploads filenames or paths and never stores credentials. You can disable it again from the Sources menu.",
+          comment: "Sources")
+        alert.addButton(withTitle: NSLocalizedString("Enable", comment: "Sources"))
+        alert.addButton(withTitle: NSLocalizedString("Cancel", comment: "Sources"))
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        MediaSourcesEnvironment.shared.enable()
+      }
+      PlayerCore.first.initialWindow?.showWindow(nil)
+      MediaSourcesEnvironment.shared.requestAddSource()
+    }
+  }
+
+  @IBAction func disableMediaSources(_ sender: Any?) {
+    MainActor.assumeIsolated {
+      MediaSourcesEnvironment.shared.disable()
+    }
+  }
+
+  @IBAction func enableMediaSources(_ sender: Any?) {
+    MainActor.assumeIsolated {
+      MediaSourcesEnvironment.shared.enable()
+      PlayerCore.first.initialWindow?.showWindow(nil)
+    }
+  }
+
+  @IBAction func showMediaSources(_ sender: Any?) {
+    MainActor.assumeIsolated {
+      PlayerCore.first.initialWindow?.showWindow(nil)
+      NotificationCenter.default.post(name: .mediaSourcesShowRequested, object: nil)
+    }
   }
 
   @IBAction func menuNewWindow(_ sender: Any) {
@@ -1142,6 +1201,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   func clearRecentDocuments(_ sender: Any?) {
     NSDocumentController.shared.clearRecentDocuments(sender)
     saveRecentDocuments()
+    MainActor.assumeIsolated {
+      guard let catalog = MediaSourcesEnvironment.shared.catalog else { return }
+      Task {
+        try? await catalog.removeReasons(originID: "legacyRecent")
+      }
+    }
   }
 
   /// Adds or replaces an Open Recent menu item corresponding to the data located by the URL.
@@ -1209,10 +1274,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Creating a URL from a bookmark fails if the original file can not be located or is on a
         // volume that is not mounted. Form a URL from the path contained in the bookmark.
         guard let resource = URL.resourceValues(forKeys: [.pathKey], fromBookmarkData: asData),
-              let path = resource.path, let url = URL(string: path) else {
+              let path = resource.path else {
           Logger.log("Unable to obtain obtain the path from a bookmark", level: .error)
           continue
         }
+        let url = URL(fileURLWithPath: path)
         Logger.log("Unable to create a bookmark, creating URL from path for: \(path)", level: .verbose)
         NSDocumentController.shared.noteNewRecentDocumentURL(url)
         continue
@@ -1272,7 +1338,9 @@ struct CommandLineStatus {
     mpvArguments.removeAll()
     iinaArguments.removeAll()
     for arg in args {
-      let splitted = arg.dropFirst(2).split(separator: "=", maxSplits: 1)
+      let stripped = arg.dropFirst(2)
+      guard !stripped.isEmpty else { continue }
+      let splitted = stripped.split(separator: "=", maxSplits: 1)
       let name = String(splitted[0])
       if (name.hasPrefix("mpv-")) {
         // mpv args

@@ -139,6 +139,7 @@ final class LibraryModel: ObservableObject {
 
   private var observers: [NSObjectProtocol] = []
   private var reloadTask: Task<Void, Never>?
+  private var presenceTask: Task<Void, Never>?
 
   init(open: @escaping (URL) -> Void) {
     self.openHandler = open
@@ -158,6 +159,7 @@ final class LibraryModel: ObservableObject {
 
   deinit {
     reloadTask?.cancel()
+    presenceTask?.cancel()
     observers.forEach(NotificationCenter.default.removeObserver)
   }
 
@@ -167,21 +169,62 @@ final class LibraryModel: ObservableObject {
   }
 
   func remove(_ item: LibraryItem) {
-    var hidden = Set(defaults.stringArray(forKey: Self.hiddenKey) ?? [])
-    hidden.insert(item.id)
-    defaults.set(Array(hidden), forKey: Self.hiddenKey)
+    if let catalog = MediaSourcesEnvironment.shared.catalog {
+      // The catalog is authoritative while it runs; its organization store
+      // mirrors the legacy defaults, so a separate write here would race it.
+      let identifier = item.id
+      Task {
+        var resolved = try? await catalog.resolveAlias(kind: "filePath", value: identifier)
+        if resolved == nil {
+          resolved = try? await catalog.resolveAlias(kind: "url", value: identifier)
+        }
+        if let mediaID = resolved {
+          try? await catalog.setHidden(mediaID: mediaID, hidden: true)
+        }
+      }
+    } else {
+      var hidden = Set(defaults.stringArray(forKey: Self.hiddenKey) ?? [])
+      hidden.insert(item.id)
+      defaults.set(Array(hidden), forKey: Self.hiddenKey)
+    }
     NotificationCenter.default.post(name: .libraryShouldReload, object: nil)
   }
 
   func restoreHiddenItems() {
     defaults.removeObject(forKey: Self.hiddenKey)
+    if let catalog = MediaSourcesEnvironment.shared.catalog {
+      Task { try? await catalog.restoreAllHidden() }
+    }
     NotificationCenter.default.post(name: .libraryShouldReload, object: nil)
   }
 
   func markWatched(_ item: LibraryItem) {
-    var watched = defaults.dictionary(forKey: Self.watchedKey) as? [String: Bool] ?? [:]
-    watched[item.id] = !item.isFinished
-    defaults.set(watched, forKey: Self.watchedKey)
+    if let catalog = MediaSourcesEnvironment.shared.catalog {
+      // One owner for watched state while the catalog runs. The legacy path
+      // wrote a persistent false override for Unwatched, which the catalog
+      // represents by removing the override instead.
+      let identifier = item.id
+      let value = !item.isFinished
+      Task {
+        var resolved = try? await catalog.resolveAlias(kind: "filePath", value: identifier)
+        if resolved == nil {
+          resolved = try? await catalog.resolveAlias(kind: "url", value: identifier)
+        }
+        if let mediaID = resolved {
+          try? await catalog.markWatched(mediaID: mediaID, watched: value)
+        }
+      }
+    } else {
+      var watched = defaults.dictionary(forKey: Self.watchedKey) as? [String: Bool] ?? [:]
+      if item.isFinished {
+        // Clearing a watched mark restores natural progress rather than
+        // forcing a zero value.
+        watched.removeValue(forKey: item.id)
+      } else {
+        watched[item.id] = true
+      }
+      defaults.set(watched, forKey: Self.watchedKey)
+    }
     NotificationCenter.default.post(name: .libraryShouldReload, object: nil)
   }
 
@@ -212,7 +255,7 @@ final class LibraryModel: ObservableObject {
   func reload() {
     // Capture AppKit and defaults state on the main actor, then do the
     // filesystem and parsing work off it.
-    let history = HistoryController.shared.history
+    let history = HistoryController.shared.historySnapshot()
     let recent = NSDocumentController.shared.recentDocumentURLs
     let lastPlayed = Preference.url(for: .iinaLastPlayedFilePath)
     let hidden = Set(defaults.stringArray(forKey: Self.hiddenKey) ?? [])
@@ -230,7 +273,7 @@ final class LibraryModel: ObservableObject {
   }
 
   nonisolated static func snapshot(
-    history: [PlaybackHistory],
+    history: [PlaybackHistorySnapshot],
     recent: [URL],
     lastPlayed: URL?, hidden: Set<String>, watched: [String: Bool]
   ) -> LibrarySnapshot {
@@ -249,8 +292,8 @@ final class LibraryModel: ObservableObject {
     }
 
     for entry in history {
-      let duration = entry.duration.second
-      let played = entry.mpvProgress?.second ?? 0
+      let duration = entry.duration
+      let played = entry.progress ?? 0
       let id = entry.url.isFileURL ? entry.url.standardizedFileURL.path : entry.url.absoluteString
       let progress = watched[id].map { $0 ? 1.0 : 0.0 }
         ?? (duration > 0 ? min(max(played / duration, 0), 1) : 0)
@@ -264,25 +307,26 @@ final class LibraryModel: ObservableObject {
         progress: progress,
         added: entry.addedDate,
         isNetwork: !entry.url.isFileURL,
-        isMissing: entry.url.isFileURL && !FileManager.default.fileExists(atPath: entry.url.path)))
+        // Presence is unknown here. The legacy snapshot must not probe source
+        // paths on a cooperative thread; the catalog resolves presence through
+        // the bounded source workers when the feature is enabled.
+        isMissing: false))
     }
 
     for url in recent {
-      if url.isFileURL {
-        let values = try? url.resourceValues(forKeys: [.isDirectoryKey])
-        if values?.isDirectory == true { continue }
-      }
       let metadata = LibraryMetadata.parse(fileName: url.lastPathComponent)
+      let id = url.isFileURL ? url.standardizedFileURL.path : url.absoluteString
+      let progress = watched[id].map { $0 ? 1.0 : 0.0 } ?? 0
       insert(LibraryItem(
         url: url,
         title: metadata.title,
         subtitle: subtitle(for: url),
         metadata: metadata,
         duration: 0,
-        progress: 0,
+        progress: progress,
         added: .distantPast,
         isNetwork: !url.isFileURL,
-        isMissing: url.isFileURL && !FileManager.default.fileExists(atPath: url.path)))
+        isMissing: false))
     }
 
     let byDate = items.values.sorted { $0.added > $1.added }
@@ -310,6 +354,84 @@ final class LibraryModel: ObservableObject {
     allItems = snapshot.allItems
     hero = snapshot.hero
     hasLoaded = true
+    refreshPresence()
+  }
+
+  /// Missing detection is a separate, bounded pass: the legacy snapshot never
+  /// probes a source path, but the library still needs to mark a file that is
+  /// gone. With the catalog running its rows answer; without it, a bounded
+  /// local observation lane probes only file URLs, with a short timeout.
+  private func refreshPresence() {
+    presenceTask?.cancel()
+    let items = allItems
+    guard !items.isEmpty else { return }
+    presenceTask = Task { [weak self] in
+      guard let self else { return }
+      var missing: Set<String> = []
+      if let catalog = MediaSourcesEnvironment.shared.catalog {
+        let aliases: [(kind: String, value: String)] = items.flatMap { item in
+          [("filePath", item.id), ("url", item.id)]
+        }
+        if let presence = try? await catalog.presence(forAliases: aliases) {
+          for item in items where presence[item.id] == .missing {
+            missing.insert(item.id)
+          }
+        }
+      } else {
+        missing = await Self.probeMissing(items)
+      }
+      guard !Task.isCancelled else { return }
+      self.markMissing(missing)
+    }
+  }
+
+  private func markMissing(_ missing: Set<String>) {
+    guard !missing.isEmpty else { return }
+    func update(_ item: LibraryItem) -> LibraryItem {
+      var copy = item
+      copy.isMissing = missing.contains(item.id)
+      return copy
+    }
+    allItems = allItems.map(update)
+    recentlyAdded = recentlyAdded.map(update)
+    continueWatching = continueWatching.map(update)
+    if let hero {
+      self.hero = update(hero)
+    }
+  }
+
+  private nonisolated static func probeMissing(_ items: [LibraryItem]) async -> Set<String> {
+    let candidates = items.filter { $0.url.isFileURL }
+    return await withTaskGroup(of: (String, Bool?).self) { group in
+      for item in candidates {
+        group.addTask {
+          let path = item.url.standardizedFileURL.path
+          do {
+            let code: Int32? = try await SourceIOExecutor.shared.perform(
+              lane: SourceIOLane.forPath(path),
+              volumeKey: "presence:\(item.url.deletingLastPathComponent().path)",
+              timeout: 1) {
+                var info = stat()
+                if stat(path, &info) == 0 { return nil }
+                return errno
+              }
+            // Only a definitive "no such file" is absence; permission and I/O
+            // errors are not evidence that the file is gone.
+            switch code {
+            case .some(ENOENT), .some(ENOTDIR): return (item.id, true)
+            default: return (item.id, nil)
+            }
+          } catch {
+            return (item.id, nil)
+          }
+        }
+      }
+      var missing: Set<String> = []
+      for await (id, isMissing) in group {
+        if isMissing == true { missing.insert(id) }
+      }
+      return missing
+    }
   }
 
   // MARK: - Names
@@ -374,7 +496,13 @@ final class PosterStore {
   func image(for url: URL) async -> NSImage? {
     guard url.isFileURL else { return nil }
 
-    let key = Self.cacheKey(for: url)
+    let key = await Task.detached(priority: .utility) { () -> String? in
+      // Eligibility comes first: `cacheKey` reads file metadata, which must
+      // never be attempted on a network mount.
+      guard MediaArtworkPolicy.allowsProbe(for: url) else { return nil }
+      return Self.cacheKey(for: url)
+    }.value
+    guard let key else { return nil }
     if let cached = cache.object(forKey: key as NSString) {
       return cached
     }
@@ -398,7 +526,9 @@ final class PosterStore {
     return image
   }
 
-  private static func cacheKey(for url: URL) -> String {
+  private nonisolated static func cacheKey(for url: URL) -> String {
+    // Runs off the main actor; the metadata read still belongs to a bounded
+    // artwork probe, not a rendering pass.
     let values = try? url.resourceValues(forKeys: [.contentModificationDateKey, .fileSizeKey])
     let date = values?.contentModificationDate?.timeIntervalSince1970 ?? 0
     let size = values?.fileSize ?? 0

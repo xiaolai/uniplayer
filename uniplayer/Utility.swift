@@ -664,7 +664,16 @@ class Utility {
   }
 
   static func resolveURLs(_ urls: [URL]) -> [URL] {
-    return urls.map { (try? URL(resolvingAliasFileAt: $0)) ?? $0 }
+    return urls.map { url in
+      // A mounted share can block on alias resolution. mpv resolves symlinks
+      // itself, so the main-thread probe is skipped there; local volumes keep
+      // Finder-alias support.
+      if url.isFileURL,
+         url.standardizedFileURL.path.hasPrefix("/Volumes/") {
+        return url
+      }
+      return (try? URL(resolvingAliasFileAt: url)) ?? url
+    }
   }
 }
 

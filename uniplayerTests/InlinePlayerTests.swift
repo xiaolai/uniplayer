@@ -575,15 +575,19 @@ final class LibraryRemediationTests: XCTestCase {
     XCTAssertEqual(LibraryQuery.apply(items, query: "fix", sort: .title, filter: .all).count, 3)
   }
 
-  func testSnapshotRetainsMissingAndAppliesHiddenWatchedOverrides() {
+  func testSnapshotKeepsPresenceUnknownAndAppliesHiddenWatchedOverrides() {
     let url = URL(fileURLWithPath: "/uniplayer-missing-fixture/film.mp4")
-    let entry = PlaybackHistory(url: url, duration: 100, title: "Film", mpvMd5: "fixture")
+    let entry = PlaybackHistorySnapshot(
+      url: url, name: url.lastPathComponent, played: true, addedDate: Date(),
+      duration: 100, progress: nil, title: "Film")
     let snapshot = LibraryModel.snapshot(history: [entry], recent: [], lastPlayed: url,
       hidden: [], watched: [url.standardizedFileURL.path: true])
     XCTAssertEqual(snapshot.allItems.count, 1)
-    XCTAssertTrue(snapshot.allItems[0].isMissing)
+    // The snapshot never probes the source path; the catalog's bounded workers
+    // decide presence later.
+    XCTAssertFalse(snapshot.allItems[0].isMissing)
     XCTAssertTrue(snapshot.allItems[0].isFinished)
-    XCTAssertNil(snapshot.hero)
+    XCTAssertEqual(snapshot.hero?.url, url)
     let hidden = LibraryModel.snapshot(history: [entry], recent: [], lastPlayed: url,
       hidden: [url.standardizedFileURL.path], watched: [:])
     XCTAssertTrue(hidden.allItems.isEmpty)

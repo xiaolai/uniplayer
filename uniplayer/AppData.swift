@@ -153,6 +153,7 @@ extension Notification.Name {
   static let iinaKeyBindingInputChanged = Notification.Name("UniPlayerKeyBindingInputChanged")
   static let iinaFileLoaded = Notification.Name("UniPlayerFileLoaded")
   static let iinaHistoryUpdated = Notification.Name("UniPlayerHistoryUpdated")
+  static let iinaPlaybackHistoryCleared = Notification.Name("UniPlayerPlaybackHistoryCleared")
   static let iinaLegacyFullScreen = Notification.Name("UniPlayerLegacyFullScreen")
   static let iinaGlobalKeyBindingsChanged = Notification.Name("iinaGlobalKeyBindingsChanged")
   static let iinaKeyBindingChanged = Notification.Name("iinaKeyBindingChanged")

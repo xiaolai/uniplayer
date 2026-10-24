@@ -213,6 +213,10 @@ class MenuController: NSObject, NSMenuDelegate {
   /// If `true` then all menu items are disabled.
   private var isDisabled = false
 
+  /// The programmatic Sources menu. It is rebuilt on open so the feature flag
+  /// and saved sources are always current without editing MainMenu.xib.
+  private var sourcesMenu: NSMenu?
+
   // MARK: - Construct Menus
 
   func bindMenuItems() {
@@ -227,6 +231,7 @@ class MenuController: NSObject, NSMenuDelegate {
     configureAudioMenu()
     configureSubtitleMenu()
     configureWindowMenu()
+    configureSourcesMenu()
     configureHelpMenu()
   }
 
@@ -470,8 +475,58 @@ class MenuController: NSObject, NSMenuDelegate {
     NSApp.windowsMenu?.addItem(openInLibrary)
   }
 
+  private func configureSourcesMenu() {
+    guard let mainMenu = NSApp.mainMenu else { return }
+    let menu = NSMenu(title: NSLocalizedString("Sources", comment: "Sources menu"))
+    menu.delegate = self
+    sourcesMenu = menu
+    let top = NSMenuItem(title: NSLocalizedString("Sources", comment: "Sources menu"),
+                         action: nil, keyEquivalent: "")
+    top.submenu = menu
+    let index = mainMenu.items.firstIndex(where: { $0.submenu === fileMenu })
+      ?? mainMenu.items.count
+    mainMenu.insertItem(top, at: min(index + 1, mainMenu.items.count))
+
+    if let fileMenu {
+      let add = NSMenuItem(
+        title: NSLocalizedString("Add Source…", comment: "File menu"),
+        action: #selector(AppDelegate.addMediaSource(_:)),
+        keyEquivalent: "")
+      add.target = AppDelegate.shared
+      fileMenu.addItem(add)
+    }
+    updateSourcesMenu()
+  }
+
+  private func updateSourcesMenu() {
+    guard let menu = sourcesMenu else { return }
+    menu.removeAllItems()
+    if MediaSourcesFeature.isEnabled {
+      let add = NSMenuItem(
+        title: NSLocalizedString("Add Folder…", comment: "Sources menu"),
+        action: #selector(AppDelegate.addMediaSource(_:)), keyEquivalent: "")
+      add.target = AppDelegate.shared
+      menu.addItem(add)
+      let show = NSMenuItem(
+        title: NSLocalizedString("Show Sources", comment: "Sources menu"),
+        action: #selector(AppDelegate.showMediaSources(_:)), keyEquivalent: "")
+      show.target = AppDelegate.shared
+      menu.addItem(show)
+      let disable = NSMenuItem(
+        title: NSLocalizedString("Disable Media Sources (Beta)", comment: "Sources menu"),
+        action: #selector(AppDelegate.disableMediaSources(_:)), keyEquivalent: "")
+      disable.target = AppDelegate.shared
+      menu.addItem(disable)
+    } else {
+      let enable = NSMenuItem(
+        title: NSLocalizedString("Enable Media Sources (Beta)", comment: "Sources menu"),
+        action: #selector(AppDelegate.enableMediaSources(_:)), keyEquivalent: "")
+      enable.target = AppDelegate.shared
+      menu.addItem(enable)
+    }
+  }
+
   private func configureHelpMenu() {
-    
     helpMenu.delegate = self
     useNewSettingsWindow.action = #selector(AppDelegate.toggleNewSettings)
 
@@ -839,6 +894,10 @@ class MenuController: NSObject, NSMenuDelegate {
   func menuWillOpen(_ menu: NSMenu) {
     // If all menu items are disabled do not update the menus.
     guard !isDisabled else { return }
+    if menu === sourcesMenu {
+      updateSourcesMenu()
+      return
+    }
     switch menu {
     case fileMenu:
       updateOpenMenuItems()
@@ -1036,17 +1095,27 @@ class MenuController: NSObject, NSMenuDelegate {
     }
   }
 
+  /// Enabled states captured when menus were disabled, restored in order.
+  /// Plugin menu items manage their own enabled state, so re-enabling must not
+  /// force every item on.
+  private var preservedMenuStates: [(item: NSMenuItem, enabled: Bool)] = []
+
   /// Disable all menu items.
   ///
   /// This method is used during application termination to stop any further input from the user and when displaying alerts.
   func disableAllMenus() {
+    let alreadyDisabled = isDisabled
     isDisabled = true
-    setIsEnabledInAllMenuItems(NSApp.mainMenu!, false)
+    if !alreadyDisabled { preservedMenuStates.removeAll() }
+    setIsEnabledInAllMenuItems(NSApp.mainMenu!, false, record: !alreadyDisabled)
   }
 
   func enableAllMenus() {
     isDisabled = false
-    setIsEnabledInAllMenuItems(NSApp.mainMenu!, true)
+    for preserved in preservedMenuStates {
+      preserved.item.isEnabled = preserved.enabled
+    }
+    preservedMenuStates.removeAll()
   }
 
   /// Set `isEnabled` to the given value in all menu items in the given menu and any submenus.
@@ -1054,10 +1123,15 @@ class MenuController: NSObject, NSMenuDelegate {
   /// This method recursively descends through the entire tree of menu items setting `isEnabled` in all items.
   /// - Parameter menu: Menu to disable or enable.
   /// - Parameter value: Value to set `isEnabled` to.
-  private func setIsEnabledInAllMenuItems(_ menu: NSMenu, _ value: Bool) {
+  /// - Parameter record: Capture each item's prior state for `enableAllMenus`.
+  private func setIsEnabledInAllMenuItems(_ menu: NSMenu, _ value: Bool,
+                                          record: Bool = false) {
     for item in menu.items {
       if item.hasSubmenu {
-        setIsEnabledInAllMenuItems(item.submenu!, value)
+        setIsEnabledInAllMenuItems(item.submenu!, value, record: record)
+      }
+      if record {
+        preservedMenuStates.append((item, item.isEnabled))
       }
       item.isEnabled = value
     }

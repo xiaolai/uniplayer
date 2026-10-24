@@ -16,6 +16,18 @@ fileprivate let KeyAddedDate = "UniPlayerPHDate"
 fileprivate let KeyDuration = "UniPlayerPHDuration"
 fileprivate let KeyTitle = "UniPlayerPHTitle"
 
+/// An immutable copy of one history entry, for readers that escape the
+/// history lock. The stored object stays mutable and owned by the controller.
+struct PlaybackHistorySnapshot: Sendable, Equatable {
+  var url: URL
+  var name: String
+  var played: Bool
+  var addedDate: Date
+  var duration: Double
+  var progress: Double?
+  var title: String?
+}
+
 /// An entry in the playback history file.
 /// - Important: This class conforms to [NSSecureCoding](https://developer.apple.com/documentation/foundation/nssecurecoding).
 ///     When making changes be certain the requirements for secure coding are not violated by the changes.
@@ -99,5 +111,11 @@ class PlaybackHistory: NSObject, NSSecureCoding {
     aCoder.encode(addedDate, forKey: KeyAddedDate)
     aCoder.encode(duration.second, forKey: KeyDuration)
     aCoder.encode(title, forKey: KeyTitle)
+  }
+
+  var snapshot: PlaybackHistorySnapshot {
+    PlaybackHistorySnapshot(
+      url: url, name: name, played: played, addedDate: addedDate,
+      duration: duration.second, progress: mpvProgress?.second, title: title)
   }
 }
