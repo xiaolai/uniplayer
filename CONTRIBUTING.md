@@ -84,3 +84,16 @@ surface and are listed under "Coverage" in the ledger.
 The translations in `uniplayer/*.lproj` come from the upstream project. Do not edit
 translations that you did not write; add or change English strings in `Base.lproj`
 and `en.lproj`.
+
+## Local subtitle-service credentials
+
+Subtitle-service credentials are supplied locally. OpenSubtitles reads
+`UNIPLAYER_OPENSUBTITLES_API_KEY` from the launch environment, or the generic
+Keychain item with service `UniPlayer OpenSubtitles Application API Key` and
+account `application`. The supplied value is the actual application key.
+Assrt requires your own token through its existing token prompt or settings.
+No shared application credential is bundled.
+
+Use synthetic media and reserved example domains in tests and public evidence.
+Keep machine paths, viewing history, account sessions and private screenshots out
+of source, commit messages, release notes and CI artifacts.

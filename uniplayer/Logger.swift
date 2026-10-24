@@ -226,6 +226,14 @@ class Logger: NSObject {
     return "\(time) [\(subsystem.rawValue)][\(level.shortForm)] \(message)\(appendNewlineAtTheEnd ? "\n" : "")"
   }
 
+  /// Removes media locators before they reach the console, memory buffer or disk.
+  static func redactedMessage(_ message: String) -> String {
+    let urls = #"(?i)\b(?:https?|ftp|smb|nfs|rtsp|rtmp|file)://[^\s<>"']+"#
+    let paths = #"/(?:Users|home|Volumes|private|tmp|mnt|var/folders)/[^\r\n]*"#
+    return message.replacingOccurrences(of: urls, with: "[redacted URL]", options: .regularExpression)
+      .replacingOccurrences(of: paths, with: "[redacted path]", options: .regularExpression)
+  }
+
   /// Whether the logger is emitting messages at the given level.
   /// - Parameter level: The log level to check.
   /// - Returns: `true` if messages at the given level will be emitted; `false` if the logger is suppressing messages at this level.
@@ -275,7 +283,7 @@ class Logger: NSObject {
 
     // Now that we know the message will not be discarded, call the closure to construct the message
     // string to log.
-    let message = message()
+    let message = redactedMessage(message())
 
     let date = Date()
     let string = formatMessage(message, level, subsystem, true, date)

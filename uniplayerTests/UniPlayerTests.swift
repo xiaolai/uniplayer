@@ -228,6 +228,33 @@ final class UniPlayerTests: XCTestCase {
     XCTAssertTrue(store.channels.isEmpty)
   }
 
+  // MARK: - Private diagnostic data
+
+  func testDiagnosticRedactionRemovesAuthenticatedURLsAndLocalPaths() {
+    let message = "Open https://user:fixture@example.test/video?token=fixture#position and file:///tmp/Private%20Movie.mkv"
+    let redacted = Logger.redactedMessage(message)
+    for value in ["user", "fixture", "example.test", "Private", "token", "position"] {
+      XCTAssertFalse(redacted.contains(value))
+    }
+    XCTAssertEqual(Logger.redactedMessage("Opening /Users/example/Movies/Private Movie.mkv"),
+                   "Opening [redacted path]")
+    XCTAssertEqual(Logger.redactedMessage("Read 3 history entries"), "Read 3 history entries")
+  }
+
+  func testHistoryDescriptionDoesNotExposeViewingDetails() {
+    let entry = PlaybackHistory(url: URL(string: "https://example.test/private?token=fixture")!,
+                                duration: 120, title: "Private Title", mpvMd5: "fixture")
+    XCTAssertEqual(entry.description, "Playback history entry")
+  }
+
+  func testSubtitleApplicationHeadersRequireAnExplicitKey() throws {
+    XCTAssertThrowsError(try OpenSubClient.applicationHeaders(apiKey: "", userAgent: "fixture"))
+    XCTAssertThrowsError(try OpenSubClient.applicationHeaders(apiKey: "  ", userAgent: "fixture"))
+    let headers = try OpenSubClient.applicationHeaders(apiKey: "fixture-key", userAgent: "fixture")
+    XCTAssertEqual(headers["Api-Key"], "fixture-key")
+    XCTAssertEqual(headers["User-Agent"], "fixture")
+  }
+
   // MARK: - Permission boundaries
 
   func testHostAllowlistMatchesExactAndWildcardDomains() {

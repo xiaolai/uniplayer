@@ -36,12 +36,6 @@ class PlaybackHistory: NSObject, NSSecureCoding {
   /// Indicate this class supports secure coding.
   static var supportsSecureCoding: Bool { true }
 
-  private static let dateFormatter: DateFormatter = {
-    let dateFormatter = DateFormatter()
-    dateFormatter.dateFormat = "MM/dd/yyyy HH:mm:ss"
-    return dateFormatter
-  }()
-
   var url: URL
   var name: String
   var mpvMd5: String
@@ -55,17 +49,7 @@ class PlaybackHistory: NSObject, NSSecureCoding {
   var title: String?
 
   /// A description of this playback history entry suitable to include in a log message.
-  override var description: String {
-    var description = """
-      added: \(PlaybackHistory.dateFormatter.string(from: addedDate)) \
-      duration: \(duration.stringRepresentation)
-      """
-    if let mpvProgress { description += " progress: \(mpvProgress.stringRepresentation)" }
-    description += "\n  \(url)"
-    if let title { description += "\n  \(title)" }
-    description += "\n  MD5: \(mpvMd5)"
-    return description
-  }
+  override var description: String { "Playback history entry" }
 
   required init?(coder aDecoder: NSCoder) {
     guard

@@ -38,7 +38,7 @@ import PromiseKit
 /// as:
 /// - The HTTP [User-Agent](https://en.wikipedia.org/wiki/User-Agent_header) request header is hardcoded to UniPlayer
 /// - The HTTP [Api-Key](https://opensubtitles.stoplight.io/docs/opensubtitles-api/e3750fd63a100-getting-started#api-key)
-/// request header is hardcoded to UniPlayer's key
+/// request header uses a locally configured application key
 /// - Only the REST API methods used by UniPlayer are supported
 /// - Only the method features used by UniPlayer are supported
 /// - UniPlayer's logger is used for debug logging
@@ -99,13 +99,11 @@ class OpenSubClient {
   /// Hostname to initially use to access the REST API.
   private let apiDefaultHostname = "api.opensubtitles.com"
 
-  /// Official UniPlayer [Open Subtitles](https://www.opensubtitles.com/)
-  /// [API key](https://opensubtitles.stoplight.io/docs/opensubtitles-api/e3750fd63a100-getting-started#api-key).
-  ///
-  /// The API key identifies the _application_ using the
-  /// [REST API](https://opensubtitles.stoplight.io/docs/opensubtitles-api/e3750fd63a100-getting-started),
-  /// not the  [Open Subtitles](https://www.opensubtitles.com/) user.
-  private let apiKey = "REDACTED"
+  /// Application credentials are supplied locally, never distributed in source.
+  private var apiKey: String {
+    ProcessInfo.processInfo.environment["UNIPLAYER_OPENSUBTITLES_API_KEY"] ??
+      ((try? KeychainAccess.read(username: "application", forService: .openSubAPIKey))?.password ?? "")
+  }
 
   /// [JSON decoder](https://developer.apple.com/documentation/foundation/jsondecoder) properly configured
   /// to decode responses from API methods.
@@ -185,7 +183,7 @@ class OpenSubClient {
       Promise { resolver in
         let data = ["file_id": String(fileId)]
         let url = apiURL("download")
-        Just.post(url, data: data, headers: formHeaders(), asyncCompletionHandler: { [self] result in
+        Just.post(url, data: data, headers: try formHeaders(), asyncCompletionHandler: { [self] result in
           logHTTPResult(result)
           do {
             let response = try decodeResponse(DownloadResponse.self, from: result)
@@ -210,7 +208,7 @@ class OpenSubClient {
   func downloadFileContents(_ url: URL) -> Promise<Data> {
     return after(seconds: rateLimiter.delayBeforeCall()).then { [self] in
       Promise { resolver in
-        Just.get(url, headers: formHeaders(), asyncCompletionHandler: { [self] result in
+        Just.get(url, headers: try formHeaders(), asyncCompletionHandler: { [self] result in
           logHTTPResult(result)
           if let error = result.error {
             resolver.reject(error)
@@ -249,7 +247,7 @@ class OpenSubClient {
     return after(seconds: rateLimiter.delayBeforeCall()).then { [self] in
       Promise { resolver in
         let url = apiURL("infos/languages")
-        Just.get(url, headers: formHeaders(), asyncCompletionHandler: { [self] result in
+        Just.get(url, headers: try formHeaders(), asyncCompletionHandler: { [self] result in
           logHTTPResult(result)
           do {
             let response = try self.decodeResponse(LanguagesResponse.self, from: result)
@@ -289,7 +287,7 @@ class OpenSubClient {
       Promise { resolver in
         let data = ["username": username, "password": password]
         let url = apiURL("login")
-        Just.post(url, data: data, headers: formHeaders(), asyncCompletionHandler: { [self] result in
+        Just.post(url, data: data, headers: try formHeaders(), asyncCompletionHandler: { [self] result in
           logHTTPResult(result)
           do {
             let response = try self.decodeResponse(LoginResponse.self, from: result)
@@ -323,7 +321,7 @@ class OpenSubClient {
   func logout(timeout: TimeInterval? = nil) -> Promise<LogoutResponse> {
     return after(seconds: rateLimiter.delayBeforeCall()).then { [self] in
       Promise { resolver in
-        let headers = formHeaders()
+        let headers = try formHeaders()
         let url = apiURL("logout")
         Just.delete(url, headers: headers, timeout: timeout, asyncCompletionHandler: { [self] result in
           logHTTPResult(result)
@@ -371,7 +369,7 @@ class OpenSubClient {
           params["query"] = query
         }
         let url = apiURL("subtitles")
-        Just.get(url, params: params, headers: formHeaders(), asyncCompletionHandler: { [self] result in
+        Just.get(url, params: params, headers: try formHeaders(), asyncCompletionHandler: { [self] result in
           logHTTPResult(result)
           do {
             let response = try self.decodeResponse(SubtitlesResponse.self, from: result)
@@ -505,9 +503,18 @@ class OpenSubClient {
   /// These are the headers shown in the [Getting Started](https://opensubtitles.stoplight.io/docs/opensubtitles-api/e3750fd63a100-getting-started)
   /// section of the REST API documentation.
   /// - Returns: Dictionary containing the headers.
-  private func formHeaders() -> [String: String] {
-    var headers = ["Accept": "*/*", "Api-Key": String(apiKey.reversed()),
-                   "Content-Type": "application/json", "User-Agent": userAgent]
+  static func applicationHeaders(apiKey: String, userAgent: String) throws -> [String: String] {
+    let key = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !key.isEmpty else {
+      throw Error.callFailed(statusCode: nil,
+                             message: NSLocalizedString("An OpenSubtitles application API key has not been configured.", comment: ""))
+    }
+    return ["Accept": "*/*", "Api-Key": key,
+            "Content-Type": "application/json", "User-Agent": userAgent]
+  }
+
+  private func formHeaders() throws -> [String: String] {
+    var headers = try Self.applicationHeaders(apiKey: apiKey, userAgent: userAgent)
     guard let token = token else { return headers }
     headers["Authorization"] = "Bearer \(token)"
     return headers

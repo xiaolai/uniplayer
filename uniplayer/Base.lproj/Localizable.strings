@@ -1459,3 +1459,5 @@
 "Speech recognition failed: %@" = "Speech recognition failed: %@";
 "The selected external audio track could not be found." = "The selected external audio track could not be found.";
 "settings.liveTranslation.note" = "Speech models and translation packs are on-device system assets and work without Apple Intelligence. Audio never leaves the Mac. Recognized text stays on this Mac only when on-device translation is used and AI repair is off; AI repair (on by default) sends flagged lines, and the AI fallback sends every translated line, to your configured provider.";
+
+"An OpenSubtitles application API key has not been configured." = "An OpenSubtitles application API key has not been configured.";

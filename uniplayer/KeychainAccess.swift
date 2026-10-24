@@ -28,6 +28,7 @@ class KeychainAccess {
       self.init(rawValue: rawValue)
     }
 
+    static let openSubAPIKey = ServiceName(rawValue: "UniPlayer OpenSubtitles Application API Key")
     static let openSubAccount = ServiceName(rawValue: "UniPlayer OpenSubtitles Account")
     static let httpAuth = ServiceName(rawValue: "UniPlayer Saved HTTP Password")
     static let assistantAPIKey = ServiceName(rawValue: "UniPlayer Assistant API Key")

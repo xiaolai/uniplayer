@@ -37,7 +37,7 @@
 
 Validation: 62 native tests and 22 checker tests passed on the review source;
 Release build, token/browser/localization checks and live playback/geometry
-checks passed on validation-host. Intel binaries are built but have not been run
+checks passed on the validation Mac. Intel binaries are built but have not been run
 on Intel hardware. Attended accessibility, HDR/DRM and multi-display hardware
 acceptance remain outside the tested scope. Builds are ad hoc signed and not
 notarized.
