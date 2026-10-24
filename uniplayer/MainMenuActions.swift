@@ -390,6 +390,11 @@ extension MainMenuActionHandler {
     player.toggleSecondSubVisibility()
   }
 
+  @objc func menuToggleSubtitleTranslation(_ sender: NSMenuItem) {
+    player.subtitleTranslation.userSetEnabled(!player.subtitleTranslation.isEnabled)
+    sender.state = player.subtitleTranslation.isEnabled ? .on : .off
+  }
+
   @objc func menuChangeSubDelay(_ sender: NSMenuItem) {
     if let delayDelta = sender.representedObject as? Double {
       let newDelay = player.info.subDelay + delayDelta
@@ -514,6 +519,9 @@ extension MainMenuActionHandler {
     case #selector(menuToggleLibraryFocus(_:)):
       menuItem.state = player.initialWindow.isFocusMode ? .on : .off
       return player.initialWindow.supportsFocusMode
+    case #selector(menuToggleSubtitleTranslation(_:)):
+      menuItem.state = player.subtitleTranslation.isEnabled ? .on : .off
+      return player.info.state.active
     default:
       break
     }

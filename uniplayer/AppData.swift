@@ -149,6 +149,7 @@ extension Notification.Name {
   static let iinaSubPositionChanged = Notification.Name("iinaSubPositionChanged")
   static let iinaSubDelayChanged = Notification.Name("iinaSubDelayChanged")
   static let iinaSubVisibilityChanged = Notification.Name("iinaSubVisibilityChanged")
+  static let iinaSubtitleTranslationChanged = Notification.Name("UniPlayerSubtitleTranslationChanged")
 
   static let iinaKeyBindingInputChanged = Notification.Name("UniPlayerKeyBindingInputChanged")
   static let iinaFileLoaded = Notification.Name("UniPlayerFileLoaded")

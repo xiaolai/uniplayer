@@ -153,6 +153,7 @@ class MPVController: NSObject {
     MPVOption.Window.ontop: MPV_FORMAT_FLAG,
     MPVOption.Window.windowScale: MPV_FORMAT_DOUBLE,
     MPVProperty.mediaTitle: MPV_FORMAT_STRING,
+    MPVProperty.subText: MPV_FORMAT_STRING,
     MPVProperty.videoParamsRotate: MPV_FORMAT_INT64,
     MPVProperty.videoParamsPrimaries: MPV_FORMAT_STRING,
     MPVProperty.videoParamsGamma: MPV_FORMAT_STRING,
@@ -1564,6 +1565,12 @@ class MPVController: NSObject {
 
     case MPVProperty.mediaTitle:
       DispatchQueue.main.async { self.player.mediaTitleChanged() }
+
+    case MPVProperty.subText:
+      // `sub-text` changes only when a new line is displayed. Reading it here
+      // keeps a single event per line instead of one per text fragment.
+      let text = propertyString(property) ?? ""
+      DispatchQueue.main.async { self.player.subTextChanged(text) }
 
     case MPVProperty.idleActive:
       guard let idleActive = propertyFlag(property) else {

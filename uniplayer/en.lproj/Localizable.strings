@@ -1348,3 +1348,17 @@
 "Opening video…" = "Opening video…";
 "The plugin could not be downloaded. Check the URL and your connection, then try again." = "The plugin could not be downloaded. Check the URL and your connection, then try again.";
 "The plugin package could not be extracted. Download a fresh copy or choose another package." = "The plugin package could not be extracted. Download a fresh copy or choose another package.";
+
+/* AI subtitle translation */
+"Translate Subtitles with AI" = "Translate Subtitles with AI";
+"Select a text subtitle track to translate." = "Select a text subtitle track to translate.";
+"Image subtitles can’t be translated." = "Image subtitles can’t be translated.";
+"Set the AI provider in Settings › AI to translate subtitles." = "Set the AI provider in Settings › AI to translate subtitles.";
+"Subtitle translation is unavailable: %@" = "Subtitle translation is unavailable: %@";
+"Translating subtitles into %@" = "Translating subtitles into %@";
+"The AI provider did not return usable translated subtitles." = "The AI provider did not return usable translated subtitles.";
+"settings.assistant.translation.label" = "Subtitle Translation";
+"settings.subtitleTranslationEnabled.label" = "Translate subtitles with AI";
+"settings.subtitleTranslationEnabled.desc" = "Translates the active subtitle track with the provider above and follows the secondary subtitle position. Subtitle text is sent to that provider; video and audio are not.";
+"settings.subtitleTranslationLanguage.label" = "Translate into";
+"settings.subtitleTranslationLanguage.desc" = "A language name such as English, Chinese or Japanese. Leave empty to follow the system language.";

@@ -198,6 +198,7 @@ class MenuController: NSObject, NSMenuDelegate {
   @IBOutlet weak var findOnlineSub: NSMenuItem!
   @IBOutlet weak var onlineSubSourceMenu: NSMenu!
   @IBOutlet weak var saveDownloadedSub: NSMenuItem!
+  private var translateSubtitles: NSMenuItem!
   // Plugin
   @IBOutlet weak var pluginMenu: NSMenu!
   @IBOutlet weak var pluginMenuItem: NSMenuItem!
@@ -406,6 +407,19 @@ class MenuController: NSObject, NSMenuDelegate {
     saveDownloadedSub.action = #selector(MainMenuActionHandler.saveDownloadedSub(_:))
 
     onlineSubSourceMenu.delegate = self
+
+    // Built here rather than in the nib so the translated title can follow the
+    // app's localization table without a second menu resource.
+    let translateItem = NSMenuItem(
+      title: NSLocalizedString("Translate Subtitles with AI",
+                               comment: "Subtitles menu"),
+      action: #selector(MainMenuActionHandler.menuToggleSubtitleTranslation(_:)),
+      keyEquivalent: "")
+    translateSubtitles = translateItem
+    let anchor = subMenu.items.firstIndex(where: { $0 === saveDownloadedSub })
+      ?? (subMenu.numberOfItems - 1)
+    subMenu.insertItem(NSMenuItem.separator(), at: anchor + 1)
+    subMenu.insertItem(translateItem, at: anchor + 2)
 
     // - text size
     [increaseTextSize, decreaseTextSize, resetTextSize].forEach {
@@ -635,6 +649,7 @@ class MenuController: NSObject, NSMenuDelegate {
     let providerID = Preference.string(for: .onlineSubProvider) ?? OnlineSubtitle.Providers.openSub.id
     let providerName = OnlineSubtitle.Providers.nameForID(providerID)
     findOnlineSub.title = String(format: Constants.String.findOnlineSubtitles, providerName)
+    translateSubtitles?.state = player.subtitleTranslation.isEnabled ? .on : .off
   }
 
   private func updateOnlineSubSourceMenu() {

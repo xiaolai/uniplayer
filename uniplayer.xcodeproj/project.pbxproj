@@ -225,6 +225,11 @@
 		BB6000000000000000000002 /* AIInspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB6000000000000000000001 /* AIInspectorView.swift */; };
 		BB7000000000000000000002 /* AssistantTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB7000000000000000000001 /* AssistantTools.swift */; };
 		BB8000000000000000000002 /* SettingsPageAssistant.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB8000000000000000000001 /* SettingsPageAssistant.swift */; };
+		DD1000000000000000000002 /* SubtitleCue.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD1000000000000000000001 /* SubtitleCue.swift */; };
+		DD2000000000000000000002 /* SubtitleTranslator.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2000000000000000000001 /* SubtitleTranslator.swift */; };
+		DD3000000000000000000002 /* SubtitleTranslationOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD3000000000000000000001 /* SubtitleTranslationOverlay.swift */; };
+		DD4000000000000000000002 /* SubtitleTranslationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD4000000000000000000001 /* SubtitleTranslationController.swift */; };
+		DD9000000000000000000002 /* SubtitleTranslationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD9000000000000000000001 /* SubtitleTranslationTests.swift */; };
 		84A09A0E1F2DF596000FF343 /* MiniPlayerWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84A09A0C1F2DF596000FF343 /* MiniPlayerWindowController.swift */; };
 		84A0BA951D2F9E9600BC8DA1 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 84A0BA931D2F9E9600BC8DA1 /* MainMenu.xib */; };
 		84A0BA971D2FA1CE00BC8DA1 /* PlayerCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84A0BA961D2FA1CE00BC8DA1 /* PlayerCore.swift */; };
@@ -1330,6 +1335,11 @@
 		BB6000000000000000000001 /* AIInspectorView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AIInspectorView.swift; sourceTree = "<group>"; };
 		BB7000000000000000000001 /* AssistantTools.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AssistantTools.swift; sourceTree = "<group>"; };
 		BB8000000000000000000001 /* SettingsPageAssistant.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsPageAssistant.swift; sourceTree = "<group>"; };
+		DD1000000000000000000001 /* SubtitleCue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleCue.swift; sourceTree = "<group>"; };
+		DD2000000000000000000001 /* SubtitleTranslator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleTranslator.swift; sourceTree = "<group>"; };
+		DD3000000000000000000001 /* SubtitleTranslationOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleTranslationOverlay.swift; sourceTree = "<group>"; };
+		DD4000000000000000000001 /* SubtitleTranslationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleTranslationController.swift; sourceTree = "<group>"; };
+		DD9000000000000000000001 /* SubtitleTranslationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleTranslationTests.swift; sourceTree = "<group>"; };
 		8497A4831D2FF573005F504F /* uniplayer-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "uniplayer-Bridging-Header.h"; sourceTree = "<group>"; };
 		84A09A0C1F2DF596000FF343 /* MiniPlayerWindowController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MiniPlayerWindowController.swift; sourceTree = "<group>"; };
 		84A0BA941D2F9E9600BC8DA1 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
@@ -1931,6 +1941,7 @@
 			children = (
 				A10000000000000000000004 /* UniPlayerTests.swift */,
 				BB9000000000000000000001 /* InlinePlayerTests.swift */,
+				DD9000000000000000000001 /* SubtitleTranslationTests.swift */,
 			);
 			path = uniplayerTests;
 			sourceTree = "<group>";
@@ -2184,6 +2195,10 @@
 				BB6000000000000000000001 /* AIInspectorView.swift */,
 				BB7000000000000000000001 /* AssistantTools.swift */,
 				BB8000000000000000000001 /* SettingsPageAssistant.swift */,
+				DD1000000000000000000001 /* SubtitleCue.swift */,
+				DD2000000000000000000001 /* SubtitleTranslator.swift */,
+				DD3000000000000000000001 /* SubtitleTranslationOverlay.swift */,
+				DD4000000000000000000001 /* SubtitleTranslationController.swift */,
 				84A09A0C1F2DF596000FF343 /* MiniPlayerWindowController.swift */,
 				8F49C370213EFB7E0076C4F9 /* MiniPlayerWindowController.xib */,
 				E36E8D7A24F6052F00B8C097 /* GuideWindowController.swift */,
@@ -2971,6 +2986,7 @@
 			files = (
 				A10000000000000000000005 /* UniPlayerTests.swift in Sources */,
 				BB9000000000000000000002 /* InlinePlayerTests.swift in Sources */,
+				DD9000000000000000000002 /* SubtitleTranslationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3004,6 +3020,10 @@
 				BB6000000000000000000002 /* AIInspectorView.swift in Sources */,
 				BB7000000000000000000002 /* AssistantTools.swift in Sources */,
 				BB8000000000000000000002 /* SettingsPageAssistant.swift in Sources */,
+				DD1000000000000000000002 /* SubtitleCue.swift in Sources */,
+				DD2000000000000000000002 /* SubtitleTranslator.swift in Sources */,
+				DD3000000000000000000002 /* SubtitleTranslationOverlay.swift in Sources */,
+				DD4000000000000000000002 /* SubtitleTranslationController.swift in Sources */,
 				8461C52E1D45FFF6006E91FF /* PlaySliderCell.swift in Sources */,
 				84F5D4A21E4796F50060A838 /* KeyBindingTranslator.swift in Sources */,
 				E3DBD23E218EF4F100B3AFBF /* AboutWindowContributorAvatarItem.swift in Sources */,

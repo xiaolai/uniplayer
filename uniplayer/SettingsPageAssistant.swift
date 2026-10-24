@@ -49,6 +49,17 @@ final class SettingsPageAssistant: SettingsPage {
           SettingsItem.Custom().view(inset(privacyNote))
         }
       }
+      section {
+        SettingsList(title: SettingsLocalization.Key("assistant.translation.label")) {
+          SettingsItem.Switch()
+            .image(name: ["captions.bubble", "captions.bubble.fill"])
+            .bindTo(.subtitleTranslationEnabled)
+            .hasDescription()
+          SettingsItem.LongInput()
+            .bindTo(.subtitleTranslationLanguage)
+            .hasDescription()
+        }
+      }
     }
   }
 
