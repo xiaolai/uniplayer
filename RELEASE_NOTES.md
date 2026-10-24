@@ -1,5 +1,15 @@
 # Release notes
 
+## 0.2.1 (build 16)
+
+- Enforce dark appearance across native windows and titlebars, including older
+  saved light/system settings. Remove unsupported appearance choices.
+- Restore system toolbar search with native sizing and focus. Share the query
+  between legacy and media-source search while preserving customized toolbars.
+- Align the standalone player's top controls with the native traffic lights,
+  balance spacing around them, and center timeline contents. Preserve full-height
+  playback behind the transparent titlebar.
+
 ## 0.2.0 (build 15)
 
 - Saved local and mounted-share media sources, with folder browsing, indexed
