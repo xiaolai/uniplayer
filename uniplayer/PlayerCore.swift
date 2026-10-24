@@ -400,6 +400,10 @@ class PlayerCore: NSObject {
   /// "music mode" status again, change this to `false` so that the preference is honored again.
   var overrideAutoSwitchToMusicMode = false
 
+  /// True when the HUD was entered from the library's inline surface, so
+  /// leaving it returns there instead of to the standalone player window.
+  private var miniPlayerReturnsToInline = false
+
   var isSearchingOnlineSubtitle = false
 
   /// Subtitle files downloaded by the online-subtitle search this session.
@@ -1021,11 +1025,13 @@ class PlayerCore: NSObject {
   func switchToMiniPlayer(automatically: Bool = false, showMiniPlayer: Bool = true) {
     log("Switch to mini player, automatically=\(automatically)")
     guard !isInMiniPlayer else { return }
-    if isInline {
+    let wasInline = isInline
+    if wasInline {
       // The mini player is another window; inline ends first so the surface
       // travels through its one restore path rather than inline → mini.
       endInlinePresentation(showWindow: false)
     }
+    miniPlayerReturnsToInline = wasInline
     if !automatically {
       // Toggle manual override
       overrideAutoSwitchToMusicMode = !overrideAutoSwitchToMusicMode
@@ -1118,6 +1124,8 @@ class PlayerCore: NSObject {
   func switchBackFromMiniPlayer(automatically: Bool = false, showMainWindow: Bool = true) {
     log("Switch to normal window from mini player, automatically=\(automatically)")
     guard isInMiniPlayer else { return }
+    let returnInline = miniPlayerReturnsToInline && !automatically && showMainWindow
+    miniPlayerReturnsToInline = false
     if !automatically {
       overrideAutoSwitchToMusicMode = !overrideAutoSwitchToMusicMode
       Logger.log("Changed overrideAutoSwitchToMusicMode to \(overrideAutoSwitchToMusicMode)",
@@ -1135,8 +1143,8 @@ class PlayerCore: NSObject {
     miniPlayer.window?.orderOut(nil)
     isInMiniPlayer = false
 
-    mainWindow.pendingShow = true
-    if showMainWindow {
+    mainWindow.pendingShow = !returnInline && showMainWindow
+    if showMainWindow && !returnInline {
       currentController.setupUI()
       mainWindow.updateTitle()
       notifyWindowVideoSizeChanged()
@@ -1146,6 +1154,12 @@ class PlayerCore: NSObject {
     mainWindow.liveText.requestAnalysis()
     postNotification(.iinaMusicModeChanged)
     events.emit(.musicModeChanged, data: false)
+
+    if returnInline {
+      initialWindow.showWindow(nil)
+      initialWindow.window?.makeKeyAndOrderFront(nil)
+      presentInline(in: initialWindow.inlineHost)
+    }
   }
 
   // MARK: - Inline presentation
@@ -3081,7 +3095,7 @@ class PlayerCore: NSObject {
         switchToMiniPlayer(automatically: true, showMiniPlayer: false)
       } else if audioStatus == .notAudio && isInMiniPlayer {
         log("Current media is not audio: auto-switching to normal window")
-        switchBackFromMiniPlayer(automatically: true, showMainWindow: false)
+        switchBackFromMiniPlayer(automatically: true, showMainWindow: true)
       }
     }
 

@@ -14,10 +14,6 @@ extension MiniPlayerWindowController {
     setWindowFloatingOnTop(!isOntop)
   }
 
-  @objc func menuSwitchToMiniPlayer(_ sender: NSMenuItem) {
-    player.switchBackFromMiniPlayer()
-  }
-
   @objc func menuShowPlaylistPanel(_ sender: NSMenuItem) {
     showPlaylistAction(.playlist)
   }

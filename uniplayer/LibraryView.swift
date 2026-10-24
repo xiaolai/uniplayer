@@ -1602,14 +1602,14 @@ private struct DetailView: View {
             .help(item.isResumable ? L("Resume") : L("Play"))
           } else {
             Button(action: openInNewWindow) {
-              Label(L("Open in New Window"), systemImage: "macwindow.on.rectangle")
+              Label(L("Open in Player Window"), systemImage: "macwindow.on.rectangle")
                 .font(Tokens.Typography.button.scaledFont(textScale))
                 .padding(.horizontal, Tokens.Space.n20)
                 .padding(.vertical, Tokens.Space.n10)
             }
             .buttonStyle(.bordered)
-            .accessibilityLabel(L("Open in New Window"))
-            .help(L("Open in New Window"))
+            .accessibilityLabel(L("Open in Player Window"))
+            .help(L("Open in Player Window"))
           }
 
     }

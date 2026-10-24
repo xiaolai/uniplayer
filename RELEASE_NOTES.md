@@ -1,5 +1,20 @@
 # Release notes
 
+## 0.2.4 (build 19)
+
+- Route the library player's pop-out control by media type. Audio opens the
+  compact HUD; video opens the standalone player window, with a matching
+  out-of-window icon and label.
+- The Video menu follows the same rule: audio switches to the HUD, video opens
+  the player window, and the item is disabled when a video is already there.
+- Leaving the HUD returns to where it was entered: the library inline when it
+  came from there, otherwise the player window. A video that reaches the HUD
+  now leaves to the visible player window.
+- Rename the remaining “Open in New Window” actions to “Open in Player Window”.
+  The HUD back control now says “Return to Player”.
+- The UniPlayer HUD Finder handler sends audio to the HUD and video to the
+  standalone player window.
+
 ## 0.2.3 (build 18)
 
 - Group the library's leading toolbar controls into three native groups:

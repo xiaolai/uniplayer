@@ -30,6 +30,18 @@ class MainMenuActionHandler: NSResponder, NSMenuItemValidation {
     player.initialWindow.showWindow(nil)
     DispatchQueue.main.async { self.player.initialWindow.menuSearchLibrary(sender) }
   }
+
+  /// The compact HUD is an audio presentation. Video leaves the library for
+  /// the standalone player window instead.
+  @objc func menuSwitchToMiniPlayer(_ sender: Any?) {
+    if player.isInMiniPlayer {
+      player.switchBackFromMiniPlayer()
+    } else if player.info.isAudio == .isAudio {
+      player.switchToMiniPlayer()
+    } else if player.isInline {
+      player.initialWindow.openInNewWindow()
+    }
+  }
   @objc func menuToggleLibraryFocus(_ sender: Any?) { player.initialWindow.menuToggleFocusMode(sender) }
 
   @objc func menuShowInspector(_ sender: AnyObject) {
@@ -573,6 +585,10 @@ extension MainMenuActionHandler {
       return player.info.currentURL != nil && !player.info.isNetworkResource
     case #selector(menuReturnToInline(_:)):
       return !player.isInline && player.info.state.active
+    case #selector(menuSwitchToMiniPlayer(_:)):
+      if player.isInMiniPlayer { return true }
+      if player.info.isAudio == .isAudio { return player.info.state.active }
+      return player.isInline
     case #selector(menuToggleLibraryFocus(_:)):
       menuItem.state = player.initialWindow.isFocusMode ? .on : .off
       return player.initialWindow.supportsFocusMode

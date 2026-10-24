@@ -489,7 +489,7 @@ class MenuController: NSObject, NSMenuDelegate {
       }
     }
 
-    miniPlayer.action = #selector(MainWindowController.menuSwitchToMiniPlayer(_:))
+    miniPlayer.action = #selector(MainMenuActionHandler.menuSwitchToMiniPlayer(_:))
 
     // Present the playing file in the library detail again. Kept next to the
     // music mode item because both change where the surface lives.
@@ -652,7 +652,13 @@ class MenuController: NSObject, NSMenuDelegate {
     deinterlace.state = player.info.deinterlace ? .on : .off
     fullScreen.title = isInFullScreen ? Constants.String.exitFullScreen : Constants.String.fullScreen
     pictureInPicture?.title = isInPIP ? Constants.String.exitPIP : Constants.String.pip
-    miniPlayer.title = player.isInMiniPlayer ? Constants.String.exitMiniPlayer : Constants.String.miniPlayer
+    if player.isInMiniPlayer {
+      miniPlayer.title = Constants.String.exitMiniPlayer
+    } else if player.info.isAudio == .isAudio {
+      miniPlayer.title = Constants.String.miniPlayer
+    } else {
+      miniPlayer.title = Constants.String.openPlayerWindow
+    }
     delogo.state = isDelogo ? .on : .off
   }
 

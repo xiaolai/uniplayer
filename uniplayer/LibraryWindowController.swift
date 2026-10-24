@@ -624,16 +624,6 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
     toggleFocusMode()
   }
 
-  @objc func menuSwitchToMiniPlayer(_ sender: Any?) {
-    // The menu item is a toggle; the library does not know which window was
-    // key when the mini player took over, so decide from the player state.
-    if player.isInMiniPlayer {
-      player.switchBackFromMiniPlayer()
-    } else {
-      player.switchToMiniPlayer()
-    }
-  }
-
   func toggleFocusMode() {
     guard let window else { return }
     if isFocusMode {

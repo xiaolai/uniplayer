@@ -200,6 +200,7 @@
 "menu.exit_pip" = "Exit Picture-in-Picture";
 "menu.mini_player" = "Switch to HUD Window";
 "menu.exit_mini_player" = "Exit HUD Window";
+"menu.open_player_window" = "Open in Player Window";
 "menu.pause" = "Pause";
 "menu.resume" = "Resume";
 "menu.speed" = "Speed: %@x";
@@ -444,7 +445,7 @@
 "mini_player.delete" = "Delete all tracks from playlist";
 "mini_player.volume" = "Volume";
 "mini_player.close" = "Close HUD window";
-"mini_player.back" = "Return to video mode";
+"mini_player.back" = "Return to Player";
 "mini_player.sort" = "Sort the playlist";
 
 // Touch bar

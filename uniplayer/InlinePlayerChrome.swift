@@ -53,6 +53,7 @@ final class InlinePlayerModel: ObservableObject {
   @Published private(set) var isMuted = false
   @Published private(set) var speed: Double = 1
   @Published private(set) var currentURL: URL?
+  @Published private(set) var isAudio = false
   @Published private(set) var audioTracks: [MPVTrack] = []
   @Published private(set) var subTracks: [MPVTrack] = []
   @Published private(set) var selectedAudioID: Int?
@@ -161,6 +162,7 @@ final class InlinePlayerModel: ObservableObject {
     subtitleTranslationEnabled = player.subtitleTranslation.isEnabled
     refreshLiveTranslation()
     currentURL = info.currentURL
+    isAudio = info.isAudio == .isAudio
     if let provider = fullscreenProvider {
       isFullscreen = provider()
     }
@@ -356,9 +358,14 @@ final class InlinePlayerModel: ObservableObject {
     onToggleFullscreen?()
   }
 
-  /// Moves the same playback surface to the HUD (Music Mode) window.
-  func switchToHUDWindow() {
-    player.switchToMiniPlayer()
+  /// Moves playback out of the library. Audio uses the compact HUD; video uses
+  /// the standalone player window, where the video has the full player chrome.
+  func openDetachedWindow() {
+    if isAudio {
+      player.switchToMiniPlayer()
+    } else {
+      onOpenInNewWindow?()
+    }
   }
 
   // MARK: Navigation lifecycle
@@ -484,8 +491,11 @@ struct InlinePlayerChrome: View {
             .popover(isPresented: $detailsPresented) { details }
         }
         utilityButtons
-        controlButton("music.note", label: inlineL("Switch to HUD Window")) {
-          model.switchToHUDWindow()
+        controlButton(model.isAudio ? "music.note" : "rectangle.portrait.and.arrow.right",
+                      label: model.isAudio
+                        ? inlineL("Switch to HUD Window")
+                        : inlineL("Open in Player Window")) {
+          model.openDetachedWindow()
         }
         fullscreenButton
       }
@@ -596,7 +606,7 @@ struct InlinePlayerChrome: View {
       .accessibilityLabel(inlineL("Live Translation Settings…"))
       Divider()
       speedMenu
-      Button(inlineL("Open in New Window")) { model.onOpenInNewWindow?() }    } label: {
+      Button(inlineL("Open in Player Window")) { model.onOpenInNewWindow?() }    } label: {
       Image(systemName: "ellipsis")
         .frame(width: Tokens.Library.glassControlSize, height: Tokens.Library.glassControlSize)
     }
