@@ -8,6 +8,7 @@
 
 import Combine
 import Foundation
+import SwiftUI
 
 struct Channel: Codable, Identifiable, Hashable {
   let id: String
@@ -100,6 +101,26 @@ final class ChannelStore: ObservableObject {
     if channels.count != oldCount {
       save()
     }
+  }
+
+  /// Uses the insertion offsets supplied by the sidebar's native move action.
+  func move(fromOffsets source: IndexSet, toOffset destination: Int) {
+    guard !source.isEmpty,
+          source.allSatisfy({ channels.indices.contains($0) }),
+          (0...channels.count).contains(destination) else { return }
+    var reordered = channels
+    reordered.move(fromOffsets: source, toOffset: destination)
+    guard reordered != channels else { return }
+    channels = reordered
+    save()
+  }
+
+  /// The context menu uses the same persisted move as drag and drop.
+  func move(id: String, by distance: Int) {
+    guard let index = channels.firstIndex(where: { $0.id == id }) else { return }
+    let (target, overflow) = index.addingReportingOverflow(distance)
+    guard !overflow, channels.indices.contains(target) else { return }
+    move(fromOffsets: IndexSet(integer: index), toOffset: target > index ? target + 1 : target)
   }
 
   private func load() {

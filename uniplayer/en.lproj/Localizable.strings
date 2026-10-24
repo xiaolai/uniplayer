@@ -1093,6 +1093,8 @@
 "Add Channel…" = "Add Channel…";
 "Edit Channel…" = "Edit Channel…";
 "Delete Channel" = "Delete Channel";
+"Move Up" = "Move Up";
+"Move Down" = "Move Down";
 "Delete Channel?" = "Delete Channel?";
 "Channel Name" = "Channel Name";
 "URL" = "URL";

@@ -664,10 +664,23 @@ struct LibraryRootView: View {
               Button(L("Edit Channel…")) {
                 channelEditor = .edit(channel)
               }
+              Divider()
+              Button(L("Move Up")) {
+                channels.move(id: channel.id, by: -1)
+              }
+              .disabled(channel.id == channels.channels.first?.id)
+              Button(L("Move Down")) {
+                channels.move(id: channel.id, by: 1)
+              }
+              .disabled(channel.id == channels.channels.last?.id)
+              Divider()
               Button(L("Delete Channel"), role: .destructive) {
                 channelPendingDeletion = channel
               }
             }
+        }
+        .onMove { source, destination in
+          channels.move(fromOffsets: source, toOffset: destination)
         }
         Button {
           channelEditor = .add

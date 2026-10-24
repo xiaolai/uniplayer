@@ -171,6 +171,63 @@ final class UniPlayerTests: XCTestCase {
     XCTAssertEqual(ChannelStore(fileURL: fileURL).channels.map(\.id), ["amazon", "netflix"])
   }
 
+  func testChannelMovesPersistInBothDirections() throws {
+    let directory = FileManager.default.temporaryDirectory
+      .appendingPathComponent("uniplayer-channel-order-\(UUID().uuidString)")
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let fileURL = directory.appendingPathComponent("channels.json")
+    let store = ChannelStore(fileURL: fileURL)
+    let added = try XCTUnwrap(store.add(name: "YouTube", urlString: "youtube.com"))
+
+    store.move(fromOffsets: IndexSet(integer: 0), toOffset: 3)
+    XCTAssertEqual(store.channels.map(\.id), ["netflix", added.id, "amazon"])
+    XCTAssertEqual(ChannelStore(fileURL: fileURL).channels, store.channels)
+
+    store.move(fromOffsets: IndexSet(integer: 2), toOffset: 0)
+    XCTAssertEqual(store.channels.map(\.id), ["amazon", "netflix", added.id])
+    XCTAssertEqual(ChannelStore(fileURL: fileURL).channels, store.channels)
+    XCTAssertEqual(store.channel(id: added.id), added)
+  }
+
+  func testChannelMoveHandlesMultipleRowsAndMenuActions() throws {
+    let directory = FileManager.default.temporaryDirectory
+      .appendingPathComponent("uniplayer-channel-order-\(UUID().uuidString)")
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let fileURL = directory.appendingPathComponent("channels.json")
+    let store = ChannelStore(fileURL: fileURL)
+    let third = try XCTUnwrap(store.add(name: "Third", urlString: "third.example"))
+    let fourth = try XCTUnwrap(store.add(name: "Fourth", urlString: "fourth.example"))
+
+    store.move(fromOffsets: IndexSet([0, 2]), toOffset: 4)
+    XCTAssertEqual(store.channels.map(\.id), ["netflix", fourth.id, "amazon", third.id])
+    store.move(id: "amazon", by: -1)
+    XCTAssertEqual(store.channels.map(\.id), ["netflix", "amazon", fourth.id, third.id])
+    store.move(id: "amazon", by: 1)
+    XCTAssertEqual(store.channels.map(\.id), ["netflix", fourth.id, "amazon", third.id])
+    XCTAssertEqual(ChannelStore(fileURL: fileURL).channels, store.channels)
+  }
+
+  func testChannelMoveIgnoresBoundariesAndStaleRows() {
+    let directory = FileManager.default.temporaryDirectory
+      .appendingPathComponent("uniplayer-channel-order-\(UUID().uuidString)")
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let store = ChannelStore(fileURL: directory.appendingPathComponent("channels.json"))
+    let original = store.channels
+
+    store.move(id: "amazon", by: -1)
+    store.move(id: "netflix", by: 1)
+    store.move(id: "deleted", by: -1)
+    store.move(fromOffsets: [], toOffset: 0)
+    store.move(fromOffsets: IndexSet(integer: 0), toOffset: 1)
+    store.move(fromOffsets: IndexSet(integer: 2), toOffset: 0)
+    store.move(fromOffsets: IndexSet(integer: 0), toOffset: 3)
+    XCTAssertEqual(store.channels, original)
+
+    for channel in original { store.remove(id: channel.id) }
+    store.move(fromOffsets: IndexSet(integer: 0), toOffset: 0)
+    XCTAssertTrue(store.channels.isEmpty)
+  }
+
   // MARK: - Permission boundaries
 
   func testHostAllowlistMatchesExactAndWildcardDomains() {
