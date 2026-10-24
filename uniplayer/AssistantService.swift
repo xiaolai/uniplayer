@@ -664,6 +664,8 @@ final class AssistantService {
   private var task: Task<Void, Never>?
   private(set) var isStreaming = false
   private var generation = 0
+  private var activeToken: UUID?
+  private let lock = NSLock()
   private let providerFactory: ProviderFactory
 
   init(providerFactory: @escaping ProviderFactory = AssistantService.defaultProviderFactory) {
@@ -677,46 +679,93 @@ final class AssistantService {
     }
   }
 
+  @discardableResult
   func stream(configuration: AssistantConfiguration = .load(),
               request: AssistantRequest,
               onEvent: @escaping (AssistantStreamEvent) -> Void,
               onError: @escaping (AssistantError) -> Void,
-              onFinish: @escaping () -> Void) {
-    cancel()
+              onFinish: @escaping () -> Void) -> UUID {
+    // A cancelled caption task must not open a provider request. The check is
+    // repeated here because this method can be reached in the gap between the
+    // caller's cancellation check and its call.
+    guard !Task.isCancelled else {
+      onError(.cancelled)
+      return UUID()
+    }
+    lock.lock()
     generation += 1
     let current = generation
-    let provider = providerFactory(configuration.provider)
+    let token = UUID()
+    activeToken = token
     isStreaming = true
+    lock.unlock()
+
+    let provider = providerFactory(configuration.provider)
     let stream = provider.stream(request, configuration: configuration)
-    task = Task {
+    let newTask = Task { [weak self] in
+      guard let self else { return }
       do {
         for try await event in stream {
           try Task.checkCancellation()
           await MainActor.run {
-            guard self.generation == current else { return }
+            guard self.isCurrent(current) else { return }
             onEvent(event)
           }
         }
         await MainActor.run {
-          guard self.generation == current else { return }
-          self.isStreaming = false
+          guard self.isCurrent(current) else { return }
+          self.finish(current)
           onFinish()
         }
       } catch {
         let mapped = (error as? AssistantError) ?? OpenAICompatibleProvider.map(error)
         await MainActor.run {
-          guard self.generation == current else { return }
-          self.isStreaming = false
+          guard self.isCurrent(current) else { return }
+          self.finish(current)
           onError(mapped)
         }
       }
     }
+    lock.lock()
+    if generation == current {
+      task = newTask
+    } else {
+      newTask.cancel()
+    }
+    lock.unlock()
+    return token
   }
 
-  func cancel() {
+  /// Cancels only the request identified by `token`. A late cancellation from
+  /// an old caption must not cancel the replacement request that followed it.
+  func cancel(token: UUID? = nil) {
+    lock.lock()
+    if let token, token != activeToken {
+      lock.unlock()
+      return
+    }
     generation += 1
-    task?.cancel()
+    let pending = task
     task = nil
+    activeToken = nil
     isStreaming = false
+    lock.unlock()
+    pending?.cancel()
+  }
+
+  private func isCurrent(_ generation: Int) -> Bool {
+    lock.lock()
+    defer { lock.unlock() }
+    return self.generation == generation
+  }
+
+  private func finish(_ generation: Int) {
+    lock.lock()
+    if self.generation == generation {
+      isStreaming = false
+      activeToken = nil
+      task = nil
+    }
+    lock.unlock()
   }
 }

@@ -113,6 +113,39 @@ class PlayerCore: NSObject {
   static var playerCores: [PlayerCore] = []
   static private var playerCoreCounter = 0
 
+  /// The process tap is per-process, so a second audible player would mix its
+  /// audio into the first player's captions. Live translation therefore runs
+  /// only when this player is the single unmuted player producing audio.
+  struct AudiblePlayerSnapshot: Equatable {
+    let id: ObjectIdentifier
+    let isPlaying: Bool
+    let isMuted: Bool
+  }
+
+  static func hasOtherAudiblePlayer(
+    than id: ObjectIdentifier, among players: [AudiblePlayerSnapshot]
+  ) -> Bool {
+    players.contains {
+      $0.id != id && $0.isPlaying && !$0.isMuted
+    }
+  }
+
+  static func hasOtherAudiblePlayer(than player: PlayerCore) -> Bool {
+    hasOtherAudiblePlayer(
+      than: ObjectIdentifier(player),
+      among: playerCores.map {
+        AudiblePlayerSnapshot(
+          id: ObjectIdentifier($0),
+          isPlaying: $0.info.state == .playing && $0.info.volume > 0,
+          isMuted: $0.info.isMuted)
+      })
+  }
+
+  static func postAudiblePlayersChanged() {
+    NotificationCenter.default.post(
+      name: .iinaAudiblePlayersChanged, object: nil)
+  }
+
   static private func findIdlePlayerCore() -> PlayerCore? {
     playerCores.first { $0.info.state == .idle && !$0.backgroundTaskInUse }
   }
@@ -300,6 +333,23 @@ class PlayerCore: NSObject {
     SubtitleTranslationController(player: self)
   }()
 
+  /// Per-show spoken-language resolution for live translation. Created in
+  /// `init` so it observes file loads and settings changes from the start.
+  lazy var liveTranslationLanguage: LiveTranslationLanguageController = {
+    LiveTranslationLanguageController(player: self)
+  }()
+
+  /// Audio-to-ASR pipeline for live translation. Created in `init` so it can
+  /// observe playback and settings from the start.
+  lazy var liveTranslationTranscription: LiveTranslationTranscriptionController = {
+    LiveTranslationTranscriptionController(player: self)
+  }()
+
+  /// Stable-prefix translation and the target-only caption overlay.
+  lazy var liveTranslationCaptions: LiveTranslationCaptionController = {
+    LiveTranslationCaptionController(player: self)
+  }()
+
   var syncUITimer: Timer?
 
   var displayOSD: Bool = true
@@ -455,11 +505,27 @@ class PlayerCore: NSObject {
     TouchBarSettings.shared.addObserver(self, forKey: .PresentationModeGlobal)
     TouchBarSettings.shared.addObserver(self, forKey: .PresentationModePerApp)
     _ = subtitleTranslation
+    _ = liveTranslationLanguage
+    _ = liveTranslationTranscription
+    _ = liveTranslationCaptions
+    liveTranslationTranscription.onSourceText = { [weak self] text, isFinal, confidence in
+      self?.liveTranslationCaptions.ingest(
+        text, isFinal: isFinal, confidence: confidence)
+    }
   }
 
   func observe(_ name: Notification.Name, block: @escaping (Notification) -> Void) {
     observers.append(NotificationCenter.default.addObserver(
       forName: name, object: self, queue: .main, using: block))
+  }
+
+  /// For notifications published by another object (the permission singleton,
+  /// window focus, the settings page). `observe` filters on this player and
+  /// would never receive them.
+  func observeGlobal(_ name: Notification.Name,
+                     block: @escaping (Notification) -> Void) {
+    observers.append(NotificationCenter.default.addObserver(
+      forName: name, object: nil, queue: .main, using: block))
   }
 
   deinit {
@@ -2719,6 +2785,7 @@ class PlayerCore: NSObject {
     if info.state != .loading {
       log("Playback has stopped")
       info.state = .idle
+      Self.postAudiblePlayersChanged()
       postNotification(.iinaPlayerStopped)
       if let pendingUrl {
         self.pendingUrl = nil
@@ -2758,6 +2825,7 @@ class PlayerCore: NSObject {
       // position must be updated before notifying the manager.
       syncUITime()
       info.state = paused ? .paused : .playing
+      Self.postAudiblePlayersChanged()
       refreshSyncUITimer()
       // Follow energy efficiency best practices and ensure UniPlayer is absolutely idle when the video
       // is paused to avoid wasting energy with needless processing. If paused shutdown the timer
@@ -2772,6 +2840,7 @@ class PlayerCore: NSObject {
       mainWindow.setWindowFloatingOnTop(!paused)
     }
     syncUI(.playButton)
+    postNotification(.iinaPauseChanged)
 
     Task { @MainActor in
       if paused {
@@ -2784,6 +2853,7 @@ class PlayerCore: NSObject {
 
   func playbackRestarted() {
     log("Playback restarted")
+    postNotification(.iinaPlaybackRestarted)
 
     // Important to synchronize the time as mpv may slightly alter the playback position during a
     // restart even while paused. See issue #5337.
@@ -3155,7 +3225,9 @@ class PlayerCore: NSObject {
       mpv.setFlag(MPVOption.PlaybackControl.pause, false, level: .verbose)
     }
     info.state = Preference.bool(for: .pauseWhenOpen) ? .paused : .playing
+    Self.postAudiblePlayersChanged()
     syncUI(.playButton)
+    postNotification(.iinaPlaybackStarted)
     if Preference.bool(for: .fullScreenWhenOpen) && !mainWindow.fsState.isFullscreen
         && !isInMiniPlayer && !isInline {
       mainWindow.toggleWindowFullScreen()

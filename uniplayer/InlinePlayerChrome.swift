@@ -58,6 +58,13 @@ final class InlinePlayerModel: ObservableObject {
   @Published private(set) var selectedAudioID: Int?
   @Published private(set) var selectedSubID: Int?
   @Published private(set) var subtitleTranslationEnabled = false
+  @Published private(set) var liveTranslationEnabled = false
+  @Published private(set) var liveTranslationStatus = ""
+  @Published private(set) var liveTranslationLanguageID: String?
+  @Published private(set) var liveTranslationTargetName = ""
+  @Published private(set) var liveTranslationShowsSource = false
+  @Published private(set) var liveTranslationCanCorrect = false
+  @Published private(set) var liveTranslationNeedsSystemAudio = false
   @Published private(set) var message: String?
   @Published private(set) var isFullscreen = false
   @Published private(set) var controlsVisible = true
@@ -104,6 +111,23 @@ final class InlinePlayerModel: ObservableObject {
     player.observe(.iinaSubtitleTranslationChanged) { [weak self] _ in
       self?.refresh()
     }
+    for name in [Notification.Name.iinaLiveTranslationLanguageChanged,
+                 .iinaLiveTranslationSourceTextChanged,
+                 .iinaPauseChanged,
+                 .iinaMuteChanged,
+                 .iinaPlaybackStarted,
+                 .iinaFileLoaded,
+                 .iinaSIDChanged,
+                 .iinaTracklistChanged,
+                 .iinaPlayerStopped] {
+      player.observe(name) { [weak self] _ in
+        self?.refreshLiveTranslation()
+      }
+    }
+    // The permission is app-global and published by its own singleton.
+    player.observeGlobal(.iinaLiveTranslationAudioPermissionChanged) { [weak self] _ in
+      self?.refreshLiveTranslation()
+    }
   }
 
   // MARK: Reading the player
@@ -135,6 +159,7 @@ final class InlinePlayerModel: ObservableObject {
     selectedAudioID = info.aid
     selectedSubID = info.sid
     subtitleTranslationEnabled = player.subtitleTranslation.isEnabled
+    refreshLiveTranslation()
     currentURL = info.currentURL
     if let provider = fullscreenProvider {
       isFullscreen = provider()
@@ -250,6 +275,81 @@ final class InlinePlayerModel: ObservableObject {
     player.subtitleTranslation.userSetEnabled(!player.subtitleTranslation.isEnabled)
     refresh()
     registerActivity()
+  }
+
+  // MARK: Live translation
+
+  private func refreshLiveTranslation() {
+    liveTranslationEnabled = LiveTranslationPreferences.enabled
+    liveTranslationLanguageID = player.liveTranslationLanguage.overrideLanguageID
+    let target = LiveTranslationPreferences.target
+    liveTranslationTargetName = target.displayName
+    liveTranslationShowsSource = LiveTranslationPreferences.showSource
+    liveTranslationCanCorrect =
+      !player.liveTranslationCaptions.latestTargetLine.isEmpty
+    let state = LiveTranslationStatus.state(for: player)
+    liveTranslationStatus = LiveTranslationStatus.text(state, target: target)
+    liveTranslationNeedsSystemAudio =
+      state == .permissionDenied || state == .permissionSuspected
+  }
+
+  func toggleLiveTranslation() {
+    Preference.set(!LiveTranslationPreferences.enabled, for: .liveTranslationEnabled)
+    refreshLiveTranslation()
+    registerActivity()
+  }
+
+  func setLiveTranslationLanguage(_ id: String?) {
+    let language = id.flatMap(LiveTranslationLanguages.language(for:))
+    player.liveTranslationLanguage.setOverride(language)
+    refreshLiveTranslation()
+    registerActivity()
+  }
+
+  func toggleLiveTranslationSource() {
+    Preference.set(!LiveTranslationPreferences.showSource,
+                   for: .liveTranslationShowSource)
+    refreshLiveTranslation()
+    registerActivity()
+  }
+
+  func openLiveTranslationSettings() {
+    SettingsWindow.default.showPage(identifier: "liveTranslation")
+  }
+
+  func openSystemAudioSettings() {
+    guard let url = URL(string:
+      "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") else {
+      return
+    }
+    NSWorkspace.shared.open(url)
+  }
+
+  func correctLiveTranslationCaption() {
+    guard let snapshot =
+            player.liveTranslationCaptions.correctionSnapshot() else { return }
+    let current = snapshot.target
+    guard !current.isEmpty else { return }
+    let alert = NSAlert()
+    alert.messageText = NSLocalizedString(
+      "Correct the Last Caption", comment: "Live translation correction")
+    alert.informativeText = NSLocalizedString(
+      "The correction is remembered for this show and used in future lines.",
+      comment: "Live translation correction")
+    let field = NSTextField(frame: NSRect(
+      x: 0, y: 0, width: Tokens.Size.n300, height: Tokens.Size.n25))
+    field.stringValue = current
+    field.setAccessibilityLabel(NSLocalizedString(
+      "Corrected Caption", comment: "Live translation correction"))
+    alert.accessoryView = field
+    alert.addButton(withTitle: NSLocalizedString(
+      "Save Correction", comment: "Live translation correction"))
+    alert.addButton(withTitle: NSLocalizedString(
+      "Cancel", comment: "Live translation correction"))
+    guard alert.runModal() == .alertFirstButtonReturn else { return }
+    player.liveTranslationCaptions.applyCorrection(
+      field.stringValue, to: snapshot)
+    refreshLiveTranslation()
   }
 
   func toggleFullscreen() {
@@ -418,10 +518,77 @@ struct InlinePlayerChrome: View {
           Text(inlineL("Translate Subtitles with AI"))
         }
       }
+      .accessibilityLabel(inlineL("Translate Subtitles with AI"))
+      Divider()
+      Button {
+        model.toggleLiveTranslation()
+      } label: {
+        if model.liveTranslationEnabled {
+          Label(inlineL("Live Translation"), systemImage: "checkmark")
+        } else {
+          Text(inlineL("Live Translation"))
+        }
+      }
+      .accessibilityLabel(inlineL("Live Translation"))
+      Text(model.liveTranslationStatus)
+        .accessibilityLabel(model.liveTranslationStatus)
+      if model.liveTranslationNeedsSystemAudio {
+        Button(inlineL("Open System Audio Settings…")) {
+          model.openSystemAudioSettings()
+        }
+        .accessibilityLabel(inlineL("Open System Audio Settings…"))
+      }
+      Menu(inlineL("Spoken Language")) {
+        Button {
+          model.setLiveTranslationLanguage(nil)
+        } label: {
+          if model.liveTranslationLanguageID == nil {
+            Label(inlineL("Auto (from File)"), systemImage: "checkmark")
+          } else {
+            Text(inlineL("Auto (from File)"))
+          }
+        }
+        ForEach(LiveTranslationLanguages.watchedCandidates, id: \.id) { language in
+          Button {
+            model.setLiveTranslationLanguage(language.id)
+          } label: {
+            if model.liveTranslationLanguageID == language.id {
+              Label(language.displayName, systemImage: "checkmark")
+            } else {
+              Text(language.displayName)
+            }
+          }
+        }
+      }
+      .accessibilityLabel(inlineL("Spoken Language"))
+      Button(String(format: inlineL("Translate into %@"),
+                    model.liveTranslationTargetName)) {
+        model.openLiveTranslationSettings()
+      }
+      .accessibilityLabel(inlineL("Live Translation Settings…"))
+      Button {
+        model.toggleLiveTranslationSource()
+      } label: {
+        if model.liveTranslationShowsSource {
+          Label(inlineL("Show Source Line"), systemImage: "checkmark")
+        } else {
+          Text(inlineL("Show Source Line"))
+        }
+      }
+      .accessibilityLabel(inlineL("Show Source Line"))
+      if model.liveTranslationCanCorrect {
+        Button(inlineL("Correct Last Caption…")) {
+          model.correctLiveTranslationCaption()
+        }
+        .accessibilityLabel(inlineL("Correct Last Caption…"))
+      }
+      Button(inlineL("Live Translation Settings…")) {
+        model.openLiveTranslationSettings()
+      }
+      .accessibilityLabel(inlineL("Live Translation Settings…"))
       Divider()
       speedMenu
-      Button(inlineL("Open in New Window")) { model.onOpenInNewWindow?() }
-    } label: {
+      Button(inlineL("Open in New Window")) { model.onOpenInNewWindow?() }    } label: {
       Image(systemName: "ellipsis")
         .frame(width: Tokens.Library.glassControlSize, height: Tokens.Library.glassControlSize)
     }

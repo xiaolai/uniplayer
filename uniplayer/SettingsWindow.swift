@@ -26,6 +26,7 @@ class SettingsWindow: CommonWindow {
     SettingsPageVideo(),
     SettingsPageAudio(),
     SettingsPageSubtitles(),
+    SettingsPageLiveTranslation(),
     SettingsPageNetwork(),
     SettingsPageControl(),
     SettingsPageKeyBindings(),
@@ -237,6 +238,22 @@ class SettingsWindow: CommonWindow {
   func show() {
     self.setFrameAutosaveName("UniPlayerPreferenceWindowV2")
     self.makeKeyAndOrderFront(nil)
+  }
+
+  /// Opens a specific settings page, used by the live-translation menu and
+  /// failure states. The page is loaded before the window is shown so the
+  /// first frame is the requested page, not the last visited one.
+  func showPage(identifier: String) {
+    guard let index = pages.firstIndex(where: { $0.identifier == identifier }) else {
+      show()
+      return
+    }
+    loadPage(at: index)
+    currentPageIndex = index
+    sidebarList.selectRowIndexes(
+      IndexSet(integer: index), byExtendingSelection: false)
+    show()
+    NSApp.activate(ignoringOtherApps: true)
   }
 
   @objc func scrolled(_ notification: Notification) {

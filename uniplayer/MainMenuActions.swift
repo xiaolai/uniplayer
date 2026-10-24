@@ -395,6 +395,63 @@ extension MainMenuActionHandler {
     sender.state = player.subtitleTranslation.isEnabled ? .on : .off
   }
 
+  // MARK: - Live translation
+
+  @objc func menuToggleLiveTranslation(_ sender: NSMenuItem) {
+    Preference.set(!LiveTranslationPreferences.enabled, for: .liveTranslationEnabled)
+    sender.state = LiveTranslationPreferences.enabled ? .on : .off
+  }
+
+  @objc func menuSetLiveTranslationLanguage(_ sender: NSMenuItem) {
+    let id = sender.representedObject as? String
+    let language = id.flatMap(LiveTranslationLanguages.language(for:))
+    player.liveTranslationLanguage.setOverride(language)
+  }
+
+  @objc func menuToggleLiveTranslationSource(_ sender: NSMenuItem) {
+    Preference.set(!LiveTranslationPreferences.showSource,
+                   for: .liveTranslationShowSource)
+    sender.state = LiveTranslationPreferences.showSource ? .on : .off
+  }
+
+  @objc func menuOpenLiveTranslationSettings(_ sender: Any?) {
+    SettingsWindow.default.showPage(identifier: "liveTranslation")
+  }
+
+  @objc func menuOpenSystemAudioSettings(_ sender: Any?) {
+    guard let url = URL(string:
+      "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") else {
+      return
+    }
+    NSWorkspace.shared.open(url)
+  }
+
+  @objc func menuCorrectLiveTranslationCaption(_ sender: Any?) {
+    guard let snapshot =
+            player.liveTranslationCaptions.correctionSnapshot() else { return }
+    let current = snapshot.target
+    guard !current.isEmpty else { return }
+    let alert = NSAlert()
+    alert.messageText = NSLocalizedString(
+      "Correct the Last Caption", comment: "Live translation correction")
+    alert.informativeText = NSLocalizedString(
+      "The correction is remembered for this show and used in future lines.",
+      comment: "Live translation correction")
+    let field = NSTextField(frame: NSRect(
+      x: 0, y: 0, width: Tokens.Size.n300, height: Tokens.Size.n25))
+    field.stringValue = current
+    field.setAccessibilityLabel(NSLocalizedString(
+      "Corrected Caption", comment: "Live translation correction"))
+    alert.accessoryView = field
+    alert.addButton(withTitle: NSLocalizedString(
+      "Save Correction", comment: "Live translation correction"))
+    alert.addButton(withTitle: NSLocalizedString(
+      "Cancel", comment: "Live translation correction"))
+    guard alert.runModal() == .alertFirstButtonReturn else { return }
+    player.liveTranslationCaptions.applyCorrection(
+      field.stringValue, to: snapshot)
+  }
+
   @objc func menuChangeSubDelay(_ sender: NSMenuItem) {
     if let delayDelta = sender.representedObject as? Double {
       let newDelay = player.info.subDelay + delayDelta
@@ -521,6 +578,16 @@ extension MainMenuActionHandler {
       return player.initialWindow.supportsFocusMode
     case #selector(menuToggleSubtitleTranslation(_:)):
       menuItem.state = player.subtitleTranslation.isEnabled ? .on : .off
+      return player.info.state.active
+    case #selector(menuToggleLiveTranslation(_:)):
+      menuItem.state = LiveTranslationPreferences.enabled ? .on : .off
+      return player.info.state.active
+    case #selector(menuToggleLiveTranslationSource(_:)):
+      menuItem.state = LiveTranslationPreferences.showSource ? .on : .off
+      return player.info.state.active
+    case #selector(menuCorrectLiveTranslationCaption(_:)):
+      return !player.liveTranslationCaptions.latestTargetLine.isEmpty
+    case #selector(menuSetLiveTranslationLanguage(_:)):
       return player.info.state.active
     default:
       break
