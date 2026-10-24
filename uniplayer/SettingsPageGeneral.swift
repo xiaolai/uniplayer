@@ -35,6 +35,11 @@ class SettingsPageGeneral: SettingsPage {
           SettingsItem.Custom().view(NetflixRatingsSettingsView())
         }
       }
+      section {
+        SettingsList(title: SettingsLocalization.Key("Torrent Playback")) {
+          SettingsItem.Custom().view(TorrentSettingsView())
+        }
+      }
       sectionHistory()
       sectionPlayList()
       sectionScreenshots()

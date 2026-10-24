@@ -328,7 +328,7 @@ class MPVController: NSObject {
     }
 
     // log
-    if Logger.enabled {
+    if Logger.enabled && !player.isTorrentDedicated {
       let path = Logger.logDirectory.appendingPathComponent("mpv.log").path
       chkErr(setOptionString(MPVOption.ProgramBehavior.logFile, path, level: .verbose))
     }
@@ -640,8 +640,16 @@ class MPVController: NSObject {
       mpv_observe_property(mpv, 0, k, v)
     }
 
+    if player.isTorrentDedicated {
+      chkErr(setOptionString(MPVOption.WatchLater.watchLaterDir,"/dev/null",level:.verbose))
+      // Raw mpv files bypass Logger's capability redactor. Keep diagnostic
+      // events routed through the redacted app logger for this core.
+      chkErr(setOptionString(MPVOption.ProgramBehavior.logFile,"",level:.verbose))
+      chkErr(setOptionString("terminal","no",level:.verbose))
+    }
     // Initialize an uninitialized mpv instance. If the mpv instance is already running, an error is returned.
     chkErr(mpv_initialize(mpv))
+    if player.isTorrentDedicated { setString(MPVOption.ProgramBehavior.logFile,""); setString("terminal","no"); setString(MPVOption.WatchLater.watchLaterDir,"/dev/null") }
 
     // The option watch-later-options is not available until after the mpv instance is initialized.
     // Useful to log the value of this option as users often ask about what the Watch Later feature
@@ -830,6 +838,7 @@ class MPVController: NSObject {
 
   // Set property
   func setFlag(_ name: String, _ flag: Bool, level: Logger.Level = .debug) {
+    let flag = player.isTorrentDedicated && [MPVOption.WatchLater.savePositionOnQuit,MPVOption.WatchLater.resumePlayback].contains(name) ? false : flag
     log("Set property: \(name)=\(flag)", level: level)
     var data: Int32 = flag ? 1 : 0
     mpv_set_property(mpv, name, MPV_FORMAT_FLAG, &data)
@@ -849,6 +858,7 @@ class MPVController: NSObject {
 
   @discardableResult
   func setString(_ name: String, _ value: String, level: Logger.Level = .debug) -> Int32 {
+    let value = player.isTorrentDedicated && name == MPVOption.WatchLater.watchLaterDir ? "/dev/null" : player.isTorrentDedicated && name == MPVOption.ProgramBehavior.logFile ? "" : player.isTorrentDedicated && name == "terminal" ? "no" : value
     log("Set property: \(name)=\(value)", level: level)
     return mpv_set_property_string(mpv, name, value)
   }

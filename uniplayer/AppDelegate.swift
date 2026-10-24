@@ -46,6 +46,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   private var commandLineStatus = CommandLineStatus()
 
   private var isTerminating = false
+  private var torrentRuntimeStopped = false
 
   /// Longest time to wait for asynchronous shutdown tasks to finish before giving up on waiting and proceeding with termination.
   ///
@@ -477,6 +478,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
   func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
     Logger.log("App should terminate")
     isTerminating = true
+    Task { @MainActor in
+      await TorrentPlaybackCoordinator.shared.quit()
+      self.torrentRuntimeStopped = true
+      NotificationCenter.default.post(name:Notification.Name("TorrentRuntimeStopped"),object:nil)
+    }
     MemoryUsage.shared.logUsage("before terminating")
 
     // Normally termination happens fast enough that the user does not have time to initiate
@@ -531,7 +537,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // Usually will have to wait for logout request to complete if logged into an online subtitle
     // provider.
-    var canTerminateNow = allPlayersHaveShutdown
+    var canTerminateNow = allPlayersHaveShutdown && torrentRuntimeStopped
     if OnlineSubtitle.loggedIn {
       canTerminateNow = false
       Logger.log("Waiting for log out of online subtitles provider to complete")
@@ -650,6 +656,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       guard !OnlineSubtitle.loggedIn else { return }
       // If still still saving playback history then continue waiting.
       guard HistoryController.shared.tasksOutstanding == 0 else { return }
+      guard torrentRuntimeStopped else { return }
       // All players have shutdown. No longer logged into an online subtitles provider and saving of
       // playback history has finished.
       Logger.log("Proceeding with application termination")
@@ -666,6 +673,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       flushCatalog()
       NSApp.reply(toApplicationShouldTerminate: true)
     }
+
+    observers.append(center.addObserver(forName:Notification.Name("TorrentRuntimeStopped"),object:nil,queue:.main) { _ in
+      guard !self.timedOut else { return }; proceedWithTermination()
+    })
 
     // Establish an observer for a player core shutting down.
     observer = center.addObserver(forName: .iinaPlayerShutdown, object: nil, queue: .main) { _ in

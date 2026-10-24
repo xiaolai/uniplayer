@@ -283,7 +283,7 @@ class Logger: NSObject {
 
     // Now that we know the message will not be discarded, call the closure to construct the message
     // string to log.
-    let message = redactedMessage(message())
+    let message = TorrentPrivacy.redact(redactedMessage(message()))
 
     let date = Date()
     let string = formatMessage(message, level, subsystem, true, date)

@@ -7,6 +7,19 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AF8700000000000000000022 /* TorrentProcessOwnership.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8600000000000000000022 /* TorrentProcessOwnership.swift */; };
+		AF8700000000000000000021 /* TorrentAuditRegressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8600000000000000000021 /* TorrentAuditRegressionTests.swift */; };
+		AF8700000000000000000020 /* TorrentIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8600000000000000000020 /* TorrentIntegrationTests.swift */; };
+		AF870000000000000000000A /* ChannelTorrentActions.js in Resources */ = {isa = PBXBuildFile; fileRef = AF860000000000000000000A /* ChannelTorrentActions.js */; };
+		AF8700000000000000000009 /* TorrentCoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8600000000000000000009 /* TorrentCoreTests.swift */; };
+		AF8700000000000000000008 /* TorrentSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8600000000000000000008 /* TorrentSettingsView.swift */; };
+		AF8700000000000000000007 /* TorrentPlaybackCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8600000000000000000007 /* TorrentPlaybackCoordinator.swift */; };
+		AF8700000000000000000006 /* TorrentInspection.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8600000000000000000006 /* TorrentInspection.swift */; };
+		AF8700000000000000000005 /* TorrentPlaybackStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8600000000000000000005 /* TorrentPlaybackStore.swift */; };
+		AF8700000000000000000004 /* ChannelTorrentBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8600000000000000000004 /* ChannelTorrentBridge.swift */; };
+		AF8700000000000000000003 /* TorrentMediaBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8600000000000000000003 /* TorrentMediaBridge.swift */; };
+		AF8700000000000000000002 /* TransmissionRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8600000000000000000002 /* TransmissionRuntime.swift */; };
+		AF8700000000000000000001 /* TorrentTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8600000000000000000001 /* TorrentTypes.swift */; };
 		AF8500000000000000000014 /* NetflixRatingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8500000000000000000004 /* NetflixRatingsTests.swift */; };
 		AF8500000000000000000013 /* NetflixRatings.js in Resources */ = {isa = PBXBuildFile; fileRef = AF8500000000000000000003 /* NetflixRatings.js */; };
 		AF8500000000000000000012 /* NetflixRatingsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8500000000000000000002 /* NetflixRatingsSettingsView.swift */; };
@@ -623,6 +636,19 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		AF8600000000000000000022 /* TorrentProcessOwnership.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TorrentProcessOwnership.swift; sourceTree = "<group>"; };
+		AF8600000000000000000021 /* TorrentAuditRegressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TorrentAuditRegressionTests.swift; sourceTree = "<group>"; };
+		AF8600000000000000000020 /* TorrentIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TorrentIntegrationTests.swift; sourceTree = "<group>"; };
+		AF860000000000000000000A /* ChannelTorrentActions.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = ChannelTorrentActions.js; sourceTree = "<group>"; };
+		AF8600000000000000000009 /* TorrentCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TorrentCoreTests.swift; sourceTree = "<group>"; };
+		AF8600000000000000000008 /* TorrentSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TorrentSettingsView.swift; sourceTree = "<group>"; };
+		AF8600000000000000000007 /* TorrentPlaybackCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TorrentPlaybackCoordinator.swift; sourceTree = "<group>"; };
+		AF8600000000000000000006 /* TorrentInspection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TorrentInspection.swift; sourceTree = "<group>"; };
+		AF8600000000000000000005 /* TorrentPlaybackStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TorrentPlaybackStore.swift; sourceTree = "<group>"; };
+		AF8600000000000000000004 /* ChannelTorrentBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelTorrentBridge.swift; sourceTree = "<group>"; };
+		AF8600000000000000000003 /* TorrentMediaBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TorrentMediaBridge.swift; sourceTree = "<group>"; };
+		AF8600000000000000000002 /* TransmissionRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransmissionRuntime.swift; sourceTree = "<group>"; };
+		AF8600000000000000000001 /* TorrentTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TorrentTypes.swift; sourceTree = "<group>"; };
 		AF8500000000000000000004 /* NetflixRatingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetflixRatingsTests.swift; sourceTree = "<group>"; };
 		AF8500000000000000000003 /* NetflixRatings.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = NetflixRatings.js; sourceTree = "<group>"; };
 		AF8500000000000000000002 /* NetflixRatingsSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetflixRatingsSettingsView.swift; sourceTree = "<group>"; };
@@ -2096,6 +2122,9 @@
 				D400B8E068CF9633E36BF126 /* SourceCoordinatorTests.swift */,
 				D400DAD7E8BD684EBCAAB875 /* MediaMigrationTests.swift */,
 				A10000000000000000000004 /* UniPlayerTests.swift */,
+				AF8600000000000000000021 /* TorrentAuditRegressionTests.swift */,
+				AF8600000000000000000020 /* TorrentIntegrationTests.swift */,
+				AF8600000000000000000009 /* TorrentCoreTests.swift */,
 				BB9000000000000000000001 /* InlinePlayerTests.swift */,
 				AF8500000000000000000004 /* NetflixRatingsTests.swift */,
 				DD9000000000000000000001 /* SubtitleTranslationTests.swift */,
@@ -2348,6 +2377,16 @@
 				AA3000000000000000000001 /* LibraryView.swift */,
 				CC2000000000000000000001 /* ChannelBrowserView.swift */,
 				AF8500000000000000000001 /* NetflixRatings.swift */,
+				AF8600000000000000000022 /* TorrentProcessOwnership.swift */,
+				AF860000000000000000000A /* ChannelTorrentActions.js */,
+				AF8600000000000000000008 /* TorrentSettingsView.swift */,
+				AF8600000000000000000007 /* TorrentPlaybackCoordinator.swift */,
+				AF8600000000000000000006 /* TorrentInspection.swift */,
+				AF8600000000000000000005 /* TorrentPlaybackStore.swift */,
+				AF8600000000000000000004 /* ChannelTorrentBridge.swift */,
+				AF8600000000000000000003 /* TorrentMediaBridge.swift */,
+				AF8600000000000000000002 /* TransmissionRuntime.swift */,
+				AF8600000000000000000001 /* TorrentTypes.swift */,
 				AF8500000000000000000002 /* NetflixRatingsSettingsView.swift */,
 				AF8500000000000000000003 /* NetflixRatings.js */,
 				CC1000000000000000000001 /* Channel.swift */,
@@ -2891,6 +2930,7 @@
 				E3E720A12CD7073D003470BF /* Copy Default Plugins */,
 				4954298A216C34960058F680 /* Embed Foundation Extensions */,
 				51728768291B6F30009E6EC1 /* Write Info.h */,
+				AF8800000000000000000001 /* Embed Torrent Runtime */,
 			);
 			buildRules = (
 			);
@@ -3079,6 +3119,7 @@
 				8492C2861E771FB200CE5825 /* ISO639.strings in Resources */,
 				8F49C36E213EFB7E0076C4F9 /* MiniPlayerWindowController.xib in Resources */,
 				348F33CA30650FDA0091E0C1 /* uniplayer_nightly.icon in Resources */,
+				AF870000000000000000000A /* ChannelTorrentActions.js in Resources */,
 				84A0BA951D2F9E9600BC8DA1 /* MainMenu.xib in Resources */,
 				AF8500000000000000000013 /* NetflixRatings.js in Resources */,
 				8400D5D81E1AB31B006785F5 /* AboutWindowController.xib in Resources */,
@@ -3110,6 +3151,19 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+    AF8800000000000000000001 /* Embed Torrent Runtime */ = {
+      isa = PBXShellScriptBuildPhase;
+      alwaysOutOfDate = 1;
+      buildActionMask = 2147483647;
+      files = ();
+      inputPaths = ();
+      outputPaths = ();
+      name = "Embed Torrent Runtime";
+      runOnlyForDeploymentPostprocessing = 0;
+      shellPath = /bin/sh;
+      shellScript = "python3 \"${SRCROOT}/scripts/embed-torrent-runtime.py\"\n";
+    };
+
 		51728768291B6F30009E6EC1 /* Write Info.h */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -3188,6 +3242,9 @@
 				D5007BE8D899B0D8736F4389 /* SourceCoordinatorTests.swift in Sources */,
 				D5003EF1CE9142CDF2105124 /* MediaMigrationTests.swift in Sources */,
 				A10000000000000000000005 /* UniPlayerTests.swift in Sources */,
+				AF8700000000000000000021 /* TorrentAuditRegressionTests.swift in Sources */,
+				AF8700000000000000000020 /* TorrentIntegrationTests.swift in Sources */,
+				AF8700000000000000000009 /* TorrentCoreTests.swift in Sources */,
 				BB9000000000000000000002 /* InlinePlayerTests.swift in Sources */,
 				AF8500000000000000000014 /* NetflixRatingsTests.swift in Sources */,
 				DD9000000000000000000002 /* SubtitleTranslationTests.swift in Sources */,
@@ -3235,6 +3292,15 @@
 				AA3000000000000000000002 /* LibraryView.swift in Sources */,
 				CC2000000000000000000002 /* ChannelBrowserView.swift in Sources */,
 				AF8500000000000000000011 /* NetflixRatings.swift in Sources */,
+				AF8700000000000000000022 /* TorrentProcessOwnership.swift in Sources */,
+				AF8700000000000000000008 /* TorrentSettingsView.swift in Sources */,
+				AF8700000000000000000007 /* TorrentPlaybackCoordinator.swift in Sources */,
+				AF8700000000000000000006 /* TorrentInspection.swift in Sources */,
+				AF8700000000000000000005 /* TorrentPlaybackStore.swift in Sources */,
+				AF8700000000000000000004 /* ChannelTorrentBridge.swift in Sources */,
+				AF8700000000000000000003 /* TorrentMediaBridge.swift in Sources */,
+				AF8700000000000000000002 /* TransmissionRuntime.swift in Sources */,
+				AF8700000000000000000001 /* TorrentTypes.swift in Sources */,
 				AF8500000000000000000012 /* NetflixRatingsSettingsView.swift in Sources */,
 				CC1000000000000000000002 /* Channel.swift in Sources */,
 				AA4000000000000000000002 /* LibraryWindowController.swift in Sources */,

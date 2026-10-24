@@ -91,6 +91,13 @@ class PlayerCore: NSObject {
     return first
   }
 
+  static func makeTorrentPlayer() -> PlayerCore {
+    playerCores.first { $0.isTorrentDedicated && !$0.isInline && $0.info.state == .idle && !$0.backgroundTaskInUse } ?? createPlayerCore(forTorrent:true)
+  }
+  private(set) var isTorrentDedicated = false
+
+  var torrentContext: TorrentPlayerContext?
+
   static var newPlayerCore: PlayerCore {
     return findIdlePlayerCore() ?? createPlayerCore()
   }
@@ -147,15 +154,16 @@ class PlayerCore: NSObject {
   }
 
   static private func findIdlePlayerCore() -> PlayerCore? {
-    playerCores.first { $0.info.state == .idle && !$0.backgroundTaskInUse }
+    playerCores.first { !$0.isTorrentDedicated && $0.info.state == .idle && !$0.backgroundTaskInUse }
   }
 
-  static private func createPlayerCore() -> PlayerCore {
+  static private func createPlayerCore(forTorrent: Bool = false) -> PlayerCore {
     let pc = PlayerCore()
+    pc.isTorrentDedicated = forTorrent
     pc.label = "\(playerCoreCounter)"
     playerCores.append(pc)
     pc.startMPV()
-    pc.loadPlugins()
+    if !forTorrent { pc.loadPlugins() }
     playerCoreCounter += 1
     return pc
   }
@@ -175,6 +183,12 @@ class PlayerCore: NSObject {
    */
   @discardableResult
   static func openURLs(_ urls: [URL], invertOpenInNewWindow: Bool = false) -> Int? {
+    let torrents = urls.filter { TorrentPreferences.enabled && TorrentPlaybackCoordinator.recognizes($0) }
+    if !torrents.isEmpty {
+      torrents.forEach { url in MainActor.assumeIsolated { _ = TorrentPlaybackCoordinator.shared.route(url) } }
+      let others = urls.filter { !TorrentPreferences.enabled || !TorrentPlaybackCoordinator.recognizes($0) }
+      return others.isEmpty ? torrents.count : (openURLs(others,invertOpenInNewWindow:invertOpenInNewWindow) ?? 0) + torrents.count
+    }
     var openInCurrentWindow = !Preference.bool(for: .alwaysOpenInNewWindow)
     if invertOpenInNewWindow {
       openInCurrentWindow = !openInCurrentWindow
@@ -562,6 +576,7 @@ class PlayerCore: NSObject {
   }
 
   func loadPlugins() {
+    guard !isTorrentDedicated else { clearPlugins(); return }
     pluginMap.removeAll()
     plugins = JavascriptPlugin.plugins.compactMap { plugin in
       guard plugin.enabled else { return nil }
@@ -572,6 +587,7 @@ class PlayerCore: NSObject {
   }
 
   func reloadPlugin(_ plugin: JavascriptPlugin, forced: Bool = false) {
+    guard !isTorrentDedicated else { clearPlugins(); return }
     let id = plugin.identifier
     if let _ = pluginMap[id] {
       if plugin.enabled {
@@ -645,6 +661,21 @@ class PlayerCore: NSObject {
   func openURLs(_ urls: [URL], shouldAutoLoad autoLoad: Bool = true,
                 plans: [PlaybackLoadPlan]? = nil) -> Int? {
     guard !urls.isEmpty else { return 0 }
+    let torrents = urls.filter { TorrentPreferences.enabled && TorrentPlaybackCoordinator.recognizes($0) }
+    if !torrents.isEmpty {
+      torrents.forEach { url in MainActor.assumeIsolated { _ = TorrentPlaybackCoordinator.shared.route(url) } }
+      let others = urls.filter { !TorrentPreferences.enabled || !TorrentPlaybackCoordinator.recognizes($0) }
+      return others.isEmpty ? torrents.count : (openURLs(others,shouldAutoLoad:autoLoad) ?? 0) + torrents.count
+    }
+    if isTorrentDedicated, !urls.contains(where:{ $0 == torrentContext?.transportURL }) {
+      // A dedicated torrent core never writes raw transport watch-later state.
+      // Ordinary replacement uses the unchanged normal core configuration.
+      savePlaybackPosition()
+      let normal = PlayerCore.createPlayerCore()
+      let result = normal.openURLs(urls,shouldAutoLoad:autoLoad)
+      mainWindow.close()
+      return result
+    }
     // A catalog plan already carries the canonical URL; resolving it again
     // would probe the filesystem on the main thread for no change.
     let fullyPlanned = plans.map { plans in
@@ -774,7 +805,7 @@ class PlayerCore: NSObject {
       // A new file in the same surface is a new inline session.
       inlineSessionID += 1
     }
-    info.currentURL = url
+    info.currentURL = torrentContext?.record.identity.url ?? url
     info.mpvMd5 = Utility.mpvWatchLaterMd5(url, ignorePathInWatchLaterConfig)
     info.isNetworkResource = isNetwork
     info.audioTracks = []
@@ -1417,6 +1448,7 @@ class PlayerCore: NSObject {
       MediaPlaybackService.shared.saveCurrent(player: self)
     }
     savePlaybackPosition()
+    MainActor.assumeIsolated { torrentContext?.owner?.detach(player:self) }
 
     // The player may already be stopped in which case the state must not be set to stopping.
     if info.state != .idle {
@@ -2456,6 +2488,14 @@ class PlayerCore: NSObject {
   }
 
   func savePlaybackPosition() {
+    if isTorrentDedicated && torrentContext == nil { return }
+    if torrentContext != nil {
+      MainActor.assumeIsolated { torrentContext?.owner?.savePosition(player:self) }
+      if let url = info.currentURL, let position = info.videoPosition {
+        HistoryController.shared.updateProgress(for:url,progress:position,duration:info.videoDuration ?? .zero)
+      }
+      return
+    }
     guard mpv.getFlag(MPVOption.WatchLater.savePositionOnQuit) else { return }
 
     // The player must be active to be able to save the watch later configuration.
@@ -2547,9 +2587,18 @@ class PlayerCore: NSObject {
     info.justStartedFile = true
     info.disableOSDForFileLoading = true
 
-    info.currentURL = path.contains("://") ?
+    if let context = torrentContext, path != context.transportURL.absoluteString {
+      // Playlist changes can bypass openURLs; keep them out of the dedicated core too.
+      savePlaybackPosition()
+      let ordinary = path.contains("://") ? URL(string:path) : URL(fileURLWithPath:path)
+      if let ordinary { PlayerCore.createPlayerCore().openURL(ordinary,shouldAutoLoad:false) }
+      mainWindow.close()
+      return
+    }
+    if torrentContext == nil && path.contains("/torrent-media/") { return }
+    info.currentURL = torrentContext?.record.identity.url ?? (path.contains("://") ?
       URL(string: path.addingPercentEncoding(withAllowedCharacters: .urlAllowed) ?? path) :
-      URL(fileURLWithPath: path)
+      URL(fileURLWithPath: path))
     if let url = info.currentURL {
       info.mpvMd5 = Utility.mpvWatchLaterMd5(url, ignorePathInWatchLaterConfig)
     }
@@ -2650,6 +2699,10 @@ class PlayerCore: NSObject {
     MainActor.assumeIsolated {
       MediaPlaybackService.shared.fileLoaded(player: self)
     }
+    if let context = torrentContext, !context.resumed {
+      context.resumed = true
+      if context.resumePosition > 0 { seek(absoluteSecond:context.resumePosition) }
+    }
 
     postNotification(.iinaFileLoaded)
     events.emit(.fileLoaded, data: info.currentURL?.absoluteString ?? "")
@@ -2712,9 +2765,9 @@ class PlayerCore: NSObject {
   }
 
   private func recordHistoryEntry() {
-    guard let url = info.currentURL else { return }
+    guard let url = info.currentURL, !url.path.hasPrefix("/torrent-media/") else { return }
     let duration = info.videoDuration ?? .zero
-    let mediaTitle = mpv.getString(MPVProperty.mediaTitle)
+    let mediaTitle = torrentContext?.record.title ?? mpv.getString(MPVProperty.mediaTitle)
     // Unfortunately the mpv media-title property returns the filename when
     // there isn't a title. Don't store a title unless the media has one.
     let titleToUse: String? = {
@@ -2724,7 +2777,7 @@ class PlayerCore: NSObject {
     }()
     HistoryController.shared.add(url, duration: duration.second, title: titleToUse,
                                  ignorePathInWatchLaterConfig)
-    if Preference.bool(for: .recordRecentFiles)
+    if torrentContext == nil && Preference.bool(for: .recordRecentFiles)
         && Preference.bool(for: .trackAllFilesInRecentOpenMenu) {
       AppDelegate.shared.noteNewRecentDocumentURL(url)
     }

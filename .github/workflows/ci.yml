@@ -32,6 +32,11 @@ jobs:
           DOWNLOAD_LIBS_ARGS: ${{ github.event_name == 'pull_request' && '--skip-plugins' || '' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Build and verify the pinned torrent runtime
+        run: |
+          python3 scripts/build-torrent-runtime.py
+          python3 -m unittest discover -s tests/torrent-runtime -p 'test_*.py'
+
       - name: Test
         run: xcodebuild -project uniplayer.xcodeproj -scheme uniplayer -derivedDataPath . -configuration Debug CODE_SIGNING_ALLOWED=NO test
 
