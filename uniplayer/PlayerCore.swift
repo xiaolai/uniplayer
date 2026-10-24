@@ -294,6 +294,12 @@ class PlayerCore: NSObject {
 
   lazy var info: PlaybackInfo = PlaybackInfo(self)
 
+  /// AI subtitle translation for this player. Created in `init` so it observes
+  /// file loads and settings changes from the start.
+  lazy var subtitleTranslation: SubtitleTranslationController = {
+    SubtitleTranslationController(player: self)
+  }()
+
   var syncUITimer: Timer?
 
   var displayOSD: Bool = true
@@ -459,6 +465,7 @@ class PlayerCore: NSObject {
     TouchBarSettings.shared.addObserver(self, forKey: .PresentationModeFnModes)
     TouchBarSettings.shared.addObserver(self, forKey: .PresentationModeGlobal)
     TouchBarSettings.shared.addObserver(self, forKey: .PresentationModePerApp)
+    _ = subtitleTranslation
   }
 
   func observe(_ name: Notification.Name, block: @escaping (Notification) -> Void) {
@@ -2972,6 +2979,11 @@ class PlayerCore: NSObject {
     if isInMiniPlayer {
       miniPlayer.refreshArtworkVisibility()
     }
+  }
+
+  /// The text of the subtitle line mpv is currently displaying changed.
+  func subTextChanged(_ text: String) {
+    subtitleTranslation.sourceTextChanged(text)
   }
 
   func trackListChanged() {

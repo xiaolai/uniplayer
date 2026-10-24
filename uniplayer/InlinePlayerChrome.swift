@@ -57,6 +57,7 @@ final class InlinePlayerModel: ObservableObject {
   @Published private(set) var subTracks: [MPVTrack] = []
   @Published private(set) var selectedAudioID: Int?
   @Published private(set) var selectedSubID: Int?
+  @Published private(set) var subtitleTranslationEnabled = false
   @Published private(set) var message: String?
   @Published private(set) var isFullscreen = false
   @Published private(set) var controlsVisible = true
@@ -100,6 +101,9 @@ final class InlinePlayerModel: ObservableObject {
     player.inlineHideOSDHandler = { [weak self] in
       self?.hideMessage()
     }
+    player.observe(.iinaSubtitleTranslationChanged) { [weak self] _ in
+      self?.refresh()
+    }
   }
 
   // MARK: Reading the player
@@ -130,6 +134,7 @@ final class InlinePlayerModel: ObservableObject {
     subTracks = info.subTracks
     selectedAudioID = info.aid
     selectedSubID = info.sid
+    subtitleTranslationEnabled = player.subtitleTranslation.isEnabled
     currentURL = info.currentURL
     if let provider = fullscreenProvider {
       isFullscreen = provider()
@@ -239,6 +244,12 @@ final class InlinePlayerModel: ObservableObject {
   func selectSubtitle(_ track: MPVTrack) {
     player.setTrack(track.id, forType: .sub)
     refresh()
+  }
+
+  func toggleSubtitleTranslation() {
+    player.subtitleTranslation.userSetEnabled(!player.subtitleTranslation.isEnabled)
+    refresh()
+    registerActivity()
   }
 
   func toggleFullscreen() {
@@ -397,6 +408,17 @@ struct InlinePlayerChrome: View {
     Menu {
       audioMenu
       subtitleMenu
+      Divider()
+      Button {
+        model.toggleSubtitleTranslation()
+      } label: {
+        if model.subtitleTranslationEnabled {
+          Label(inlineL("Translate Subtitles with AI"), systemImage: "checkmark")
+        } else {
+          Text(inlineL("Translate Subtitles with AI"))
+        }
+      }
+      Divider()
       speedMenu
       Button(inlineL("Open in New Window")) { model.onOpenInNewWindow?() }
     } label: {

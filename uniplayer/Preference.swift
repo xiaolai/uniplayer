@@ -60,6 +60,10 @@ struct Preference {
     static let assistantEndpoint = Key("assistantEndpoint")
     static let assistantModel = Key("assistantModel")
 
+    /** AI subtitle translation. An empty language follows the system language. */
+    static let subtitleTranslationEnabled = Key("subtitleTranslationEnabled")
+    static let subtitleTranslationLanguage = Key("subtitleTranslationLanguage")
+
     static let useLiquidGlassOSD = Key("useLiquidGlassOSD")
     static let useLiquidGlassOSC = Key("useLiquidGlassOSC")
     static let useLiquidGlassSidebar = Key("useLiquidGlassSidebar")
@@ -978,6 +982,8 @@ struct Preference {
     .assistantProvider: AssistantProviderKind.openAICompatible.rawValue,
     .assistantEndpoint: AssistantProviderKind.openAICompatible.defaultEndpoint,
     .assistantModel: AssistantProviderKind.openAICompatible.defaultModel,
+    .subtitleTranslationEnabled: false,
+    .subtitleTranslationLanguage: "",
     .useLiquidGlassOSD: true,
     .useLiquidGlassOSC: true,
     .useLiquidGlassSidebar: true,
