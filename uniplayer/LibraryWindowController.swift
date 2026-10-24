@@ -32,6 +32,12 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
   private let savesToolbarConfiguration: Bool
   private var temporarySearchItem = false
   private var searchToolbarAutosavesConfiguration = false
+  private static let sidebarItem = NSToolbarItem.Identifier("library.sidebar")
+  private static let sidebarBoundary = NSToolbarItem.Identifier("library.sidebarBoundary")
+  /// AppKit renders one native platter per run of adjacent items; its fixed
+  /// space is the supported way to start the next button group.
+  private static let groupSeparator = NSToolbarItem.Identifier.space
+  private lazy var sidebarSpacer = LibraryTitlebarSpacer()
   private(set) lazy var searchToolbarItem: NSSearchToolbarItem = {
     let item = NSSearchToolbarItem(itemIdentifier: .init("library.search"))
     item.label = NSLocalizedString("Search Library", comment: "Library toolbar")
@@ -91,6 +97,7 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
     }
     super.showWindow(sender)
     window?.makeKeyAndOrderFront(nil)
+    updateSidebarToolbarLayout()
   }
 
   private func createWindow() {
@@ -101,6 +108,7 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
     hosting.sizingOptions = []
     window.contentView = hosting
     installToolbar(in: window)
+    window.addTitlebarAccessoryViewController(sidebarSpacer)
     updateMinimumSize(window)
     window.delegate = self
     // Assigning the controller sets NSWindow's responder chain. Insert our
@@ -146,6 +154,32 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
     if !toolbar.items.contains(where: { $0.itemIdentifier.rawValue == "library.navigation" }) {
       toolbar.insertItem(withItemIdentifier: .init("library.navigation"), at: toolbar.items.count)
     }
+    normalizeToolbarStructure(in: toolbar)
+  }
+
+  /// Keep the sidebar toggle and its own native group first without resetting
+  /// the user's content actions.
+  func normalizeToolbarStructure(in toolbar: NSToolbar) {
+    let structural: [NSToolbarItem.Identifier] = [Self.sidebarItem, Self.sidebarBoundary]
+    // Retired toolbar items: the structural leading space and the Add Source
+    // button, which duplicated the File and Sources menu actions.
+    var identifiers = toolbar.itemIdentifiers.filter {
+      $0.rawValue != "library.sidebarLeadingSpace" && $0.rawValue != "library.add"
+        && !structural.contains($0)
+    }
+    while identifiers.first == Self.groupSeparator { identifiers.removeFirst() }
+    identifiers.insert(contentsOf: structural + [Self.groupSeparator], at: 0)
+    // Layouts saved before the groups existed run Back, Forward, Open File and
+    // Open URL together in one platter.
+    if let forward = identifiers.firstIndex(of: .init("library.forward")),
+       identifiers.indices.contains(forward + 1),
+       identifiers[forward + 1] == .init("library.file") {
+      identifiers.insert(Self.groupSeparator, at: forward + 1)
+    }
+    let autosaves = toolbar.autosavesConfiguration
+    toolbar.autosavesConfiguration = false
+    toolbar.itemIdentifiers = identifiers
+    toolbar.autosavesConfiguration = autosaves
   }
 
   func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
@@ -153,22 +187,41 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
   }
 
   func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-    [.init("library.sidebar"), .init("library.back"), .init("library.forward"),
+    [Self.sidebarItem, Self.sidebarBoundary, Self.groupSeparator,
+     .init("library.back"), .init("library.forward"), Self.groupSeparator,
      .init("library.file"), .init("library.url"),
-     .flexibleSpace, .init("library.search"), .init("library.add"),
+     .flexibleSpace, .init("library.search"),
      .init("library.navigation"), .init("library.inspector")]
+  }
+
+  func toolbarImmovableItemIdentifiers(_ toolbar: NSToolbar) -> Set<NSToolbarItem.Identifier> {
+    [Self.sidebarItem, Self.sidebarBoundary, Self.groupSeparator]
+  }
+
+  func toolbar(_ toolbar: NSToolbar, itemIdentifier: NSToolbarItem.Identifier, canBeInsertedAt index: Int) -> Bool {
+    index == NSNotFound || index >= toolbarImmovableItemIdentifiers(toolbar).count
   }
 
   func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier id: NSToolbarItem.Identifier,
                willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
     if id.rawValue == "library.search" { return searchToolbarItem }
+    if id == Self.sidebarBoundary {
+      // Zero width: the item exists only to mark the sidebar's trailing edge.
+      let item = NSToolbarItem(itemIdentifier: id)
+      let marker = LibraryToolbarLayoutSpace()
+      marker.translatesAutoresizingMaskIntoConstraints = false
+      NSLayoutConstraint.activate([marker.widthAnchor.constraint(equalToConstant: Tokens.Space.n0),
+                                   marker.heightAnchor.constraint(equalToConstant: Tokens.Space.n1)])
+      item.view = marker
+      item.visibilityPriority = .high
+      return item
+    }
     let definitions: [String: (String, String, Selector)] = [
       "library.back": ("Back", "chevron.left", #selector(navigateBack(_:))),
       "library.forward": ("Forward", "chevron.right", #selector(navigateForward(_:))),
       "library.sidebar": ("Show or Hide Sidebar", "sidebar.left", #selector(toggleSidebar(_:))),
       "library.file": ("Open File…", "folder", #selector(toolbarOpenFile(_:))),
       "library.url": ("Open URL…", "link", #selector(toolbarOpenURL(_:))),
-      "library.add": ("Add Source…", "plus", #selector(toolbarAddSource(_:))),
       "library.navigation": ("Channel Navigation", "safari", #selector(toggleChannelNavigation(_:))),
       "library.inspector": ("AI Assistant", "sidebar.right", #selector(menuToggleInspector(_:))),
     ]
@@ -183,9 +236,26 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
     return item
   }
 
+  /// Measure the actual native toolbar layout rather than assuming button sizes
+  /// or traffic-light insets. The zero-width boundary marks the sidebar's
+  /// trailing edge; the transparent titlebar strip moves the toggle group there
+  /// without stretching the toggle's own platter.
+  private func updateSidebarToolbarLayout() {
+    guard let toolbar = window?.toolbar,
+          let boundary = toolbar.items.first(where: { $0.itemIdentifier == Self.sidebarBoundary }),
+          let marker = boundary.view else { return }
+    if chrome.columnVisibility == .detailOnly {
+      sidebarSpacer.width = Tokens.Space.n0
+      return
+    }
+    guard marker.window != nil, boundary.isVisible else { return }
+    let correction = chrome.sidebarWidth - marker.convert(marker.bounds, to: nil).minX
+    guard abs(correction) > Tokens.Size.n0_5 else { return }
+    sidebarSpacer.width += correction
+  }
+
   @objc private func navigateBack(_ sender: Any?) { chrome.navigateBack?() }
   @objc private func navigateForward(_ sender: Any?) { chrome.navigateForward?() }
-  @objc private func toolbarAddSource(_ sender: Any?) { chrome.addSource?() }
 
   private func updatePlaybackToolbar() {
     window?.toolbar?.validateVisibleItems()
@@ -318,6 +388,9 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
   }
 
   private func wireChromeActions(window: NSWindow) {
+    chrome.sidebarLayoutChanged = { [weak self] in
+      DispatchQueue.main.async { self?.updateSidebarToolbarLayout() }
+    }
     chrome.playbackChromeChanged = { [weak self] in self?.updatePlaybackToolbar() }
     chrome.searchPresentationChanged = { [weak self] in self?.updateSearchPresentation() }
     chrome.searchQueryChanged = { [weak self] in self?.updateSearchText() }
@@ -625,6 +698,10 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
 
   // MARK: - NSWindowDelegate
 
+  func windowDidUpdate(_ notification: Notification) {
+    updateSidebarToolbarLayout()
+  }
+
   func windowWillEnterFullScreen(_ notification: Notification) {
     fullscreenPanes = (chrome.columnVisibility, chrome.inspectorPresented, chrome.leftDocked, chrome.rightDocked)
     // Fullscreen cannot expand outwards: visible panes float above the content.
@@ -702,6 +779,35 @@ final class LibraryWindowController: NSWindowController, NSWindowDelegate, NSToo
     reloadData()
   }
 
+}
+
+/// Structural space must leave ordinary titlebar dragging to AppKit.
+private final class LibraryToolbarLayoutSpace: NSView {
+  override var mouseDownCanMoveWindow: Bool { true }
+  override func hitTest(_ point: NSPoint) -> NSView? { nil }
+}
+
+/// A transparent leading titlebar strip that offsets the toolbar so the sidebar
+/// toggle sits above the sidebar's trailing edge. It is deliberately outside the
+/// toolbar: a toolbar spacer would join, and visually stretch, the toggle's
+/// native button group.
+private final class LibraryTitlebarSpacer: NSTitlebarAccessoryViewController {
+  private let strip = LibraryToolbarLayoutSpace(frame: .zero)
+
+  var width: CGFloat {
+    get { strip.frame.width }
+    set { strip.setFrameSize(NSSize(width: max(Tokens.Space.n0, newValue), height: strip.frame.height)) }
+  }
+
+  init() {
+    super.init(nibName: nil, bundle: nil)
+    layoutAttribute = .left
+    view = strip
+  }
+
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
 }
 
 private final class LibraryToolbarSearchField: NSSearchField {

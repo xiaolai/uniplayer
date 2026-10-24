@@ -30,7 +30,7 @@
 "8kU-8g-VgX.title" = "Requires restarting UniPlayer to take effect.";
 
 /* Class = "NSButtonCell"; title = "Only in \"music mode\""; ObjectID = "AVe-9Z-RgQ"; */
-"AVe-9Z-RgQ.title" = "Only in \"music mode\"";
+"AVe-9Z-RgQ.title" = "Only in the HUD window";
 
 /* Class = "NSButtonCell"; title = "Track all played files in \"Open Recent\" menu"; ObjectID = "Ci8-j2-QS3"; */
 "Ci8-j2-QS3.title" = "Track all played files in \"Open Recent\" menu";
@@ -60,7 +60,7 @@
 "Kdk-iC-e1C.title" = "Still prevents system from sleeping.";
 
 /* Class = "NSButtonCell"; title = "Switch to \"music mode\" automatically when playing an audio file"; ObjectID = "KfL-r7-Uav"; */
-"KfL-r7-Uav.title" = "Switch to \"music mode\" automatically when playing an audio file";
+"KfL-r7-Uav.title" = "Switch to the HUD window automatically when playing an audio file";
 
 /* Class = "NSButtonCell"; title = "Play next item automatically"; ObjectID = "Lac-Ol-g6E"; */
 "Lac-Ol-g6E.title" = "Play next item automatically";
@@ -153,7 +153,7 @@
 "xr2-rB-O0x.title" = "Pause/resume when:";
 
 /* Class = "NSButtonCell"; title = "Not while in \"music mode\" or only playing audio"; ObjectID = "yla-DT-YTx"; */
-"yla-DT-YTx.title" = "Not while in \"music mode\" or only playing audio";
+"yla-DT-YTx.title" = "Not while in the HUD window or only playing audio";
 
 /* Class = "NSMenuItem"; title = "Show Library"; ObjectID = "z9T-8h-1T0"; */
 "z9T-8h-1T0.title" = "Show Library";

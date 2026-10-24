@@ -198,8 +198,8 @@
 "menu.exit_fullscreen" = "Exit Full Screen";
 "menu.pip" = "Enter Picture-in-Picture";
 "menu.exit_pip" = "Exit Picture-in-Picture";
-"menu.mini_player" = "Enter Music Mode";
-"menu.exit_mini_player" = "Exit Music Mode";
+"menu.mini_player" = "Switch to HUD Window";
+"menu.exit_mini_player" = "Exit HUD Window";
 "menu.pause" = "Pause";
 "menu.resume" = "Resume";
 "menu.speed" = "Speed: %@x";
@@ -426,7 +426,7 @@
 "osc_toolbar.playlist" = "Playlist and chapters";
 "osc_toolbar.pip" = "Toggle Picture-in-Picture";
 "osc_toolbar.full_screen" = "Toggle full screen";
-"osc_toolbar.music_mode" = "Enter music mode";
+"osc_toolbar.music_mode" = "Switch to HUD Window";
 "osc_toolbar.sub_track" = "Choose subtitle track";
 "osc_toolbar.screenshot" = "Take a screenshot";
 "osc_toolbar.plugins" = "Show plugins panel";
@@ -436,14 +436,14 @@
 "osc_pos.top" = "Top";
 "osc_pos.bottom" = "Bottom";
 
-"mini_player.album_art" = "Toggle album art";
+"mini_player.album_art" = "Show or Hide Video and Artwork";
 "mini_player.loop" = "Repeat";
 "mini_player.shuffle" = "Shuffle";
 "mini_player.remove" = "Remove from playlist";
 "mini_player.add" = "Add to playlist";
 "mini_player.delete" = "Delete all tracks from playlist";
 "mini_player.volume" = "Volume";
-"mini_player.close" = "Close music mode";
+"mini_player.close" = "Close HUD window";
 "mini_player.back" = "Return to video mode";
 "mini_player.sort" = "Sort the playlist";
 
@@ -606,10 +606,10 @@
 "settings.actionAfterLaunch.label" = "At launch";
 "settings.allowDuplicatePlayers.label" = "Allow opening the same file in multiple windows";
 "settings.allowScreenSaverForAudio.desc" = "Still prevents system from sleeping.";
-"settings.allowScreenSaverForAudio.label" = "Not while in \"music mode\" or only playing audio";
+"settings.allowScreenSaverForAudio.label" = "Not while in the HUD window or only playing audio";
 "settings.alwaysOpenInNewWindow.label" = "Allow multiple player windows";
 "settings.autoRepeat.label" = "Loop when a file is opened manually";
-"settings.autoSwitchToMusicMode.label" = "Switch to \"music mode\" automatically when playing an audio file";
+"settings.autoSwitchToMusicMode.label" = "Switch to the HUD window automatically when playing an audio file";
 "settings.blackOutMonitor.label" = "Black out other monitors while in full screen";
 "settings.defaultRepeatMode.items.0" = "Loop playlist";
 "settings.defaultRepeatMode.items.1" = "Loop single file";
@@ -627,7 +627,7 @@
 "settings.playlistAutoAdd.label" = "Add files in the same folder automatically";
 "settings.playlistAutoPlayNext.label" = "Play next item automatically";
 "settings.playlistShowMetadata.label" = "Show artist and track name for audio files when available";
-"settings.playlistShowMetadataInMusicMode.label" = "Only in \"music mode\"";
+"settings.playlistShowMetadataInMusicMode.label" = "Only in the HUD window";
 "settings.preventScreenSaver.label" = "Prevent screen saver from starting while playing";
 "settings.quitWhenNoOpenedWindow.label" = "Quit after all windows are closed";
 "settings.recordPlaybackHistory.label" = "Enable playback history";

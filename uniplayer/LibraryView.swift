@@ -78,15 +78,22 @@ final class LibraryChrome: ObservableObject {
   var searchQueryChanged: (() -> Void)?
   var searchText: (() -> String)?
   var searchTextChanged: ((String) -> Void)?
-  @Published var columnVisibility: NavigationSplitViewVisibility = .all
+  @Published var columnVisibility: NavigationSplitViewVisibility = .all {
+    didSet { if columnVisibility != oldValue { sidebarLayoutChanged?() } }
+  }
   @Published var inspectorPresented = false
-  @Published var leftDocked = true
+  @Published var leftDocked = true {
+    didSet { if leftDocked != oldValue { sidebarLayoutChanged?() } }
+  }
   @Published var rightDocked = true
   @Published var canDockLeft = false
   @Published var canDockRight = false
   var pinPane: ((Bool) -> Void)?
   @Published var sidebarWidth = LibraryLayout.boundedPaneWidth(
-    UserDefaults.standard.object(forKey: "library.outwardSidebarWidth.v1") as? Double ?? Tokens.Library.outwardSidebarWidth, left: true)
+    UserDefaults.standard.object(forKey: "library.outwardSidebarWidth.v1") as? Double ?? Tokens.Library.outwardSidebarWidth, left: true) {
+    didSet { if sidebarWidth != oldValue { sidebarLayoutChanged?() } }
+  }
+  var sidebarLayoutChanged: (() -> Void)?
   @Published var inspectorWidth = LibraryLayout.boundedPaneWidth(
     UserDefaults.standard.object(forKey: "library.outwardInspectorWidth.v1") as? Double ?? Tokens.Inspector.idealWidth, left: false)
   @Published var playbackPresented = false {
@@ -98,7 +105,6 @@ final class LibraryChrome: ObservableObject {
   @Published var canNavigateForward = false
   var navigateBack: (() -> Void)?
   var navigateForward: (() -> Void)?
-  var addSource: (() -> Void)?
   @Published var channelSelected = false
   @Published var channelNavigationPresented = false
   var resizePane: ((Bool, CGFloat) -> Void)?
@@ -490,15 +496,6 @@ struct LibraryRootView: View {
       catalogDetailID = nil
       sourcePropertiesID = nil
     }
-    chrome.addSource = {
-      guard let coordinator = MediaSourcesEnvironment.shared.coordinator else { return }
-      AddSourceSupport.present(coordinator: coordinator, window: NSApp.keyWindow,
-                               onCreated: { root in
-        selection = .source(root.id)
-        catalogDetailID = nil
-        sourcePropertiesID = nil
-      }, onError: { sourceError = $0 })
-    }
     // Navigation closures are owned by updateNavigationChrome().
     updateNavigationChrome()
 
@@ -652,8 +649,6 @@ struct LibraryRootView: View {
       Section {
         sidebarLabel(LibrarySection.home.title, symbol: LibrarySection.home.symbol)
           .tag(LibrarySidebarItem.section(.home))
-        sidebarLabel(LibrarySection.search.title, symbol: LibrarySection.search.symbol)
-          .tag(LibrarySidebarItem.section(.search))
       }
       Section {
         sidebarLabel(LibrarySection.continueWatching.title, symbol: LibrarySection.continueWatching.symbol)
@@ -1076,12 +1071,10 @@ private struct HomeView: View {
     ScrollView {
       VStack(alignment: .leading, spacing: Tokens.Space.n24) {
         HStack {
-          Text(L("Home")).font(Tokens.Typography.pageTitle.scaledFont(textScale))
+          // Keep the title row's line height so the shelves do not shift up.
+          Text(L("Home")).font(Tokens.Typography.pageTitle.scaledFont(textScale)).hidden()
           Spacer()
         }
-        Text(L("Your playback history, ready to resume."))
-          .font(Tokens.Typography.body.scaledFont(textScale))
-          .foregroundStyle(Tokens.Palette.textSecondary.color)
         if !model.hasLoaded {
           LibraryLoadingState()
         }

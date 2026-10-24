@@ -9,7 +9,7 @@ for its author's own machines; there is no support commitment, no roadmap, and
 no promise that a change will suit anyone else's setup. Issues and pull
 requests may go unanswered.
 
-The current version is 0.2.2 (build 17). Release builds use Developer ID signing
+The current version is 0.2.3 (build 18). Release builds use Developer ID signing
 and Apple notarization.
 
 ## Install
@@ -20,6 +20,18 @@ brew install --cask xiaolai/tap/uniplayer
 
 Requires macOS 27 or later. The universal build contains Apple silicon and
 Intel binaries. Release builds are Developer ID signed and notarized, with stapled tickets.
+
+## HUD window
+
+The HUD is UniPlayer's compact playback window (formerly called Music Mode).
+While playing in the library, use the HUD button in the player controls or
+**Video → Switch to HUD Window**. The library stays open; exiting the HUD
+returns to the standalone player window.
+
+The release DMG also contains the tiny **UniPlayer HUD.app** Finder handler.
+Install it next to UniPlayer, and Finder's **Open With** menu offers
+“UniPlayer HUD”, which opens the selected files in the HUD. Install both apps;
+the Homebrew cask must ship both.
 
 ## Relationship to IINA
 

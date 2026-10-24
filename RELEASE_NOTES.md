@@ -1,5 +1,20 @@
 # Release notes
 
+## 0.2.3 (build 18)
+
+- Group the library's leading toolbar controls into three native groups:
+  sidebar toggle, navigation, and open file/URL. Remove the dead Add Source
+  toolbar button, which duplicated the File and Sources menus, and the
+  duplicate sidebar Search item, which duplicated the toolbar field and ⌘F.
+- Add a Switch to HUD Window button to the inline player controls. Rename
+  Music Mode to HUD Window across menus, settings, the OSC toolbar and key
+  bindings, and correct the HUD media-area toggle label.
+- Add the tiny UniPlayer HUD.app Finder handler. Finder's Open With now offers
+  both UniPlayer and UniPlayer HUD; the latter opens the selection in the HUD.
+  Install both apps; the Homebrew cask must ship both.
+- Remove the large Home heading text and its subtitle while preserving the
+  heading's line height, so the shelves keep their position.
+
 ## 0.2.2 (build 17)
 
 - Restore Netflix IMDb rating badges, which were missing from the release

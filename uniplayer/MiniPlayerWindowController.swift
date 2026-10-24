@@ -351,7 +351,10 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
 
     // tool tips
     togglePlaylistButton.toolTip = Preference.ToolBarButton.playlist.localizedDescription()
-    toggleAlbumArtButton.toolTip = NSLocalizedString("mini_player.album_art", comment: "album_art")
+    let mediaAreaLabel = NSLocalizedString(
+      "mini_player.album_art", comment: "Show or hide video and artwork")
+    toggleAlbumArtButton.toolTip = mediaAreaLabel
+    toggleAlbumArtButton.setAccessibilityLabel(mediaAreaLabel)
     muteButton.toolTip = NSLocalizedString("mini_player.volume", comment: "volume")
 
     if Preference.bool(for: .alwaysFloatOnTop) {

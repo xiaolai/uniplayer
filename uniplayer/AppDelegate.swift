@@ -860,6 +860,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
    - `enqueue`: 0 (default) or 1 to indicate whether to add the media to the current playlist.
    - `full_screen`: 0 (default) or 1 to indicate whether open the media and enter fullscreen.
    - `pip`: 0 (default) or 1 to indicate whether open the media and enter pip.
+   - `hud`: 0 (default) or 1 to open the media in the HUD (mini player) window.
+   - `url` may be repeated to open a Finder selection as one playlist.
    - `mpv_*`: additional mpv options to be passed. e.g. `mpv_volume=20`.
      Options starting with `no-` are not supported.
    */
@@ -882,12 +884,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     if host == "open" || host == "weblink" {
       // open a file or link
       guard let queries = parsed.queryItems else { return }
-      // First value wins. A duplicate query name is malformed input, not a
-      // reason to trap with Dictionary(uniqueKeysWithValues:).
+      // The first value of each name wins for scalar options. A duplicate
+      // query name is malformed input, not a reason to trap with
+      // Dictionary(uniqueKeysWithValues:). Repeated `url` items are
+      // intentional: the HUD helper sends a Finder selection as one request.
       let queryDict = queries.firstValueDictionary
+      let urlValues = queries.filter { $0.name == "url" }.compactMap(\.value).filter { !$0.isEmpty }
 
-      // url
-      guard let urlValue = queryDict["url"], !urlValue.isEmpty else {
+      guard !urlValues.isEmpty else {
         Logger.log("Cannot find parameter \"url\", stopped")
         return
       }
@@ -903,15 +907,27 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       // enqueue
       let playlistEmpty = PlayerCore.lastActive.info.$playlist.withLock { $0.isEmpty }
       if let enqueueValue = queryDict["enqueue"], enqueueValue == "1", !playlistEmpty {
-        PlayerCore.lastActive.appendToPlaylist(urlValue)
+        for urlValue in urlValues {
+          PlayerCore.lastActive.appendToPlaylist(urlValue)
+        }
         PlayerCore.lastActive.postNotification(.iinaPlaylistChanged)
-        PlayerCore.lastActive.sendOSD(.addToPlaylist(1))
+        PlayerCore.lastActive.sendOSD(.addToPlaylist(urlValues.count))
+      } else if urlValues.count == 1 {
+        player.openURLString(urlValues[0])
       } else {
-        player.openURLString(urlValue)
+        let urls = urlValues.compactMap(Self.playbackURL(from:))
+        guard urls.count == urlValues.count else {
+          Logger.log("Cannot parse one or more url parameters", level: .warning)
+          return
+        }
+        player.openURLs(urls)
       }
 
       // presentation options
-      if let fsValue = queryDict["full_screen"], fsValue == "1" {
+      if let hudValue = queryDict["hud"], hudValue == "1" {
+        // hud: the same surface opens in the mini player (HUD) window.
+        player.switchToMiniPlayer()
+      } else if let fsValue = queryDict["full_screen"], fsValue == "1" {
         // full_screen
         player.mpv.setFlag(MPVOption.Window.fullscreen, true)
       } else if let pipValue = queryDict["pip"], pipValue == "1" {
@@ -935,6 +951,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
       Logger.log("Finished URL scheme handling")
     }
+  }
+
+  /// Builds the URL for one `url` query value: a plain path, a file URL, or a
+  /// web URL. The single-value path uses `openURLString`, which also handles
+  /// stdin.
+  private static func playbackURL(from value: String) -> URL? {
+    if value.hasPrefix("/") { return URL(fileURLWithPath: value) }
+    return URL(string: value)
   }
 
   // MARK: - Menu actions

@@ -142,6 +142,18 @@ def main():
     # ZIP submissions notarize the enclosed app; tickets staple to that app.
     # The ZIP itself cannot carry a stapled ticket.
     run('spctl', '--assess', '--type', 'execute', '--verbose=2', app)
+    # The tiny alternate Finder handler opens files in the HUD window. It is a
+    # separate app because Finder's Open With lists apps, not modes.
+    helper = stage/'UniPlayer HUD.app'
+    if helper.exists():
+        shutil.rmtree(helper)
+    run('python3', root/'scripts/build-hud-helper.py',
+        '--app', app, '--output', helper, '--identity', args.identity,
+        '--archs', 'arm64', 'x86_64')
+    helper_architectures = subprocess.check_output(
+        ['lipo', '-archs', str(helper/'Contents/MacOS/UniPlayer HUD')], text=True).split()
+    assert set(helper_architectures) == {'arm64', 'x86_64'}, helper_architectures
+    run('codesign', '--verify', '--deep', '--strict', helper)
     applications = stage/'Applications'
     if not applications.exists():
         applications.symlink_to('/Applications')

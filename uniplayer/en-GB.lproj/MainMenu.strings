@@ -314,7 +314,7 @@
 "ar5-3T-O9h.title" = "Rotation";
 
 /* Class = "NSMenuItem"; title = "Music Mode"; ObjectID = "bGN-E4-V5A"; */
-"bGN-E4-V5A.title" = "Music Mode";
+"bGN-E4-V5A.title" = "Switch to HUD Window";
 
 /* Class = "NSMenuItem"; title = "Open URL in New Window…"; ObjectID = "bfB-bn-KeM"; */
 "bfB-bn-KeM.title" = "Open URL in New Window…";

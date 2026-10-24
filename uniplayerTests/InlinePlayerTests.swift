@@ -26,6 +26,116 @@ final class ChannelRatingIntegrationTests: XCTestCase {
 }
 
 @MainActor
+final class LibrarySidebarToolbarTests: XCTestCase {
+  private func settle(_ controller: LibraryWindowController) async throws {
+    for _ in 0..<8 {
+      controller.window?.contentView?.superview?.layoutSubtreeIfNeeded()
+      if let window = controller.window {
+        controller.windowDidUpdate(Notification(name: NSWindow.didUpdateNotification, object: window))
+      }
+      try await Task.sleep(for: .milliseconds(20))
+    }
+  }
+
+  private func button(_ title: String, in view: NSView) -> NSView? {
+    if view.accessibilityRole() == .button && view.accessibilityLabel() == title { return view }
+    return view.subviews.lazy.compactMap { self.button(title, in: $0) }.first
+  }
+
+  func testNativeControlsFollowTheSidebarBoundaryAndResize() async throws {
+    let chrome = LibraryChrome()
+    let controller = LibraryWindowController(playerCore: PlayerCore.first, chrome: chrome,
+      toolbarIdentifier: "OwnedSidebarToolbar." + UUID().uuidString, savesToolbarConfiguration: false)
+    controller.showWindow(nil)
+    defer { controller.close() }
+    let window = try XCTUnwrap(controller.window)
+    let toolbar = try XCTUnwrap(window.toolbar)
+    let boundary = try XCTUnwrap(toolbar.items.first { $0.itemIdentifier.rawValue == "library.sidebarBoundary" }?.view)
+    let sidebar = try XCTUnwrap(toolbar.items.first { $0.itemIdentifier.rawValue == "library.sidebar" })
+    XCTAssertNil(sidebar.view, "AppKit must create the sidebar button, with native control metrics")
+    for width: CGFloat in [240, 320] {
+      chrome.sidebarWidth = width
+      try await settle(controller)
+      XCTAssertEqual(boundary.convert(boundary.bounds, to: nil).minX, width, accuracy: 1)
+      let frameView = try XCTUnwrap(window.contentView?.superview)
+      let toggle = try XCTUnwrap(button("Show or Hide Sidebar", in: frameView))
+      let back = try XCTUnwrap(button("Back", in: frameView))
+      XCTAssertLessThanOrEqual(toggle.convert(toggle.bounds, to: nil).maxX, width)
+      XCTAssertGreaterThanOrEqual(back.convert(back.bounds, to: nil).minX, width)
+    }
+    XCTAssertTrue(window.styleMask.contains(.fullSizeContentView))
+    XCTAssertTrue(window.titlebarAppearsTransparent)
+  }
+
+  func testLeadingControlsFormThreeNativeGroups() throws {
+    let chrome = LibraryChrome()
+    let controller = LibraryWindowController(playerCore: PlayerCore.first, chrome: chrome,
+      toolbarIdentifier: "OwnedToolbarGroups." + UUID().uuidString, savesToolbarConfiguration: false)
+    controller.showWindow(nil)
+    defer { controller.close() }
+    let toolbar = try XCTUnwrap(controller.window?.toolbar)
+    let ids = toolbar.items.map(\.itemIdentifier)
+    let sidebar = try XCTUnwrap(ids.firstIndex(of: .init("library.sidebar")))
+    let boundary = try XCTUnwrap(ids.firstIndex(of: .init("library.sidebarBoundary")))
+    let back = try XCTUnwrap(ids.firstIndex(of: .init("library.back")))
+    let forward = try XCTUnwrap(ids.firstIndex(of: .init("library.forward")))
+    let file = try XCTUnwrap(ids.firstIndex(of: .init("library.file")))
+    let url = try XCTUnwrap(ids.firstIndex(of: .init("library.url")))
+    XCTAssertEqual(boundary, sidebar + 1)
+    XCTAssertEqual(back, boundary + 2)
+    XCTAssertEqual(ids[back - 1], .space, "The sidebar toggle is its own native group")
+    XCTAssertEqual(forward, back + 1)
+    XCTAssertEqual(file, forward + 2)
+    XCTAssertEqual(ids[file - 1], .space, "Navigation is its own native group")
+    XCTAssertEqual(url, file + 1)
+    XCTAssertFalse(ids.contains(.init("library.sidebarLeadingSpace")))
+  }
+
+  func testLegacyToolbarLayoutRegainsItsGroupSeparators() throws {
+    let controller = LibraryWindowController(playerCore: PlayerCore.first)
+    let toolbar = NSToolbar(identifier: "OwnedLegacyToolbar." + UUID().uuidString)
+    toolbar.autosavesConfiguration = false
+    toolbar.delegate = controller
+    toolbar.itemIdentifiers = [
+      .init("library.sidebar"), .init("library.back"), .init("library.forward"),
+      .init("library.file"), .init("library.url"), .init("library.add"),
+    ]
+    controller.normalizeToolbarStructure(in: toolbar)
+    XCTAssertEqual(toolbar.itemIdentifiers, [
+      .init("library.sidebar"), .init("library.sidebarBoundary"), .space,
+      .init("library.back"), .init("library.forward"), .space,
+      .init("library.file"), .init("library.url"),
+    ])
+  }
+
+  func testCollapsingAndReopeningSidebarRestoresNativeToolbarLayout() async throws {
+    let chrome = LibraryChrome()
+    let controller = LibraryWindowController(playerCore: PlayerCore.first, chrome: chrome,
+      toolbarIdentifier: "OwnedSidebarToggle." + UUID().uuidString, savesToolbarConfiguration: false)
+    controller.showWindow(nil)
+    defer { controller.close() }
+    let toolbar = try XCTUnwrap(controller.window?.toolbar)
+    let boundary = try XCTUnwrap(toolbar.items.first { $0.itemIdentifier.rawValue == "library.sidebarBoundary" })
+    let marker = try XCTUnwrap(boundary.view)
+    try await settle(controller)
+    let frameView = try XCTUnwrap(controller.window?.contentView?.superview)
+    let openBoundaryX = marker.convert(marker.bounds, to: nil).minX
+    XCTAssertEqual(openBoundaryX, chrome.sidebarWidth, accuracy: 1)
+    let originalToggleSize = try XCTUnwrap(button("Show or Hide Sidebar", in: frameView)).frame.size
+    chrome.columnVisibility = .detailOnly
+    try await settle(controller)
+    XCTAssertFalse(boundary.isHidden, "Keep native button groups separate in both states")
+    let collapsedBoundaryX = marker.convert(marker.bounds, to: nil).minX
+    XCTAssertLessThan(collapsedBoundaryX, openBoundaryX, "Collapsing removes the sidebar offset")
+    XCTAssertEqual(try XCTUnwrap(button("Show or Hide Sidebar", in: frameView)).frame.size, originalToggleSize)
+    chrome.columnVisibility = .all
+    try await settle(controller)
+    XCTAssertFalse(boundary.isHidden)
+    XCTAssertEqual(marker.convert(marker.bounds, to: nil).minX, chrome.sidebarWidth, accuracy: 1)
+  }
+}
+
+@MainActor
 final class LibrarySearchToolbarTests: XCTestCase {
   func testSearchUsesANativeToolbarSearchItem() throws {
     let controller = LibraryWindowController(playerCore: PlayerCore.first)

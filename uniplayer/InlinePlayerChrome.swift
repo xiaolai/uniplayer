@@ -356,6 +356,11 @@ final class InlinePlayerModel: ObservableObject {
     onToggleFullscreen?()
   }
 
+  /// Moves the same playback surface to the HUD (Music Mode) window.
+  func switchToHUDWindow() {
+    player.switchToMiniPlayer()
+  }
+
   // MARK: Navigation lifecycle
 
   /// Browsing away pauses playback; returning never starts audio implicitly.
@@ -479,6 +484,9 @@ struct InlinePlayerChrome: View {
             .popover(isPresented: $detailsPresented) { details }
         }
         utilityButtons
+        controlButton("music.note", label: inlineL("Switch to HUD Window")) {
+          model.switchToHUDWindow()
+        }
         fullscreenButton
       }
     }

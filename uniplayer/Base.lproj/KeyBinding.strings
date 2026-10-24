@@ -38,7 +38,7 @@
 "uniplayer.mirror" = "Mirror";
 
 "uniplayer.toggle-pip" = "Toggle Picture-in-Picture";
-"uniplayer.toggle-music-mode" = "Toggle Music Mode";
+"uniplayer.toggle-music-mode" = "Toggle HUD Window";
 "uniplayer.open-file" = "Open file";
 "uniplayer.open-url" = "Open URL";
 "uniplayer.video-panel" = "Video panel";
