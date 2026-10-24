@@ -150,6 +150,21 @@ extension Notification.Name {
   static let iinaSubDelayChanged = Notification.Name("iinaSubDelayChanged")
   static let iinaSubVisibilityChanged = Notification.Name("iinaSubVisibilityChanged")
   static let iinaSubtitleTranslationChanged = Notification.Name("UniPlayerSubtitleTranslationChanged")
+  static let iinaLiveTranslationLanguageChanged = Notification.Name("UniPlayerLiveTranslationLanguageChanged")
+  static let iinaLiveTranslationAudioPermissionChanged = Notification.Name("UniPlayerLiveTranslationAudioPermissionChanged")
+  static let iinaLiveTranslationSourceTextChanged = Notification.Name("UniPlayerLiveTranslationSourceTextChanged")
+  static let iinaLiveTranslationPackDownloadRequested = Notification.Name("UniPlayerLiveTranslationPackDownloadRequested")
+  static let iinaLiveTranslationPackInstalled = Notification.Name("UniPlayerLiveTranslationPackInstalled")
+  static let iinaLiveTranslationSpeechModelInstalled = Notification.Name("UniPlayerLiveTranslationSpeechModelInstalled")
+  static let iinaLiveTranslationSessionRestarted = Notification.Name("UniPlayerLiveTranslationSessionRestarted")
+  static let iinaPauseChanged = Notification.Name("iinaPauseChanged")
+  static let iinaSeekStarted = Notification.Name("UniPlayerSeekStarted")
+  /// Published with a nil object when any player's playing/muted state
+  /// changes, so every player can re-evaluate process-wide audio ownership.
+  static let iinaAudiblePlayersChanged = Notification.Name("UniPlayerAudiblePlayersChanged")
+  static let iinaMuteChanged = Notification.Name("UniPlayerMuteChanged")
+  static let iinaPlaybackStarted = Notification.Name("iinaPlaybackStarted")
+  static let iinaPlaybackRestarted = Notification.Name("iinaPlaybackRestarted")
 
   static let iinaKeyBindingInputChanged = Notification.Name("UniPlayerKeyBindingInputChanged")
   static let iinaFileLoaded = Notification.Name("UniPlayerFileLoaded")

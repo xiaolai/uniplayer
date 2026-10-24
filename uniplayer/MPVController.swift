@@ -1154,6 +1154,7 @@ class MPVController: NSObject {
     case MPV_EVENT_SEEK:
       DispatchQueue.main.async { [self] in
         player.info.isSeeking = true
+        player.postNotification(.iinaSeekStarted)
         // When playback is paused the display link may be shutdown in order to not waste energy.
         // It must be running when seeking to avoid slowdowns caused by mpv waiting for UniPlayer to call
         // mpv_render_report_swap.
@@ -1407,6 +1408,8 @@ class MPVController: NSObject {
         player.info.isMuted = data
         player.syncUI(.volume)
         player.sendOSD(data ? OSDMessage.mute : OSDMessage.unMute)
+        player.postNotification(.iinaMuteChanged)
+        PlayerCore.postAudiblePlayersChanged()
       }
 
     case MPVOption.Audio.volume:

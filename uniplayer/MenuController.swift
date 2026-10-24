@@ -199,6 +199,7 @@ class MenuController: NSObject, NSMenuDelegate {
   @IBOutlet weak var onlineSubSourceMenu: NSMenu!
   @IBOutlet weak var saveDownloadedSub: NSMenuItem!
   private var translateSubtitles: NSMenuItem!
+  private var liveTranslationMenu: NSMenu!
   // Plugin
   @IBOutlet weak var pluginMenu: NSMenu!
   @IBOutlet weak var pluginMenuItem: NSMenuItem!
@@ -425,6 +426,17 @@ class MenuController: NSObject, NSMenuDelegate {
       ?? (subMenu.numberOfItems - 1)
     subMenu.insertItem(NSMenuItem.separator(), at: anchor + 1)
     subMenu.insertItem(translateItem, at: anchor + 2)
+
+    let liveRoot = NSMenuItem(
+      title: NSLocalizedString("Live Translation", comment: "Live translation menu"),
+      action: nil, keyEquivalent: "")
+    let liveMenu = NSMenu(title: NSLocalizedString(
+      "Live Translation", comment: "Live translation menu"))
+    liveMenu.delegate = self
+    liveRoot.submenu = liveMenu
+    subMenu.insertItem(liveRoot, at: anchor + 3)
+    liveTranslationMenu = liveMenu
+    refreshLiveTranslationMenu()
 
     // - text size
     [increaseTextSize, decreaseTextSize, resetTextSize].forEach {
@@ -705,6 +717,108 @@ class MenuController: NSObject, NSMenuDelegate {
     let providerName = OnlineSubtitle.Providers.nameForID(providerID)
     findOnlineSub.title = String(format: Constants.String.findOnlineSubtitles, providerName)
     translateSubtitles?.state = player.subtitleTranslation.isEnabled ? .on : .off
+    refreshLiveTranslationMenu()
+  }
+
+  private func refreshLiveTranslationMenu() {
+    guard let menu = liveTranslationMenu else { return }
+    let player = PlayerCore.active
+    let target = LiveTranslationPreferences.target
+    let state = LiveTranslationStatus.state(for: player)
+    menu.removeAllItems()
+
+    let toggle = NSMenuItem(
+      title: NSLocalizedString("Live Translation", comment: "Live translation menu"),
+      action: #selector(MainMenuActionHandler.menuToggleLiveTranslation(_:)),
+      keyEquivalent: "")
+    toggle.state = LiveTranslationPreferences.enabled ? .on : .off
+    menu.addItem(toggle)
+
+    let status = NSMenuItem(
+      title: LiveTranslationStatus.text(state, target: target),
+      action: LiveTranslationStatus.opensSettings(state)
+        ? #selector(MainMenuActionHandler.menuOpenLiveTranslationSettings(_:))
+        : nil,
+      keyEquivalent: "")
+    status.isEnabled = LiveTranslationStatus.opensSettings(state)
+    menu.addItem(status)
+    if player.liveTranslationCaptions.isUsingAIProvider {
+      let route = NSMenuItem(
+        title: NSLocalizedString(
+          "Using the AI provider", comment: "Live translation menu"),
+        action: nil, keyEquivalent: "")
+      route.isEnabled = false
+      menu.addItem(route)
+    }
+
+    if state == .permissionDenied || state == .permissionSuspected {
+      menu.addItem(NSMenuItem(
+        title: NSLocalizedString("Open System Audio Settings…",
+                                 comment: "Live translation menu"),
+        action: #selector(MainMenuActionHandler.menuOpenSystemAudioSettings(_:)),
+        keyEquivalent: ""))
+    }
+
+    menu.addItem(.separator())
+
+    let languageRoot = NSMenuItem(
+      title: NSLocalizedString("Spoken Language", comment: "Live translation menu"),
+      action: nil, keyEquivalent: "")
+    let languageMenu = NSMenu(title: languageRoot.title)
+    let overrideID = player.liveTranslationLanguage.overrideLanguageID
+    let auto = NSMenuItem(
+      title: NSLocalizedString("Auto (from File)", comment: "Live translation menu"),
+      action: #selector(MainMenuActionHandler.menuSetLiveTranslationLanguage(_:)),
+      keyEquivalent: "")
+    auto.representedObject = nil
+    auto.state = overrideID == nil ? .on : .off
+    languageMenu.addItem(auto)
+    for language in LiveTranslationLanguages.watchedCandidates {
+      let item = NSMenuItem(
+        title: language.displayName,
+        action: #selector(MainMenuActionHandler.menuSetLiveTranslationLanguage(_:)),
+        keyEquivalent: "")
+      item.representedObject = language.id
+      item.state = overrideID == language.id ? .on : .off
+      languageMenu.addItem(item)
+    }
+    languageMenu.addItem(.separator())
+    languageMenu.addItem(NSMenuItem(
+      title: NSLocalizedString("Other Languages in Settings…",
+                               comment: "Live translation menu"),
+      action: #selector(MainMenuActionHandler.menuOpenLiveTranslationSettings(_:)),
+      keyEquivalent: ""))
+    languageRoot.submenu = languageMenu
+    menu.addItem(languageRoot)
+
+    let targetItem = NSMenuItem(
+      title: String(format: NSLocalizedString("Translate into %@",
+                                            comment: "Live translation menu"),
+                    target.displayName),
+      action: #selector(MainMenuActionHandler.menuOpenLiveTranslationSettings(_:)),
+      keyEquivalent: "")
+    menu.addItem(targetItem)
+
+    let source = NSMenuItem(
+      title: NSLocalizedString("Show Source Line", comment: "Live translation menu"),
+      action: #selector(MainMenuActionHandler.menuToggleLiveTranslationSource(_:)),
+      keyEquivalent: "")
+    source.state = LiveTranslationPreferences.showSource ? .on : .off
+    menu.addItem(source)
+
+    let correct = NSMenuItem(
+      title: NSLocalizedString("Correct Last Caption…", comment: "Live translation menu"),
+      action: #selector(MainMenuActionHandler.menuCorrectLiveTranslationCaption(_:)),
+      keyEquivalent: "")
+    correct.isEnabled = !player.liveTranslationCaptions.latestTargetLine.isEmpty
+    menu.addItem(correct)
+
+    menu.addItem(.separator())
+    menu.addItem(NSMenuItem(
+      title: NSLocalizedString("Live Translation Settings…",
+                               comment: "Live translation menu"),
+      action: #selector(MainMenuActionHandler.menuOpenLiveTranslationSettings(_:)),
+      keyEquivalent: ""))
   }
 
   private func updateOnlineSubSourceMenu() {
@@ -936,6 +1050,8 @@ class MenuController: NSObject, NSMenuDelegate {
       updateAudioDevice()
     case subMenu:
       updateSubMenu()
+    case liveTranslationMenu:
+      refreshLiveTranslationMenu()
     case subTrackMenu:
       updateTracks(forMenu: menu, type: .sub)
     case secondSubTrackMenu:

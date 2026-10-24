@@ -37,19 +37,10 @@ final class SubtitleTranslationController {
     let end: Double
   }
 
-  private struct RenderedOverlay: Equatable {
-    let text: String
-    let style: SubtitleOverlayStyle
-    let playWidth: Double
-    let playHeight: Double
-  }
-
   /// Seconds of subtitle text translated ahead of the playhead.
   private static let lookaheadSeconds: Double = 30
   private static let maximumCuesPerRequest = 12
   private static let maximumFailuresPerLine = 3
-  /// Unique within this player's OSD namespace; plugin overlays use their own.
-  private static let overlayID = "1431198513"
 
   private var mode: Mode = .idle
   private var sourceTrackID: Int?
@@ -83,8 +74,10 @@ final class SubtitleTranslationController {
   private var hardBlocked = false
   private var lastErrorShownAt: Date?
 
-  private var overlayVisible = false
-  private var renderedOverlay: RenderedOverlay?
+  /// Unique within this player's OSD namespace; plugin overlays use their own.
+  private lazy var overlay = CaptionOverlayController(
+    player: player, overlayID: "1431198513")
+
   private var pendingUserInitiation = false
   private var shuttingDown = false
 
@@ -315,7 +308,7 @@ final class SubtitleTranslationController {
     liveUntil = nil
     lastPosition = nil
     pendingLanguage = nil
-    clearOverlay()
+    overlay.clear()
     mode = .idle
   }
 
@@ -577,7 +570,7 @@ final class SubtitleTranslationController {
   private func updateOverlay() {
     guard isEnabled, !shuttingDown, player.info.state.active, player.mpv != nil,
           mode.isRunning, player.info.isSubVisible else {
-      clearOverlay()
+      overlay.clear()
       return
     }
 
@@ -603,117 +596,10 @@ final class SubtitleTranslationController {
     }
 
     guard let text, !text.isEmpty else {
-      clearOverlay()
+      overlay.clear()
       return
     }
-    guard let dimensions = overlayDimensions() else {
-      clearOverlay()
-      return
-    }
-    let style = overlayStyle()
-    let rendered = RenderedOverlay(
-      text: text, style: style,
-      playWidth: dimensions.width, playHeight: dimensions.height)
-    guard rendered != renderedOverlay else { return }
-    let event = style.assEvent(
-      text: text, playWidth: dimensions.width, playHeight: dimensions.height)
-    player.mpv.command(.osdOverlay, args: [
-      Self.overlayID, "ass-events", event,
-      "\(Int(dimensions.width.rounded()))", "\(Int(dimensions.height.rounded()))",
-      "10", "no",
-    ], checkError: false, level: .verbose) { [weak self] code in
-      if code < 0 {
-        self?.player.log("Failed to draw the subtitle translation overlay (\(code))",
-                         level: .warning)
-      }
-    }
-    renderedOverlay = rendered
-    overlayVisible = true
-  }
-
-  private func clearOverlay() {
-    guard overlayVisible else {
-      renderedOverlay = nil
-      return
-    }
-    overlayVisible = false
-    renderedOverlay = nil
-    guard !shuttingDown, player.mpv != nil, player.info.state.active else { return }
-    player.mpv.command(.osdOverlay, args: [
-      Self.overlayID, "none", "", "0", "0", "0", "no",
-    ], checkError: false, level: .verbose) { [weak self] code in
-      if code < 0 {
-        self?.player.log("Failed to clear the subtitle translation overlay (\(code))",
-                         level: .warning)
-      }
-    }
-  }
-
-  private func overlayDimensions() -> (width: Double, height: Double)? {
-    // dwidth/dheight are the displayed size after aspect ratio and rotation;
-    // fall back to the decoded size when they are not available yet.
-    var width = player.mpv.getInt(MPVProperty.dwidth)
-    var height = player.mpv.getInt(MPVProperty.dheight)
-    if width <= 0 || height <= 0 {
-      width = player.mpv.getInt(MPVProperty.width)
-      height = player.mpv.getInt(MPVProperty.height)
-      let rotation = ((player.mpv.getInt(MPVProperty.videoParamsRotate) % 360) + 360) % 360
-      if rotation == 90 || rotation == 270 {
-        swap(&width, &height)
-      }
-    }
-    guard width > 0, height > 0 else { return nil }
-    let playHeight = 720.0
-    let playWidth = (playHeight * Double(width) / Double(height)).clamped(to: 100...5000)
-    return (playWidth, playHeight)
-  }
-
-  private func overlayStyle() -> SubtitleOverlayStyle {
-    var style = SubtitleOverlayStyle()
-
-    if let font = player.mpv.getString(MPVOption.Subtitles.subFont), !font.isEmpty {
-      style.fontName = font
-    }
-    let size = player.mpv.getDouble(MPVOption.Subtitles.subFontSize)
-    let scale = abs(player.mpv.getDouble(MPVOption.Subtitles.subScale))
-    style.fontSize = (size > 0 ? size : 55) * (scale > 0.01 ? scale : 1) // token-exempt: mpv --sub-font-size default
-    style.bold = player.mpv.getFlag(MPVOption.Subtitles.subBold)
-    style.italic = player.mpv.getFlag(MPVOption.Subtitles.subItalic)
-    style.textColor = mpvColor(MPVOption.Subtitles.subColor, fallback: .white) // token-exempt: mpv subtitle colour default
-    style.outlineColor = mpvColor(MPVOption.Subtitles.subOutlineColor, fallback: .black) // token-exempt: mpv subtitle colour default
-    // The app stores the shadow colour in `sub-back-color`.
-    style.backColor = mpvColor(MPVOption.Subtitles.subBackColor, fallback: .black) // token-exempt: mpv subtitle colour default
-    style.shadowColor = style.backColor
-
-    let outline = player.mpv.getDouble(MPVOption.Subtitles.subOutlineSize)
-    if outline >= 0 { style.outlineSize = outline }
-    let shadow = player.mpv.getDouble(MPVOption.Subtitles.subShadowOffset)
-    if shadow >= 0 { style.shadowOffset = shadow }
-    if let borderStyle = player.mpv.getString(MPVOption.Subtitles.subBorderStyle),
-       !borderStyle.isEmpty {
-      style.borderStyle = borderStyle
-    }
-    style.verticalPosition = player.mpv.getDouble(MPVOption.Subtitles.secondarySubPos)
-    if let alignment = player.mpv.getString(MPVOption.Subtitles.subAlignX), !alignment.isEmpty {
-      style.horizontalAlignment = alignment
-    }
-    let marginX = player.mpv.getDouble(MPVOption.Subtitles.subMarginX)
-    if marginX >= 0 { style.marginX = marginX }
-    let marginY = player.mpv.getDouble(MPVOption.Subtitles.subMarginY)
-    if marginY >= 0 { style.marginY = marginY }
-    return style
-  }
-
-  private func mpvColor(_ option: String, fallback: SubtitleOverlayColor) -> SubtitleOverlayColor {
-    guard let raw = player.mpv.getString(option),
-          let color = NSColor(mpvColorString: raw)?.usingColorSpace(.sRGB) else { // token-exempt: parses an mpv colour value, not a design value
-      return fallback
-    }
-    return SubtitleOverlayColor(
-      red: Double(color.redComponent),
-      green: Double(color.greenComponent),
-      blue: Double(color.blueComponent),
-      alpha: Double(color.alphaComponent))
+    overlay.show(text: text)
   }
 
   // MARK: - Configuration and errors
@@ -725,7 +611,7 @@ final class SubtitleTranslationController {
     guard configuration.isConfigured else {
       hardBlocked = true
       nextAttemptAt = Date().addingTimeInterval(60)
-      clearOverlay()
+      overlay.clear()
       if showError {
         showErrorOnce(configurationProblem(configuration), throttle: 300)
       }
@@ -760,7 +646,7 @@ final class SubtitleTranslationController {
     if let assistant = error as? AssistantError, assistant.needsSettingsCorrection {
       hardBlocked = true
       nextAttemptAt = Date().addingTimeInterval(60)
-      clearOverlay()
+      overlay.clear()
       showErrorOnce(message, throttle: 300)
       return
     }

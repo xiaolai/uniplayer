@@ -259,6 +259,33 @@
 		DD3000000000000000000002 /* SubtitleTranslationOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD3000000000000000000001 /* SubtitleTranslationOverlay.swift */; };
 		DD4000000000000000000002 /* SubtitleTranslationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD4000000000000000000001 /* SubtitleTranslationController.swift */; };
 		DD9000000000000000000002 /* SubtitleTranslationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD9000000000000000000001 /* SubtitleTranslationTests.swift */; };
+		DD5000000000000000000002 /* LiveTranslationSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD5000000000000000000001 /* LiveTranslationSettings.swift */; };
+		DD6000000000000000000002 /* LiveTranslationPackInventory.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD6000000000000000000001 /* LiveTranslationPackInventory.swift */; };
+		DD7000000000000000000002 /* LiveTranslationPackDownloads.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7000000000000000000001 /* LiveTranslationPackDownloads.swift */; };
+		DD8000000000000000000002 /* LiveTranslationSettingsPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD8000000000000000000001 /* LiveTranslationSettingsPage.swift */; };
+		DDE000000000000000000002 /* LiveTranslationSettingsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDE000000000000000000001 /* LiveTranslationSettingsTests.swift */; };
+		DDF000000000000000000002 /* LiveTranslationLanguageResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDF000000000000000000001 /* LiveTranslationLanguageResolver.swift */; };
+		DDF100000000000000000002 /* LiveTranslationShowLanguageStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDF100000000000000000001 /* LiveTranslationShowLanguageStore.swift */; };
+		DDF200000000000000000002 /* LiveTranslationLanguageController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDF200000000000000000001 /* LiveTranslationLanguageController.swift */; };
+		DDF300000000000000000002 /* LiveTranslationLanguageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDF300000000000000000001 /* LiveTranslationLanguageTests.swift */; };
+		DDF400000000000000000002 /* LiveTranslationAudio.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDF400000000000000000001 /* LiveTranslationAudio.swift */; };
+		DDF500000000000000000002 /* LiveTranslationAudioTapSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDF500000000000000000001 /* LiveTranslationAudioTapSource.swift */; };
+		DDF600000000000000000002 /* LiveTranslationFileAudioSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDF600000000000000000001 /* LiveTranslationFileAudioSource.swift */; };
+		DDF700000000000000000002 /* LiveTranslationAudioTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDF700000000000000000001 /* LiveTranslationAudioTests.swift */; };
+		DDF800000000000000000002 /* LiveTranslationSpeechRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDF800000000000000000001 /* LiveTranslationSpeechRecognizer.swift */; };
+		DDF900000000000000000002 /* LiveTranslationTranscriptionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDF900000000000000000001 /* LiveTranslationTranscriptionController.swift */; };
+		DDFB000000000000000000002 /* CaptionOverlayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDFB000000000000000000001 /* CaptionOverlayController.swift */; };
+		DDFC000000000000000000002 /* LiveTranslationCommitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDFC000000000000000000001 /* LiveTranslationCommitter.swift */; };
+		DDFD000000000000000000002 /* LiveTranslationTranslator.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDFD000000000000000000001 /* LiveTranslationTranslator.swift */; };
+		DDFE000000000000000000002 /* LiveTranslationCaptionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDFE000000000000000000001 /* LiveTranslationCaptionController.swift */; };
+		DDFF000000000000000000002 /* LiveTranslationPipelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDFF000000000000000000001 /* LiveTranslationPipelineTests.swift */; };
+		E01000000000000000000002 /* LiveTranslationGlossaryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E01000000000000000000001 /* LiveTranslationGlossaryStore.swift */; };
+		E02000000000000000000002 /* LiveTranslationVerifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = E02000000000000000000001 /* LiveTranslationVerifier.swift */; };
+		E03000000000000000000002 /* AssistantLiveTranslation.swift in Sources */ = {isa = PBXBuildFile; fileRef = E03000000000000000000001 /* AssistantLiveTranslation.swift */; };
+		E04000000000000000000002 /* LiveTranslationVerifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E04000000000000000000001 /* LiveTranslationVerifierTests.swift */; };
+		E05000000000000000000002 /* LiveTranslationStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = E05000000000000000000001 /* LiveTranslationStatus.swift */; };
+		E06000000000000000000002 /* LiveTranslationStatusTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E06000000000000000000001 /* LiveTranslationStatusTests.swift */; };
+		DDFA000000000000000000002 /* LiveTranslationSpeechTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDFA000000000000000000001 /* LiveTranslationSpeechTests.swift */; };
 		84A09A0E1F2DF596000FF343 /* MiniPlayerWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84A09A0C1F2DF596000FF343 /* MiniPlayerWindowController.swift */; };
 		84A0BA951D2F9E9600BC8DA1 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 84A0BA931D2F9E9600BC8DA1 /* MainMenu.xib */; };
 		84A0BA971D2FA1CE00BC8DA1 /* PlayerCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84A0BA961D2FA1CE00BC8DA1 /* PlayerCore.swift */; };
@@ -1398,6 +1425,33 @@
 		DD3000000000000000000001 /* SubtitleTranslationOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleTranslationOverlay.swift; sourceTree = "<group>"; };
 		DD4000000000000000000001 /* SubtitleTranslationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleTranslationController.swift; sourceTree = "<group>"; };
 		DD9000000000000000000001 /* SubtitleTranslationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleTranslationTests.swift; sourceTree = "<group>"; };
+		DD5000000000000000000001 /* LiveTranslationSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationSettings.swift; sourceTree = "<group>"; };
+		DD6000000000000000000001 /* LiveTranslationPackInventory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationPackInventory.swift; sourceTree = "<group>"; };
+		DD7000000000000000000001 /* LiveTranslationPackDownloads.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationPackDownloads.swift; sourceTree = "<group>"; };
+		DD8000000000000000000001 /* LiveTranslationSettingsPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationSettingsPage.swift; sourceTree = "<group>"; };
+		DDE000000000000000000001 /* LiveTranslationSettingsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationSettingsTests.swift; sourceTree = "<group>"; };
+		DDF000000000000000000001 /* LiveTranslationLanguageResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationLanguageResolver.swift; sourceTree = "<group>"; };
+		DDF100000000000000000001 /* LiveTranslationShowLanguageStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationShowLanguageStore.swift; sourceTree = "<group>"; };
+		DDF200000000000000000001 /* LiveTranslationLanguageController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationLanguageController.swift; sourceTree = "<group>"; };
+		DDF300000000000000000001 /* LiveTranslationLanguageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationLanguageTests.swift; sourceTree = "<group>"; };
+		DDF400000000000000000001 /* LiveTranslationAudio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationAudio.swift; sourceTree = "<group>"; };
+		DDF500000000000000000001 /* LiveTranslationAudioTapSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationAudioTapSource.swift; sourceTree = "<group>"; };
+		DDF600000000000000000001 /* LiveTranslationFileAudioSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationFileAudioSource.swift; sourceTree = "<group>"; };
+		DDF700000000000000000001 /* LiveTranslationAudioTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationAudioTests.swift; sourceTree = "<group>"; };
+		DDF800000000000000000001 /* LiveTranslationSpeechRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationSpeechRecognizer.swift; sourceTree = "<group>"; };
+		DDF900000000000000000001 /* LiveTranslationTranscriptionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationTranscriptionController.swift; sourceTree = "<group>"; };
+		DDFB000000000000000000001 /* CaptionOverlayController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptionOverlayController.swift; sourceTree = "<group>"; };
+		DDFC000000000000000000001 /* LiveTranslationCommitter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationCommitter.swift; sourceTree = "<group>"; };
+		DDFD000000000000000000001 /* LiveTranslationTranslator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationTranslator.swift; sourceTree = "<group>"; };
+		DDFE000000000000000000001 /* LiveTranslationCaptionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationCaptionController.swift; sourceTree = "<group>"; };
+		DDFF000000000000000000001 /* LiveTranslationPipelineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationPipelineTests.swift; sourceTree = "<group>"; };
+		E01000000000000000000001 /* LiveTranslationGlossaryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationGlossaryStore.swift; sourceTree = "<group>"; };
+		E02000000000000000000001 /* LiveTranslationVerifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationVerifier.swift; sourceTree = "<group>"; };
+		E03000000000000000000001 /* AssistantLiveTranslation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantLiveTranslation.swift; sourceTree = "<group>"; };
+		E04000000000000000000001 /* LiveTranslationVerifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationVerifierTests.swift; sourceTree = "<group>"; };
+		E05000000000000000000001 /* LiveTranslationStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationStatus.swift; sourceTree = "<group>"; };
+		E06000000000000000000001 /* LiveTranslationStatusTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationStatusTests.swift; sourceTree = "<group>"; };
+		DDFA000000000000000000001 /* LiveTranslationSpeechTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationSpeechTests.swift; sourceTree = "<group>"; };
 		8497A4831D2FF573005F504F /* uniplayer-Bridging-Header.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "uniplayer-Bridging-Header.h"; sourceTree = "<group>"; };
 		84A09A0C1F2DF596000FF343 /* MiniPlayerWindowController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MiniPlayerWindowController.swift; sourceTree = "<group>"; };
 		84A0BA941D2F9E9600BC8DA1 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
@@ -2036,6 +2090,13 @@
 				A10000000000000000000004 /* UniPlayerTests.swift */,
 				BB9000000000000000000001 /* InlinePlayerTests.swift */,
 				DD9000000000000000000001 /* SubtitleTranslationTests.swift */,
+				DDE000000000000000000001 /* LiveTranslationSettingsTests.swift */,
+				DDF300000000000000000001 /* LiveTranslationLanguageTests.swift */,
+				DDF700000000000000000001 /* LiveTranslationAudioTests.swift */,
+				DDFA000000000000000000001 /* LiveTranslationSpeechTests.swift */,
+				DDFF000000000000000000001 /* LiveTranslationPipelineTests.swift */,
+				E04000000000000000000001 /* LiveTranslationVerifierTests.swift */,
+				E06000000000000000000001 /* LiveTranslationStatusTests.swift */,
 			);
 			path = uniplayerTests;
 			sourceTree = "<group>";
@@ -2293,6 +2354,26 @@
 				DD2000000000000000000001 /* SubtitleTranslator.swift */,
 				DD3000000000000000000001 /* SubtitleTranslationOverlay.swift */,
 				DD4000000000000000000001 /* SubtitleTranslationController.swift */,
+				DD5000000000000000000001 /* LiveTranslationSettings.swift */,
+				DD6000000000000000000001 /* LiveTranslationPackInventory.swift */,
+				DD7000000000000000000001 /* LiveTranslationPackDownloads.swift */,
+				DD8000000000000000000001 /* LiveTranslationSettingsPage.swift */,
+				DDF000000000000000000001 /* LiveTranslationLanguageResolver.swift */,
+				DDF100000000000000000001 /* LiveTranslationShowLanguageStore.swift */,
+				DDF200000000000000000001 /* LiveTranslationLanguageController.swift */,
+				DDF400000000000000000001 /* LiveTranslationAudio.swift */,
+				DDF500000000000000000001 /* LiveTranslationAudioTapSource.swift */,
+				DDF600000000000000000001 /* LiveTranslationFileAudioSource.swift */,
+				DDF800000000000000000001 /* LiveTranslationSpeechRecognizer.swift */,
+				DDF900000000000000000001 /* LiveTranslationTranscriptionController.swift */,
+				DDFB000000000000000000001 /* CaptionOverlayController.swift */,
+				DDFC000000000000000000001 /* LiveTranslationCommitter.swift */,
+				DDFD000000000000000000001 /* LiveTranslationTranslator.swift */,
+				DDFE000000000000000000001 /* LiveTranslationCaptionController.swift */,
+				E01000000000000000000001 /* LiveTranslationGlossaryStore.swift */,
+				E02000000000000000000001 /* LiveTranslationVerifier.swift */,
+				E03000000000000000000001 /* AssistantLiveTranslation.swift */,
+				E05000000000000000000001 /* LiveTranslationStatus.swift */,
 				84A09A0C1F2DF596000FF343 /* MiniPlayerWindowController.swift */,
 				8F49C370213EFB7E0076C4F9 /* MiniPlayerWindowController.xib */,
 				E36E8D7A24F6052F00B8C097 /* GuideWindowController.swift */,
@@ -3096,6 +3177,13 @@
 				A10000000000000000000005 /* UniPlayerTests.swift in Sources */,
 				BB9000000000000000000002 /* InlinePlayerTests.swift in Sources */,
 				DD9000000000000000000002 /* SubtitleTranslationTests.swift in Sources */,
+				DDE000000000000000000002 /* LiveTranslationSettingsTests.swift in Sources */,
+				DDF300000000000000000002 /* LiveTranslationLanguageTests.swift in Sources */,
+				DDF700000000000000000002 /* LiveTranslationAudioTests.swift in Sources */,
+				DDFA000000000000000000002 /* LiveTranslationSpeechTests.swift in Sources */,
+				DDFF000000000000000000002 /* LiveTranslationPipelineTests.swift in Sources */,
+				E04000000000000000000002 /* LiveTranslationVerifierTests.swift in Sources */,
+				E06000000000000000000002 /* LiveTranslationStatusTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3148,6 +3236,26 @@
 				DD2000000000000000000002 /* SubtitleTranslator.swift in Sources */,
 				DD3000000000000000000002 /* SubtitleTranslationOverlay.swift in Sources */,
 				DD4000000000000000000002 /* SubtitleTranslationController.swift in Sources */,
+				DD5000000000000000000002 /* LiveTranslationSettings.swift in Sources */,
+				DD6000000000000000000002 /* LiveTranslationPackInventory.swift in Sources */,
+				DD7000000000000000000002 /* LiveTranslationPackDownloads.swift in Sources */,
+				DD8000000000000000000002 /* LiveTranslationSettingsPage.swift in Sources */,
+				DDF000000000000000000002 /* LiveTranslationLanguageResolver.swift in Sources */,
+				DDF100000000000000000002 /* LiveTranslationShowLanguageStore.swift in Sources */,
+				DDF200000000000000000002 /* LiveTranslationLanguageController.swift in Sources */,
+				DDF400000000000000000002 /* LiveTranslationAudio.swift in Sources */,
+				DDF500000000000000000002 /* LiveTranslationAudioTapSource.swift in Sources */,
+				DDF600000000000000000002 /* LiveTranslationFileAudioSource.swift in Sources */,
+				DDF800000000000000000002 /* LiveTranslationSpeechRecognizer.swift in Sources */,
+				DDF900000000000000000002 /* LiveTranslationTranscriptionController.swift in Sources */,
+				DDFB000000000000000000002 /* CaptionOverlayController.swift in Sources */,
+				DDFC000000000000000000002 /* LiveTranslationCommitter.swift in Sources */,
+				DDFD000000000000000000002 /* LiveTranslationTranslator.swift in Sources */,
+				DDFE000000000000000000002 /* LiveTranslationCaptionController.swift in Sources */,
+				E01000000000000000000002 /* LiveTranslationGlossaryStore.swift in Sources */,
+				E02000000000000000000002 /* LiveTranslationVerifier.swift in Sources */,
+				E03000000000000000000002 /* AssistantLiveTranslation.swift in Sources */,
+				E05000000000000000000002 /* LiveTranslationStatus.swift in Sources */,
 				8461C52E1D45FFF6006E91FF /* PlaySliderCell.swift in Sources */,
 				84F5D4A21E4796F50060A838 /* KeyBindingTranslator.swift in Sources */,
 				E3DBD23E218EF4F100B3AFBF /* AboutWindowContributorAvatarItem.swift in Sources */,

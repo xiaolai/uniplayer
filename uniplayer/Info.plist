@@ -618,6 +618,8 @@
 			</dict>
 		</dict>
 	</dict>
+	<key>NSAudioCaptureUsageDescription</key>
+	<string>UniPlayer listens to its own playback to generate on-device live captions. Audio never leaves this Mac.</string>
 	<key>NSPrefersDisplaySafeAreaCompatibilityMode</key>
 	<false/>
 	<key>NSServices</key>

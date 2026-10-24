@@ -64,6 +64,16 @@ struct Preference {
     static let subtitleTranslationEnabled = Key("subtitleTranslationEnabled")
     static let subtitleTranslationLanguage = Key("subtitleTranslationLanguage")
 
+    /** On-device live translation from audio. Target and watched languages are BCP-47 ids. */
+    static let liveTranslationEnabled = Key("liveTranslationEnabled")
+    static let liveTranslationTarget = Key("liveTranslationTarget")
+    static let liveTranslationWatchedLanguages = Key("liveTranslationWatchedLanguages")
+    static let liveTranslationAutoDownload = Key("liveTranslationAutoDownload")
+    static let liveTranslationFallback = Key("liveTranslationFallback")
+    static let liveTranslationShowSource = Key("liveTranslationShowSource")
+    static let liveTranslationRepair = Key("liveTranslationRepair")
+    static let liveTranslationPreferredStrategy = Key("liveTranslationPreferredStrategy")
+
     static let useLiquidGlassOSD = Key("useLiquidGlassOSD")
     static let useLiquidGlassOSC = Key("useLiquidGlassOSC")
     static let useLiquidGlassSidebar = Key("useLiquidGlassSidebar")
@@ -984,6 +994,14 @@ struct Preference {
     .assistantModel: AssistantProviderKind.openAICompatible.defaultModel,
     .subtitleTranslationEnabled: false,
     .subtitleTranslationLanguage: "",
+    .liveTranslationEnabled: false,
+    .liveTranslationTarget: "",
+    .liveTranslationWatchedLanguages: "en,zh-Hans",
+    .liveTranslationAutoDownload: true,
+    .liveTranslationFallback: LiveTranslationFallback.aiProvider.rawValue,
+    .liveTranslationShowSource: false,
+    .liveTranslationRepair: true,
+    .liveTranslationPreferredStrategy: LiveTranslationStrategy.lowLatency.rawValue,
     .useLiquidGlassOSD: true,
     .useLiquidGlassOSC: true,
     .useLiquidGlassSidebar: true,
