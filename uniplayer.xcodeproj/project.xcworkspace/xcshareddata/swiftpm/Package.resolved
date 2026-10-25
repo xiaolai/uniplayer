@@ -1,5 +1,5 @@
 {
-  "originHash" : "d47d2b54d2074afccd9ca72634b96746ca680420a7d0af58b7115304c3df68e4",
+  "originHash" : "29b7682c924622d92a541569ee7e3e684fddced70d3ebf6d9aba85936dbda3be",
   "pins" : [
     {
       "identity" : "grmustache.swift",
@@ -26,6 +26,15 @@
       "state" : {
         "revision" : "8a98e31a47854d3180882c8068cc4d9381bf382d",
         "version" : "6.22.1"
+      }
+    },
+    {
+      "identity" : "sayso",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/xiaolai/sayso.git",
+      "state" : {
+        "revision" : "82c6111946c39d185cff15f9f582ce11226bddd7",
+        "version" : "0.5.1"
       }
     }
   ],

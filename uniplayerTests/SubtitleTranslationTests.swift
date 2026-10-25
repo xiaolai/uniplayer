@@ -274,6 +274,60 @@ final class SubtitleTranslationEngineTests: XCTestCase {
     XCTAssertEqual(provider.requestCount, 2)
   }
 
+  func testOneShotSourceUsesTheSaySoAnswer() async throws {
+    var calls = 0
+    let engine = SubtitleTranslationEngine(
+      providerFactory: { _ in self.provider },
+      sourceProvider: { .codexCLI },
+      oneShotAnswer: { source, system, user in
+        calls += 1
+        XCTAssertEqual(source, .codexCLI)
+        XCTAssertTrue(system.contains("French"))
+        XCTAssertTrue(user.contains("Hello"))
+        return #"{"translations":[{"id":0,"text":"Bonjour"}]}"#
+      })
+    let result = try await engine.translate(
+      items: [(id: 0, text: "Hello")], language: "French", configuration: configuration)
+    XCTAssertEqual(result, [0: "Bonjour"])
+    XCTAssertEqual(calls, 1)
+    XCTAssertEqual(provider.requestCount, 0, "a one-shot source must not use the streaming provider")
+  }
+
+  func testExplicitSourceOverridesTheAmbientSource() async throws {
+    var calls = 0
+    let engine = SubtitleTranslationEngine(
+      providerFactory: { _ in self.provider },
+      sourceProvider: { .assistant },
+      oneShotAnswer: { source, _, _ in
+        calls += 1
+        XCTAssertEqual(source, .appleOnDevice)
+        return #"{"translations":[{"id":0,"text":"Bonjour"}]}"#
+      })
+    let result = try await engine.translate(
+      items: [(id: 0, text: "Hello")], language: "French", configuration: configuration,
+      source: .appleOnDevice)
+    XCTAssertEqual(result, [0: "Bonjour"])
+    XCTAssertEqual(calls, 1)
+    XCTAssertEqual(provider.requestCount, 0)
+  }
+
+  func testOneShotSourceRetriesMalformedAnswer() async throws {
+    var calls = 0
+    let engine = SubtitleTranslationEngine(
+      providerFactory: { _ in self.provider },
+      sourceProvider: { .appleOnDevice },
+      oneShotAnswer: { _, _, _ in
+        calls += 1
+        return calls == 1
+          ? "not json"
+          : #"{"translations":[{"id":0,"text":"Bonjour"}]}"#
+      })
+    let result = try await engine.translate(
+      items: [(id: 0, text: "Hello")], language: "French", configuration: configuration)
+    XCTAssertEqual(result, [0: "Bonjour"])
+    XCTAssertEqual(calls, 2)
+  }
+
   func testLargeRequestIsSplitIntoBatches() async throws {
     let engine = makeEngine()
     let items = (0..<13).map { (id: $0, text: "line \($0)") }

@@ -57,12 +57,16 @@ struct Preference {
 
     /** The AI inspector's provider, endpoint and model. The key lives in the Keychain. */
     static let assistantProvider = Key("assistantProvider")
+    static let assistantProfile = Key("assistantProfile")
     static let assistantEndpoint = Key("assistantEndpoint")
     static let assistantModel = Key("assistantModel")
 
     /** AI subtitle translation. An empty language follows the system language. */
     static let subtitleTranslationEnabled = Key("subtitleTranslationEnabled")
     static let subtitleTranslationLanguage = Key("subtitleTranslationLanguage")
+    static let translationSource = Key("translationSource")
+    static let translationCodexModel = Key("translationCodexModel")
+    static let translationClaudeModel = Key("translationClaudeModel")
 
     /** On-device live translation from audio. Target and watched languages are BCP-47 ids. */
     static let liveTranslationEnabled = Key("liveTranslationEnabled")
@@ -977,10 +981,14 @@ struct Preference {
     .prefetchPlaylistVideoDuration: true,
     .themeMaterial: Theme.dark.rawValue,
     .assistantProvider: AssistantProviderKind.openAICompatible.rawValue,
+    .assistantProfile: "",
     .assistantEndpoint: AssistantProviderKind.openAICompatible.defaultEndpoint,
     .assistantModel: AssistantProviderKind.openAICompatible.defaultModel,
     .subtitleTranslationEnabled: false,
     .subtitleTranslationLanguage: "",
+    .translationSource: TranslationSource.assistant.rawValue,
+    .translationCodexModel: "",
+    .translationClaudeModel: "",
     .liveTranslationEnabled: false,
     .liveTranslationTarget: "",
     .liveTranslationWatchedLanguages: "en,zh-Hans",

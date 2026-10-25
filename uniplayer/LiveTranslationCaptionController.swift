@@ -87,6 +87,7 @@ final class LiveTranslationCaptionController {
   private var queuedRepair: PendingRepair?
   private var packInstalledPending = false
   private var lastExpiredSource: String?
+  private var observedLiveSource = TranslationSettings.liveSource
 
   private(set) var latestTargetText = ""
   private(set) var lastFailure: String?
@@ -217,10 +218,24 @@ final class LiveTranslationCaptionController {
       .liveTranslationShowSource,
       .liveTranslationPreferredStrategy,
       .liveTranslationFallback,
-    ]) { [weak self] _ in
-      self?.clear()
-      self?.currentSourceID = nil
-      self?.currentTargetID = nil
+      .assistantProvider,
+      .assistantProfile,
+      .assistantEndpoint,
+      .assistantModel,
+      .translationSource,
+    ]) { [weak self] key in
+      guard let self else { return }
+      let liveSource = TranslationSettings.liveSource
+      if key == .translationSource {
+        // Two batch-only CLI sources both fall back to the same assistant
+        // connection for live captions; switching between them changes
+        // nothing here.
+        guard liveSource != self.observedLiveSource else { return }
+      }
+      self.observedLiveSource = liveSource
+      self.clear()
+      self.currentSourceID = nil
+      self.currentTargetID = nil
     }
     preferences.addAll([.liveTranslationRepair]) { [weak self] _ in
       guard let self, !LiveTranslationPreferences.repair else { return }
