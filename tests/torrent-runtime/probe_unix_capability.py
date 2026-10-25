@@ -27,7 +27,7 @@ class UnixCapabilityTests(unittest.TestCase):
     status,headers,_=request({'Authorization':auth});self.assertEqual(status,409)
     session=next(v for k,v in headers.items() if k.lower()=='x-transmission-session-id')
     status,_,data=request({'Authorization':auth,'X-Transmission-Session-Id':session});self.assertEqual(status,200)
-    result=json.loads(data)['result'];self.assertIn('4.1.3 (838877323f)',result['version']);self.assertFalse(result['lpd_enabled']);self.assertFalse(result['start_added_torrents']);self.assertTrue(result['peer_port_random_on_start'])
+    result=json.loads(data)['result'];self.assertIn('4.1.0 (272401184f)',result['version']);self.assertFalse(result['lpd_enabled']);self.assertFalse(result['start_added_torrents']);self.assertTrue(result['peer_port_random_on_start'])
     self.assertEqual(path.stat().st_mode & 0o777,0o600)
    finally:
     process.terminate()

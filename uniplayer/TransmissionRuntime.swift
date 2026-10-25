@@ -61,7 +61,7 @@ struct TorrentRuntimeSource {
 
 actor TransmissionRuntime {
   static let shared = TransmissionRuntime()
-  static let requiredVersion = "4.1.3"
+  static let requiredVersion = "4.1.0"
   nonisolated let root: URL
   private let runtimeDirectory: URL
   private let usesPreferences: Bool
@@ -91,6 +91,11 @@ actor TransmissionRuntime {
   }
   func start() async throws -> TransmissionRPCClient {
     guard !terminated else { throw TorrentFailure.cancelled }
+    if stopping, let shutdownTask {
+      // A stop that is already in flight owns the daemon lock and profile;
+      // wait for it rather than making the next playback fail immediately.
+      await shutdownTask.value
+    }
     guard !stopping else { throw TorrentFailure.unavailable("The torrent runtime is stopping. Retry in a moment.") }
     if let rpc, process?.isRunning == true { return rpc }
     if let startup { return try await startup.value }
@@ -109,7 +114,7 @@ actor TransmissionRuntime {
     let supervisor = runtimeDirectory.appendingPathComponent("TorrentRuntimeSupervisor")
     guard fm.isExecutableFile(atPath: daemon.path), fm.isExecutableFile(atPath: supervisor.path),
           let data = try? Data(contentsOf: runtimeDirectory.appendingPathComponent("manifest.json")),
-          let manifest = try? JSONSerialization.jsonObject(with: data) as? [String: Any], manifest["version"] as? String == Self.requiredVersion, manifest["commit"] as? String == "838877323facc4cc2b677fe817e203779c437bb1",
+          let manifest = try? JSONSerialization.jsonObject(with: data) as? [String: Any], manifest["version"] as? String == Self.requiredVersion, manifest["commit"] as? String == "272401184f0736e6063f9da90be7d037e907508a",
           manifest["patches"] as? [String] == [], let binaries = manifest["builtBinaries"] as? [String: [String: Any]] else {
       throw TorrentFailure.unavailable("The bundled Transmission runtime is missing or does not match this build. Reinstall a complete UniPlayer build.")
     }
@@ -163,7 +168,7 @@ actor TransmissionRuntime {
         guard child.isRunning, generation == epoch else { throw TorrentFailure.cancelled }
         do {
           let session = try await client.call("session_get", ["fields":["version","rpc_version_semver"]])
-          guard let actual = session["version"] as? String, actual.hasPrefix(Self.requiredVersion + " "), session["rpc_version_semver"] as? String == "6.0.1" else { throw TorrentFailure.protocolMismatch }
+          guard let actual = session["version"] as? String, actual.hasPrefix(Self.requiredVersion + " "), session["rpc_version_semver"] as? String == "6.0.0" else { throw TorrentFailure.protocolMismatch }
           guard child.isRunning, generation == epoch, !stopping, !terminated, !Task.isCancelled else { throw TorrentFailure.cancelled }
           version = actual; rpc = client
           // --paused prevents previously retained jobs from silently resuming.

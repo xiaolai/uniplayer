@@ -2,7 +2,7 @@
 
 The Preview feature is enabled by default. Turn it off in Settings → General → Torrent Playback; it remains a qualified internal candidate. The adjacent Check & Play action opens a native inspection sheet. Press its native Check button to begin network inspection; the page badge alone starts no transfer. Play uses UniPlayer’s existing standalone player; Window → Return to Torrent Source returns to the Channel. Window → Stop Torrent stops the owned transfer without deleting its files.
 
-Transmission is the genuine, unmodified 4.1.3 engine, pinned in `RuntimeDependencies/Transmission.lock.json`. Its identity is not configurable. A private tracker’s approval of this exact release still requires that tracker’s rules and a real authorized announce; a label or local fixture does not establish approval. Pure v2 torrents are unsupported.
+Transmission is the genuine, unmodified 4.1.0 engine, pinned in `RuntimeDependencies/Transmission.lock.json`. Its identity is not configurable. A private tracker’s approval of this exact release still requires that tracker’s rules and a real authorized announce; a label or local fixture does not establish approval. Pure v2 torrents are unsupported.
 
 New public magnet inspection can download metadata and small test pieces. It uses 64 KiB/s, a 20-second observation window, a 2 MiB soft target and an 8 MiB failure threshold. This is not a hard byte cap or a strict metadata-only mode. Missing seed totals remain Unknown. Full playback can download the entire selected file. Private sources preserve their complete metainfo and tracker context.
 
