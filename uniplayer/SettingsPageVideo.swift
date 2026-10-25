@@ -29,9 +29,9 @@ class SettingsPageVideo: SettingsPage {
     return sections {
       sectionDecoding()
       if Preference.isLiveTextAvailable {
-        sectionLiveText()
+        sectionLiveText().onlyInAdvanced()
       }
-      sectionColor()
+      sectionColor().onlyInAdvanced()
     }
   }
 

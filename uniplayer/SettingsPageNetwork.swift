@@ -7,6 +7,8 @@
 //
 
 class SettingsPageNetwork: SettingsPage {
+  override var availableInSimpleMode: Bool { false }
+
   private let prefObserver = Preference.Observer()
 
   override var identifier: String {

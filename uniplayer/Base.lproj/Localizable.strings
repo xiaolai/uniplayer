@@ -1475,3 +1475,12 @@
 "No OMDb key stored." = "No OMDb key stored.";
 "Couldn’t save the key in the Keychain." = "Couldn’t save the key in the Keychain.";
 "Couldn’t remove the key from the Keychain." = "Couldn’t remove the key from the Keychain.";
+
+"Playback" = "Playback";
+"Intelligence" = "Intelligence";
+"Connections" = "Connections";
+"System" = "System";
+"Simple" = "Simple";
+"Advanced" = "Advanced";
+"Settings Mode" = "Settings Mode";
+"About UniPlayer" = "About UniPlayer";

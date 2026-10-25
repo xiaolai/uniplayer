@@ -19,6 +19,17 @@ struct SettingsItem {
     var isLastItem = false
 
     var controlSize: NSControl.ControlSize = .regular
+    var advancedOnly = false
+
+    @discardableResult
+    func onlyInAdvanced() -> Self {
+      self.advancedOnly = true
+      return self
+    }
+
+    func isVisible(in mode: SettingsMode) -> Bool {
+      !(mode == .simple && advancedOnly)
+    }
 
     func setControlSize(_ label: NSTextField) {
       label.controlSize = controlSize

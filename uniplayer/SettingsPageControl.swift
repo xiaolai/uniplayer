@@ -10,6 +10,8 @@ fileprivate let ui = SettingsUIHelper.sharedUI
 
 
 class SettingsPageControl: SettingsPage {
+  override var availableInSimpleMode: Bool { false }
+
   override var identifier: String {
     "control"
   }

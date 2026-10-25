@@ -15,6 +15,7 @@ struct SettingsSearch {
     let extraTerms: [String] = []
     let section: String?
     let parent: Int?
+    let advancedOnly: Bool
 
     let icon: NSImage?
 
@@ -30,13 +31,15 @@ struct SettingsSearch {
       mainEntry?.title ?? title
     }
 
-    init(page: String, anchor: Int, title: String, isMain: Bool, section: String?, parent: Int?, icon: NSImage? = nil) {
+    init(page: String, anchor: Int, title: String, isMain: Bool, section: String?, parent: Int?,
+         advancedOnly: Bool = false, icon: NSImage? = nil) {
       self.page = page
       self.anchor = anchor
       self.title = title
       self.isMain = isMain
       self.section = section
       self.parent = parent
+      self.advancedOnly = advancedOnly
       self.icon = icon
     }
 
@@ -61,19 +64,32 @@ struct SettingsSearch {
     let page: String
     let section: String?
     let parent: Int?
+    let advancedOnly: Bool
+
+    init(page: String, section: String?, parent: Int?, advancedOnly: Bool = false) {
+      self.page = page
+      self.section = section
+      self.parent = parent
+      self.advancedOnly = advancedOnly
+    }
 
     func with(section: String?) -> Self {
-      .init(page: page, section: section, parent: parent)
+      .init(page: page, section: section, parent: parent, advancedOnly: advancedOnly)
     }
 
     func with(parent: Int?) -> Self {
-      .init(page: page, section: section, parent: parent)
+      .init(page: page, section: section, parent: parent, advancedOnly: advancedOnly)
+    }
+
+    func with(advancedOnly: Bool) -> Self {
+      .init(page: page, section: section, parent: parent, advancedOnly: advancedOnly)
     }
 
     func add(_ tag: Int, _ entry: String?, isMain: Bool = false) {
       guard let entry else { return }
       entries.append(.init(page: page, anchor: tag, title: entry,
-                           isMain: isMain, section: section, parent: parent))
+                           isMain: isMain, section: section, parent: parent,
+                           advancedOnly: advancedOnly))
     }
   }
 

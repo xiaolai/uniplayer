@@ -20,28 +20,35 @@ fileprivate extension NSView {
 }
 
 class SettingsWindow: CommonWindow {
-  static let `default`: SettingsWindow = SettingsWindow([
-    SettingsPageGeneral(),
-    SettingsPageUI(),
-    SettingsPageVideo(),
-    SettingsPageAudio(),
-    SettingsPageSubtitles(),
-    SettingsPageLiveTranslation(),
-    SettingsPageNetwork(),
-    SettingsPageControl(),
-    SettingsPageKeyBindings(),
-    SettingsPageAdvanced(),
-    SettingsPagePlugin(),
-    SettingsPageAssistant(),
-    SettingsPageUtilities(),
-  ])
+  static func makePages() -> [SettingsPage] {
+    [
+      SettingsPageGeneral(),
+      SettingsPageUI(),
+      SettingsPageVideo(),
+      SettingsPageAudio(),
+      SettingsPageSubtitles(),
+      SettingsPageLiveTranslation(),
+      SettingsPageAssistant(),
+      SettingsPageNetwork(),
+      SettingsPageControl(),
+      SettingsPageKeyBindings(),
+      SettingsPagePlugin(),
+      SettingsPageUtilities(),
+      SettingsPageAdvanced(),
+    ]
+  }
+
+  static let `default`: SettingsWindow = SettingsWindow(makePages())
 
   let sidebarList: NSTableView
   private let contentScrollView: NSScrollView
   private let highlightView: HighlightView
 
+  let allPages: [SettingsPage]
+  private(set) var mode: SettingsMode
   var pages: [SettingsPage]
   private var cachedPageViews: [String: NSView] = [:]
+  private var modeControl: NSSegmentedControl!
 
   private var sectionNames: [String] = []
   private var sectionViews: [SettingsSection.View] = []
@@ -52,13 +59,18 @@ class SettingsWindow: CommonWindow {
   private var currentPageIndex: Int?
 
   private enum SidebarRow {
+    case header(String)
     case page(Int)
     case indicator
-    
+
     var isIndicator: Bool {
       if case .indicator = self { return true } else { return false }
     }
-    
+
+    var isHeader: Bool {
+      if case .header = self { return true } else { return false }
+    }
+
     var page: Int? {
       if case .page(let i) = self { return i } else { return nil }
     }
@@ -67,9 +79,13 @@ class SettingsWindow: CommonWindow {
 
   private func makeSidebarRows() -> [SidebarRow] {
     var rows: [SidebarRow] = []
-    for i in pages.indices {
-      rows.append(.page(i))
-
+    for group in SettingsSidebarLayout.groups(for: mode) {
+      let indices = group.identifiers.compactMap { identifier in
+        pages.firstIndex { $0.identifier == identifier }
+      }
+      guard !indices.isEmpty else { continue }
+      rows.append(.header(group.title))
+      rows.append(contentsOf: indices.map { .page($0) })
     }
     return rows
   }
@@ -80,7 +96,10 @@ class SettingsWindow: CommonWindow {
   private var pendingHighlightItem: (id: Int, parentId: Int?)?
 
   init(_ pages: [SettingsPage]) {
-    self.pages = pages
+    self.allPages = pages
+    let mode = SettingsMode.current
+    self.mode = mode
+    self.pages = pages.filter { mode == .advanced || $0.availableInSimpleMode }
     contentScrollView = NSScrollView()
     contentScrollView.autohidesScrollers = true
 
@@ -136,10 +155,38 @@ class SettingsWindow: CommonWindow {
     let col = NSTableColumn(identifier: NSUserInterfaceItemIdentifier(rawValue: "col"))
 
     sidebarBackground.addSubview(sidebarScrollView)
-    sidebarScrollView.padding(.bottom, .horizontal)
+    sidebarScrollView.padding(.horizontal)
 
     searchBox.padding(.top(Tokens.Space.n52), .horizontal(Tokens.Space.n8))
     sidebarScrollView.spacing(.top(Tokens.Space.n8), to: searchBox)
+
+    let modeControl = NSSegmentedControl(
+      labels: [SettingsMode.simple.title, SettingsMode.advanced.title],
+      trackingMode: .selectOne, target: self, action: #selector(modeChanged(_:)))
+    modeControl.controlSize = .small
+    modeControl.selectedSegment = mode == .simple ? 0 : 1
+    modeControl.setAccessibilityLabel(NSLocalizedString("Settings Mode", comment: "Settings mode"))
+    self.modeControl = modeControl
+
+    let aboutButton = NSButton(
+      title: NSLocalizedString("About UniPlayer", comment: "About"),
+      target: self, action: #selector(showAbout))
+    aboutButton.isBordered = false
+    aboutButton.font = Tokens.Typography.caption.nsFont
+    aboutButton.contentTintColor = Tokens.Palette.textSecondary.nsColor
+    aboutButton.image = .sf("info.circle")
+    aboutButton.imagePosition = .imageLeading
+    aboutButton.alignment = .left
+
+    let footer = NSStackView(views: [modeControl, aboutButton])
+    footer.translatesAutoresizingMaskIntoConstraints = false
+    footer.orientation = .vertical
+    footer.alignment = .leading
+    footer.spacing = Tokens.Space.n6
+    sidebarBackground.addSubview(footer)
+    footer.padding(.horizontal(Tokens.Space.n8), .bottom(Tokens.Space.n8))
+    modeControl.widthAnchor.constraint(equalTo: footer.widthAnchor).isActive = true
+    sidebarScrollView.bottomAnchor.constraint(equalTo: footer.topAnchor, constant: -Tokens.Space.n8).isActive = true
 
     let contentViewController = NSViewController()
     contentViewController.view = NSView()
@@ -186,17 +233,21 @@ class SettingsWindow: CommonWindow {
     toolbar.displayMode = .iconOnly
     self.toolbar = toolbar
 
-    pages.forEach { $0.registerSearchEntries() }
+    allPages.forEach { $0.registerSearchEntries() }
     SettingsSearch.makeTries()
 
-    let savedPage = UserDefaults.standard.string(forKey: "settings.lastPane.v1")
+    let legacyPage = UserDefaults.standard.string(forKey: "settings.lastPane.v1")
+    let savedPage = UserDefaults.standard.string(forKey: mode.lastPageKey) ?? legacyPage
     let initialPage = pages.firstIndex(where: { $0.identifier == savedPage }) ?? 0
-    loadPage(at: initialPage)
-    currentPageIndex = initialPage
     sidebarRows = makeSidebarRows()
     sidebarList.addTableColumn(col)
     sidebarScrollView.documentView = sidebarList
-    sidebarList.selectRowIndexes(IndexSet(integer: initialPage), byExtendingSelection: false)
+    sidebarList.reloadData()
+    loadPage(at: initialPage)
+    currentPageIndex = initialPage
+    if let initialRow = sidebarRows.firstIndex(where: { $0.page == initialPage }) {
+      sidebarList.selectRowIndexes(IndexSet(integer: initialRow), byExtendingSelection: false)
+    }
   }
 
   func loadPage(at index: Int) {
@@ -219,7 +270,7 @@ class SettingsWindow: CommonWindow {
     }
 
     self.title = page.title
-    UserDefaults.standard.set(page.identifier, forKey: "settings.lastPane.v1")
+    UserDefaults.standard.set(page.identifier, forKey: mode.lastPageKey)
     if let toolbar {
       for _ in 0..<toolbar.items.count {
         toolbar.removeItem(at: 0)
@@ -244,14 +295,18 @@ class SettingsWindow: CommonWindow {
   /// failure states. The page is loaded before the window is shown so the
   /// first frame is the requested page, not the last visited one.
   func showPage(identifier: String) {
+    if !pages.contains(where: { $0.identifier == identifier }) {
+      setMode(.advanced, preserving: identifier)
+    }
     guard let index = pages.firstIndex(where: { $0.identifier == identifier }) else {
       show()
       return
     }
     loadPage(at: index)
     currentPageIndex = index
-    sidebarList.selectRowIndexes(
-      IndexSet(integer: index), byExtendingSelection: false)
+    if let row = sidebarRows.firstIndex(where: { $0.page == index }) {
+      sidebarList.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
+    }
     show()
     NSApp.activate(ignoringOtherApps: true)
   }
@@ -397,6 +452,14 @@ fileprivate extension NSUserInterfaceItemIdentifier {
 }
 
 
+fileprivate func settingsSearchBadge(_ entry: SettingsSearch.Entry, advanced: Bool) -> String {
+  [entry.section ?? entry.pageTitle,
+   advanced ? NSLocalizedString("Advanced", comment: "Settings mode") : nil]
+    .compactMap { $0 }
+    .joined(separator: " · ")
+}
+
+
 extension SettingsWindow {
   private class PopoverViewController: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
     unowned var window: SettingsWindow
@@ -471,7 +534,7 @@ extension SettingsWindow {
     func reloadData(_ data: [SettingsSearch.Entry]) {
       let dict = Dictionary(grouping: data, by: \.page)
       results = []
-      for page in SettingsWindow.default.pages {
+      for page in window.allPages {
         if let entries = dict[page.identifier] {
           entries.forEach { $0.pageTitle = page.title }
           results.append(SettingsSearch.Entry(pageHeader: page.title, icon: page.image))
@@ -522,13 +585,13 @@ extension SettingsWindow {
         let view = (tableView.makeView(withIdentifier: .searchResultItemWithParent,
                                        owner: self) as? ItemWithParentView) ?? ItemWithParentView()
         view.identifier = .searchResultItemWithParent
-        view.setup(entry: entry)
+        view.setup(entry: entry, advanced: window.mode == .simple && entry.advancedOnly)
         return view
       } else {
         let view = (tableView.makeView(withIdentifier: .searchResultItem,
                                        owner: self) as? ItemView) ?? ItemView()
         view.identifier = .searchResultItem
-        view.setup(entry: entry)
+        view.setup(entry: entry, advanced: window.mode == .simple && entry.advancedOnly)
         return view
       }
     }
@@ -536,7 +599,8 @@ extension SettingsWindow {
     func tableViewSelectionDidChange(_ notification: Notification) {
       guard let entry = results[at: tableView.selectedRow] else { return }
       window.pendingHighlightItem = (entry.anchor, entry.parent)
-      window.navigateTo(page: entry.page)
+      window.completionPopover.close()
+      window.navigateTo(page: entry.page, advancedEntry: entry.advancedOnly)
 
       DispatchQueue.main.async {
         self.window.highlightItem()
@@ -575,7 +639,7 @@ extension SettingsWindow {
       var sectionLabel: NSTextField!
       var titleLabel: NSTextField!
 
-      func setup(entry: SettingsSearch.Entry) {
+      func setup(entry: SettingsSearch.Entry, advanced: Bool = false) {
         if textField == nil {
           sectionLabel = makeSectionBadge()
           addSubview(sectionLabel)
@@ -592,7 +656,7 @@ extension SettingsWindow {
             .spacing(.trailing(Tokens.Space.n4), to: titleLabel)
           titleLabel.padding(.trailing(Tokens.Space.n8), .bottom(Tokens.Space.n6))
         }
-        sectionLabel.stringValue = entry.section ?? entry.pageTitle ?? ""
+        sectionLabel.stringValue = settingsSearchBadge(entry, advanced: advanced)
         titleLabel.stringValue = entry.titleForDisplay
       }
     }
@@ -602,7 +666,7 @@ extension SettingsWindow {
       var parentLabel: NSTextField!
       var titleLabel: NSTextField!
 
-      func setup(entry: SettingsSearch.Entry) {
+      func setup(entry: SettingsSearch.Entry, advanced: Bool = false) {
         if textField == nil {
           sectionLabel = makeSectionBadge()
           addSubview(sectionLabel)
@@ -635,11 +699,12 @@ extension SettingsWindow {
           titleLabel.padding(.trailing(Tokens.Space.n8), .bottom(Tokens.Space.n6))
         }
 
-        sectionLabel.stringValue = entry.section ?? entry.pageTitle ?? ""
+        sectionLabel.stringValue = settingsSearchBadge(entry, advanced: advanced)
         parentLabel.stringValue = entry.parentEntry!.titleForDisplay
         titleLabel.stringValue = entry.titleForDisplay
       }
     }
+
   }
 
   private func createSearchPopover() -> NSPopover {
@@ -670,7 +735,10 @@ extension SettingsWindow {
     }
   }
 
-  func navigateTo(page: String) {
+  func navigateTo(page: String, advancedEntry: Bool = false) {
+    if advancedEntry, mode == .simple {
+      setMode(.advanced, preserving: page)
+    }
     guard let idx = pages.firstIndex(where: { $0.identifier == page }),
           let targetRow = sidebarRows.firstIndex(where: { $0.page == idx })
     else { return }
@@ -682,10 +750,48 @@ extension SettingsWindow {
 
   func installPlugin(localPackageURL url: URL) {
     show()
-    navigateTo(page: "plugin")
+    navigateTo(page: "plugin", advancedEntry: true)
     if let pluginPage = pages.first(where: { $0.identifier == "plugin" }) as? SettingsPagePlugin {
       pluginPage.installPlugin(localPackageURL: url)
     }
+  }
+
+  @objc private func modeChanged(_ sender: NSSegmentedControl) {
+    setMode(sender.selectedSegment == 0 ? .simple : .advanced)
+  }
+
+  @objc private func showAbout() {
+    AppDelegate.shared.showAboutWindow(self)
+  }
+
+  private func setMode(_ newMode: SettingsMode, preserving identifier: String? = nil) {
+    guard newMode != mode else { return }
+    let currentID = identifier ?? currentPageIndex.flatMap { pages[at: $0]?.identifier }
+    if let currentID {
+      UserDefaults.standard.set(currentID, forKey: mode.lastPageKey)
+    }
+    mode = newMode
+    SettingsMode.current = newMode
+    cachedPageViews.removeAll()
+    pages = allPages.filter { newMode == .advanced || $0.availableInSimpleMode }
+    let preserved = currentID.flatMap { id in
+      pages.contains { $0.identifier == id } ? id : nil
+    }
+    let preferred = identifier
+      ?? preserved
+      ?? UserDefaults.standard.string(forKey: newMode.lastPageKey)
+      ?? "general"
+    let target = pages.firstIndex(where: { $0.identifier == preferred })
+      ?? pages.firstIndex(where: { $0.identifier == "general" }) ?? 0
+    sidebarRows = makeSidebarRows()
+    sidebarList.reloadData()
+    loadPage(at: target)
+    currentPageIndex = target
+    if let row = sidebarRows.firstIndex(where: { $0.page == target }) {
+      sidebarList.selectRowIndexes(IndexSet(integer: row), byExtendingSelection: false)
+    }
+    modeControl.selectedSegment = newMode == .simple ? 0 : 1
+    completionPopover.close()
   }
 }
 
@@ -737,6 +843,17 @@ extension SettingsWindow: NSTableViewDataSource, NSTableViewDelegate {
   func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
     let cell = NSTableCellView()
     guard let rowKind = sidebarRows[at: row] else { return cell }
+
+    if case .header(let title) = rowKind {
+      let label = NSTextField(labelWithString: title.localizedUppercase)
+      label.font = Tokens.Typography.captionStrong.nsFont
+      label.textColor = Tokens.Palette.textSecondary.nsColor
+      label.translatesAutoresizingMaskIntoConstraints = false
+      cell.addSubview(label)
+      label.padding(.leading(Tokens.Space.n8), .trailing(Tokens.Space.n8),
+                    .top(Tokens.Space.n4), .bottom(Tokens.Space.n2))
+      return cell
+    }
 
     if rowKind.isIndicator {
       let sectionStackView = NSStackView()
@@ -816,6 +933,9 @@ extension SettingsWindow: NSTableViewDataSource, NSTableViewDelegate {
 
   func tableView(_ tableView: NSTableView, heightOfRow row: Int) -> CGFloat {
     guard let rowKind = sidebarRows[at: row] else { return 0 }
+    if rowKind.isHeader {
+      return Tokens.Settings.sectionRowHeight
+    }
     if rowKind.isIndicator {
       return CGFloat(12 + sectionNames.count * 22)
     }
@@ -824,7 +944,7 @@ extension SettingsWindow: NSTableViewDataSource, NSTableViewDelegate {
 
   func tableView(_ tableView: NSTableView, shouldSelectRow row: Int) -> Bool {
     guard let rowKind = sidebarRows[at: row] else { return false }
-    return !rowKind.isIndicator
+    return rowKind.page != nil
   }
 
   func tableViewSelectionDidChange(_ notification: Notification) {

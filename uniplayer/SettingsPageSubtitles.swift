@@ -39,11 +39,11 @@ class SettingsPageSubtitles: SettingsPage {
   override func content() -> [SettingsSection] {
     return sections {
       sectionAutoLoad()
-      sectionASS()
-      sectionText()
+      sectionASS().onlyInAdvanced()
+      sectionText().onlyInAdvanced()
       sectionPosition()
       sectionOnlineSubtitles()
-      sectionOther()
+      sectionOther().onlyInAdvanced()
     }
   }
 
@@ -64,6 +64,7 @@ class SettingsPageSubtitles: SettingsPage {
               .controlSize(.small)
               .hasDescription()
           }
+          .onlyInAdvanced()
       }
     }
   }

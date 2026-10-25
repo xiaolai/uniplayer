@@ -45,9 +45,9 @@ class SettingsPageUI: SettingsPage {
     return sections {
       sectionAppearance()
       sectionWindow()
-      sectionOSC()
+      sectionOSC().onlyInAdvanced()
       sectionOSD()
-      sectionThumbnail()
+      sectionThumbnail().onlyInAdvanced()
       sectionPIP()
       sectionAccessibility()
     }

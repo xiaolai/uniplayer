@@ -13,6 +13,8 @@ fileprivate let ui = SettingsUIHelper.sharedUI
 
 
 class SettingsPagePlugin: SettingsPage {
+  override var availableInSimpleMode: Bool { false }
+
   override var identifier: String {
     "plugin"
   }

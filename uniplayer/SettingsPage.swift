@@ -21,6 +21,7 @@ protocol SettingsContainer {
 extension SettingsContainer {
   func getChildren() -> [any SettingsContainer] { [] }
   func registerSearchEntry(context: SettingsSearch.Context) { }
+  func isVisible(in mode: SettingsMode) -> Bool { true }
 
   func find(where predicate: (any SettingsContainer) -> Bool) -> SettingsContainer? {
     if predicate(self) {
@@ -138,6 +139,10 @@ class SettingsPage {
   var sectionSpacing: CGFloat { Tokens.Settings.sectionSpacing }
   var showSubSections: Bool { true }
 
+  /// Pages that are expert-only are omitted from Simple mode. Their search
+  /// entries remain available and are tagged as advanced.
+  var availableInSimpleMode: Bool { true }
+
   let symbolConfiguration = NSImage.SymbolConfiguration(pointSize: Tokens.Icon.n18, weight: .bold)
 
   lazy var builtSections: [SettingsSection] = {
@@ -170,8 +175,12 @@ class SettingsPage {
     sections()
   }
 
+  private var visibleSections: [SettingsSection] {
+    builtSections.filter { $0.isVisible(in: SettingsMode.current) }
+  }
+
   private func makeContentView() -> NSView {
-    let views = builtSections.map {
+    let views = visibleSections.map {
       let view = $0.makeView()
       if let label = $0.label {
         labeledViews[label] = view
@@ -190,7 +199,8 @@ class SettingsPage {
   }
 
   func registerSearchEntries() {
-    let context = SettingsSearch.Context(page: identifier, section: nil, parent: nil)
+    let context = SettingsSearch.Context(page: identifier, section: nil, parent: nil,
+                                         advancedOnly: !availableInSimpleMode)
     builtSections.forEach { $0.registerSearchEntry(context: context) }
   }
 
@@ -211,6 +221,18 @@ class SettingsSection: SettingsContainer {
   var titleKey: SettingsLocalization.Key?
   let children: [SettingsContainer]
   let label: String?
+  var advancedOnly = false
+
+  @discardableResult
+  func onlyInAdvanced() -> Self {
+    self.advancedOnly = true
+    return self
+  }
+
+  func isVisible(in mode: SettingsMode) -> Bool {
+    guard !(mode == .simple && advancedOnly) else { return false }
+    return children.contains { $0.isVisible(in: mode) }
+  }
 
   init(titleKey: SettingsLocalization.Key? = nil, label: String? = nil, spacing: CGFloat, _ children: [SettingsContainer]) {
     self.spacing = spacing
@@ -232,8 +254,10 @@ class SettingsSection: SettingsContainer {
   }
 
   func makeView() -> NSView {
+    let visibleChildren = children.filter { $0.isVisible(in: SettingsMode.current) }
+    guard !visibleChildren.isEmpty else { return NSView() }
     let view = View()
-    let childViews = children.map { $0.makeView() }
+    let childViews = visibleChildren.map { $0.makeView() }
     let stackView = NSStackView(views: childViews)
     stackView.translatesAutoresizingMaskIntoConstraints = false
     stackView.orientation = .vertical
@@ -263,7 +287,9 @@ class SettingsSection: SettingsContainer {
   }
 
   func registerSearchEntry(context: SettingsSearch.Context) {
-    let context = context.with(section: titleKey.map { ui.localized($0) })
+    let context = context
+      .with(section: titleKey.map { ui.localized($0) })
+      .with(advancedOnly: context.advancedOnly || advancedOnly)
     return children.forEach { $0.registerSearchEntry(context: context) }
   }
 
@@ -278,6 +304,23 @@ class SettingsList: SettingsContainer {
   lazy var itemID = SettingsContainerUUID.next()
   var titleKey: SettingsLocalization.Key?
   var items: [SettingsItem.Base]
+  var advancedOnly = false
+
+  @discardableResult
+  func onlyInAdvanced() -> Self {
+    self.advancedOnly = true
+    return self
+  }
+
+  func isVisible(in mode: SettingsMode) -> Bool {
+    guard !(mode == .simple && advancedOnly) else { return false }
+    return items.contains { $0.isVisible(in: mode) }
+  }
+
+  private var visibleItems: [SettingsItem.Base] {
+    items.filter { $0.isVisible(in: SettingsMode.current) }
+  }
+
   var horizontalPadding: CGFloat { 8 }
 
   static private let SMALL_TITLE = false
@@ -321,7 +364,10 @@ class SettingsList: SettingsContainer {
   }
 
   func registerSearchEntry(context: SettingsSearch.Context) {
-    items.forEach { $0.registerSearchEntry(context: context) }
+    let context = context.with(advancedOnly: context.advancedOnly || advancedOnly)
+    items.forEach {
+      $0.registerSearchEntry(context: context.with(advancedOnly: context.advancedOnly || $0.advancedOnly))
+    }
   }
 
   func makeListView() -> View {
@@ -331,6 +377,7 @@ class SettingsList: SettingsContainer {
   }
 
   func addItems(to listView: View) {
+    let items = visibleItems
     items.forEach {
       $0.isFirstItem = false
       $0.isLastItem = false

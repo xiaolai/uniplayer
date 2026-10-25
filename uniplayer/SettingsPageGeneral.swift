@@ -34,7 +34,7 @@ class SettingsPageGeneral: SettingsPage {
         SettingsList(title: SettingsLocalization.Key("Netflix Ratings")) {
           SettingsItem.Custom().view(NetflixRatingsSettingsView())
         }
-      }
+      }.onlyInAdvanced()
       section {
         SettingsList(title: SettingsLocalization.Key("Torrent Playback")) {
           SettingsItem.Custom().view(TorrentSettingsView())

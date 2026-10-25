@@ -35,6 +35,8 @@ private final class MPVOptionTextFieldCell: NSTextFieldCell {
 }
 
 class SettingsPageAdvanced: SettingsPage {
+  override var availableInSimpleMode: Bool { false }
+
   private var pageView: NSView?
   private var advancedSettingsView: NSView?
   private let prefObserver = Preference.Observer()

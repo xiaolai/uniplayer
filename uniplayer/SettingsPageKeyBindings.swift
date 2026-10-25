@@ -10,6 +10,8 @@ fileprivate let ui = SettingsUIHelper.sharedUI
 
 
 class SettingsPageKeyBindings: SettingsPage {
+  override var availableInSimpleMode: Bool { false }
+
   override var identifier: String {
     "key.bindings"
   }
