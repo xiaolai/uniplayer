@@ -74,6 +74,7 @@ final class ChannelBrowserModel: NSObject, ObservableObject {
   private var slowNoticeTask: Task<Void, Never>?
   private var timeoutTask: Task<Void, Never>?
   private var lastRequestedURL: URL?
+  private var torrentDownload: ChannelTorrentDownload?
 
   @Published private(set) var canGoBack = false
   @Published private(set) var canGoForward = false
@@ -263,6 +264,56 @@ extension ChannelBrowserModel: WKNavigationDelegate {
     default:
       NSWorkspace.shared.open(url)
       decisionHandler(.cancel)
+    }
+  }
+
+  func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse,
+               decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
+    guard navigationResponse.isForMainFrame,
+          TorrentPreferences.enabled,
+          webView === self.webView,
+          let pageHost = webView.url?.host,
+          TorrentPreferences.allowed(host: pageHost),
+          ChannelTorrentResponse.isTorrent(navigationResponse.response) else {
+      decisionHandler(.allow)
+      return
+    }
+    decisionHandler(.download)
+  }
+
+  func webView(_ webView: WKWebView, navigationResponse: WKNavigationResponse, didBecome download: WKDownload) {
+    guard torrentDownload == nil else { download.cancel { _ in }; return }
+    // The download replaces a page navigation; keep the channel on the page
+    // that initiated it and clear the provisional loading state.
+    activeNavigation = nil
+    lastRequestedURL = webView.url
+    finishLoading()
+    let fallbackTitle = webView.title
+    let transfer = ChannelTorrentDownload { [weak self, weak webView] result in
+      guard let self else { return }
+      self.torrentDownload = nil
+      guard let webView else { return }
+      switch result {
+      case .success(let payload):
+        let title = ChannelTorrentResponse.title(payload.suggestedFilename, fallback: fallbackTitle)
+        TorrentPlaybackCoordinator.shared.present(metainfo: payload.data, title: title, parent: webView.window)
+      case .failure(let error):
+        self.showTorrentDownloadError(error, in: webView)
+      }
+    }
+    torrentDownload = transfer
+    download.delegate = transfer
+  }
+
+  private func showTorrentDownloadError(_ error: Error, in webView: WKWebView) {
+    let alert = NSAlert()
+    alert.messageText = channelL("Couldn’t open this torrent")
+    alert.informativeText = (error as? TorrentFailure)?.localizedDescription ?? error.localizedDescription
+    alert.addButton(withTitle: NSLocalizedString("general.ok", comment: "OK"))
+    if let window = webView.window {
+      alert.beginSheetModal(for: window)
+    } else {
+      alert.runModal()
     }
   }
 

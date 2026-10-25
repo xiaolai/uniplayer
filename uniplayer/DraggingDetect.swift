@@ -227,7 +227,7 @@ extension PlayerCore {
       openURLString(url[0])
       return true
     } else if let droppedString = pb.string(forType: .string) {
-      if TorrentPreferences.enabled, let url = URL(string:droppedString.trimmingCharacters(in:.whitespacesAndNewlines)), MainActor.assumeIsolated({ TorrentPlaybackCoordinator.shared.route(url) }) { return true }
+      if TorrentPreferences.enabled, let url = URL(string:droppedString.trimmingCharacters(in:.whitespacesAndNewlines)), MainActor.assumeIsolated({ TorrentPlaybackCoordinator.shared.route(url, hud: PlayerCore.active.isInMiniPlayer, player: PlayerCore.active) }) { return true }
       if Regex.url.matches(droppedString) || Regex.filePath.matches(droppedString) {
         openURLString(droppedString)
         return true

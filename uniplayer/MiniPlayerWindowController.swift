@@ -7,6 +7,7 @@
 //
 
 import Cocoa
+import Combine
 
 fileprivate let DefaultPlaylistHeight = Tokens.Size.n300
 fileprivate let AutoHidePlaylistThreshold: CGFloat = 200
@@ -59,6 +60,10 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   var videoViewAspectConstraint: NSLayoutConstraint?
 
   var hideVolumeControlTask: DispatchWorkItem?
+
+  private var inspectionCancellable: AnyCancellable?
+  private var inspectionModelCancellable: AnyCancellable?
+  private var bufferingStatus: String?
 
   var playlistView: PlaylistViewController {
     return player.mainWindow.sidebars.playlistView
@@ -362,6 +367,20 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     }
 
     updateCloseButton()
+    observeInspection()
+  }
+
+  private func observeInspection() {
+    inspectionCancellable = TorrentPlaybackCoordinator.shared.$hudInspection
+      .receive(on: DispatchQueue.main)
+      .sink { [weak self] model in
+        guard let self else { return }
+        self.inspectionModelCancellable = model?.objectWillChange.sink { [weak self] in
+          DispatchQueue.main.async { self?.updateTitle() }
+        }
+        self.bufferingStatus = nil
+        self.updateTitle()
+      }
   }
 
   // MARK: - Mouse / Trackpad events
@@ -403,6 +422,7 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   // MARK: - Window delegate: Open / Close
 
   func windowWillClose(_ notification: Notification) {
+    TorrentPlaybackCoordinator.shared.cancelInspectionFromHUD(for: player)
     if player.info.state != .shuttingDown && player.info.state != .shutDown {
       // not needed if called when terminating the whole app
       player.overrideAutoSwitchToMusicMode = false
@@ -473,6 +493,16 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
   // MARK: - UI
   @objc
   override func updateTitle() {
+    let coordinator = TorrentPlaybackCoordinator.shared
+    if let model = coordinator.hudInspection, coordinator.hudOwner === player {
+      titleLabel.stringValue = model.title
+      window?.title = model.title
+      artistAlbumLabel.stringValue = model.failure ?? model.message
+      titleLabelTopConstraint.constant = Tokens.Space.n6
+      titleLabel.scroll()
+      artistAlbumLabel.scroll()
+      return
+    }
     let (mediaTitle, mediaAlbum, mediaArtist) = player.getMusicMetadata()
     titleLabel.stringValue = mediaTitle
     window?.title = mediaTitle
@@ -490,6 +520,31 @@ class MiniPlayerWindowController: PlayerWindowController, NSPopoverDelegate {
     }
     titleLabel.scroll()
     artistAlbumLabel.scroll()
+  }
+
+  override func updatePlayTime(andProgressBar: Bool) {
+    super.updatePlayTime(andProgressBar: andProgressBar)
+    let coordinator = TorrentPlaybackCoordinator.shared
+    guard !(coordinator.hudInspection != nil && coordinator.hudOwner === player),
+          player.info.state.loaded else { return }
+    let text: String?
+    if Preference.bool(for: .showBufferingThrobber), player.info.pausedForCache {
+      let state = player.info.bufferingState
+      text = state > 0
+        ? String(format: NSLocalizedString("main.buffering_indicator", comment: "Buffering… %d%%"), state)
+        : NSLocalizedString("Buffering…", comment: "Buffering")
+    } else {
+      text = nil
+    }
+    guard text != bufferingStatus else { return }
+    bufferingStatus = text
+    if let text {
+      artistAlbumLabel.stringValue = text
+      titleLabelTopConstraint.constant = Tokens.Space.n6
+      artistAlbumLabel.scroll()
+    } else {
+      updateTitle()
+    }
   }
 
   override func updateVolume() {

@@ -11,7 +11,7 @@ final class TorrentPlayerContext {
   init(record: TorrentPlaybackRecord, resume: Bool, owner: TorrentPlaybackCoordinator,transportURL:URL) { self.record = record; self.transportURL = transportURL; resumePosition = resume && (record.duration <= 0 || record.position < record.duration-3) ? record.position : 0; self.owner = owner }
 }
 
-@MainActor final class TorrentPlaybackCoordinator: NSObject {
+@MainActor final class TorrentPlaybackCoordinator: NSObject, ObservableObject {
   static let shared = TorrentPlaybackCoordinator()
   static let returnToSource = Notification.Name("TorrentReturnToSource")
   struct Session {
@@ -23,6 +23,11 @@ final class TorrentPlayerContext {
     self.runtime = runtime; self.store = store; super.init()
   }
   private(set) var sessions: [String:Session] = [:]
+  /// The inspection owned by a HUD window. It is scoped to `hudOwner` so a
+  /// second mini player never mirrors another player's torrent status.
+  @Published private(set) var hudInspection: TorrentInspection?
+  private(set) weak var hudOwner: PlayerCore?
+  private var hudWatch: Task<Void,Never>?
   private var sheet: NSWindow?
   private var inspectionCleanup = 0
   private var inspection: TorrentInspection?
@@ -35,7 +40,7 @@ final class TorrentPlayerContext {
   nonisolated static func recognizes(_ url: URL) -> Bool {
     url.scheme?.lowercased() == "magnet" || url.scheme == "uniplayer-torrent" || url.pathExtension.lowercased() == "torrent"
   }
-  @discardableResult func route(_ url: URL) -> Bool {
+  @discardableResult func route(_ url: URL, hud: Bool = false, player: PlayerCore? = nil) -> Bool {
     guard Self.recognizes(url) else { return false }
     guard TorrentPreferences.enabled else { return false }
     if let identity = TorrentIdentity(url:url) {
@@ -48,15 +53,26 @@ final class TorrentPlayerContext {
       }
       return true
     }
-    PlayerCore.first.initialWindow.showWindow(nil)
+    if !hud { PlayerCore.first.initialWindow.showWindow(nil) }
     if url.isFileURL {
-      present(title:url.lastPathComponent,parent:PlayerCore.first.initialWindow.window) {
+      let resolve: () async throws -> TorrentRuntimeSource = {
         let size = try url.resourceValues(forKeys:[.fileSizeKey]).fileSize ?? 0
         guard size > 0, size <= 10 * 1024 * 1024 else { throw TorrentFailure.invalidMetainfo }
         return try TorrentRuntimeSource(metainfo:Data(contentsOf:url))
       }
+      if hud, let player { presentInHUD(title:url.lastPathComponent, resolve:resolve, player:player) }
+      else {
+        PlayerCore.first.initialWindow.showWindow(nil)
+        present(title:url.lastPathComponent,parent:PlayerCore.first.initialWindow.window,resolve:resolve)
+      }
     } else if url.scheme?.lowercased() == "magnet" {
-      present(title:(try? TorrentMagnet(url.absoluteString).displayName) ?? "Magnet source",parent:PlayerCore.first.initialWindow.window) { try TorrentRuntimeSource(magnet:url.absoluteString) }
+      let title = (try? TorrentMagnet(url.absoluteString).displayName) ?? "Magnet source"
+      let resolve: () async throws -> TorrentRuntimeSource = { try TorrentRuntimeSource(magnet:url.absoluteString) }
+      if hud, let player { presentInHUD(title:title, resolve:resolve, player:player) }
+      else {
+        PlayerCore.first.initialWindow.showWindow(nil)
+        present(title:title,parent:PlayerCore.first.initialWindow.window,resolve:resolve)
+      }
     } else {
       showError("Open protected torrent links from their logged-in Channel, or download the .torrent file and open it locally.")
     }
@@ -67,6 +83,9 @@ final class TorrentPlayerContext {
     present(title:candidate.title,candidate:candidate,parent:web.window,autoStart:false, cancel:{ resolver.cancel() }) {
       try await resolver.resolve(candidate,isCurrent:isCurrent)
     }
+  }
+  func present(metainfo: Data, title: String, parent: NSWindow?) {
+    present(title:title,parent:parent) { try TorrentRuntimeSource(metainfo:metainfo) }
   }
   private func present(title: String,candidate: ChannelTorrentCandidate? = nil,parent: NSWindow? = nil,autoStart:Bool = false,cancel: @escaping () -> Void = {},resolve: @escaping () async throws -> TorrentRuntimeSource) {
     guard !quitting else { return }
@@ -81,25 +100,86 @@ final class TorrentPlayerContext {
       Task { await self.releaseIdleRuntime() }
     }
     model.cancelSource = cancel
+    showSheet(model,parent:parent,autoStart:autoStart)
+    originWindow = candidate == nil ? nil : WeakWindow(parent)
+  }
+  private func showSheet(_ model: TorrentInspection, parent: NSWindow?, autoStart: Bool) {
+    let parent = parent ?? NSApp.keyWindow ?? PlayerCore.first.initialWindow.window
+    guard sheet == nil else { sheet?.makeKeyAndOrderFront(nil); return }
+    guard parent?.attachedSheet == nil else { showError("Finish the current dialog before inspecting another source."); return }
     let window = NSWindow(contentViewController:NSHostingController(rootView:TorrentInspectionView(model:model)))
     window.isReleasedWhenClosed = false
     window.appearance = NSAppearance(named:.darkAqua); window.title = "Check & Play"
     sheet = window; inspection = model
+    let cancelSource = model.cancelSource
     model.dismiss = { [weak self,weak parent,weak window] in
-      cancel()
+      cancelSource?()
       if let window { parent?.endSheet(window); window.orderOut(nil) }
       self?.sheet = nil; self?.inspection = nil
       if let observer = self?.parentObserver { NotificationCenter.default.removeObserver(observer); self?.parentObserver = nil }
       Task { await self?.releaseIdleRuntime() }
     }
     if let parent { parent.beginSheet(window) } else { window.center(); window.makeKeyAndOrderFront(nil) }
-    originWindow = candidate == nil ? nil : WeakWindow(parent)
     if let parent {
       parentObserver = NotificationCenter.default.addObserver(forName:NSWindow.willCloseNotification,object:parent,queue:.main) { [weak model] _ in
         Task { @MainActor in model?.cancel() }
       }
     }
     if autoStart { model.begin() } else { model.busy = false; model.message = "Check retrieves metadata and may download small test pieces for up to 20 seconds at 64 KiB/s. Select Check to continue." }
+  }
+
+  /// HUD presentations run the inspection without a sheet. The compact
+  /// window shows the source and phase, starts playback when the metadata is
+  /// ready, and hands the same model to the full sheet if it fails.
+  private func presentInHUD(title: String, resolve: @escaping () async throws -> TorrentRuntimeSource, player: PlayerCore) {
+    guard !quitting, player.isInMiniPlayer else {
+      present(title:title,parent:player.initialWindow.window,resolve:resolve); return
+    }
+    if let hudInspection, sheet == nil { hudInspection.cancel() }
+    guard inspectionCleanup == 0 else { showError("The previous inspection is stopping. Retry in a moment."); return }
+    let model = TorrentInspection(title:title,runtime:runtime,owner:self,resolve:resolve)
+    model.cleanupBegan = { [weak self] in self?.inspectionCleanup += 1 }
+    model.cleanupFinished = { [weak self] in
+      guard let self else { return }; self.inspectionCleanup = max(0,self.inspectionCleanup-1)
+      Task { await self.releaseIdleRuntime() }
+    }
+    model.dismiss = { [weak self, weak model] in
+      guard let self, self.hudInspection === model else { return }
+      self.hudInspection = nil; self.hudOwner = nil
+      self.hudWatch?.cancel(); self.hudWatch = nil
+      Task { await self.releaseIdleRuntime() }
+    }
+    hudInspection = model
+    hudOwner = player
+    model.begin()
+    hudWatch = Task { [weak self, weak model] in
+      while !Task.isCancelled, let self, let model, self.hudInspection === model {
+        if model.failure != nil { self.handoffHUDInspection(model); return }
+        if model.canPlay {
+          model.play()
+          while !Task.isCancelled, self.hudInspection === model, model.failure == nil {
+            try? await Task.sleep(for:.milliseconds(250))
+          }
+          if model.failure != nil { self.handoffHUDInspection(model) }
+          return
+        }
+        if !model.busy && !model.playing { return }
+        try? await Task.sleep(for:.milliseconds(300))
+      }
+    }
+  }
+  private func handoffHUDInspection(_ model: TorrentInspection) {
+    guard hudInspection === model else { return }
+    hudWatch?.cancel(); hudWatch = nil
+    let player = hudOwner ?? PlayerCore.active
+    hudInspection = nil; hudOwner = nil
+    if player.isInMiniPlayer { player.switchBackFromMiniPlayer(showMainWindow: true) }
+    showSheet(model, parent: player.initialWindow.window, autoStart: false)
+  }
+  func cancelInspectionFromHUD(for player: PlayerCore? = nil) {
+    guard sheet == nil, let model = hudInspection else { return }
+    if let player, hudOwner !== player { return }
+    model.cancel()
   }
   func protects(hash:String) -> Bool { !store.canWrite || store.records.contains { $0.identity.hash == hash } }
   func requiresSwitch(hash:String,file:TorrentFile) -> Bool { sessions[hash].map { $0.record.file != file } ?? false }

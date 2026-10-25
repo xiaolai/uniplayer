@@ -915,6 +915,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         player = PlayerCore.activeOrNew
       }
 
+      // A HUD open must enter the compact presentation before the media is
+      // opened: torrent routing chooses the HUD inspection from this state,
+      // and otherwise would show the library window and a full-size sheet.
+      let hudRequested = queryDict["hud"] == "1"
+      let newWindowRequested = queryDict["new_window"] == "1"
+      if hudRequested, !newWindowRequested {
+        player.switchToMiniPlayer()
+      }
+
       // enqueue
       let playlistEmpty = PlayerCore.lastActive.info.$playlist.withLock { $0.isEmpty }
       if let enqueueValue = queryDict["enqueue"], enqueueValue == "1", !playlistEmpty {
@@ -935,9 +944,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
       }
 
       // presentation options
-      if let hudValue = queryDict["hud"], hudValue == "1" {
-        // hud: the same surface opens in the mini player (HUD) window.
-        player.switchToMiniPlayer()
+      if hudRequested {
+        // hud: the same surface opens in the mini player (HUD) window. The
+        // common path already switched before opening; a new window can only
+        // switch after it exists.
+        if newWindowRequested { player.switchToMiniPlayer() }
       } else if let fsValue = queryDict["full_screen"], fsValue == "1" {
         // full_screen
         player.mpv.setFlag(MPVOption.Window.fullscreen, true)

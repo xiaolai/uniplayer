@@ -27,6 +27,10 @@ class OpenURLWindowController: NSWindowController, NSTextFieldDelegate, NSContro
   @IBOutlet weak var loadingMediaProgressIndicator: NSProgressIndicator!
   @IBOutlet weak var loadingMediaLabel: NSTextField!
 
+  private var loadingDetailLabel: NSTextField!
+  private var loadingStatsLabel: NSTextField!
+  private var torrentStatsTask: Task<Void, Never>?
+
   var isAlternativeAction = false
 
   var playerCore: PlayerCore?
@@ -49,10 +53,44 @@ class OpenURLWindowController: NSWindowController, NSTextFieldDelegate, NSContro
     httpPrefixTextField.font = Tokens.Typography.urlField.nsFont
     urlField.font = Tokens.Typography.urlField.nsFont
     loadingMediaLabel.font = Tokens.Typography.loading.nsFont
+    loadingMediaLabel.cell?.lineBreakMode = .byTruncatingMiddle
+    loadingMediaLabel.leadingAnchor.constraint(greaterThanOrEqualTo: overlayView.leadingAnchor, constant: Tokens.Space.n24).isActive = true
+    loadingMediaLabel.trailingAnchor.constraint(lessThanOrEqualTo: overlayView.trailingAnchor, constant: -Tokens.Space.n24).isActive = true
     urlField.delegate = self
     ([.closeButton, .miniaturizeButton, .zoomButton] as [NSWindow.ButtonType]).forEach {
       window?.standardWindowButton($0)?.isHidden = true
     }
+
+    let detail = NSTextField(labelWithString: "")
+    detail.translatesAutoresizingMaskIntoConstraints = false
+    detail.font = Tokens.Typography.caption.nsFont
+    detail.textColor = Tokens.Palette.textSecondary.nsColor
+    detail.alignment = .center
+    detail.lineBreakMode = .byTruncatingMiddle
+    overlayView.addSubview(detail)
+    NSLayoutConstraint.activate([
+      detail.topAnchor.constraint(equalTo: loadingMediaLabel.bottomAnchor, constant: Tokens.Space.n6),
+      detail.centerXAnchor.constraint(equalTo: overlayView.centerXAnchor),
+      detail.leadingAnchor.constraint(greaterThanOrEqualTo: overlayView.leadingAnchor, constant: Tokens.Space.n24),
+      detail.trailingAnchor.constraint(lessThanOrEqualTo: overlayView.trailingAnchor, constant: -Tokens.Space.n24),
+    ])
+    loadingDetailLabel = detail
+
+    let stats = NSTextField(labelWithString: "")
+    stats.translatesAutoresizingMaskIntoConstraints = false
+    stats.font = Tokens.Typography.caption.nsFont
+    stats.textColor = Tokens.Palette.textSecondary.nsColor
+    stats.alignment = .center
+    stats.cell?.lineBreakMode = .byTruncatingTail
+    stats.cell?.usesSingleLineMode = true
+    overlayView.addSubview(stats)
+    NSLayoutConstraint.activate([
+      stats.topAnchor.constraint(equalTo: detail.bottomAnchor, constant: Tokens.Space.n4),
+      stats.centerXAnchor.constraint(equalTo: overlayView.centerXAnchor),
+      stats.leadingAnchor.constraint(greaterThanOrEqualTo: overlayView.leadingAnchor, constant: Tokens.Space.n24),
+      stats.trailingAnchor.constraint(lessThanOrEqualTo: overlayView.trailingAnchor, constant: -Tokens.Space.n24),
+    ])
+    loadingStatsLabel = stats
 
     loadingMediaProgressIndicator.startAnimation(self)
   }
@@ -64,11 +102,79 @@ class OpenURLWindowController: NSWindowController, NSTextFieldDelegate, NSContro
     window?.makeFirstResponder(nil)
     self.playerCore = playerCore
     loadingURL = playerCore.info.currentURL?.absoluteString
+    stopTorrentStats()
+    if let context = playerCore.torrentContext {
+      let parts = context.record.file.name.split(separator: "/").map(String.init)
+      let torrent = parts.first ?? context.record.title
+      let file = parts.count > 1 ? parts.dropFirst().joined(separator: "/") : nil
+      let size = ByteCountFormatter.string(fromByteCount: context.record.file.length, countStyle: .file)
+      loadingMediaLabel.stringValue = torrent
+      loadingDetailLabel.stringValue = file.map { "Torrent · \($0) · \(size)" } ?? "Torrent · \(size)"
+      loadingStatsLabel.stringValue = NSLocalizedString("Reading torrent status…", comment: "Torrent loading status")
+      startTorrentStats(context)
+    } else {
+      loadingMediaLabel.stringValue = NSLocalizedString("Loading Media……", comment: "Loading media")
+      loadingDetailLabel.stringValue = playerCore.info.currentURL?.host ?? ""
+      loadingStatsLabel.stringValue = ""
+    }
     NSApp.activate()
     showWindow(self)
   }
 
+  private func startTorrentStats(_ context: TorrentPlayerContext) {
+    let hash = context.record.identity.hash
+    let file = context.record.file
+    torrentStatsTask = Task { [weak self] in
+      while !Task.isCancelled {
+        guard let self, !self.overlayView.isHidden else { return }
+        if let snapshot = try? await TransmissionRuntime.shared.find(hash, fresh: true) {
+          self.updateTorrentStats(snapshot, file: file)
+        }
+        try? await Task.sleep(for: .milliseconds(700))
+      }
+    }
+  }
+
+  private func stopTorrentStats() {
+    torrentStatsTask?.cancel()
+    torrentStatsTask = nil
+  }
+
+  private func updateTorrentStats(_ snapshot: TorrentSnapshot, file: TorrentFile) {
+    guard snapshot.pieceSize > 0, file.length > 0, snapshot.pieceCount > 0 else { return }
+    let first = Int(file.offset / snapshot.pieceSize)
+    let last = Int((file.offset + file.length - 1) / snapshot.pieceSize)
+    guard first >= 0, first <= last, last < snapshot.pieceCount else { return }
+    var have = 0, available = 0
+    for piece in first...last {
+      if snapshot.hasPiece(piece) { have += 1 }
+      if snapshot.hasPiece(piece) || (piece < snapshot.availability.count && snapshot.availability[piece] > 0) {
+        available += 1
+      }
+    }
+    let count = last - first + 1
+    let progress = have * 100 / count
+    let availability = available * 100 / count
+    let speed = snapshot.downloadRate > 0
+      ? ByteCountFormatter.string(fromByteCount: snapshot.downloadRate, countStyle: .file) + "/s"
+      : "0 B/s"
+    let health: String
+    if snapshot.peers == 0 {
+      health = NSLocalizedString("No peers — playback may stall", comment: "Torrent loading status")
+    } else if available == 0 {
+      health = NSLocalizedString("No pieces available — playback may stall", comment: "Torrent loading status")
+    } else if availability < 95 {
+      health = NSLocalizedString("Limited availability", comment: "Torrent loading status")
+    } else if snapshot.downloadRate == 0 {
+      health = NSLocalizedString("Waiting for data", comment: "Torrent loading status")
+    } else {
+      health = NSLocalizedString("Good availability", comment: "Torrent loading status")
+    }
+    loadingStatsLabel.stringValue = "Seeds \(snapshot.completePeers) · Peers \(snapshot.peers) · \(speed) · \(progress)% · \(health)"
+  }
+
   func failedToLoadURL() {
+    stopTorrentStats()
     guard isWindowLoaded && window?.isVisible == true else { return }
     urlField.stringValue = loadingURL ?? ""
     errorMessageLabel.stringValue = failedToOpenURLMessage
@@ -78,6 +184,7 @@ class OpenURLWindowController: NSWindowController, NSTextFieldDelegate, NSContro
   }
 
   func resetWindowState() {
+    stopTorrentStats()
     urlField.stringValue = ""
     urlField.textColor = Tokens.Palette.textPrimary.nsColor
     usernameField.stringValue = ""
@@ -99,6 +206,7 @@ class OpenURLWindowController: NSWindowController, NSTextFieldDelegate, NSContro
   }
 
   func windowWillClose(_ notification: Notification) {
+    stopTorrentStats()
     playerCore = nil
     overlayView.isHidden = true
   }
@@ -112,6 +220,7 @@ class OpenURLWindowController: NSWindowController, NSTextFieldDelegate, NSContro
   }
 
   @IBAction func stopLoadingBtnAction(_ sender: Any) {
+    stopTorrentStats()
     guard let playerCore else { return }
     playerCore.stop()
     overlayView.isHidden = true
@@ -119,7 +228,7 @@ class OpenURLWindowController: NSWindowController, NSTextFieldDelegate, NSContro
 
   @IBAction func openBtnAction(_ sender: Any) {
     if let url = getURL().url {
-      if MainActor.assumeIsolated({ TorrentPlaybackCoordinator.shared.route(url) }) { window?.close(); return }
+      if MainActor.assumeIsolated({ TorrentPlaybackCoordinator.shared.route(url, hud: PlayerCore.active.isInMiniPlayer, player: PlayerCore.active) }) { window?.close(); return }
       if rememberPasswordCheckBox.state == .on,
          let host = url.host,
          !usernameField.stringValue.isEmpty {
@@ -129,7 +238,9 @@ class OpenURLWindowController: NSWindowController, NSTextFieldDelegate, NSContro
                                   server: host,
                                   port: url.port)
       }
+      stopTorrentStats()
       overlayView.isHidden = false
+      loadingStatsLabel.stringValue = ""
       // Must not leave the focus in the username or password text fields.
       window?.makeFirstResponder(nil)
       playerCore = PlayerCore.activeOrNewForMenuAction(isAlternative: isAlternativeAction)

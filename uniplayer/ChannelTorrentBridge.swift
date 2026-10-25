@@ -202,6 +202,109 @@ final class ChannelTorrentResolver {
 
 }
 
+/// Recognizes a response that is a torrent file rather than a page. Some
+/// channels (M-Team, for example) expose download as a JavaScript button that
+/// calls a token endpoint, so there is no anchor for the injected scanner.
+enum ChannelTorrentResponse {
+  static func isTorrent(_ response: URLResponse) -> Bool {
+    if let http = response as? HTTPURLResponse {
+      let type = (http.value(forHTTPHeaderField: "Content-Type") ?? response.mimeType ?? "").lowercased()
+      if type.contains("application/x-bittorrent") || type.contains("application/bittorrent") { return true }
+      if (http.value(forHTTPHeaderField: "Content-Disposition") ?? "").lowercased().contains(".torrent") { return true }
+    }
+    if response.suggestedFilename?.lowercased().hasSuffix(".torrent") == true { return true }
+    return response.url?.pathExtension.lowercased() == "torrent"
+  }
+
+  static func title(_ suggestedFilename: String?, fallback: String?) -> String {
+    var name = suggestedFilename ?? ""
+    if name.lowercased().hasSuffix(".torrent") { name.removeLast(8) }
+    let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+    if !trimmed.isEmpty { return trimmed }
+    let fallback = fallback?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    return fallback.isEmpty ? "Torrent download" : fallback
+  }
+}
+
+struct ChannelTorrentPayload {
+  let data: Data
+  let suggestedFilename: String?
+}
+
+/// Reads a site-initiated torrent download into memory so the normal Check &
+/// Play inspection can run without a second request to a one-time token URL.
+@MainActor
+final class ChannelTorrentDownload: NSObject, WKDownloadDelegate {
+  private let folder = FileManager.default.temporaryDirectory
+    .appendingPathComponent("UniPlayerTorrentDownload-" + UUID().uuidString, isDirectory: true)
+  private let completion: (Result<ChannelTorrentPayload, Error>) -> Void
+  private var redirects = 0
+  private var finished = false
+  private var suggestedFilename: String?
+
+  init(completion: @escaping (Result<ChannelTorrentPayload, Error>) -> Void) {
+    self.completion = completion
+  }
+
+  func download(_ download: WKDownload, decidePlaceholderPolicy completionHandler: @escaping (WKDownload.PlaceholderPolicy, URL?) -> Void) {
+    completionHandler(.disable, nil)
+  }
+
+  func download(_ download: WKDownload, decideDestinationUsing response: URLResponse,
+                suggestedFilename: String, completionHandler: @escaping (URL?) -> Void) {
+    self.suggestedFilename = suggestedFilename
+    let isHTML = response.mimeType?.lowercased().contains("html") == true
+    guard !finished, let http = response as? HTTPURLResponse, http.statusCode == 200,
+          response.expectedContentLength < 0 || response.expectedContentLength <= 10 * 1024 * 1024,
+          !isHTML else {
+      completionHandler(nil)
+      finish(.failure(isHTML ? TorrentFailure.needsVerification : TorrentFailure.invalidMetainfo))
+      return
+    }
+    do {
+      try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true,
+                                              attributes: [.posixPermissions: 0o700])
+    } catch {
+      completionHandler(nil); finish(.failure(TorrentFailure.invalidMetainfo)); return
+    }
+    completionHandler(folder.appendingPathComponent("source.torrent"))
+  }
+
+  func download(_ download: WKDownload, willPerformHTTPRedirection response: HTTPURLResponse,
+                newRequest request: URLRequest, decisionHandler: @escaping (WKDownload.RedirectPolicy) -> Void) {
+    redirects += 1
+    guard redirects <= 5, ["https", "http"].contains(request.url?.scheme?.lowercased() ?? "") else {
+      decisionHandler(.cancel); finish(.failure(TorrentFailure.invalidSource)); return
+    }
+    decisionHandler(.allow)
+  }
+
+  func downloadDidFinish(_ download: WKDownload) {
+    do {
+      let path = folder.appendingPathComponent("source.torrent")
+      let size = try path.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+      guard size > 0, size <= 10 * 1024 * 1024 else { throw TorrentFailure.invalidMetainfo }
+      try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: path.path)
+      let data = try Data(contentsOf: path)
+      _ = try TorrentMetainfo(data)
+      finish(.success(ChannelTorrentPayload(data: data, suggestedFilename: suggestedFilename)))
+    } catch {
+      finish(.failure(error))
+    }
+  }
+
+  func download(_ download: WKDownload, didFailWithError error: Error, resumeData: Data?) {
+    finish(.failure(TorrentFailure.unavailable("The torrent download failed. Complete any site verification and retry its download.")))
+  }
+
+  private func finish(_ result: Result<ChannelTorrentPayload, Error>) {
+    guard !finished else { return }
+    finished = true
+    try? FileManager.default.removeItem(at: folder)
+    completion(result)
+  }
+}
+
 @MainActor
 final class TorrentSourceDownload: NSObject, WKDownloadDelegate {
   private weak var web: WKWebView?

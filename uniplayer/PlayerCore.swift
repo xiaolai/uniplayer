@@ -663,7 +663,7 @@ class PlayerCore: NSObject {
     guard !urls.isEmpty else { return 0 }
     let torrents = urls.filter { TorrentPreferences.enabled && TorrentPlaybackCoordinator.recognizes($0) }
     if !torrents.isEmpty {
-      torrents.forEach { url in MainActor.assumeIsolated { _ = TorrentPlaybackCoordinator.shared.route(url) } }
+      torrents.forEach { url in MainActor.assumeIsolated { _ = TorrentPlaybackCoordinator.shared.route(url, hud: isInMiniPlayer, player: self) } }
       let others = urls.filter { !TorrentPreferences.enabled || !TorrentPlaybackCoordinator.recognizes($0) }
       return others.isEmpty ? torrents.count : (openURLs(others,shouldAutoLoad:autoLoad) ?? 0) + torrents.count
     }
