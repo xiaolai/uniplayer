@@ -1,5 +1,11 @@
 # Release notes
 
+## 0.2.9 (build 24)
+
+- Stop treating `.js` files as subtitles. A folder containing web assets no
+  longer floods the subtitle menu with JavaScript files; `.jss` (JACOSub)
+  remains supported.
+
 ## 0.2.8 (build 23)
 
 - Torrent downloads a channel starts from a JavaScript button now reach
