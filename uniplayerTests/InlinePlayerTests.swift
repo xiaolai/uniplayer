@@ -924,6 +924,16 @@ final class AssistantRemediationTests: XCTestCase {
 
 @MainActor
 final class LibraryMenuRoutingTests: XCTestCase {
+  /// A hosted CI screen can be narrower than the desktop-sized 1220-point
+  /// window these tests use. The restore path correctly refuses to grow past
+  /// the screen, so size the fixture to the current display instead.
+  private func focusModeFrame(for window: NSWindow) -> NSRect {
+    let available = window.screen?.visibleFrame.width
+      ?? NSScreen.main?.visibleFrame.width ?? 1220
+    let width = max(700, min(1220, available - 40))
+    return NSRect(x: 100, y: 100, width: width, height: 760)
+  }
+
   func testProgrammaticResizeCannotShrinkTheCentralViewportBelowItsMinimum() throws {
     let controller = LibraryWindowController(playerCore: PlayerCore.first)
     controller.showWindow(nil)
@@ -944,7 +954,7 @@ final class LibraryMenuRoutingTests: XCTestCase {
     controller.showWindow(nil)
     defer { controller.close() }
     let window = try XCTUnwrap(controller.window)
-    window.setFrame(NSRect(x: 100, y: 100, width: 1220, height: 760), display: false)
+    window.setFrame(focusModeFrame(for: window), display: false)
     let original = window.frame
     controller.windowWillEnterFullScreen(Notification(name: NSWindow.willEnterFullScreenNotification, object: window))
     controller.toggleFocusMode()
@@ -965,7 +975,7 @@ final class LibraryMenuRoutingTests: XCTestCase {
     controller.showWindow(nil)
     defer { controller.close() }
     let window = try XCTUnwrap(controller.window)
-    window.setFrame(NSRect(x: 100, y: 100, width: 1220, height: 760), display: false)
+    window.setFrame(focusModeFrame(for: window), display: false)
     let original = window.frame
     controller.toggleFocusMode()
     let focusedFrame = window.frame
