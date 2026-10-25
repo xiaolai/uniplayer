@@ -1,5 +1,11 @@
 # Release notes
 
+## 0.2.7 (build 22)
+
+- Pin the bundled Transmission runtime to 4.1.0. The 4.1.3 runtime is not
+  compatible with the channel torrent workflow; 4.1.0 is the same genuine,
+  unmodified engine with RPC 6.0.0.
+
 ## 0.2.6 (build 21)
 
 - Channels inspect magnet and torrent links and open them in a native sheet
