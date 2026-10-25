@@ -99,4 +99,130 @@ final class SettingsModeTests: XCTestCase {
   func testLastPageKeysArePerMode() {
     XCTAssertNotEqual(SettingsMode.simple.lastPageKey, SettingsMode.advanced.lastPageKey)
   }
+
+  func testSectionVisibilityFiltersProtocolTypedChildren() {
+    let advancedSection = SettingsSection(
+      spacing: 0,
+      [SettingsList([SettingsItem.General().onlyInAdvanced()])])
+    XCTAssertFalse(advancedSection.isVisible(in: .simple))
+    XCTAssertTrue(advancedSection.isVisible(in: .advanced))
+
+    let emptySection = SettingsSection(spacing: 0, [SettingsList([])])
+    XCTAssertFalse(emptySection.isVisible(in: .simple))
+  }
+
+  func testExpandedDetailRemainsExpandedAfterRebuild() {
+    let item = SettingsItem.General()
+    item.withExpandingDetailView(SettingsItem.General())
+    _ = item.makeView()
+    item.toggleExpandable(true, animated: false)
+    XCTAssertTrue(item.isExpanded)
+
+    _ = item.makeView()
+
+    XCTAssertEqual(item.disclosureButton.state, .on)
+    XCTAssertEqual(item.renderedDetailView?.alphaValue, 1)
+    guard let detail = item.renderedDetailView else {
+      return XCTFail("Expected a rendered detail view")
+    }
+    XCTAssertEqual(item.expandingStackView?.visibilityPriority(for: detail), .mustHold)
+  }
+
+  func testLanguageSelectorAddsDescriptionOnce() {
+    let selector = SettingsAccessory.LanguageSelector()
+      .bind(to: .subTextFont)
+      .hasDescription()
+    _ = selector.makeView()
+    _ = selector.makeView()
+
+    let labels = descendants(of: selector.view)
+      .compactMap { $0 as? NSTextField }
+      .filter { !($0 is LanguageTokenField) }
+    XCTAssertEqual(labels.count, 1)
+  }
+
+  func testASSSelectionVisibilitySurvivesRebuild() {
+    let accessory = SubtitlesASSView()
+    _ = accessory.makeView()
+    accessory.segmentControl.selectedSegment = 1
+    accessory.subOverrideLevelSegmentedControlAction(accessory.segmentControl)
+
+    _ = accessory.makeView()
+
+    guard let stack = accessory.view.subviews.compactMap({ $0 as? NSStackView }).first,
+          stack.arrangedSubviews.count == 2 else {
+      return XCTFail("Expected the ASS accessory to keep two selections")
+    }
+    XCTAssertEqual(stack.visibilityPriority(for: stack.arrangedSubviews[0]), .notVisible)
+    XCTAssertEqual(stack.visibilityPriority(for: stack.arrangedSubviews[1]), .mustHold)
+  }
+
+  func testHiddenPageNavigationSwitchesToAdvanced() {
+    SettingsMode.current = .simple
+    let window = SettingsWindow([
+      StubSettingsPage(identifier: "video"),
+      StubSettingsPage(identifier: "plugin", availableInSimpleMode: false),
+    ])
+    defer { window.close() }
+
+    XCTAssertEqual(window.mode, .simple)
+    window.navigateTo(page: "plugin")
+    XCTAssertEqual(window.mode, .advanced)
+    XCTAssertEqual(window.title, "plugin")
+  }
+
+  func testAdvancedSearchEntrySwitchesModeWithinVisiblePage() {
+    SettingsMode.current = .simple
+    let window = SettingsWindow([StubSettingsPage(identifier: "video")])
+    defer { window.close() }
+
+    window.navigateTo(page: "video", advancedEntry: true)
+
+    XCTAssertEqual(window.mode, .advanced)
+    XCTAssertEqual(window.title, "video")
+  }
+
+  func testAdvancedNavigationKeepsOutgoingModeLastPage() {
+    let key = SettingsMode.simple.lastPageKey
+    let saved = UserDefaults.standard.string(forKey: key)
+    defer {
+      if let saved {
+        UserDefaults.standard.set(saved, forKey: key)
+      } else {
+        UserDefaults.standard.removeObject(forKey: key)
+      }
+    }
+
+    SettingsMode.current = .simple
+    UserDefaults.standard.set("video", forKey: key)
+    let window = SettingsWindow([
+      StubSettingsPage(identifier: "video"),
+      StubSettingsPage(identifier: "network", availableInSimpleMode: false),
+    ])
+    defer { window.close() }
+
+    window.navigateTo(page: "network")
+
+    XCTAssertEqual(window.mode, .advanced)
+    XCTAssertEqual(UserDefaults.standard.string(forKey: key), "video")
+  }
+
+  private func descendants(of view: NSView) -> [NSView] {
+    view.subviews + view.subviews.flatMap(descendants(of:))
+  }
+}
+
+private final class StubSettingsPage: SettingsPage {
+  private let pageID: String
+  private let simpleMode: Bool
+
+  init(identifier: String, availableInSimpleMode: Bool = true) {
+    self.pageID = identifier
+    self.simpleMode = availableInSimpleMode
+    super.init()
+  }
+
+  override var identifier: String { pageID }
+  override var title: String { pageID }
+  override var availableInSimpleMode: Bool { simpleMode }
 }

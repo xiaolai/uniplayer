@@ -1078,8 +1078,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
   @objc func showPluginPreferences(_ sender: NSMenuItem) {
     if Preference.enableNewSettings {
-      SettingsWindow.default.show()
-      SettingsWindow.default.navigateTo(page: "plugin")
+      SettingsWindow.default.showPage(identifier: "plugin")
     } else {
       preferenceWindowController.openPreferenceView(withNibName: "PrefPluginViewController")
     }

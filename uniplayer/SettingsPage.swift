@@ -16,6 +16,7 @@ protocol SettingsContainer {
   func makeView() -> NSView
   func getChildren() -> [any SettingsContainer]
   func registerSearchEntry(context: SettingsSearch.Context)
+  func isVisible(in mode: SettingsMode) -> Bool
 }
 
 extension SettingsContainer {

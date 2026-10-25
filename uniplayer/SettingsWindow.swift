@@ -296,7 +296,7 @@ class SettingsWindow: CommonWindow {
   /// first frame is the requested page, not the last visited one.
   func showPage(identifier: String) {
     if !pages.contains(where: { $0.identifier == identifier }) {
-      setMode(.advanced, preserving: identifier)
+      setMode(.advanced, selecting: identifier)
     }
     guard let index = pages.firstIndex(where: { $0.identifier == identifier }) else {
       show()
@@ -736,8 +736,11 @@ extension SettingsWindow {
   }
 
   func navigateTo(page: String, advancedEntry: Bool = false) {
-    if advancedEntry, mode == .simple {
-      setMode(.advanced, preserving: page)
+    let pageIsHidden = !pages.contains(where: { $0.identifier == page })
+    if mode == .simple,
+       allPages.contains(where: { $0.identifier == page }),
+       advancedEntry || pageIsHidden {
+      setMode(.advanced, selecting: page)
     }
     guard let idx = pages.firstIndex(where: { $0.identifier == page }),
           let targetRow = sidebarRows.firstIndex(where: { $0.page == idx })
@@ -750,7 +753,7 @@ extension SettingsWindow {
 
   func installPlugin(localPackageURL url: URL) {
     show()
-    navigateTo(page: "plugin", advancedEntry: true)
+    navigateTo(page: "plugin")
     if let pluginPage = pages.first(where: { $0.identifier == "plugin" }) as? SettingsPagePlugin {
       pluginPage.installPlugin(localPackageURL: url)
     }
@@ -764,17 +767,17 @@ extension SettingsWindow {
     AppDelegate.shared.showAboutWindow(self)
   }
 
-  private func setMode(_ newMode: SettingsMode, preserving identifier: String? = nil) {
+  private func setMode(_ newMode: SettingsMode, selecting identifier: String? = nil) {
     guard newMode != mode else { return }
-    let currentID = identifier ?? currentPageIndex.flatMap { pages[at: $0]?.identifier }
-    if let currentID {
-      UserDefaults.standard.set(currentID, forKey: mode.lastPageKey)
+    let outgoingID = currentPageIndex.flatMap { pages[at: $0]?.identifier }
+    if let outgoingID {
+      UserDefaults.standard.set(outgoingID, forKey: mode.lastPageKey)
     }
     mode = newMode
     SettingsMode.current = newMode
     cachedPageViews.removeAll()
     pages = allPages.filter { newMode == .advanced || $0.availableInSimpleMode }
-    let preserved = currentID.flatMap { id in
+    let preserved = outgoingID.flatMap { id in
       pages.contains { $0.identifier == id } ? id : nil
     }
     let preferred = identifier

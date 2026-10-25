@@ -462,8 +462,10 @@ struct SettingsItem {
         if isExpandableAndClickable {
           disclosureButton.isHidden = false
         }
-        expandingStackView!.setVisibilityPriority(.notVisible, for: detailView)
-        detailView.alphaValue = 0
+        disclosureButton.state = isExpanded ? .on : .off
+        expandingStackView!.setVisibilityPriority(isExpanded ? .mustHold : .notVisible, for: detailView)
+        detailView.alphaValue = isExpanded ? 1 : 0
+        backgroundView.enableRoundCorner = !isExpanded
       } else {
         expandingStackView!.setVisibilityPriority(.mustHold, for: detailView)
       }
@@ -1348,6 +1350,7 @@ class SettingsAccessory {
     let view: NSView
     private var key: Preference.Key? = nil
     private var hasDesc = false
+    private var descLabel: NSTextField?
     private let stackView: NSStackView
     private let audioLangTokenField: LanguageTokenField
 
@@ -1389,12 +1392,13 @@ class SettingsAccessory {
       audioLangTokenField.awakeFromNib()
       if let key {
         audioLangTokenField.commaSeparatedValues = Preference.string(for: key) ?? ""
-        if hasDesc {
-          let descLabel = NSTextField(labelWithString: ui.localized("\(key.rawValue).desc"))
-          descLabel.makeMultiLine()
-          descLabel.font = Tokens.Typography.caption.nsFont
-          descLabel.textColor = Tokens.Palette.textSecondary.nsColor
-          stackView.addArrangedSubview(descLabel)
+        if hasDesc, descLabel == nil {
+          let label = NSTextField(labelWithString: ui.localized("\(key.rawValue).desc"))
+          label.makeMultiLine()
+          label.font = Tokens.Typography.caption.nsFont
+          label.textColor = Tokens.Palette.textSecondary.nsColor
+          stackView.addArrangedSubview(label)
+          descLabel = label
         }
       }
       return view

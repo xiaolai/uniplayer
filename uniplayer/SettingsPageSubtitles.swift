@@ -225,12 +225,13 @@ fileprivate class SButton: NSButton {
 }
 
 
-fileprivate class SubtitlesASSView: SettingsAccessory.Base {
+class SubtitlesASSView: SettingsAccessory.Base {
   let segmentControl: NSSegmentedControl
 
   private let stackView: NSStackView
   private let primarySelection: SettingsAccessory.Selection
   private let secondarySelection: SettingsAccessory.Selection
+  private var didBuild = false
 
   override init() {
     self.segmentControl = NSSegmentedControl(
@@ -262,23 +263,28 @@ fileprivate class SubtitlesASSView: SettingsAccessory.Base {
   }
 
   override func makeView() -> NSView {
-    stackView.addArrangedSubview(primarySelection.makeView())
-    stackView.addArrangedSubview(secondarySelection.makeView())
-    stackView.orientation = .vertical
-    stackView.alignment = .width
-    stackView.setVisibilityPriority(.notVisible, for: secondarySelection.builtView!)
+    if !didBuild {
+      stackView.addArrangedSubview(primarySelection.makeView())
+      stackView.addArrangedSubview(secondarySelection.makeView())
+      stackView.orientation = .vertical
+      stackView.alignment = .width
+      didBuild = true
+    }
+    updateSelectionVisibility()
 
     return super.makeView()
   }
 
+  private func updateSelectionVisibility() {
+    guard let primaryView = primarySelection.builtView,
+          let secondaryView = secondarySelection.builtView else { return }
+    let showsPrimary = segmentControl.selectedSegment == 0
+    stackView.setVisibilityPriority(showsPrimary ? .mustHold : .notVisible, for: primaryView)
+    stackView.setVisibilityPriority(showsPrimary ? .notVisible : .mustHold, for: secondaryView)
+  }
+
   @objc func subOverrideLevelSegmentedControlAction(_ sender: NSSegmentedControl) {
-    if sender.selectedSegment == 0 {
-      stackView.setVisibilityPriority(.mustHold, for: primarySelection.builtView!)
-      stackView.setVisibilityPriority(.notVisible, for: secondarySelection.builtView!)
-    } else {
-      stackView.setVisibilityPriority(.notVisible, for: primarySelection.builtView!)
-      stackView.setVisibilityPriority(.mustHold, for: secondarySelection.builtView!)
-    }
+    updateSelectionVisibility()
   }
 }
 
