@@ -127,8 +127,16 @@ enum TranslationSettings {
 
   static func isConfigured(for source: TranslationSource) -> Bool {
     switch source {
+    case .assistant: return AssistantConfiguration.load().isConfigured
+    case .codexCLI, .claudeCLI, .appleOnDevice: return true
+    }
+  }
+
+  static func isConfigured(for source: TranslationSource,
+                           configuration: AssistantConfiguration) -> Bool {
+    switch source {
     case .assistant:
-      return AssistantConfiguration.load().isConfigured
+      return configuration.isConfigured
     case .codexCLI, .claudeCLI, .appleOnDevice:
       // The CLI and on-device sources report a missing binary, sign-in or
       // model when asked; requiring a key here would block them for no reason.
@@ -137,9 +145,14 @@ enum TranslationSettings {
   }
 
   static func configurationProblem(for source: TranslationSource) -> String? {
+    guard source == .assistant else { return nil }
+    return configurationProblem(for: source, configuration: .load())
+  }
+
+  static func configurationProblem(for source: TranslationSource,
+                                   configuration: AssistantConfiguration) -> String? {
     switch source {
     case .assistant:
-      let configuration = AssistantConfiguration.load()
       if configuration.endpointURL == nil {
         return AssistantError.invalidEndpoint.errorDescription
       }
@@ -166,14 +179,6 @@ enum TranslationPrompt {
 
   static func question(system: String, user: String) -> String {
     "\(system)\n\n\(user)"
-  }
-
-  static func batch(system: String, user: String) -> String {
-    question(system: system, user: user)
-  }
-
-  static func plain(system: String, user: String) -> String {
-    question(system: system, user: user)
   }
 }
 
@@ -204,7 +209,7 @@ struct AppleTranslationLine: Codable, Sendable {
 /// caller parses it exactly as it parsed the streaming assistant's answer.
 enum SaySoTranslation {
   static func batch(source: TranslationSource, system: String, user: String) async throws -> String {
-    let question = TranslationPrompt.batch(system: system, user: user)
+    let question = TranslationPrompt.question(system: system, user: user)
     switch source {
     case .assistant:
       throw AssistantError.notConfigured
@@ -220,7 +225,7 @@ enum SaySoTranslation {
   }
 
   static func plain(source: TranslationSource, system: String, user: String) async throws -> String {
-    let question = TranslationPrompt.plain(system: system, user: user)
+    let question = TranslationPrompt.question(system: system, user: user)
     switch source {
     case .assistant:
       throw AssistantError.notConfigured
@@ -305,10 +310,8 @@ enum SaySoTranslation {
         codexHome: TranslationSettings.codexHome,
         workingDirectory: TranslationSettings.workingDirectory,
         model: TranslationSettings.model(for: .codexCLI)))
-    } catch let error as AIProviderError {
-      throw assistantError(error, source: .codexCLI)
     } catch {
-      throw AssistantError.provider(error.localizedDescription)
+      throw assistantError(error, source: .codexCLI)
     }
   }
 
@@ -337,10 +340,8 @@ enum SaySoTranslation {
                              source: TranslationSource) async throws -> String {
     do {
       return try await provider.answer(to: question)
-    } catch let error as AIProviderError {
-      throw assistantError(error, source: source)
     } catch {
-      throw AssistantError.provider(error.localizedDescription)
+      throw assistantError(error, source: source)
     }
   }
 
@@ -438,11 +439,13 @@ enum SaySoTranslation {
   private static func versionTooOldMessage(_ source: TranslationSource) -> String {
     switch source {
     case .codexCLI:
-      return NSLocalizedString("Update the Codex CLI to version 0.163.0 or later.",
-                               comment: "Translation provider error")
+      return String(format: NSLocalizedString(
+        "Update the Codex CLI to version %@ or later.",
+        comment: "Translation provider error"), CodexCLIProvider.minimumVersion)
     case .claudeCLI:
-      return NSLocalizedString("Update Claude Code to version 2.1.304 or later.",
-                               comment: "Translation provider error")
+      return String(format: NSLocalizedString(
+        "Update Claude Code to version %@ or later.",
+        comment: "Translation provider error"), ClaudeCLIProvider.minimumVersion)
     case .assistant, .appleOnDevice:
       return NSLocalizedString("The translation provider is too old.",
                                comment: "Translation provider error")

@@ -114,13 +114,83 @@ final class AssistantTextClient {
     }
   }
 
+  /// Owns the one-shot answer task so `cancel()` can stop an on-device
+  /// generation that is not routed through `AssistantService`.
+  private final class OneShotTaskBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var task: Task<String, Error>?
+    private var token: UUID?
+    private var cancelled = false
+
+    func begin() -> UUID {
+      let token = UUID()
+      lock.lock()
+      self.task = nil
+      self.token = token
+      cancelled = false
+      lock.unlock()
+      return token
+    }
+
+    func install(_ task: Task<String, Error>, token: UUID) {
+      lock.lock()
+      guard self.token == token else {
+        lock.unlock()
+        task.cancel()
+        return
+      }
+      self.task = task
+      let wasCancelled = cancelled
+      lock.unlock()
+      if wasCancelled { task.cancel() }
+    }
+
+    func clear(_ token: UUID) {
+      lock.lock()
+      if self.token == token { task = nil; self.token = nil }
+      lock.unlock()
+    }
+
+    func isCancelled(_ token: UUID) -> Bool {
+      lock.lock()
+      defer { lock.unlock() }
+      return cancelled || self.token != token
+    }
+
+    func cancel() {
+      lock.lock()
+      cancelled = true
+      let task = self.task
+      self.task = nil
+      token = nil
+      lock.unlock()
+      task?.cancel()
+    }
+  }
+
+  private let oneShotTasks = OneShotTaskBox()
+
   func complete(system: String, user: String) async throws -> String {
     let source = source()
     if source != .assistant {
       // The on-device source answers one composed question; a CLI selection
       // never reaches here because `TranslationSettings.liveSource` falls back
       // to the assistant.
-      return try await oneShotAnswer(source, system, user)
+      guard !Task.isCancelled else { throw AssistantError.cancelled }
+      let answer = oneShotAnswer
+      let token = oneShotTasks.begin()
+      let task = Task { try await answer(source, system, user) }
+      oneShotTasks.install(task, token: token)
+      defer { oneShotTasks.clear(token) }
+      return try await withTaskCancellationHandler {
+        let value = try await task.value
+        guard !oneShotTasks.isCancelled(token), !Task.isCancelled else {
+          throw AssistantError.cancelled
+        }
+        return value
+      } onCancel: {
+        task.cancel()
+      }
     }
     let configuration = configuration()
     guard configuration.isConfigured else {
@@ -168,6 +238,7 @@ final class AssistantTextClient {
   }
 
   func cancel() {
+    oneShotTasks.cancel()
     service.cancel()
   }
 }

@@ -37,6 +37,11 @@ final class SubtitleTranslationController {
     let end: Double
   }
 
+  /// The one-shot sources ignore the assistant configuration; this keeps
+  /// their path free of a Keychain read.
+  private static let unusedConfiguration = AssistantConfiguration(
+    provider: .openAICompatible, endpoint: "", model: "", apiKey: nil)
+
   /// Seconds of subtitle text translated ahead of the playhead.
   private static let lookaheadSeconds: Double = 30
   private static let maximumCuesPerRequest = 12
@@ -57,6 +62,7 @@ final class SubtitleTranslationController {
   private var requestTask: Task<Void, Never>?
   private var lineTask: Task<Void, Never>?
   private var lineGeneration = 0
+  private var requestGeneration = 0
   private var requestInFlight = false
   private var requestStartedAt: Date?
 
@@ -163,6 +169,14 @@ final class SubtitleTranslationController {
                 || key == .assistantEndpoint || key == .assistantModel
                 || key == .translationSource || key == .translationCodexModel
                 || key == .translationClaudeModel {
+      requestGeneration += 1
+      requestTask?.cancel()
+      requestTask = nil
+      requestInFlight = false
+      requestStartedAt = nil
+      lineGeneration += 1
+      lineTask?.cancel()
+      lineTask = nil
       hardBlocked = false
       lastErrorShownAt = nil
       nextAttemptAt = .distantPast
@@ -220,7 +234,9 @@ final class SubtitleTranslationController {
     translationLanguage = SubtitleTranslationSettings.targetLanguage()
     pendingLanguage = nil
 
-    guard currentConfiguration(showError: userInitiated) != nil else {
+    let path = Self.localPath(from: track.externalFilename)
+    let source = path == nil ? TranslationSettings.liveSource : TranslationSettings.source
+    guard currentConfiguration(for: source, showError: userInitiated) != nil else {
       mode = .waiting
       return
     }
@@ -229,7 +245,6 @@ final class SubtitleTranslationController {
     lastErrorShownAt = nil
     lastTopUp = .distantPast
 
-    let path = Self.localPath(from: track.externalFilename)
     sourcePath = path
     sourceEncoding = player.mpv.getString(MPVOption.Subtitles.subCodepage)
     sourceModificationDate = path.flatMap(Self.modificationDate)
@@ -304,6 +319,7 @@ final class SubtitleTranslationController {
     lineTask = nil
     loadGeneration += 1
     lineGeneration += 1
+    requestGeneration += 1
     requestInFlight = false
     requestStartedAt = nil
     timer?.invalidate()
@@ -442,9 +458,11 @@ final class SubtitleTranslationController {
       maximum: Self.maximumCuesPerRequest,
       maximumFailures: Self.maximumFailuresPerLine)
     guard !selected.isEmpty else { return }
-    guard let configuration = currentConfiguration(showError: true) else { return }
+    let source = TranslationSettings.source
+    guard let configuration = currentConfiguration(for: source, showError: true) else { return }
 
-    let generation = loadGeneration
+    requestGeneration += 1
+    let generation = requestGeneration
     let language = translationLanguage
     let items = selected.map { (id: $0, text: cues[$0].text) }
     requestInFlight = true
@@ -453,12 +471,12 @@ final class SubtitleTranslationController {
       guard let self else { return }
       do {
         let result = try await self.engine.translate(
-          items: items, language: language, configuration: configuration)
+          items: items, language: language, configuration: configuration, source: source)
         await MainActor.run {
+          guard generation == self.requestGeneration else { return }
           self.requestInFlight = false
           self.requestStartedAt = nil
-          guard generation == self.loadGeneration, language == self.translationLanguage,
-                case .cues = self.mode else { return }
+          guard language == self.translationLanguage, case .cues = self.mode else { return }
           guard !result.isEmpty else {
             // The provider answered but translated nothing. Treat it like a
             // failed batch instead of hammering it every 1.5 seconds.
@@ -477,9 +495,9 @@ final class SubtitleTranslationController {
         }
       } catch {
         await MainActor.run {
+          guard generation == self.requestGeneration else { return }
           self.requestInFlight = false
           self.requestStartedAt = nil
-          guard generation == self.loadGeneration else { return }
           self.handle(error)
         }
       }
@@ -535,13 +553,14 @@ final class SubtitleTranslationController {
       return
     }
     updateOverlay()
-    guard let configuration = currentConfiguration(showError: true) else { return }
+    let source = TranslationSettings.liveSource
+    guard let configuration = currentConfiguration(for: source, showError: true) else { return }
     let language = translationLanguage
     lineTask = Task { [weak self] in
       guard let self else { return }
       do {
         let result = try await self.engine.translate(
-          items: [(0, text)], language: language, configuration: configuration)
+          items: [(0, text)], language: language, configuration: configuration, source: source)
         await MainActor.run {
           guard generation == self.lineGeneration, self.currentLine?.id == generation,
                 language == self.translationLanguage, case .live = self.mode else { return }
@@ -611,17 +630,18 @@ final class SubtitleTranslationController {
 
   // MARK: - Configuration and errors
 
-  private func currentConfiguration(showError: Bool) -> AssistantConfiguration? {
+  private func currentConfiguration(for source: TranslationSource,
+                                    showError: Bool) -> AssistantConfiguration? {
     // Read on each request so a new Keychain key or a settings change applies
-    // without restarting; the read is local and cheap.
-    let configuration = AssistantConfiguration.load()
-    let source = TranslationSettings.source
-    guard TranslationSettings.isConfigured(for: source) else {
+    // without restarting; one snapshot validates and reports the same state.
+    let configuration = source == .assistant ? AssistantConfiguration.load() : Self.unusedConfiguration
+    guard TranslationSettings.isConfigured(for: source, configuration: configuration) else {
       hardBlocked = true
       nextAttemptAt = Date().addingTimeInterval(60)
       overlay.clear()
       if showError {
-        showErrorOnce(configurationProblem(for: source), throttle: 300)
+        showErrorOnce(configurationProblem(for: source, configuration: configuration),
+                      throttle: 300)
       }
       return nil
     }
@@ -629,8 +649,9 @@ final class SubtitleTranslationController {
     return configuration
   }
 
-  private func configurationProblem(for source: TranslationSource) -> String {
-    TranslationSettings.configurationProblem(for: source)
+  private func configurationProblem(for source: TranslationSource,
+                                    configuration: AssistantConfiguration) -> String {
+    TranslationSettings.configurationProblem(for: source, configuration: configuration)
       ?? NSLocalizedString(
         "Set the AI provider in Settings › AI to translate subtitles.",
         comment: "Subtitle translation")

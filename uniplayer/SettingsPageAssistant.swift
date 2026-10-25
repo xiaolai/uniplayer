@@ -12,10 +12,15 @@ import SaySoAI
 
 private final class FieldEditingObserver: NSObject, NSTextFieldDelegate, NSComboBoxDelegate {
   var onEndEditing: (() -> Void)?
+  var onTextChange: (() -> Void)?
   var onSelection: (() -> Void)?
 
   func controlTextDidEndEditing(_ notification: Notification) {
     onEndEditing?()
+  }
+
+  func controlTextDidChange(_ notification: Notification) {
+    onTextChange?()
   }
 
   func comboBoxSelectionDidChange(_ notification: Notification) {
@@ -58,8 +63,14 @@ final class SettingsPageAssistant: SettingsPage {
   private let translationAction = NSButton()
   private let translationCheck = NSButton()
   private var translationCheckTask: Task<Void, Never>?
+  private var translationSignInTask: Task<Void, Never>?
+  private var signInGeneration = 0
+  private var modelLoadTask: Task<Void, Never>?
+  private var modelLoadGeneration = 0
+  private var isLoadingModels = false
   private var lastTranslationSource: TranslationSource?
   private let modelEditingObserver = FieldEditingObserver()
+  private let endpointEditingObserver = FieldEditingObserver()
   private let translationEditingObserver = FieldEditingObserver()
 
   override func content() -> [SettingsSection] {
@@ -122,6 +133,8 @@ final class SettingsPageAssistant: SettingsPage {
     configureField(endpointField)
     endpointField.bind(.value, to: UserDefaults.standard,
                        withKeyPath: Preference.Key.assistantEndpoint.rawValue)
+    endpointEditingObserver.onTextChange = { [weak self] in self?.endpointChanged() }
+    endpointField.delegate = endpointEditingObserver
     endpointField.placeholderString = configuration.profile.baseURL?.absoluteString
       ?? provider.defaultEndpoint
     endpointField.setAccessibilityLabel(NSLocalizedString("Assistant Endpoint", comment: "Settings"))
@@ -320,7 +333,7 @@ final class SettingsPageAssistant: SettingsPage {
     let configuration = AssistantConfiguration.load()
     let isClaude = configuration.provider == .claude
     profilePopup.isEnabled = !isClaude
-    fetchModelsButton.isEnabled = !isClaude
+    fetchModelsButton.isEnabled = !isClaude && !isLoadingModels
     endpointField.placeholderString = isClaude
       ? configuration.provider.defaultEndpoint
       : configuration.profile.baseURL?.absoluteString
@@ -335,13 +348,37 @@ final class SettingsPageAssistant: SettingsPage {
 
   private func populateModelHints() {
     let configuration = AssistantConfiguration.load()
-    guard configuration.provider == .openAICompatible else { return }
     let current = modelCombo.stringValue.isEmpty
       ? (Preference.string(for: .assistantModel) ?? "")
       : modelCombo.stringValue
     modelCombo.removeAllItems()
-    modelCombo.addItems(withObjectValues: configuration.profile.hints)
+    if configuration.provider == .openAICompatible {
+      modelCombo.addItems(withObjectValues: configuration.profile.hints)
+    }
     modelCombo.stringValue = current
+  }
+
+  private func cancelModelLoading() {
+    modelLoadGeneration += 1
+    modelLoadTask?.cancel()
+    modelLoadTask = nil
+    isLoadingModels = false
+  }
+
+  private func endpointChanged() {
+    cancelModelLoading()
+    refreshModelButton()
+  }
+
+  private func keyChanged() {
+    cancelModelLoading()
+    refreshModelButton()
+  }
+
+  private func refreshModelButton() {
+    let provider = AssistantProviderKind(
+      rawValue: Preference.string(for: .assistantProvider) ?? "") ?? .openAICompatible
+    fetchModelsButton.isEnabled = provider == .openAICompatible && !isLoadingModels
   }
 
   // MARK: Translation UI
@@ -394,26 +431,24 @@ final class SettingsPageAssistant: SettingsPage {
     let previousDefaults = AssistantProviderKind.allCases.flatMap {
       [$0.defaultEndpoint, $0.defaultModel]
     }
+    cancelModelLoading()
     // Setting stringValue on a bound control does not write through to
     // UserDefaults, so persist the replacement explicitly.
-    if endpointField.stringValue.isEmpty
-        || previousDefaults.contains(endpointField.stringValue) {
-      endpointField.stringValue = provider.defaultEndpoint
-      Preference.set(provider.defaultEndpoint, for: .assistantEndpoint)
-    }
-    if modelCombo.stringValue.isEmpty
-        || previousDefaults.contains(modelCombo.stringValue) {
-      modelCombo.stringValue = provider.defaultModel
-      Preference.set(provider.defaultModel, for: .assistantModel)
-    }
-    Preference.set(provider.rawValue, for: .assistantProvider)
+    let currentEndpoint = endpointField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+    let anthropicCompatibility = "https://api.anthropic.com/v1"
+    let anthropicCompatibilityChat = "https://api.anthropic.com/v1/chat/completions"
     if provider == .claude {
-      if !endpointField.stringValue.contains("api.anthropic.com") {
+      // Known provider defaults become the native Messages endpoint; a custom
+      // proxy or gateway stays where the reader put it.
+      if isKnownProviderEndpoint(currentEndpoint) {
         endpointField.stringValue = provider.defaultEndpoint
         Preference.set(provider.defaultEndpoint, for: .assistantEndpoint)
       }
     } else {
-      if endpointField.stringValue.contains("api.anthropic.com") {
+      if currentEndpoint.isEmpty
+          || currentEndpoint == AssistantProviderKind.claude.defaultEndpoint
+          || currentEndpoint == anthropicCompatibility
+          || currentEndpoint == anthropicCompatibilityChat {
         endpointField.stringValue = provider.defaultEndpoint
         Preference.set(provider.defaultEndpoint, for: .assistantEndpoint)
       }
@@ -423,12 +458,34 @@ final class SettingsPageAssistant: SettingsPage {
         Preference.set(derived, for: .assistantProfile)
       }
     }
+    if modelCombo.stringValue.isEmpty
+        || previousDefaults.contains(modelCombo.stringValue) {
+      modelCombo.stringValue = provider.defaultModel
+      Preference.set(provider.defaultModel, for: .assistantModel)
+    }
+    Preference.set(provider.rawValue, for: .assistantProvider)
     updateAssistantUI()
+  }
+
+  /// A documented service address is not a custom proxy: switching to native
+  /// Claude must not send Messages requests to an OpenAI-compatible base.
+  private func isKnownProviderEndpoint(_ endpoint: String) -> Bool {
+    let trimmed = endpoint.trimmingCharacters(in: .whitespacesAndNewlines)
+    if trimmed.isEmpty { return true }
+    if trimmed == AssistantProviderKind.claude.defaultEndpoint { return true }
+    guard let base = AssistantProfiles.baseURL(trimmed)?.absoluteString else { return false }
+    let documented = Set(AssistantProfiles.known.compactMap { profile in
+      profile.baseURL.flatMap { AssistantProfiles.baseURL($0.absoluteString)?.absoluteString }
+    })
+    let openAIBase = AssistantProfiles.baseURL(
+      AssistantProviderKind.openAICompatible.defaultEndpoint)?.absoluteString
+    return documented.contains(base) || base == openAIBase
   }
 
   @objc private func profileChanged() {
     let index = profilePopup.indexOfSelectedItem
     guard AssistantProfiles.known.indices.contains(index) else { return }
+    cancelModelLoading()
     let profile = AssistantProfiles.known[index]
     Preference.set(profile.id, for: .assistantProfile)
     if let base = profile.baseURL {
@@ -453,20 +510,48 @@ final class SettingsPageAssistant: SettingsPage {
         comment: "Assistant")
       return
     }
-    fetchModelsButton.isEnabled = false
+    guard configuration.supportsSaySoTransport else {
+      modelStatus.stringValue = NSLocalizedString(
+        "Model lists need HTTPS or a loopback address. Enter the LAN model name manually.",
+        comment: "Assistant")
+      return
+    }
+    cancelModelLoading()
+    let generation = modelLoadGeneration
+    isLoadingModels = true
+    updateAssistantUI()
     modelStatus.stringValue = NSLocalizedString("Loading models…", comment: "Assistant")
-    Task { @MainActor [weak self] in
+    modelLoadTask = Task { @MainActor [weak self] in
       guard let self else { return }
+      let result: Result<[AIModel], Error>
       do {
-        let models = try await ModelCatalog().fetch(request)
+        result = .success(try await ModelCatalog().fetch(request))
+      } catch {
+        result = .failure(error)
+      }
+      guard self.modelLoadGeneration == generation else { return }
+      let current = AssistantConfiguration.load()
+      guard current.catalogRequest == request else {
+        self.isLoadingModels = false
+        self.modelLoadTask = nil
+        self.modelStatus.stringValue = NSLocalizedString(
+          "Configuration changed. Load models again.", comment: "Assistant")
+        self.fetchModelsButton.isEnabled =
+          current.provider == .openAICompatible && current.supportsSaySoTransport
+        return
+      }
+      switch result {
+      case .success(let models):
         self.modelCombo.removeAllItems()
         self.modelCombo.addItems(withObjectValues: models.map(\.id))
         self.modelStatus.stringValue = String(
           format: NSLocalizedString("Loaded %d models.", comment: "Assistant"), models.count)
-      } catch {
+      case .failure(let error):
         self.modelStatus.stringValue = AssistantProfiles.catalogMessage(error)
       }
-      self.fetchModelsButton.isEnabled = true
+      self.isLoadingModels = false
+      self.modelLoadTask = nil
+      self.fetchModelsButton.isEnabled = current.supportsSaySoTransport
     }
   }
 
@@ -480,23 +565,28 @@ final class SettingsPageAssistant: SettingsPage {
     }
     testButton.isEnabled = false
     keyStatus.stringValue = NSLocalizedString("Testing connection…", comment: "Assistant")
-    if configuration.provider == .openAICompatible {
-      Task { @MainActor in
+    if configuration.provider == .openAICompatible, configuration.supportsSaySoTransport {
+      Task { @MainActor [weak self] in
+        guard let self else { return }
         do {
           let provider = try configuration.makeHTTPProvider()
           _ = try await provider.probe()
-          keyStatus.stringValue = NSLocalizedString("Connection succeeded.", comment: "Assistant")
+          self.keyStatus.stringValue = NSLocalizedString("Connection succeeded.", comment: "Assistant")
         } catch let error as AIProviderError {
-          keyStatus.stringValue = SaySoTranslation
+          self.keyStatus.stringValue = SaySoTranslation
             .assistantError(error, source: .assistant)
             .localizedDescription
         } catch {
-          keyStatus.stringValue = error.localizedDescription
+          self.keyStatus.stringValue = error.localizedDescription
         }
-        testButton.isEnabled = true
+        self.testButton.isEnabled = true
       }
       return
     }
+    testWithStreaming(configuration)
+  }
+
+  private func testWithStreaming(_ configuration: AssistantConfiguration) {
     connectionService.stream(configuration: configuration,
       request: AssistantRequest(messages: [AssistantProviderMessage(role: .user, content: "Reply with OK.")], tools: []),
       onEvent: { _ in },
@@ -523,6 +613,10 @@ final class SettingsPageAssistant: SettingsPage {
     guard TranslationSource.allCases.indices.contains(index) else { return }
     let source = TranslationSource.allCases[index]
     Preference.set(source.rawValue, for: .translationSource)
+    signInGeneration += 1
+    translationSignInTask?.cancel()
+    translationSignInTask = nil
+    translationAction.isEnabled = true
     lastTranslationSource = source
     updateTranslationUI()
     checkTranslationSource()
@@ -535,23 +629,40 @@ final class SettingsPageAssistant: SettingsPage {
   @objc private func translationActionTapped() {
     switch TranslationSettings.source {
     case .codexCLI:
+      let source = TranslationSource.codexCLI
+      translationSignInTask?.cancel()
+      signInGeneration += 1
+      let generation = signInGeneration
       translationAction.isEnabled = false
       translationStatus.stringValue = NSLocalizedString(
         "Starting Codex sign-in…", comment: "Translation source")
-      Task { @MainActor [weak self] in
+      translationSignInTask = Task { @MainActor [weak self] in
         guard let self else { return }
-        do {
-          let output = try await SaySoTranslation.signInToCodex { line in
-            Task { @MainActor [weak self] in
-              self?.translationStatus.stringValue = line
+        defer {
+          if self.signInGeneration == generation {
+            self.translationSignInTask = nil
+            if TranslationSettings.source == source {
+              self.translationAction.isEnabled = true
             }
           }
-          if !output.isEmpty { translationStatus.stringValue = output }
+        }
+        do {
+          let output = try await SaySoTranslation.signInToCodex { line in
+            Task { @MainActor in
+              guard self.signInGeneration == generation,
+                    TranslationSettings.source == source else { return }
+              self.translationStatus.stringValue = line
+            }
+          }
+          guard self.signInGeneration == generation,
+                TranslationSettings.source == source else { return }
+          if !output.isEmpty { self.translationStatus.stringValue = output }
           self.checkTranslationSource()
         } catch {
-          translationStatus.stringValue = error.localizedDescription
+          guard self.signInGeneration == generation,
+                TranslationSettings.source == source else { return }
+          self.translationStatus.stringValue = error.localizedDescription
         }
-        self.translationAction.isEnabled = true
       }
     case .claudeCLI:
       let pasteboard = NSPasteboard.general
@@ -607,6 +718,7 @@ final class SettingsPageAssistant: SettingsPage {
         username: NSUserName(), password: key, forService: .assistantAPIKey)
       keyField.stringValue = ""
       refreshKeyStatus()
+      keyChanged()
     } catch {
       keyStatus.stringValue = NSLocalizedString(
         "The key could not be saved.", comment: "Settings")
@@ -619,6 +731,7 @@ final class SettingsPageAssistant: SettingsPage {
       try KeychainAccess.remove(username: NSUserName(), forService: .assistantAPIKey)
       keyField.stringValue = ""
       refreshKeyStatus()
+      keyChanged()
     } catch {
       keyStatus.stringValue = NSLocalizedString(
         "The key could not be removed.", comment: "Settings")
@@ -627,6 +740,8 @@ final class SettingsPageAssistant: SettingsPage {
 
   deinit {
     translationCheckTask?.cancel()
+    translationSignInTask?.cancel()
+    modelLoadTask?.cancel()
   }
 
   private func refreshKeyStatus() {

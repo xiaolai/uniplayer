@@ -167,7 +167,8 @@ final class SubtitleTranslationEngine {
   ///   batch as a failure.
   func translate(items: [(id: Int, text: String)],
                  language: String,
-                 configuration: AssistantConfiguration) async throws -> [Int: String] {
+                 configuration: AssistantConfiguration,
+                 source requestedSource: TranslationSource? = nil) async throws -> [Int: String] {
     var results: [Int: String] = [:]
     var pending: [(id: Int, text: String)] = []
     for item in items {
@@ -182,7 +183,8 @@ final class SubtitleTranslationEngine {
 
     for batch in Self.batches(pending) {
       try Task.checkCancellation()
-      let translated = try await request(batch, language: language, configuration: configuration)
+      let translated = try await request(
+        batch, language: language, configuration: configuration, source: requestedSource)
       for (id, text) in batch {
         guard let translation = translated[id],
               !translation.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
@@ -199,8 +201,9 @@ final class SubtitleTranslationEngine {
 
   private func request(_ batch: [(id: Int, text: String)],
                        language: String,
-                       configuration: AssistantConfiguration) async throws -> [Int: String] {
-    let source = sourceProvider()
+                       configuration: AssistantConfiguration,
+                       source requestedSource: TranslationSource?) async throws -> [Int: String] {
+    let source = requestedSource ?? sourceProvider()
     let prompt = Self.prompt(for: batch, language: language)
     // A provider that wraps JSON in prose is common enough that one retry is
     // worth the round trip; provider and network errors are not retried here
@@ -229,10 +232,7 @@ final class SubtitleTranslationEngine {
   ) async throws -> String {
     let provider = providerFactory(configuration.provider)
     let request = AssistantRequest(
-      messages: [
-        AssistantProviderMessage(role: .system, content: prompt.system),
-        AssistantProviderMessage(role: .user, content: prompt.user),
-      ],
+      messages: Self.messages(for: prompt.system, user: prompt.user),
       tools: [])
     var answer = ""
     for try await event in provider.stream(request, configuration: configuration) {
@@ -265,13 +265,17 @@ final class SubtitleTranslationEngine {
     return (system, user)
   }
 
+  static func messages(for system: String, user: String) -> [AssistantProviderMessage] {
+    [
+      AssistantProviderMessage(role: .system, content: system),
+      AssistantProviderMessage(role: .user, content: user),
+    ]
+  }
+
   static func messages(for batch: [(id: Int, text: String)],
                        language: String) -> [AssistantProviderMessage] {
     let prompt = prompt(for: batch, language: language)
-    return [
-      AssistantProviderMessage(role: .system, content: prompt.system),
-      AssistantProviderMessage(role: .user, content: prompt.user),
-    ]
+    return messages(for: prompt.system, user: prompt.user)
   }
 
   // MARK: - Batching

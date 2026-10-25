@@ -293,6 +293,24 @@ final class SubtitleTranslationEngineTests: XCTestCase {
     XCTAssertEqual(provider.requestCount, 0, "a one-shot source must not use the streaming provider")
   }
 
+  func testExplicitSourceOverridesTheAmbientSource() async throws {
+    var calls = 0
+    let engine = SubtitleTranslationEngine(
+      providerFactory: { _ in self.provider },
+      sourceProvider: { .assistant },
+      oneShotAnswer: { source, _, _ in
+        calls += 1
+        XCTAssertEqual(source, .appleOnDevice)
+        return #"{"translations":[{"id":0,"text":"Bonjour"}]}"#
+      })
+    let result = try await engine.translate(
+      items: [(id: 0, text: "Hello")], language: "French", configuration: configuration,
+      source: .appleOnDevice)
+    XCTAssertEqual(result, [0: "Bonjour"])
+    XCTAssertEqual(calls, 1)
+    XCTAssertEqual(provider.requestCount, 0)
+  }
+
   func testOneShotSourceRetriesMalformedAnswer() async throws {
     var calls = 0
     let engine = SubtitleTranslationEngine(

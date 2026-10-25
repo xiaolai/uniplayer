@@ -17,6 +17,43 @@ final class AssistantProfileTests: XCTestCase {
     XCTAssertEqual(
       AssistantProfiles.baseURL("https://api.openai.com/v1/chat/completions/")?.absoluteString,
       "https://api.openai.com/v1")
+    XCTAssertEqual(
+      AssistantProfiles.baseURL("https://api.deepseek.com/")?.absoluteString,
+      "https://api.deepseek.com")
+  }
+
+  func testEncodedPathSegmentsSurviveNormalization() {
+    XCTAssertEqual(
+      AssistantProfiles.baseURL(
+        "https://gateway.example/tenant%2Fproject/v1/chat/completions")?.absoluteString,
+      "https://gateway.example/tenant%2Fproject/v1")
+  }
+
+  func testPathCaseIsPreservedWhenDerivingAProfile() {
+    XCTAssertEqual(
+      AssistantProfiles.derivedID(for: "https://api.openai.com/V1"),
+      AssistantProfiles.customID)
+  }
+
+  func testEmptyServerMessageKeepsTheStatus() {
+    let message = AssistantProfiles.catalogMessage(
+      ModelCatalogError.server(status: 500, message: "  "))
+    XCTAssertTrue(message.contains("500"))
+  }
+
+  func testSaySoTransportPolicyMatchesTheLibrary() {
+    let loopback = AssistantConfiguration(
+      provider: .openAICompatible,
+      endpoint: "http://127.0.0.1:8080/v1",
+      model: "local",
+      apiKey: nil)
+    let lan = AssistantConfiguration(
+      provider: .openAICompatible,
+      endpoint: "http://192.168.1.10/v1",
+      model: "local",
+      apiKey: nil)
+    XCTAssertTrue(loopback.supportsSaySoTransport)
+    XCTAssertFalse(lan.supportsSaySoTransport)
   }
 
   func testKnownEndpointDerivesItsProfile() {
@@ -169,6 +206,26 @@ final class AssistantTextClientTests: XCTestCase {
       })
     let result = try await client.complete(system: "system", user: "hello")
     XCTAssertEqual(result, "bonjour")
+  }
+
+  func testCancelStopsAOneShotAnswer() async throws {
+    let started = expectation(description: "one-shot answer started")
+    let client = AssistantTextClient(
+      source: { .appleOnDevice },
+      oneShotAnswer: { _, _, _ in
+        started.fulfill()
+        try await Task.sleep(for: .seconds(30))
+        return "late"
+      })
+    let task = Task { try await client.complete(system: "system", user: "hello") }
+    await fulfillment(of: [started], timeout: 2)
+    client.cancel()
+    do {
+      _ = try await task.value
+      XCTFail("a cancelled on-device answer must not return")
+    } catch {
+      // Cancellation is the expected result.
+    }
   }
 }
 

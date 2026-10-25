@@ -28,15 +28,18 @@ enum AssistantProfiles {
     guard !trimmed.isEmpty, var components = URLComponents(string: trimmed) else { return nil }
     guard components.scheme == "https" || components.scheme == "http" else { return nil }
     let suffix = "/chat/completions"
-    while components.path.hasSuffix("/") && components.path.count > 1 {
-      components.path.removeLast()
+    var path = components.percentEncodedPath
+    while path.hasSuffix("/") && path.count > 1 {
+      path.removeLast()
     }
-    if components.path.hasSuffix(suffix) {
-      components.path.removeLast(suffix.count)
+    if path.hasSuffix(suffix) {
+      path.removeLast(suffix.count)
     }
-    while components.path.hasSuffix("/") && components.path.count > 1 {
-      components.path.removeLast()
+    while path.hasSuffix("/") && path.count > 1 {
+      path.removeLast()
     }
+    if path == "/" { path = "" }
+    components.percentEncodedPath = path
     return components.url
   }
 
@@ -52,9 +55,15 @@ enum AssistantProfiles {
   }
 
   private static func normalized(_ value: String) -> String {
-    var text = value.lowercased()
-    while text.hasSuffix("/") { text.removeLast() }
-    return text
+    guard var components = URLComponents(string: value) else { return value }
+    components.scheme = components.scheme?.lowercased()
+    components.host = components.host?.lowercased()
+    if components.scheme == "https", components.port == 443 { components.port = nil }
+    if components.scheme == "http", components.port == 80 { components.port = nil }
+    var path = components.percentEncodedPath
+    while path.hasSuffix("/") { path.removeLast() }
+    components.percentEncodedPath = path
+    return components.string ?? value
   }
 
   static func catalogMessage(_ error: Error) -> String {
@@ -83,8 +92,12 @@ enum AssistantProfiles {
     case .cancelled:
       return NSLocalizedString("The model list request was cancelled.",
                                comment: "Assistant model list")
-    case .server(_, let message):
-      return message
+    case .server(let status, let message):
+      let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines)
+      if !trimmed.isEmpty { return trimmed }
+      return String(format: NSLocalizedString(
+        "The service refused the model list (HTTP %d).",
+        comment: "Assistant model list"), status)
     case .badShape:
       return NSLocalizedString("The service returned a model list this app could not read.",
                                comment: "Assistant model list")

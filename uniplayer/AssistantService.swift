@@ -61,9 +61,13 @@ struct AssistantConfiguration: Equatable {
     return url
   }
 
-  /// The OpenAI-compatible base URL, without `/chat/completions`.
+  /// The OpenAI-compatible base URL, without `/chat/completions`. A blank
+  /// endpoint falls back to the selected profile; a malformed nonblank one
+  /// does not, so a typo cannot silently send the conversation elsewhere.
   var baseURL: URL? {
-    AssistantProfiles.baseURL(endpoint) ?? profile.baseURL
+    let trimmed = endpoint.trimmingCharacters(in: .whitespacesAndNewlines)
+    if trimmed.isEmpty { return profile.baseURL }
+    return AssistantProfiles.baseURL(trimmed)
   }
 
   /// The OpenAI-compatible request URL. Existing settings stored the full
@@ -114,13 +118,14 @@ struct AssistantConfiguration: Equatable {
     return !requiresAPIKey || apiKey?.isEmpty == false
   }
 
-  /// How this profile authenticates an OpenAI-compatible request.
-  var auth: AIProviderAuth {
-    provider == .claude ? .header("x-api-key") : profile.auth
-  }
-
-  var tokenField: AIProviderTokenField {
-    profile.tokenField
+  /// SaySo's one-shot transport accepts HTTPS anywhere and plain HTTP only
+  /// on loopback. The streaming transport is more permissive, so a LAN
+  /// endpoint uses it for the connection test and manual model entry.
+  var supportsSaySoTransport: Bool {
+    guard provider == .openAICompatible, let url = baseURL else { return false }
+    guard url.scheme == "http" else { return true }
+    let host = url.host?.lowercased() ?? ""
+    return host == "localhost" || host == "127.0.0.1" || host == "::1"
   }
 
   var catalogRequest: ModelCatalog.Request? {
@@ -140,7 +145,7 @@ struct AssistantConfiguration: Equatable {
         apiKey: apiKey?.trimmingCharacters(in: .whitespacesAndNewlines),
         auth: profile.auth,
         tokenField: profile.tokenField))
-    } catch let error as AIProviderError {
+    } catch {
       throw SaySoTranslation.assistantError(error, source: .assistant)
     }
   }
@@ -175,20 +180,38 @@ struct AssistantConfiguration: Equatable {
   static func load() -> AssistantConfiguration {
     let provider = AssistantProviderKind(
       rawValue: Preference.string(for: .assistantProvider) ?? "") ?? .openAICompatible
+    let storedProfile = Preference.string(for: .assistantProfile) ?? ""
     var endpoint = Preference.string(for: .assistantEndpoint) ?? ""
-    if endpoint.isEmpty { endpoint = provider.defaultEndpoint }
+    if endpoint.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+      if provider == .claude {
+        endpoint = provider.defaultEndpoint
+      } else if !storedProfile.isEmpty,
+                let base = AssistantProfiles.profile(id: storedProfile).baseURL {
+        endpoint = base.absoluteString
+      } else {
+        endpoint = provider.defaultEndpoint
+      }
+    }
     var model = Preference.string(for: .assistantModel) ?? ""
     if model.isEmpty { model = provider.defaultModel }
     let key = (try? KeychainAccess.read(
       username: nil, forService: .assistantAPIKey))?.password
-    let storedProfile = Preference.string(for: .assistantProfile) ?? ""
     let profileID: String
     if provider == .claude {
       profileID = storedProfile.isEmpty ? AssistantProfiles.customID : storedProfile
+    } else if storedProfile.isEmpty {
+      let derived = AssistantProfiles.derivedID(for: endpoint)
+      // An old endpoint with a saved key used to send it as a bearer. A
+      // derived profile that would drop the key keeps the custom profile so
+      // the authenticated installation keeps working.
+      let hadKey = key?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+      if hadKey, AssistantProfiles.profile(id: derived).auth != .bearer {
+        profileID = AssistantProfiles.customID
+      } else {
+        profileID = derived
+      }
     } else {
-      profileID = storedProfile.isEmpty
-        ? AssistantProfiles.derivedID(for: endpoint)
-        : storedProfile
+      profileID = storedProfile
     }
     return AssistantConfiguration(
       provider: provider, profileID: profileID, endpoint: endpoint, model: model, apiKey: key)
