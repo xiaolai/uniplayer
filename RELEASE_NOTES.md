@@ -6,9 +6,10 @@
   Check & Play. M-Team's 下載 control serves an `application/x-bittorrent`
   response from its token endpoint; UniPlayer recognizes the response, reads
   the metainfo in memory, and opens the normal inspection sheet.
-- The Open URL loading screen names the torrent, file and size, and shows live
-  connected seeds/peers, download speed, selected-file progress and an
-  availability hint while playback waits for pieces.
+- The Open URL loading surface is redesigned around a circular progress gauge
+  and a live four-metric grid: torrent name, file and size, connected
+  seeds/peers, download speed, selected-file progress and an availability
+  verdict while playback waits for pieces.
 - The HUD (mini player) shows the torrent source and inspection phase, starts
   playback when the metadata is ready, and reports buffering progress. A
   failed inspection hands the same model to the full Check & Play sheet, and

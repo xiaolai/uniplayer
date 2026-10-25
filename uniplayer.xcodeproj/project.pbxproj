@@ -15,6 +15,7 @@
 		AF8700000000000000000008 /* TorrentSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8600000000000000000008 /* TorrentSettingsView.swift */; };
 		AF8700000000000000000007 /* TorrentPlaybackCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8600000000000000000007 /* TorrentPlaybackCoordinator.swift */; };
 		AF8700000000000000000006 /* TorrentInspection.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8600000000000000000006 /* TorrentInspection.swift */; };
+		AF8700000000000000000099 /* LoadingMediaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8600000000000000000099 /* LoadingMediaView.swift */; };
 		AF8700000000000000000005 /* TorrentPlaybackStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8600000000000000000005 /* TorrentPlaybackStore.swift */; };
 		AF8700000000000000000004 /* ChannelTorrentBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8600000000000000000004 /* ChannelTorrentBridge.swift */; };
 		AF8700000000000000000003 /* TorrentMediaBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8600000000000000000003 /* TorrentMediaBridge.swift */; };
@@ -651,6 +652,7 @@
 		AF8600000000000000000008 /* TorrentSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TorrentSettingsView.swift; sourceTree = "<group>"; };
 		AF8600000000000000000007 /* TorrentPlaybackCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TorrentPlaybackCoordinator.swift; sourceTree = "<group>"; };
 		AF8600000000000000000006 /* TorrentInspection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TorrentInspection.swift; sourceTree = "<group>"; };
+		AF8600000000000000000099 /* LoadingMediaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingMediaView.swift; sourceTree = "<group>"; };
 		AF8600000000000000000005 /* TorrentPlaybackStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TorrentPlaybackStore.swift; sourceTree = "<group>"; };
 		AF8600000000000000000004 /* ChannelTorrentBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelTorrentBridge.swift; sourceTree = "<group>"; };
 		AF8600000000000000000003 /* TorrentMediaBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TorrentMediaBridge.swift; sourceTree = "<group>"; };
@@ -2398,6 +2400,7 @@
 				AF8600000000000000000008 /* TorrentSettingsView.swift */,
 				AF8600000000000000000007 /* TorrentPlaybackCoordinator.swift */,
 				AF8600000000000000000006 /* TorrentInspection.swift */,
+				AF8600000000000000000099 /* LoadingMediaView.swift */,
 				AF8600000000000000000005 /* TorrentPlaybackStore.swift */,
 				AF8600000000000000000004 /* ChannelTorrentBridge.swift */,
 				AF8600000000000000000003 /* TorrentMediaBridge.swift */,
@@ -3320,6 +3323,7 @@
 				AF8700000000000000000008 /* TorrentSettingsView.swift in Sources */,
 				AF8700000000000000000007 /* TorrentPlaybackCoordinator.swift in Sources */,
 				AF8700000000000000000006 /* TorrentInspection.swift in Sources */,
+				AF8700000000000000000099 /* LoadingMediaView.swift in Sources */,
 				AF8700000000000000000005 /* TorrentPlaybackStore.swift in Sources */,
 				AF8700000000000000000004 /* ChannelTorrentBridge.swift in Sources */,
 				AF8700000000000000000003 /* TorrentMediaBridge.swift in Sources */,

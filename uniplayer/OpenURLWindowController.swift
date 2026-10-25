@@ -7,6 +7,7 @@
 //
 
 import Cocoa
+import SwiftUI
 
 class OpenURLWindowController: NSWindowController, NSTextFieldDelegate, NSControlTextEditingDelegate, NSWindowDelegate {
 
@@ -27,8 +28,7 @@ class OpenURLWindowController: NSWindowController, NSTextFieldDelegate, NSContro
   @IBOutlet weak var loadingMediaProgressIndicator: NSProgressIndicator!
   @IBOutlet weak var loadingMediaLabel: NSTextField!
 
-  private var loadingDetailLabel: NSTextField!
-  private var loadingStatsLabel: NSTextField!
+  private let loadingModel = LoadingMediaModel()
   private var torrentStatsTask: Task<Void, Never>?
 
   var isAlternativeAction = false
@@ -52,47 +52,27 @@ class OpenURLWindowController: NSWindowController, NSTextFieldDelegate, NSContro
     urlStackView.setVisibilityPriority(.notVisible, for: httpPrefixTextField)
     httpPrefixTextField.font = Tokens.Typography.urlField.nsFont
     urlField.font = Tokens.Typography.urlField.nsFont
-    loadingMediaLabel.font = Tokens.Typography.loading.nsFont
-    loadingMediaLabel.cell?.lineBreakMode = .byTruncatingMiddle
-    loadingMediaLabel.leadingAnchor.constraint(greaterThanOrEqualTo: overlayView.leadingAnchor, constant: Tokens.Space.n24).isActive = true
-    loadingMediaLabel.trailingAnchor.constraint(lessThanOrEqualTo: overlayView.trailingAnchor, constant: -Tokens.Space.n24).isActive = true
     urlField.delegate = self
     ([.closeButton, .miniaturizeButton, .zoomButton] as [NSWindow.ButtonType]).forEach {
       window?.standardWindowButton($0)?.isHidden = true
     }
 
-    let detail = NSTextField(labelWithString: "")
-    detail.translatesAutoresizingMaskIntoConstraints = false
-    detail.font = Tokens.Typography.caption.nsFont
-    detail.textColor = Tokens.Palette.textSecondary.nsColor
-    detail.alignment = .center
-    detail.lineBreakMode = .byTruncatingMiddle
-    overlayView.addSubview(detail)
+    // The legacy AppKit loading contents stay in the nib for the window's
+    // geometry; the loading surface itself is the SwiftUI view hosted over it.
+    loadingMediaProgressIndicator.isHidden = true
+    loadingMediaLabel.isHidden = true
+    overlayView.subviews.compactMap { $0 as? NSButton }.forEach { $0.isHidden = true }
+    let loadingView = NSHostingView(rootView: LoadingMediaView(model: loadingModel, onStop: { [weak self] in
+      self?.stopLoading()
+    }))
+    loadingView.translatesAutoresizingMaskIntoConstraints = false
+    overlayView.addSubview(loadingView)
     NSLayoutConstraint.activate([
-      detail.topAnchor.constraint(equalTo: loadingMediaLabel.bottomAnchor, constant: Tokens.Space.n6),
-      detail.centerXAnchor.constraint(equalTo: overlayView.centerXAnchor),
-      detail.leadingAnchor.constraint(greaterThanOrEqualTo: overlayView.leadingAnchor, constant: Tokens.Space.n24),
-      detail.trailingAnchor.constraint(lessThanOrEqualTo: overlayView.trailingAnchor, constant: -Tokens.Space.n24),
+      loadingView.leadingAnchor.constraint(equalTo: overlayView.leadingAnchor),
+      loadingView.trailingAnchor.constraint(equalTo: overlayView.trailingAnchor),
+      loadingView.topAnchor.constraint(equalTo: overlayView.topAnchor),
+      loadingView.bottomAnchor.constraint(equalTo: overlayView.bottomAnchor),
     ])
-    loadingDetailLabel = detail
-
-    let stats = NSTextField(labelWithString: "")
-    stats.translatesAutoresizingMaskIntoConstraints = false
-    stats.font = Tokens.Typography.caption.nsFont
-    stats.textColor = Tokens.Palette.textSecondary.nsColor
-    stats.alignment = .center
-    stats.cell?.lineBreakMode = .byTruncatingTail
-    stats.cell?.usesSingleLineMode = true
-    overlayView.addSubview(stats)
-    NSLayoutConstraint.activate([
-      stats.topAnchor.constraint(equalTo: detail.bottomAnchor, constant: Tokens.Space.n4),
-      stats.centerXAnchor.constraint(equalTo: overlayView.centerXAnchor),
-      stats.leadingAnchor.constraint(greaterThanOrEqualTo: overlayView.leadingAnchor, constant: Tokens.Space.n24),
-      stats.trailingAnchor.constraint(lessThanOrEqualTo: overlayView.trailingAnchor, constant: -Tokens.Space.n24),
-    ])
-    loadingStatsLabel = stats
-
-    loadingMediaProgressIndicator.startAnimation(self)
   }
 
   func showLoadingScreen(playerCore: PlayerCore) {
@@ -103,19 +83,26 @@ class OpenURLWindowController: NSWindowController, NSTextFieldDelegate, NSContro
     self.playerCore = playerCore
     loadingURL = playerCore.info.currentURL?.absoluteString
     stopTorrentStats()
+    loadingModel.isTorrent = playerCore.torrentContext != nil
     if let context = playerCore.torrentContext {
       let parts = context.record.file.name.split(separator: "/").map(String.init)
       let torrent = parts.first ?? context.record.title
-      let file = parts.count > 1 ? parts.dropFirst().joined(separator: "/") : nil
+      let file = parts.count > 1 ? parts.last : nil
       let size = ByteCountFormatter.string(fromByteCount: context.record.file.length, countStyle: .file)
-      loadingMediaLabel.stringValue = torrent
-      loadingDetailLabel.stringValue = file.map { "Torrent · \($0) · \(size)" } ?? "Torrent · \(size)"
-      loadingStatsLabel.stringValue = NSLocalizedString("Reading torrent status…", comment: "Torrent loading status")
+      loadingModel.title = torrent
+      loadingModel.subtitle = file.map { "Torrent · \($0) · \(size)" } ?? "Torrent · \(size)"
+      loadingModel.stats = []
+      loadingModel.progress = nil
+      loadingModel.health = NSLocalizedString("Reading torrent status…", comment: "Torrent loading status")
+      loadingModel.healthTone = .waiting
       startTorrentStats(context)
     } else {
-      loadingMediaLabel.stringValue = NSLocalizedString("Loading Media……", comment: "Loading media")
-      loadingDetailLabel.stringValue = playerCore.info.currentURL?.host ?? ""
-      loadingStatsLabel.stringValue = ""
+      loadingModel.title = NSLocalizedString("Loading Media……", comment: "Loading media")
+      loadingModel.subtitle = playerCore.info.currentURL?.host ?? ""
+      loadingModel.stats = []
+      loadingModel.progress = nil
+      loadingModel.health = nil
+      loadingModel.healthTone = .none
     }
     NSApp.activate()
     showWindow(self)
@@ -159,18 +146,32 @@ class OpenURLWindowController: NSWindowController, NSTextFieldDelegate, NSContro
       ? ByteCountFormatter.string(fromByteCount: snapshot.downloadRate, countStyle: .file) + "/s"
       : "0 B/s"
     let health: String
+    let tone: LoadingMediaModel.HealthTone
     if snapshot.peers == 0 {
-      health = NSLocalizedString("No peers — playback may stall", comment: "Torrent loading status")
+      health = NSLocalizedString("No peers — may stall", comment: "Torrent loading status")
+      tone = .stalled
     } else if available == 0 {
-      health = NSLocalizedString("No pieces available — playback may stall", comment: "Torrent loading status")
+      health = NSLocalizedString("No pieces — may stall", comment: "Torrent loading status")
+      tone = .stalled
     } else if availability < 95 {
       health = NSLocalizedString("Limited availability", comment: "Torrent loading status")
+      tone = .limited
     } else if snapshot.downloadRate == 0 {
       health = NSLocalizedString("Waiting for data", comment: "Torrent loading status")
+      tone = .waiting
     } else {
       health = NSLocalizedString("Good availability", comment: "Torrent loading status")
+      tone = .good
     }
-    loadingStatsLabel.stringValue = "Seeds \(snapshot.completePeers) · Peers \(snapshot.peers) · \(speed) · \(progress)% · \(health)"
+    loadingModel.progress = Double(have) / Double(count)
+    loadingModel.stats = [
+      .init(label: "Seeds", value: "\(snapshot.completePeers)"),
+      .init(label: "Peers", value: "\(snapshot.peers)"),
+      .init(label: "Speed", value: speed),
+      .init(label: "Progress", value: "\(progress)%"),
+    ]
+    loadingModel.health = health
+    loadingModel.healthTone = tone
   }
 
   func failedToLoadURL() {
@@ -220,9 +221,12 @@ class OpenURLWindowController: NSWindowController, NSTextFieldDelegate, NSContro
   }
 
   @IBAction func stopLoadingBtnAction(_ sender: Any) {
+    stopLoading()
+  }
+
+  private func stopLoading() {
     stopTorrentStats()
-    guard let playerCore else { return }
-    playerCore.stop()
+    playerCore?.stop()
     overlayView.isHidden = true
   }
 
@@ -240,7 +244,11 @@ class OpenURLWindowController: NSWindowController, NSTextFieldDelegate, NSContro
       }
       stopTorrentStats()
       overlayView.isHidden = false
-      loadingStatsLabel.stringValue = ""
+      loadingModel.isTorrent = false
+      loadingModel.stats = []
+      loadingModel.progress = nil
+      loadingModel.health = nil
+      loadingModel.healthTone = .none
       // Must not leave the focus in the username or password text fields.
       window?.makeFirstResponder(nil)
       playerCore = PlayerCore.activeOrNewForMenuAction(isAlternative: isAlternativeAction)
