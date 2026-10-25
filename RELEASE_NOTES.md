@@ -1,5 +1,12 @@
 # Release notes
 
+## 0.3.1 (build 27)
+
+- Open File now uses a sheet attached to the visible window instead of a
+  blocking application-modal panel. On multi-display or full-screen setups the
+  old panel could be placed off-screen, leaving the app waiting with no visible
+  dialog; the sheet keeps the app responsive and stays with its window.
+
 ## 0.3.0 (build 26)
 
 - The AI assistant now receives a richer, explicit context message: media
