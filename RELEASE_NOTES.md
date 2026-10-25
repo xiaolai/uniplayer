@@ -1,5 +1,18 @@
 # Release notes
 
+## 0.2.6 (build 21)
+
+- Channels inspect magnet and torrent links and open them in a native sheet
+  before playback. The bundled Transmission runtime serves only verified
+  pieces; private transfers and resume state are retained.
+- Mini4K resource posts offer Check & Play. The torrent preview and the Mini4K
+  adapter are enabled by default and remain switchable in Settings › General ›
+  Torrent Playback.
+- The library toolbar Back and Forward now follow a channel's web history
+  while a channel is selected.
+- Opening a magnet link from Open URL reaches the torrent inspector instead of
+  being rejected as invalid.
+
 ## 0.2.5 (build 20)
 
 - AI subtitle translation can now use the reader's signed-in Codex or Claude

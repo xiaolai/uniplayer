@@ -9,7 +9,7 @@ for its author's own machines; there is no support commitment, no roadmap, and
 no promise that a change will suit anyone else's setup. Issues and pull
 requests may go unanswered.
 
-The current version is 0.2.5 (build 20). Release builds use Developer ID signing
+The current version is 0.2.6 (build 21). Release builds use Developer ID signing
 and Apple notarization.
 
 ## Install
