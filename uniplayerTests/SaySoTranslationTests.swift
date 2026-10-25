@@ -108,7 +108,15 @@ final class AssistantProfileTests: XCTestCase {
     }
     Preference.set("http://127.0.0.1:11434/v1/chat/completions", for: .assistantEndpoint)
     UserDefaults.standard.removeObject(forKey: Preference.Key.assistantProfile.rawValue)
-    XCTAssertEqual(AssistantConfiguration.load().profileID, "ollama")
+    let endpoint = "http://127.0.0.1:11434/v1/chat/completions"
+    XCTAssertEqual(AssistantProfiles.derivedID(for: endpoint), "ollama")
+    // A stored key keeps the custom profile: the derived Ollama profile would
+    // drop a key the old installation was already sending as a bearer. The
+    // test host's Keychain is external state, so accept both documented paths.
+    let hasKey = (try? KeychainAccess.read(username: nil, forService: .assistantAPIKey))?
+      .password.isEmpty == false
+    XCTAssertEqual(AssistantConfiguration.load().profileID,
+                   hasKey ? AssistantProfiles.customID : "ollama")
   }
 
   func testClaudeKeepsItsNativeMessagesEndpoint() {
