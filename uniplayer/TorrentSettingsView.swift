@@ -2,8 +2,8 @@ import AppKit
 import SwiftUI
 
 struct TorrentSettingsContent: View {
-  @AppStorage(TorrentPreferences.enabledKey) private var enabled = false
-  @AppStorage(TorrentPreferences.mini4KPosts) private var mini4KPosts = false
+  @AppStorage(TorrentPreferences.enabledKey) private var enabled = true
+  @AppStorage(TorrentPreferences.mini4KPosts) private var mini4KPosts = true
   @AppStorage(TorrentPreferences.quotaGiB) private var quota = 50
   @ObservedObject private var store = TorrentPlaybackStore.shared
   @State private var jobs: [TorrentTransferSummary] = []

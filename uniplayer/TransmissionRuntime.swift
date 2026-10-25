@@ -405,6 +405,15 @@ enum TorrentPreferences {
   static let quotaGiB = "torrent.playback.quotaGiB.v1"
   static let cachePath = "torrent.playback.cachePath.v1"
   static let changed = Notification.Name("TorrentPlaybackSettingsChanged")
-  static var enabled: Bool { UserDefaults.standard.bool(forKey:enabledKey) }
+  static var enabled: Bool {
+    let defaults = UserDefaults.standard
+    guard defaults.object(forKey: enabledKey) != nil else { return true }
+    return defaults.bool(forKey: enabledKey)
+  }
+  static var mini4KPostsEnabled: Bool {
+    let defaults = UserDefaults.standard
+    guard defaults.object(forKey: mini4KPosts) != nil else { return true }
+    return defaults.bool(forKey: mini4KPosts)
+  }
   static func allowed(host: String) -> Bool { let key = "torrent.playback.disabledHosts.v1"; return !(UserDefaults.standard.stringArray(forKey:key) ?? []).contains(host.lowercased()) }
 }

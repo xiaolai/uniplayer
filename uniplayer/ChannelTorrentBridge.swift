@@ -44,7 +44,7 @@ final class ChannelTorrentBridge: NSObject, WKScriptMessageHandlerWithReply {
   static var script: String {
     let source = Bundle.main.url(forResource:"ChannelTorrentActions",withExtension:"js").flatMap { try? String(contentsOf:$0,encoding:.utf8) } ?? ""
     func json(_ value: String) -> String { String(data:try! JSONEncoder().encode(value),encoding:.utf8)! }
-    return "globalThis.uniPlayerTorrentMini4KPosts=\(UserDefaults.standard.bool(forKey:TorrentPreferences.mini4KPosts));globalThis.uniPlayerTorrentEnabled=\(TorrentPreferences.enabled);globalThis.uniPlayerTorrentDisabledHosts=\(String(data:try! JSONEncoder().encode(UserDefaults.standard.stringArray(forKey:"torrent.playback.disabledHosts.v1") ?? []),encoding:.utf8)!);globalThis.uniPlayerTorrentCSS=\(json(Tokens.Torrent.css));globalThis.uniPlayerTorrentIcon=\(json(Tokens.Torrent.icon));\n" + source
+    return "globalThis.uniPlayerTorrentMini4KPosts=\(TorrentPreferences.mini4KPostsEnabled);globalThis.uniPlayerTorrentEnabled=\(TorrentPreferences.enabled);globalThis.uniPlayerTorrentDisabledHosts=\(String(data:try! JSONEncoder().encode(UserDefaults.standard.stringArray(forKey:"torrent.playback.disabledHosts.v1") ?? []),encoding:.utf8)!);globalThis.uniPlayerTorrentCSS=\(json(Tokens.Torrent.css));globalThis.uniPlayerTorrentIcon=\(json(Tokens.Torrent.icon));\n" + source
   }
   func install(in configuration: WKWebViewConfiguration) {
     configuration.userContentController.addScriptMessageHandler(self,contentWorld:Self.world,name:"torrentActions")
@@ -81,7 +81,7 @@ final class ChannelTorrentBridge: NSObject, WKScriptMessageHandlerWithReply {
     let views = [webView].compactMap { $0 } + popups.values.compactMap(\.web)
     for web in views {
       let enabled = TorrentPreferences.enabled && owns(web) && TorrentPreferences.allowed(host:web.url?.host ?? "")
-      web.evaluateJavaScript("globalThis.uniPlayerTorrentMini4KPosts=\(UserDefaults.standard.bool(forKey:TorrentPreferences.mini4KPosts));globalThis.uniPlayerTorrentActions?.enable(\(enabled))",in:nil,in:Self.world,completionHandler:nil)
+      web.evaluateJavaScript("globalThis.uniPlayerTorrentMini4KPosts=\(TorrentPreferences.mini4KPostsEnabled);globalThis.uniPlayerTorrentActions?.enable(\(enabled))",in:nil,in:Self.world,completionHandler:nil)
     }
   }
   func handleLink(_ url:URL,in web:WKWebView) -> Bool { false }
@@ -123,7 +123,7 @@ final class ChannelTorrentResolver {
     defer { withExtendedLifetime(web) {} }
     var source = candidate.url
     if candidate.kind == "resource" {
-      guard UserDefaults.standard.bool(forKey:TorrentPreferences.mini4KPosts) else { throw TorrentFailure.unavailable("Mini4K resource-post resolution is under site validation. Enable its experimental option in Torrent Playback settings, or open the resource page and use its direct magnet link.") }
+      guard TorrentPreferences.mini4KPostsEnabled else { throw TorrentFailure.unavailable("Mini4K resource-post resolution is under site validation. Enable its experimental option in Torrent Playback settings, or open the resource page and use its direct magnet link.") }
       let script = """
       const target = new URL(url,location.href);
       if(target.origin!==location.origin) return {error:'origin'};
