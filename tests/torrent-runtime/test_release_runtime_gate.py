@@ -20,6 +20,10 @@ class ReleaseRuntimeGateTests(unittest.TestCase):
             (app / 'MacOS').mkdir(parents=True)
             shutil.copy2(executable, app / 'MacOS/UniPlayer')
             (app / 'Info.plist').write_bytes(plistlib.dumps({'CFBundleShortVersionString':config['MARKETING_VERSION'], 'CFBundleVersion':config['CURRENT_PROJECT_VERSION']}))
+            # Satisfy the earlier release gate so this fixture reaches the
+            # runtime check it exists to exercise.
+            (app / 'Resources').mkdir()
+            (app / 'Resources/NetflixRatings.js').write_text('uniPlayerRatings')
             result = subprocess.run(['python3', str(ROOT / 'scripts/release-macos.py'), '--build', config['CURRENT_PROJECT_VERSION'], '--sign-only', '--skip-build', '--identity', 'Developer ID Application: missing-runtime-test', '--derived-data', str(base / 'derived'), '--output', str(base / 'candidate')], text=True, capture_output=True)
             self.assertNotEqual(result.returncode, 0)
             self.assertIn('TorrentRuntime is required in every candidate', result.stderr)
