@@ -281,6 +281,7 @@
 		DD9000000000000000000002 /* SubtitleTranslationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD9000000000000000000001 /* SubtitleTranslationTests.swift */; };
 		BF3000000000000000000002 /* SaySoTranslationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF3000000000000000000001 /* SaySoTranslationTests.swift */; };
 		BF3000000000000000000003 /* ChannelTorrentResponseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF3000000000000000000004 /* ChannelTorrentResponseTests.swift */; };
+		BF3000000000000000000005 /* SubtitleExtensionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF3000000000000000000006 /* SubtitleExtensionTests.swift */; };
 		DD5000000000000000000002 /* LiveTranslationSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD5000000000000000000001 /* LiveTranslationSettings.swift */; };
 		DD6000000000000000000002 /* LiveTranslationPackInventory.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD6000000000000000000001 /* LiveTranslationPackInventory.swift */; };
 		DD7000000000000000000002 /* LiveTranslationPackDownloads.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7000000000000000000001 /* LiveTranslationPackDownloads.swift */; };
@@ -1472,6 +1473,7 @@
 		DD9000000000000000000001 /* SubtitleTranslationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleTranslationTests.swift; sourceTree = "<group>"; };
 		BF3000000000000000000001 /* SaySoTranslationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaySoTranslationTests.swift; sourceTree = "<group>"; };
 		BF3000000000000000000004 /* ChannelTorrentResponseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelTorrentResponseTests.swift; sourceTree = "<group>"; };
+		BF3000000000000000000006 /* SubtitleExtensionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleExtensionTests.swift; sourceTree = "<group>"; };
 		DD5000000000000000000001 /* LiveTranslationSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationSettings.swift; sourceTree = "<group>"; };
 		DD6000000000000000000001 /* LiveTranslationPackInventory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationPackInventory.swift; sourceTree = "<group>"; };
 		DD7000000000000000000001 /* LiveTranslationPackDownloads.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationPackDownloads.swift; sourceTree = "<group>"; };
@@ -2146,6 +2148,7 @@
 				DD9000000000000000000001 /* SubtitleTranslationTests.swift */,
 				BF3000000000000000000001 /* SaySoTranslationTests.swift */,
 				BF3000000000000000000004 /* ChannelTorrentResponseTests.swift */,
+				BF3000000000000000000006 /* SubtitleExtensionTests.swift */,
 				DDE000000000000000000001 /* LiveTranslationSettingsTests.swift */,
 				DDF300000000000000000001 /* LiveTranslationLanguageTests.swift */,
 				DDF700000000000000000001 /* LiveTranslationAudioTests.swift */,
@@ -3275,6 +3278,7 @@
 				DD9000000000000000000002 /* SubtitleTranslationTests.swift in Sources */,
 				BF3000000000000000000002 /* SaySoTranslationTests.swift in Sources */,
 				BF3000000000000000000003 /* ChannelTorrentResponseTests.swift in Sources */,
+				BF3000000000000000000005 /* SubtitleExtensionTests.swift in Sources */,
 				DDE000000000000000000002 /* LiveTranslationSettingsTests.swift in Sources */,
 				DDF300000000000000000002 /* LiveTranslationLanguageTests.swift in Sources */,
 				DDF700000000000000000002 /* LiveTranslationAudioTests.swift in Sources */,
