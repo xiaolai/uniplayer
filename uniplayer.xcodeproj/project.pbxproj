@@ -5223,7 +5223,7 @@
 			repositoryURL = "https://github.com/xiaolai/sayso.git";
 			requirement = {
 				kind = exactVersion;
-				version = 0.5.0;
+				version = 0.5.1;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
