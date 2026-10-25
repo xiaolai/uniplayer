@@ -1,5 +1,19 @@
 # Release notes
 
+## 0.2.5 (build 20)
+
+- AI subtitle translation can now use the reader's signed-in Codex or Claude
+  CLI, or Apple's on-device model, in addition to the assistant connection.
+  CLI sources run in app-owned folders; live captions use the assistant
+  connection or the on-device model because a CLI process is too slow per line.
+- OpenAI-compatible assistant settings now offer SaySo service profiles, the
+  service's model list, and a one-token connection test.
+- The assistant transport applies the profile's auth header, refuses
+  cross-origin redirects before replaying a key, and scrubs the key from
+  server refusal messages.
+- The inspector keeps streaming and typed tool calls; SaySo's one-shot
+  provider contract is used where it fits.
+
 ## 0.2.4 (build 19)
 
 - Route the library player's pop-out control by media type. Audio opens the
