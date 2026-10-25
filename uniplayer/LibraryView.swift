@@ -284,6 +284,12 @@ struct LibraryRootView: View {
     .onChange(of: selectedItem?.id) { _, _ in updateNavigationChrome(); updateSearchChrome() }
     .onChange(of: catalogDetailID) { _, _ in updateNavigationChrome(); updateSearchChrome() }
     .onChange(of: sourcePropertiesID) { _, _ in updateNavigationChrome(); updateSearchChrome() }
+    .onChange(of: browser.canGoBack) { _, _ in
+      if case .channel = selection { updateNavigationChrome() }
+    }
+    .onChange(of: browser.canGoForward) { _, _ in
+      if case .channel = selection { updateNavigationChrome() }
+    }
     .onChange(of: model.query) { _, _ in chrome.searchQueryChanged?() }
     .onChange(of: chrome.playbackPresented) { _, _ in updateSearchChrome() }
     .onChange(of: selection) { _, value in
@@ -460,6 +466,16 @@ struct LibraryRootView: View {
   }
 
   private func updateNavigationChrome() {
+    // A channel has its own web history; the toolbar back/forward controls
+    // that history while the channel is selected, then returns to library
+    // navigation when the selection moves elsewhere.
+    if case .channel = selection {
+      chrome.canNavigateBack = browser.canGoBack
+      chrome.canNavigateForward = browser.canGoForward
+      chrome.navigateBack = { [weak browser] in browser?.goBack() }
+      chrome.navigateForward = { [weak browser] in browser?.goForward() }
+      return
+    }
     chrome.canNavigateBack = catalogDetailID != nil || sourcePropertiesID != nil
       || selectedItem != nil
     chrome.canNavigateForward = false
