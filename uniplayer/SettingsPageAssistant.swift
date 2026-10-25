@@ -2,11 +2,26 @@
 //  SettingsPageAssistant.swift
 //  uniplayer
 //
-//  Endpoint, model and key for the AI inspector. The key is stored in the
-//  Keychain and is never shown again after it is saved.
+//  Endpoint, profile, model and key for the AI inspector, plus the one-shot
+//  source used to translate subtitle files. The key is stored in the Keychain
+//  and is never shown again after it is saved.
 //
 
 import Cocoa
+import SaySoAI
+
+private final class FieldEditingObserver: NSObject, NSTextFieldDelegate, NSComboBoxDelegate {
+  var onEndEditing: (() -> Void)?
+  var onSelection: (() -> Void)?
+
+  func controlTextDidEndEditing(_ notification: Notification) {
+    onEndEditing?()
+  }
+
+  func comboBoxSelectionDidChange(_ notification: Notification) {
+    onSelection?()
+  }
+}
 
 final class SettingsPageAssistant: SettingsPage {
 
@@ -23,13 +38,29 @@ final class SettingsPageAssistant: SettingsPage {
   override var showSubSections: Bool { false }
 
   private let providerPopup = NSPopUpButton()
+  private let profilePopup = NSPopUpButton()
   private let endpointField = NSTextField()
-  private let modelField = NSTextField()
+  private let modelCombo = NSComboBox()
+  private let fetchModelsButton = NSButton()
   private let keyField = NSSecureTextField()
   private let keyStatus = NSTextField(wrappingLabelWithString: "")
+  private let modelStatus = NSTextField(wrappingLabelWithString: "")
+  private let profileNote = NSTextField(wrappingLabelWithString: "")
   private let connectionService = AssistantService()
   private let testButton = NSButton()
   private let privacyNote = NSTextField(wrappingLabelWithString: "")
+
+  private let translationSourcePopup = NSPopUpButton()
+  private let translationModelField = NSTextField()
+  private let translationModelRow = NSStackView()
+  private let translationExplanation = NSTextField(wrappingLabelWithString: "")
+  private let translationStatus = NSTextField(wrappingLabelWithString: "")
+  private let translationAction = NSButton()
+  private let translationCheck = NSButton()
+  private var translationCheckTask: Task<Void, Never>?
+  private var lastTranslationSource: TranslationSource?
+  private let modelEditingObserver = FieldEditingObserver()
+  private let translationEditingObserver = FieldEditingObserver()
 
   override func content() -> [SettingsSection] {
     configureControls()
@@ -38,10 +69,12 @@ final class SettingsPageAssistant: SettingsPage {
         SettingsList(title: SettingsLocalization.Key("assistant.connection.label")) {
           SettingsItem.Custom().view(row(title: SettingsLocalization.Key("assistant.provider.label"),
                                          control: providerPopup))
+          SettingsItem.Custom().view(row(title: SettingsLocalization.Key("assistant.profile.label"),
+                                         control: profilePopup))
           SettingsItem.Custom().view(row(title: SettingsLocalization.Key("assistant.endpoint.label"),
                                          control: endpointField))
-          SettingsItem.Custom().view(row(title: SettingsLocalization.Key("assistant.model.label"),
-                                         control: modelField))
+          SettingsItem.Custom().view(inset(profileNote))
+          SettingsItem.Custom().view(modelRow)
           SettingsItem.Custom().view(inset(keyRow))
           SettingsItem.Custom().view(inset(connectionTestRow))
         }
@@ -58,6 +91,9 @@ final class SettingsPageAssistant: SettingsPage {
           SettingsItem.LongInput()
             .bindTo(.subtitleTranslationLanguage)
             .hasDescription()
+          SettingsItem.Custom().view(row(title: SettingsLocalization.Key("assistant.translation_source.label"),
+                                         control: translationSourcePopup))
+          SettingsItem.Custom().view(translationDetails)
         }
       }
     }
@@ -74,17 +110,42 @@ final class SettingsPageAssistant: SettingsPage {
     providerPopup.action = #selector(providerChanged)
     providerPopup.controlSize = .regular
 
+    profilePopup.addItems(withTitles: AssistantProfiles.known.map(\.name))
+    let configuration = AssistantConfiguration.load()
+    if let index = AssistantProfiles.known.firstIndex(where: { $0.id == configuration.profileID }) {
+      profilePopup.selectItem(at: index)
+    }
+    profilePopup.target = self
+    profilePopup.action = #selector(profileChanged)
+    profilePopup.controlSize = .regular
+
     configureField(endpointField)
     endpointField.bind(.value, to: UserDefaults.standard,
                        withKeyPath: Preference.Key.assistantEndpoint.rawValue)
-    endpointField.placeholderString = provider.defaultEndpoint
+    endpointField.placeholderString = configuration.profile.baseURL?.absoluteString
+      ?? provider.defaultEndpoint
     endpointField.setAccessibilityLabel(NSLocalizedString("Assistant Endpoint", comment: "Settings"))
 
-    configureField(modelField)
-    modelField.bind(.value, to: UserDefaults.standard,
+    configureField(modelCombo)
+    modelEditingObserver.onEndEditing = { [weak self] in self?.modelChanged() }
+    modelEditingObserver.onSelection = { [weak self] in self?.modelChanged() }
+    modelCombo.delegate = modelEditingObserver
+    modelCombo.completes = true
+    modelCombo.numberOfVisibleItems = 12
+    modelCombo.bind(.value, to: UserDefaults.standard,
                     withKeyPath: Preference.Key.assistantModel.rawValue)
-    modelField.placeholderString = provider.defaultModel
-    modelField.setAccessibilityLabel(NSLocalizedString("Assistant Model", comment: "Settings"))
+    modelCombo.target = self
+    modelCombo.action = #selector(modelChanged)
+    modelCombo.placeholderString = provider.defaultModel.isEmpty
+      ? NSLocalizedString("Model", comment: "Assistant")
+      : provider.defaultModel
+    modelCombo.setAccessibilityLabel(NSLocalizedString("Assistant Model", comment: "Settings"))
+    populateModelHints()
+
+    fetchModelsButton.title = NSLocalizedString("Load Models", comment: "Assistant")
+    fetchModelsButton.bezelStyle = .rounded
+    fetchModelsButton.target = self
+    fetchModelsButton.action = #selector(loadModels)
 
     keyField.translatesAutoresizingMaskIntoConstraints = false
     keyField.bezelStyle = .roundedBezel
@@ -97,12 +158,57 @@ final class SettingsPageAssistant: SettingsPage {
 
     keyStatus.font = Tokens.Typography.caption.nsFont
     keyStatus.textColor = Tokens.Palette.textSecondary.nsColor
+    modelStatus.font = Tokens.Typography.caption.nsFont
+    modelStatus.textColor = Tokens.Palette.textSecondary.nsColor
+    profileNote.font = Tokens.Typography.caption.nsFont
+    profileNote.textColor = Tokens.Palette.textSecondary.nsColor
     privacyNote.font = Tokens.Typography.caption.nsFont
     privacyNote.textColor = Tokens.Palette.textSecondary.nsColor
     privacyNote.stringValue = NSLocalizedString(
       "The key is stored in the Keychain. Requests go only to the endpoint above; video frames and files are never uploaded. A full file path is sent only when the inspector's opt-in is on.",
       comment: "Settings privacy note")
     refreshKeyStatus()
+
+    translationSourcePopup.addItems(withTitles: TranslationSource.allCases.map(\.title))
+    let source = TranslationSettings.source
+    translationSourcePopup.selectItem(withTitle: source.title)
+    translationSourcePopup.target = self
+    translationSourcePopup.action = #selector(translationSourceChanged)
+    translationSourcePopup.controlSize = .regular
+
+    configureField(translationModelField)
+    translationEditingObserver.onEndEditing = { [weak self] in self?.saveTranslationModel() }
+    translationModelField.delegate = translationEditingObserver
+    translationModelField.target = self
+    translationModelField.action = #selector(translationModelChanged)
+    translationModelField.setAccessibilityLabel(
+      NSLocalizedString("Translation Model", comment: "Settings"))
+
+    translationExplanation.font = Tokens.Typography.caption.nsFont
+    translationExplanation.textColor = Tokens.Palette.textSecondary.nsColor
+    translationStatus.font = Tokens.Typography.caption.nsFont
+    translationStatus.textColor = Tokens.Palette.textSecondary.nsColor
+
+    translationAction.bezelStyle = .rounded
+    translationAction.target = self
+    translationAction.action = #selector(translationActionTapped)
+    translationCheck.title = NSLocalizedString("Check Again", comment: "Settings")
+    translationCheck.bezelStyle = .rounded
+    translationCheck.target = self
+    translationCheck.action = #selector(checkTranslationSource)
+    translationModelRow.orientation = .vertical
+    translationModelRow.alignment = .leading
+    translationModelRow.spacing = Tokens.Space.n4
+    let modelLabel = NSTextField(labelWithString: NSLocalizedString("CLI Model", comment: "Settings"))
+    modelLabel.font = Tokens.Typography.bodyStrong.nsFont
+    modelLabel.textColor = Tokens.Palette.textPrimary.nsColor
+    translationModelRow.addArrangedSubview(modelLabel)
+    translationModelRow.addArrangedSubview(translationModelField)
+
+    updateAssistantUI()
+    updateTranslationUI()
+    lastTranslationSource = source
+    checkTranslationSource()
   }
 
   private func configureField(_ field: NSTextField) {
@@ -130,6 +236,37 @@ final class SettingsPageAssistant: SettingsPage {
     wrapper.addSubview(content)
     content.padding(.horizontal(Tokens.Space.n12), .vertical(Tokens.Space.n10))
     return wrapper
+  }
+
+  private var modelRow: NSView {
+    let label = NSTextField(labelWithString: NSLocalizedString("Model", comment: "Settings"))
+    label.font = Tokens.Typography.bodyStrong.nsFont
+    label.textColor = Tokens.Palette.textPrimary.nsColor
+    let buttons = NSStackView(views: [fetchModelsButton])
+    buttons.orientation = .horizontal
+    buttons.spacing = Tokens.Space.n8
+    let input = NSStackView(views: [modelCombo, buttons])
+    input.orientation = .horizontal
+    input.alignment = .centerY
+    input.spacing = Tokens.Space.n8
+    let stack = NSStackView(views: [label, input, modelStatus])
+    stack.orientation = .vertical
+    stack.alignment = .leading
+    stack.spacing = Tokens.Space.n4
+    return inset(stack)
+  }
+
+  private var translationDetails: NSView {
+    let buttons = NSStackView(views: [translationAction, translationCheck])
+    buttons.orientation = .horizontal
+    buttons.spacing = Tokens.Space.n8
+    let stack = NSStackView(views: [
+      translationExplanation, translationModelRow, translationStatus, buttons,
+    ])
+    stack.orientation = .vertical
+    stack.alignment = .leading
+    stack.spacing = Tokens.Space.n8
+    return inset(stack)
   }
 
   private var keyRow: NSView {
@@ -165,7 +302,7 @@ final class SettingsPageAssistant: SettingsPage {
     testButton.target = self
     testButton.action = #selector(testConnection)
     let note = NSTextField(wrappingLabelWithString: NSLocalizedString(
-      "Sends a short test message to your selected provider.", comment: "Assistant"))
+      "Sends one short message to your selected provider.", comment: "Assistant"))
     note.font = Tokens.Typography.caption.nsFont
     note.textColor = Tokens.Palette.textSecondary.nsColor
     let stack = NSStackView(views: [testButton, note])
@@ -175,44 +312,80 @@ final class SettingsPageAssistant: SettingsPage {
     return stack
   }
 
-  @objc private func testConnection() {
-    windowForControls?.makeFirstResponder(nil)
-    let configuration = AssistantConfiguration.load()
-    guard configuration.isConfigured else {
-      keyStatus.stringValue = NSLocalizedString("Enter a valid endpoint, model and any required API key.", comment: "Assistant")
-      return
-    }
-    testButton.isEnabled = false
-    keyStatus.stringValue = NSLocalizedString("Testing connection…", comment: "Assistant")
-    connectionService.stream(configuration: configuration,
-      request: AssistantRequest(messages: [AssistantProviderMessage(role: .user, content: "Reply with OK.")], tools: []),
-      onEvent: { _ in },
-      onError: { [weak self] error in
-        self?.keyStatus.stringValue = error.localizedDescription
-        self?.testButton.isEnabled = true
-      },
-      onFinish: { [weak self] in
-        guard self?.testButton.isEnabled == false else { return }
-        self?.keyStatus.stringValue = NSLocalizedString("Connection succeeded.", comment: "Assistant")
-        self?.testButton.isEnabled = true
-      })
-  }
-
   private var windowForControls: NSWindow? { endpointField.window }
 
-  private func refreshKeyStatus() {
-    do {
-      _ = try KeychainAccess.read(username: nil, forService: .assistantAPIKey)
-      keyStatus.stringValue = NSLocalizedString("A key is stored.", comment: "Settings")
-    } catch KeychainAccess.KeychainError.noResult {
-      keyStatus.stringValue = NSLocalizedString("No key stored.", comment: "Settings")
-    } catch {
-      keyStatus.stringValue = NSLocalizedString(
-        "The stored key could not be read.", comment: "Settings")
+  // MARK: Assistant UI
+
+  private func updateAssistantUI() {
+    let configuration = AssistantConfiguration.load()
+    let isClaude = configuration.provider == .claude
+    profilePopup.isEnabled = !isClaude
+    fetchModelsButton.isEnabled = !isClaude
+    endpointField.placeholderString = isClaude
+      ? configuration.provider.defaultEndpoint
+      : configuration.profile.baseURL?.absoluteString
+    modelCombo.placeholderString = configuration.provider.defaultModel.isEmpty
+      ? NSLocalizedString("Model", comment: "Assistant")
+      : configuration.provider.defaultModel
+    profileNote.stringValue = isClaude
+      ? NSLocalizedString("The native Claude Messages API.", comment: "Assistant")
+      : (configuration.profile.note ?? "")
+    populateModelHints()
+  }
+
+  private func populateModelHints() {
+    let configuration = AssistantConfiguration.load()
+    guard configuration.provider == .openAICompatible else { return }
+    let current = modelCombo.stringValue.isEmpty
+      ? (Preference.string(for: .assistantModel) ?? "")
+      : modelCombo.stringValue
+    modelCombo.removeAllItems()
+    modelCombo.addItems(withObjectValues: configuration.profile.hints)
+    modelCombo.stringValue = current
+  }
+
+  // MARK: Translation UI
+
+  private func updateTranslationUI() {
+    let source = TranslationSettings.source
+    translationSourcePopup.selectItem(withTitle: source.title)
+    translationExplanation.stringValue = source.explanation
+    translationModelRow.isHidden = !source.needsModel
+    translationModelField.stringValue = TranslationSettings.model(for: source) ?? ""
+    translationModelField.placeholderString = source == .claudeCLI
+      ? NSLocalizedString("Default Claude model", comment: "Translation source")
+      : NSLocalizedString("Default Codex model", comment: "Translation source")
+    translationAction.isHidden = source == .assistant || source == .appleOnDevice
+    translationCheck.isHidden = source == .assistant
+    translationAction.title = source == .claudeCLI
+      ? NSLocalizedString("Copy Sign-In Command", comment: "Translation source")
+      : NSLocalizedString("Sign In to Codex", comment: "Translation source")
+    switch source {
+    case .assistant:
+      translationStatus.stringValue = NSLocalizedString(
+        "Uses the assistant connection above.", comment: "Translation source")
+    case .appleOnDevice:
+      translationStatus.stringValue = SaySoTranslation.appleAvailabilityText(
+        SaySoTranslation.appleAvailability())
+    case .codexCLI, .claudeCLI:
+      translationStatus.stringValue = NSLocalizedString("Checking…", comment: "Translation source")
     }
+  }
+
+  private func saveTranslationModel() {
+    let source = TranslationSettings.source
+    guard source.needsModel else { return }
+    let key: Preference.Key = source == .codexCLI ? .translationCodexModel : .translationClaudeModel
+    Preference.set(translationModelField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines),
+                   for: key)
   }
 
   // MARK: Actions
+
+  @objc private func modelChanged() {
+    Preference.set(modelCombo.stringValue.trimmingCharacters(in: .whitespacesAndNewlines),
+                   for: .assistantModel)
+  }
 
   @objc private func providerChanged() {
     let index = providerPopup.indexOfSelectedItem
@@ -228,14 +401,202 @@ final class SettingsPageAssistant: SettingsPage {
       endpointField.stringValue = provider.defaultEndpoint
       Preference.set(provider.defaultEndpoint, for: .assistantEndpoint)
     }
-    if modelField.stringValue.isEmpty
-        || previousDefaults.contains(modelField.stringValue) {
-      modelField.stringValue = provider.defaultModel
+    if modelCombo.stringValue.isEmpty
+        || previousDefaults.contains(modelCombo.stringValue) {
+      modelCombo.stringValue = provider.defaultModel
       Preference.set(provider.defaultModel, for: .assistantModel)
     }
-    endpointField.placeholderString = provider.defaultEndpoint
-    modelField.placeholderString = provider.defaultModel
     Preference.set(provider.rawValue, for: .assistantProvider)
+    if provider == .claude {
+      if !endpointField.stringValue.contains("api.anthropic.com") {
+        endpointField.stringValue = provider.defaultEndpoint
+        Preference.set(provider.defaultEndpoint, for: .assistantEndpoint)
+      }
+    } else {
+      if endpointField.stringValue.contains("api.anthropic.com") {
+        endpointField.stringValue = provider.defaultEndpoint
+        Preference.set(provider.defaultEndpoint, for: .assistantEndpoint)
+      }
+      let derived = AssistantProfiles.derivedID(for: endpointField.stringValue)
+      if let index = AssistantProfiles.known.firstIndex(where: { $0.id == derived }) {
+        profilePopup.selectItem(at: index)
+        Preference.set(derived, for: .assistantProfile)
+      }
+    }
+    updateAssistantUI()
+  }
+
+  @objc private func profileChanged() {
+    let index = profilePopup.indexOfSelectedItem
+    guard AssistantProfiles.known.indices.contains(index) else { return }
+    let profile = AssistantProfiles.known[index]
+    Preference.set(profile.id, for: .assistantProfile)
+    if let base = profile.baseURL {
+      endpointField.stringValue = base.absoluteString
+      Preference.set(base.absoluteString, for: .assistantEndpoint)
+    }
+    if modelCombo.stringValue.isEmpty, let hint = profile.hints.first {
+      modelCombo.stringValue = hint
+      Preference.set(hint, for: .assistantModel)
+    }
+    modelStatus.stringValue = ""
+    updateAssistantUI()
+  }
+
+  @objc private func loadModels() {
+    windowForControls?.makeFirstResponder(nil)
+    let configuration = AssistantConfiguration.load()
+    guard configuration.provider == .openAICompatible,
+          let request = configuration.catalogRequest else {
+      modelStatus.stringValue = NSLocalizedString(
+        "Model lists are only available for OpenAI-compatible providers.",
+        comment: "Assistant")
+      return
+    }
+    fetchModelsButton.isEnabled = false
+    modelStatus.stringValue = NSLocalizedString("Loading models…", comment: "Assistant")
+    Task { @MainActor [weak self] in
+      guard let self else { return }
+      do {
+        let models = try await ModelCatalog().fetch(request)
+        self.modelCombo.removeAllItems()
+        self.modelCombo.addItems(withObjectValues: models.map(\.id))
+        self.modelStatus.stringValue = String(
+          format: NSLocalizedString("Loaded %d models.", comment: "Assistant"), models.count)
+      } catch {
+        self.modelStatus.stringValue = AssistantProfiles.catalogMessage(error)
+      }
+      self.fetchModelsButton.isEnabled = true
+    }
+  }
+
+  @objc private func testConnection() {
+    windowForControls?.makeFirstResponder(nil)
+    let configuration = AssistantConfiguration.load()
+    guard configuration.isConfigured else {
+      keyStatus.stringValue = NSLocalizedString(
+        "Enter a valid endpoint, model and any required API key.", comment: "Assistant")
+      return
+    }
+    testButton.isEnabled = false
+    keyStatus.stringValue = NSLocalizedString("Testing connection…", comment: "Assistant")
+    if configuration.provider == .openAICompatible {
+      Task { @MainActor in
+        do {
+          let provider = try configuration.makeHTTPProvider()
+          _ = try await provider.probe()
+          keyStatus.stringValue = NSLocalizedString("Connection succeeded.", comment: "Assistant")
+        } catch let error as AIProviderError {
+          keyStatus.stringValue = SaySoTranslation
+            .assistantError(error, source: .assistant)
+            .localizedDescription
+        } catch {
+          keyStatus.stringValue = error.localizedDescription
+        }
+        testButton.isEnabled = true
+      }
+      return
+    }
+    connectionService.stream(configuration: configuration,
+      request: AssistantRequest(messages: [AssistantProviderMessage(role: .user, content: "Reply with OK.")], tools: []),
+      onEvent: { _ in },
+      onError: { [weak self] error in
+        self?.keyStatus.stringValue = error.localizedDescription
+        self?.testButton.isEnabled = true
+      },
+      onFinish: { [weak self] in
+        guard self?.testButton.isEnabled == false else { return }
+        self?.keyStatus.stringValue = NSLocalizedString("Connection succeeded.", comment: "Assistant")
+        self?.testButton.isEnabled = true
+      })
+  }
+
+  @objc private func translationSourceChanged() {
+    let previous = lastTranslationSource
+    if previous?.needsModel == true {
+      let key: Preference.Key = previous == .codexCLI
+        ? .translationCodexModel : .translationClaudeModel
+      Preference.set(translationModelField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines),
+                     for: key)
+    }
+    let index = translationSourcePopup.indexOfSelectedItem
+    guard TranslationSource.allCases.indices.contains(index) else { return }
+    let source = TranslationSource.allCases[index]
+    Preference.set(source.rawValue, for: .translationSource)
+    lastTranslationSource = source
+    updateTranslationUI()
+    checkTranslationSource()
+  }
+
+  @objc private func translationModelChanged() {
+    saveTranslationModel()
+  }
+
+  @objc private func translationActionTapped() {
+    switch TranslationSettings.source {
+    case .codexCLI:
+      translationAction.isEnabled = false
+      translationStatus.stringValue = NSLocalizedString(
+        "Starting Codex sign-in…", comment: "Translation source")
+      Task { @MainActor [weak self] in
+        guard let self else { return }
+        do {
+          let output = try await SaySoTranslation.signInToCodex { line in
+            Task { @MainActor [weak self] in
+              self?.translationStatus.stringValue = line
+            }
+          }
+          if !output.isEmpty { translationStatus.stringValue = output }
+          self.checkTranslationSource()
+        } catch {
+          translationStatus.stringValue = error.localizedDescription
+        }
+        self.translationAction.isEnabled = true
+      }
+    case .claudeCLI:
+      let pasteboard = NSPasteboard.general
+      pasteboard.clearContents()
+      pasteboard.setString(TranslationSettings.claudeSignInCommand, forType: .string)
+      translationStatus.stringValue = NSLocalizedString(
+        "Sign-in command copied. Run it once in Terminal, then choose Check Again.",
+        comment: "Translation source")
+    case .assistant, .appleOnDevice:
+      break
+    }
+  }
+
+  @objc private func checkTranslationSource() {
+    let source = TranslationSettings.source
+    guard source != .assistant else { return }
+    translationCheckTask?.cancel()
+    translationStatus.stringValue = NSLocalizedString("Checking…", comment: "Translation source")
+    translationCheckTask = Task { @MainActor [weak self] in
+      guard let self else { return }
+      do {
+        let result = try await SaySoTranslation.check(source: source)
+        guard !Task.isCancelled, TranslationSettings.source == source else { return }
+        if source == .claudeCLI {
+          translationStatus.stringValue = String(
+            format: NSLocalizedString(
+              "%@ found. Run the sign-in command once if a translation says you are signed out.",
+              comment: "Translation source"), result)
+        } else {
+          translationStatus.stringValue = result
+        }
+        if source == .codexCLI {
+          translationAction.title = NSLocalizedString("Sign In Again", comment: "Translation source")
+        }
+      } catch {
+        guard !Task.isCancelled, TranslationSettings.source == source else { return }
+        translationStatus.stringValue =
+          (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        if source == .codexCLI {
+          translationAction.title = NSLocalizedString("Sign In to Codex", comment: "Translation source")
+        }
+      }
+      self.translationCheck.isEnabled = true
+    }
+    translationCheck.isEnabled = false
   }
 
   @objc private func saveKey() {
@@ -261,6 +622,22 @@ final class SettingsPageAssistant: SettingsPage {
     } catch {
       keyStatus.stringValue = NSLocalizedString(
         "The key could not be removed.", comment: "Settings")
+    }
+  }
+
+  deinit {
+    translationCheckTask?.cancel()
+  }
+
+  private func refreshKeyStatus() {
+    do {
+      _ = try KeychainAccess.read(username: nil, forService: .assistantAPIKey)
+      keyStatus.stringValue = NSLocalizedString("A key is stored.", comment: "Settings")
+    } catch KeychainAccess.KeychainError.noResult {
+      keyStatus.stringValue = NSLocalizedString("No key stored.", comment: "Settings")
+    } catch {
+      keyStatus.stringValue = NSLocalizedString(
+        "The stored key could not be read.", comment: "Settings")
     }
   }
 }

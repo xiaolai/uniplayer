@@ -9,6 +9,7 @@
 //
 
 import Foundation
+import SaySoAI
 
 // MARK: - Configuration
 
@@ -42,21 +43,49 @@ enum AssistantProviderKind: String, CaseIterable, Identifiable {
 
 struct AssistantConfiguration: Equatable {
   var provider: AssistantProviderKind
+  var profileID: String = AssistantProfiles.customID
   var endpoint: String
   var model: String
   var apiKey: String?
 
+  var profile: AIProviderProfile {
+    AssistantProfiles.profile(id: profileID)
+  }
+
+  var isCustomProfile: Bool { profile.id == AssistantProfiles.customID }
+
+  /// The raw endpoint, kept for the native Claude Messages API.
   var endpointURL: URL? {
     guard let url = URL(string: endpoint),
           url.scheme == "https" || url.scheme == "http" else { return nil }
     return url
   }
 
+  /// The OpenAI-compatible base URL, without `/chat/completions`.
+  var baseURL: URL? {
+    AssistantProfiles.baseURL(endpoint) ?? profile.baseURL
+  }
+
+  /// The OpenAI-compatible request URL. Existing settings stored the full
+  /// endpoint; a documented profile supplies the base when the field is empty.
+  var openAIRequestURL: URL? {
+    guard let base = baseURL else { return nil }
+    if base.path.hasSuffix("/chat/completions") { return base }
+    return base.appending(path: "chat/completions")
+  }
+
+  var configuredURL: URL? {
+    provider == .claude ? endpointURL : openAIRequestURL
+  }
+
   /// A local endpoint (Ollama and friends) usually accepts requests without a
   /// credential, so requiring one would make the default unusable. Plain HTTP
   /// on a loopback, link-local or private address is treated as a LAN service.
+  /// A documented profile states its own requirement.
   var requiresAPIKey: Bool {
-    guard let url = endpointURL, let host = url.host?.lowercased() else { return true }
+    guard provider == .openAICompatible else { return true }
+    if !isCustomProfile { return profile.keyRequired }
+    guard let url = baseURL, let host = url.host?.lowercased() else { return true }
     // Only plain HTTP is treated as a credential-free LAN service; HTTPS is
     // never assumed to be unauthenticated.
     guard url.scheme == "http" else { return true }
@@ -81,8 +110,64 @@ struct AssistantConfiguration: Equatable {
   }
 
   var isConfigured: Bool {
-    guard endpointURL != nil, !model.isEmpty else { return false }
+    guard configuredURL != nil, !model.isEmpty else { return false }
     return !requiresAPIKey || apiKey?.isEmpty == false
+  }
+
+  /// How this profile authenticates an OpenAI-compatible request.
+  var auth: AIProviderAuth {
+    provider == .claude ? .header("x-api-key") : profile.auth
+  }
+
+  var tokenField: AIProviderTokenField {
+    profile.tokenField
+  }
+
+  var catalogRequest: ModelCatalog.Request? {
+    guard provider == .openAICompatible, let baseURL else { return nil }
+    return .init(profile: profile, baseURL: baseURL, apiKey: apiKey)
+  }
+
+  /// The one-shot HTTP provider behind the connection test and model list.
+  func makeHTTPProvider() throws -> HTTPProvider {
+    guard provider == .openAICompatible, let baseURL else {
+      throw AssistantError.invalidEndpoint
+    }
+    do {
+      return try HTTPProvider(configuration: .init(
+        endpoint: baseURL,
+        model: model,
+        apiKey: apiKey?.trimmingCharacters(in: .whitespacesAndNewlines),
+        auth: profile.auth,
+        tokenField: profile.tokenField))
+    } catch let error as AIProviderError {
+      throw SaySoTranslation.assistantError(error, source: .assistant)
+    }
+  }
+
+  /// The key is never put in a request that redirects elsewhere, and it is
+  /// never allowed to survive inside a server's refusal message.
+  func redacting(_ text: String) -> String {
+    guard let key = apiKey?.trimmingCharacters(in: .whitespacesAndNewlines),
+          !key.isEmpty else { return text }
+    return text.replacingOccurrences(of: key, with: "…")
+  }
+
+  func applyAuthorization(to request: inout URLRequest) {
+    guard provider == .openAICompatible else { return }
+    let key = apiKey?.trimmingCharacters(in: .whitespacesAndNewlines)
+    switch profile.auth {
+    case .bearer:
+      if let key, !key.isEmpty {
+        request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+      }
+    case .header(let name):
+      if let key, !key.isEmpty {
+        request.setValue(key, forHTTPHeaderField: name)
+      }
+    case .none:
+      break
+    }
   }
 
   /// Reads the current settings on every call, so a settings change applies to
@@ -96,8 +181,17 @@ struct AssistantConfiguration: Equatable {
     if model.isEmpty { model = provider.defaultModel }
     let key = (try? KeychainAccess.read(
       username: nil, forService: .assistantAPIKey))?.password
+    let storedProfile = Preference.string(for: .assistantProfile) ?? ""
+    let profileID: String
+    if provider == .claude {
+      profileID = storedProfile.isEmpty ? AssistantProfiles.customID : storedProfile
+    } else {
+      profileID = storedProfile.isEmpty
+        ? AssistantProfiles.derivedID(for: endpoint)
+        : storedProfile
+    }
     return AssistantConfiguration(
-      provider: provider, endpoint: endpoint, model: model, apiKey: key)
+      provider: provider, profileID: profileID, endpoint: endpoint, model: model, apiKey: key)
   }
 }
 
@@ -113,11 +207,16 @@ enum AssistantError: LocalizedError, Equatable {
   case timedOut
   case malformedResponse
   case cancelled
+  case redirectRefused
   case provider(String)
+  /// A one-shot source (a CLI, the on-device model, a profile) cannot answer
+  /// until the reader changes something in Settings.
+  case providerConfiguration(String)
 
   var needsSettingsCorrection: Bool {
     switch self {
-    case .notConfigured, .invalidEndpoint, .missingAPIKey, .unauthorized: return true
+    case .notConfigured, .invalidEndpoint, .missingAPIKey, .unauthorized,
+         .redirectRefused, .providerConfiguration: return true
     default: return false
     }
   }
@@ -165,7 +264,13 @@ enum AssistantError: LocalizedError, Equatable {
       return NSLocalizedString("The assistant returned a response this app could not read.", comment: "Assistant error")
     case .cancelled:
       return NSLocalizedString("The request was cancelled.", comment: "Assistant error")
+    case .redirectRefused:
+      return NSLocalizedString(
+        "The assistant endpoint redirected to a different host. Update the endpoint in Settings.",
+        comment: "Assistant error")
     case .provider(let message):
+      return message
+    case .providerConfiguration(let message):
       return message
     }
   }
@@ -288,6 +393,57 @@ struct ToolCallAccumulator {
 
 // MARK: - Shared stream transport
 
+/// A request's origin. A redirect to another scheme, host or port is refused
+/// before the credential is replayed; SaySo's one-shot transport applies the
+/// same rule.
+struct AssistantOrigin: Equatable {
+  let scheme: String
+  let host: String
+  let port: Int?
+
+  init?(_ url: URL?) {
+    guard let url, let scheme = url.scheme?.lowercased(),
+          let host = url.host?.lowercased() else { return nil }
+    self.scheme = scheme
+    self.host = host
+    self.port = url.port ?? (scheme == "https" ? 443 : scheme == "http" ? 80 : nil)
+  }
+
+  func contains(_ url: URL?) -> Bool {
+    AssistantOrigin(url) == self
+  }
+}
+
+private final class AssistantRedirectGuard: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
+  let origin: AssistantOrigin
+  private let lock = NSLock()
+  private var refusedStorage = false
+
+  init(origin: AssistantOrigin) {
+    self.origin = origin
+  }
+
+  var refused: Bool {
+    lock.lock()
+    defer { lock.unlock() }
+    return refusedStorage
+  }
+
+  func urlSession(_ session: URLSession, task: URLSessionTask,
+                  willPerformHTTPRedirection response: HTTPURLResponse,
+                  newRequest request: URLRequest,
+                  completionHandler: @escaping (URLRequest?) -> Void) {
+    guard origin.contains(request.url) else {
+      lock.lock()
+      refusedStorage = true
+      lock.unlock()
+      completionHandler(nil)
+      return
+    }
+    completionHandler(request)
+  }
+}
+
 /// Owns the read loop both providers share: HTTP validation, SSE line
 /// iteration, cancellation and terminal handling. Request encoding and event
 /// decoding stay provider-specific.
@@ -308,7 +464,15 @@ enum AssistantStreamTransport {
       let task = Task {
         do {
           let urlRequest = try request()
-          let (bytes, response) = try await session.bytes(for: urlRequest)
+          guard let origin = AssistantOrigin(urlRequest.url) else {
+            throw AssistantError.invalidEndpoint
+          }
+          let redirectGuard = AssistantRedirectGuard(origin: origin)
+          let (bytes, response) = try await session.bytes(
+            for: urlRequest, delegate: redirectGuard)
+          if redirectGuard.refused || !origin.contains(response.url) {
+            throw AssistantError.redirectRefused
+          }
           try OpenAICompatibleProvider.validate(response)
           var parser = SSEParser()
           readLoop: for try await line in bytes.lines {
@@ -364,9 +528,9 @@ struct OpenAICompatibleProvider: AssistantProvider {
             return .failure(.malformedResponse)
           }
           if let error = object["error"] as? [String: Any] {
-            return .failure(.provider(
-              error["message"] as? String
-                ?? AssistantError.malformedResponse.errorDescription ?? ""))
+            let message = error["message"] as? String
+              ?? AssistantError.malformedResponse.errorDescription ?? ""
+            return .failure(.provider(configuration.redacting(message)))
           }
           guard let choices = object["choices"] as? [[String: Any]],
                 let choice = choices.first else { return .none }
@@ -395,7 +559,7 @@ struct OpenAICompatibleProvider: AssistantProvider {
 
   private func makeRequest(_ request: AssistantRequest,
                            configuration: AssistantConfiguration) throws -> URLRequest {
-    guard let url = configuration.endpointURL else {
+    guard let url = configuration.openAIRequestURL else {
       throw AssistantError.invalidEndpoint
     }
     let key = configuration.apiKey?.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -445,9 +609,7 @@ struct OpenAICompatibleProvider: AssistantProvider {
     urlRequest.httpMethod = "POST"
     urlRequest.timeoutInterval = Self.requestTimeout
     urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    if let key, !key.isEmpty {
-      urlRequest.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
-    }
+    configuration.applyAuthorization(to: &urlRequest)
     urlRequest.httpBody = try JSONSerialization.data(withJSONObject: body)
     return urlRequest
   }
@@ -528,8 +690,8 @@ struct ClaudeProvider: AssistantProvider {
           return .stop
         case "error":
           let message = (object["error"] as? [String: Any])?["message"] as? String
-          return .failure(.provider(
-            message ?? AssistantError.malformedResponse.errorDescription ?? "Assistant error"))
+            ?? AssistantError.malformedResponse.errorDescription ?? "Assistant error"
+          return .failure(.provider(configuration.redacting(message)))
         default:
           return .none
         }

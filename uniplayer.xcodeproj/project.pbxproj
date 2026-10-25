@@ -255,6 +255,8 @@
 		BB3000000000000000000002 /* InlinePlayerChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB3000000000000000000001 /* InlinePlayerChrome.swift */; };
 		BB4000000000000000000002 /* PlaybackContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB4000000000000000000001 /* PlaybackContext.swift */; };
 		BB5000000000000000000002 /* AssistantService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB5000000000000000000001 /* AssistantService.swift */; };
+		BF1000000000000000000002 /* TranslationProviders.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF1000000000000000000001 /* TranslationProviders.swift */; };
+		BF2000000000000000000002 /* AssistantProfiles.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF2000000000000000000001 /* AssistantProfiles.swift */; };
 		BB6000000000000000000002 /* AIInspectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB6000000000000000000001 /* AIInspectorView.swift */; };
 		BB7000000000000000000002 /* AssistantTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB7000000000000000000001 /* AssistantTools.swift */; };
 		BB8000000000000000000002 /* SettingsPageAssistant.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB8000000000000000000001 /* SettingsPageAssistant.swift */; };
@@ -263,6 +265,7 @@
 		DD3000000000000000000002 /* SubtitleTranslationOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD3000000000000000000001 /* SubtitleTranslationOverlay.swift */; };
 		DD4000000000000000000002 /* SubtitleTranslationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD4000000000000000000001 /* SubtitleTranslationController.swift */; };
 		DD9000000000000000000002 /* SubtitleTranslationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD9000000000000000000001 /* SubtitleTranslationTests.swift */; };
+		BF3000000000000000000002 /* SaySoTranslationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF3000000000000000000001 /* SaySoTranslationTests.swift */; };
 		DD5000000000000000000002 /* LiveTranslationSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD5000000000000000000001 /* LiveTranslationSettings.swift */; };
 		DD6000000000000000000002 /* LiveTranslationPackInventory.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD6000000000000000000001 /* LiveTranslationPackInventory.swift */; };
 		DD7000000000000000000002 /* LiveTranslationPackDownloads.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7000000000000000000001 /* LiveTranslationPackDownloads.swift */; };
@@ -465,6 +468,9 @@
 		E3FC31461FE1501E00B9B86F /* PowerSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3FC31451FE1501E00B9B86F /* PowerSource.swift */; };
 		E3FEC1332A30400F00CFD845 /* PluginInputManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3FEC1322A30400F00CFD845 /* PluginInputManager.swift */; };
 		E3FF5AC02938582F0019CE45 /* JavascriptDevTool.swift in Sources */ = {isa = PBXBuildFile; fileRef = E3FF5ABF2938582F0019CE45 /* JavascriptDevTool.swift */; };
+		AF9200000000000000000001 /* SaySoAI in Frameworks */ = {isa = PBXBuildFile; productRef = AF9100000000000000000001 /* SaySoAI */; };
+		AF9200000000000000000002 /* SaySoAICLI in Frameworks */ = {isa = PBXBuildFile; productRef = AF9100000000000000000002 /* SaySoAICLI */; };
+		AF9200000000000000000003 /* SaySoAIApple in Frameworks */ = {isa = PBXBuildFile; productRef = AF9100000000000000000003 /* SaySoAIApple */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -1425,6 +1431,8 @@
 		BB3000000000000000000001 /* InlinePlayerChrome.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = InlinePlayerChrome.swift; sourceTree = "<group>"; };
 		BB4000000000000000000001 /* PlaybackContext.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PlaybackContext.swift; sourceTree = "<group>"; };
 		BB5000000000000000000001 /* AssistantService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AssistantService.swift; sourceTree = "<group>"; };
+		BF1000000000000000000001 /* TranslationProviders.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TranslationProviders.swift; sourceTree = "<group>"; };
+		BF2000000000000000000001 /* AssistantProfiles.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AssistantProfiles.swift; sourceTree = "<group>"; };
 		BB6000000000000000000001 /* AIInspectorView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AIInspectorView.swift; sourceTree = "<group>"; };
 		BB7000000000000000000001 /* AssistantTools.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AssistantTools.swift; sourceTree = "<group>"; };
 		BB8000000000000000000001 /* SettingsPageAssistant.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsPageAssistant.swift; sourceTree = "<group>"; };
@@ -1433,6 +1441,7 @@
 		DD3000000000000000000001 /* SubtitleTranslationOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleTranslationOverlay.swift; sourceTree = "<group>"; };
 		DD4000000000000000000001 /* SubtitleTranslationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleTranslationController.swift; sourceTree = "<group>"; };
 		DD9000000000000000000001 /* SubtitleTranslationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleTranslationTests.swift; sourceTree = "<group>"; };
+		BF3000000000000000000001 /* SaySoTranslationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaySoTranslationTests.swift; sourceTree = "<group>"; };
 		DD5000000000000000000001 /* LiveTranslationSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationSettings.swift; sourceTree = "<group>"; };
 		DD6000000000000000000001 /* LiveTranslationPackInventory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationPackInventory.swift; sourceTree = "<group>"; };
 		DD7000000000000000000001 /* LiveTranslationPackDownloads.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationPackDownloads.swift; sourceTree = "<group>"; };
@@ -1988,6 +1997,9 @@
 				496B19921E2968530035AF10 /* PIP.framework in Frameworks */,
 				8403CEA72007CBD400645516 /* MediaPlayer.framework in Frameworks */,
 				8451E6D92604AEFC009A15D7 /* Just in Frameworks */,
+				AF9200000000000000000001 /* SaySoAI in Frameworks */,
+				AF9200000000000000000002 /* SaySoAICLI in Frameworks */,
+				AF9200000000000000000003 /* SaySoAIApple in Frameworks */,
 				5196819A29EC963F00B05D55 /* CoreDisplay.framework in Frameworks */,
 				B4E446E825CB53920069F06E /* PromiseKit in Frameworks */,
 				B4E446F725CB54EF0069F06E /* Mustache in Frameworks */,
@@ -2099,6 +2111,7 @@
 				BB9000000000000000000001 /* InlinePlayerTests.swift */,
 				AF8500000000000000000004 /* NetflixRatingsTests.swift */,
 				DD9000000000000000000001 /* SubtitleTranslationTests.swift */,
+				BF3000000000000000000001 /* SaySoTranslationTests.swift */,
 				DDE000000000000000000001 /* LiveTranslationSettingsTests.swift */,
 				DDF300000000000000000001 /* LiveTranslationLanguageTests.swift */,
 				DDF700000000000000000001 /* LiveTranslationAudioTests.swift */,
@@ -2359,6 +2372,8 @@
 				BB3000000000000000000001 /* InlinePlayerChrome.swift */,
 				BB4000000000000000000001 /* PlaybackContext.swift */,
 				BB5000000000000000000001 /* AssistantService.swift */,
+				BF1000000000000000000001 /* TranslationProviders.swift */,
+				BF2000000000000000000001 /* AssistantProfiles.swift */,
 				BB6000000000000000000001 /* AIInspectorView.swift */,
 				BB7000000000000000000001 /* AssistantTools.swift */,
 				BB8000000000000000000001 /* SettingsPageAssistant.swift */,
@@ -2904,6 +2919,9 @@
 				B4E446E725CB53920069F06E /* PromiseKit */,
 				B4E446F625CB54EF0069F06E /* Mustache */,
 				8451E6D82604AEFC009A15D7 /* Just */,
+				AF9100000000000000000001 /* SaySoAI */,
+				AF9100000000000000000002 /* SaySoAICLI */,
+				AF9100000000000000000003 /* SaySoAIApple */,
 			);
 			productName = UniPlayer;
 			productReference = 84EB1ED61D2F51D3004FA5A1 /* UniPlayer.app */;
@@ -3027,6 +3045,7 @@
 				B4E446E625CB53920069F06E /* XCRemoteSwiftPackageReference "PromiseKit" */,
 				B4E446F525CB54EF0069F06E /* XCRemoteSwiftPackageReference "GRMustache" */,
 				8451E6D72604AEFC009A15D7 /* XCRemoteSwiftPackageReference "Just" */,
+				AF9000000000000000000001 /* XCRemoteSwiftPackageReference "sayso" */,
 			);
 			productRefGroup = 84EB1ED71D2F51D3004FA5A1 /* Products */;
 			projectDirPath = "";
@@ -3191,6 +3210,7 @@
 				BB9000000000000000000002 /* InlinePlayerTests.swift in Sources */,
 				AF8500000000000000000014 /* NetflixRatingsTests.swift in Sources */,
 				DD9000000000000000000002 /* SubtitleTranslationTests.swift in Sources */,
+				BF3000000000000000000002 /* SaySoTranslationTests.swift in Sources */,
 				DDE000000000000000000002 /* LiveTranslationSettingsTests.swift in Sources */,
 				DDF300000000000000000002 /* LiveTranslationLanguageTests.swift in Sources */,
 				DDF700000000000000000002 /* LiveTranslationAudioTests.swift in Sources */,
@@ -3245,6 +3265,8 @@
 				BB3000000000000000000002 /* InlinePlayerChrome.swift in Sources */,
 				BB4000000000000000000002 /* PlaybackContext.swift in Sources */,
 				BB5000000000000000000002 /* AssistantService.swift in Sources */,
+				BF1000000000000000000002 /* TranslationProviders.swift in Sources */,
+				BF2000000000000000000002 /* AssistantProfiles.swift in Sources */,
 				BB6000000000000000000002 /* AIInspectorView.swift in Sources */,
 				BB7000000000000000000002 /* AssistantTools.swift in Sources */,
 				BB8000000000000000000002 /* SettingsPageAssistant.swift in Sources */,
@@ -5196,6 +5218,14 @@
 				minimumVersion = 4.2.0;
 			};
 		};
+		AF9000000000000000000001 /* XCRemoteSwiftPackageReference "sayso" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/xiaolai/sayso.git";
+			requirement = {
+				kind = exactVersion;
+				version = 0.5.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -5218,6 +5248,21 @@
 			isa = XCSwiftPackageProductDependency;
 			package = B4E446F525CB54EF0069F06E /* XCRemoteSwiftPackageReference "GRMustache" */;
 			productName = Mustache;
+		};
+		AF9100000000000000000001 /* SaySoAI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AF9000000000000000000001 /* XCRemoteSwiftPackageReference "sayso" */;
+			productName = SaySoAI;
+		};
+		AF9100000000000000000002 /* SaySoAICLI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AF9000000000000000000001 /* XCRemoteSwiftPackageReference "sayso" */;
+			productName = SaySoAICLI;
+		};
+		AF9100000000000000000003 /* SaySoAIApple */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AF9000000000000000000001 /* XCRemoteSwiftPackageReference "sayso" */;
+			productName = SaySoAIApple;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

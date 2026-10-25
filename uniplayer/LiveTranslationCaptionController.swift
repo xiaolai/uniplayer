@@ -217,6 +217,13 @@ final class LiveTranslationCaptionController {
       .liveTranslationShowSource,
       .liveTranslationPreferredStrategy,
       .liveTranslationFallback,
+      .assistantProvider,
+      .assistantProfile,
+      .assistantEndpoint,
+      .assistantModel,
+      .translationSource,
+      .translationCodexModel,
+      .translationClaudeModel,
     ]) { [weak self] _ in
       self?.clear()
       self?.currentSourceID = nil

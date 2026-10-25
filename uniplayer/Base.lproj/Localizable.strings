@@ -1124,6 +1124,8 @@
 // AI settings
 "settings.assistant.connection.label" = "OpenAI-Compatible or Claude";
 "assistant.provider.label" = "Provider";
+"assistant.profile.label" = "Service";
+"assistant.translation_source.label" = "Translation Source";
 "assistant.endpoint.label" = "Endpoint";
 "assistant.model.label" = "Model";
 "Assistant Endpoint" = "Assistant Endpoint";

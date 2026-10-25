@@ -127,8 +127,12 @@ final class SubtitleTranslationController {
       .subtitleTranslationEnabled,
       .subtitleTranslationLanguage,
       .assistantProvider,
+      .assistantProfile,
       .assistantEndpoint,
       .assistantModel,
+      .translationSource,
+      .translationCodexModel,
+      .translationClaudeModel,
     ]) { [weak self] key in
       guard let self else { return }
       if Thread.isMainThread {
@@ -155,7 +159,10 @@ final class SubtitleTranslationController {
     } else if key == .subtitleTranslationLanguage {
       pendingLanguage = SubtitleTranslationSettings.targetLanguage()
       lastLanguageChange = Date()
-    } else if key == .assistantProvider || key == .assistantEndpoint || key == .assistantModel {
+    } else if key == .assistantProvider || key == .assistantProfile
+                || key == .assistantEndpoint || key == .assistantModel
+                || key == .translationSource || key == .translationCodexModel
+                || key == .translationClaudeModel {
       hardBlocked = false
       lastErrorShownAt = nil
       nextAttemptAt = .distantPast
@@ -608,12 +615,13 @@ final class SubtitleTranslationController {
     // Read on each request so a new Keychain key or a settings change applies
     // without restarting; the read is local and cheap.
     let configuration = AssistantConfiguration.load()
-    guard configuration.isConfigured else {
+    let source = TranslationSettings.source
+    guard TranslationSettings.isConfigured(for: source) else {
       hardBlocked = true
       nextAttemptAt = Date().addingTimeInterval(60)
       overlay.clear()
       if showError {
-        showErrorOnce(configurationProblem(configuration), throttle: 300)
+        showErrorOnce(configurationProblem(for: source), throttle: 300)
       }
       return nil
     }
@@ -621,20 +629,11 @@ final class SubtitleTranslationController {
     return configuration
   }
 
-  private func configurationProblem(_ configuration: AssistantConfiguration) -> String {
-    let fallback = NSLocalizedString(
-      "Set the AI provider in Settings › AI to translate subtitles.",
-      comment: "Subtitle translation")
-    if configuration.endpointURL == nil {
-      return AssistantError.invalidEndpoint.errorDescription ?? fallback
-    }
-    if configuration.model.isEmpty {
-      return AssistantError.notConfigured.errorDescription ?? fallback
-    }
-    if configuration.requiresAPIKey, configuration.apiKey?.isEmpty != false {
-      return AssistantError.missingAPIKey.errorDescription ?? fallback
-    }
-    return fallback
+  private func configurationProblem(for source: TranslationSource) -> String {
+    TranslationSettings.configurationProblem(for: source)
+      ?? NSLocalizedString(
+        "Set the AI provider in Settings › AI to translate subtitles.",
+        comment: "Subtitle translation")
   }
 
   private func handle(_ error: Error) {

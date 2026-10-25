@@ -10,13 +10,23 @@
 import Foundation
 
 final class AssistantTextClient {
+  typealias OneShotAnswer = (TranslationSource, String, String) async throws -> String
+
   private let service: AssistantService
   private let configuration: () -> AssistantConfiguration
+  private let source: () -> TranslationSource
+  private let oneShotAnswer: OneShotAnswer
 
   init(service: AssistantService = AssistantService(),
-       configuration: @escaping () -> AssistantConfiguration = { .load() }) {
+       configuration: @escaping () -> AssistantConfiguration = { .load() },
+       source: @escaping () -> TranslationSource = { TranslationSettings.liveSource },
+       oneShotAnswer: @escaping OneShotAnswer = { source, system, user in
+         try await SaySoTranslation.plain(source: source, system: system, user: user)
+       }) {
     self.service = service
     self.configuration = configuration
+    self.source = source
+    self.oneShotAnswer = oneShotAnswer
   }
 
   /// Resumes exactly once even when cancellation races the stream's callbacks.
@@ -105,6 +115,13 @@ final class AssistantTextClient {
   }
 
   func complete(system: String, user: String) async throws -> String {
+    let source = source()
+    if source != .assistant {
+      // The on-device source answers one composed question; a CLI selection
+      // never reaches here because `TranslationSettings.liveSource` falls back
+      // to the assistant.
+      return try await oneShotAnswer(source, system, user)
+    }
     let configuration = configuration()
     guard configuration.isConfigured else {
       throw AssistantError.notConfigured
@@ -166,8 +183,16 @@ final class AssistantTranslationSession: LiveTranslationTranslating {
 
   func prepare(from source: LiveTranslationLanguage,
                to target: LiveTranslationLanguage) async throws {
-    guard AssistantConfiguration.load().isConfigured else {
+    let translationSource = TranslationSettings.liveSource
+    guard TranslationSettings.isConfigured(for: translationSource) else {
       throw AssistantError.notConfigured
+    }
+    if translationSource == .appleOnDevice {
+      let availability = SaySoTranslation.appleAvailability()
+      guard availability == .available else {
+        throw AssistantError.providerConfiguration(
+          SaySoTranslation.appleAvailabilityText(availability))
+      }
     }
     sourceName = source.displayName
     targetName = target.displayName
