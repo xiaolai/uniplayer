@@ -913,12 +913,12 @@ final class AssistantRemediationTests: XCTestCase {
     func relatedItems(matching query: String) -> [String] { [] }
     func rangeDescription(start: Double, end: Double) -> String { "" }
   }
-  func testSuggestionsDoNotPromiseUnseenVideoSummary() {
+  func testPresetsDoNotPromiseUnseenVideoSummary() {
     let model = AssistantViewModel(toolExecutor: EmptyExecutor())
-    XCTAssertFalse(model.suggestedPrompts.contains { $0.contains("Summarize this video") })
-    XCTAssertFalse(model.suggestedPrompts.contains { $0.contains("Translate") })
-    model.setChannelContext(ChannelPageContext(title: "A page", url: URL(string: "https://example.com")!, selection: nil))
-    XCTAssertFalse(model.suggestedPrompts.contains { $0.contains("selected text") })
+    XCTAssertTrue(model.availablePresets.isEmpty)
+    model.setChannelContext(ChannelPageContext(
+      title: "A page", url: URL(string: "https://example.com")!, selection: nil))
+    XCTAssertEqual(model.availablePresets, [.pageSummary])
   }
 }
 

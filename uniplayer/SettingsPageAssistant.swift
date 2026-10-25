@@ -177,9 +177,6 @@ final class SettingsPageAssistant: SettingsPage {
     profileNote.textColor = Tokens.Palette.textSecondary.nsColor
     privacyNote.font = Tokens.Typography.caption.nsFont
     privacyNote.textColor = Tokens.Palette.textSecondary.nsColor
-    privacyNote.stringValue = NSLocalizedString(
-      "The key is stored in the Keychain. Requests go only to the endpoint above; video frames and files are never uploaded. A full file path is sent only when the inspector's opt-in is on.",
-      comment: "Settings privacy note")
     refreshKeyStatus()
 
     translationSourcePopup.addItems(withTitles: TranslationSource.allCases.map(\.title))
@@ -343,7 +340,24 @@ final class SettingsPageAssistant: SettingsPage {
     profileNote.stringValue = isClaude
       ? NSLocalizedString("The native Claude Messages API.", comment: "Assistant")
       : (configuration.profile.note ?? "")
+    updatePrivacyNote()
     populateModelHints()
+  }
+
+  private func updatePrivacyNote(endpoint: String? = nil) {
+    var configuration = AssistantConfiguration.load()
+    if let endpoint {
+      configuration.endpoint = endpoint
+    }
+    var privacy = NSLocalizedString(
+      "The key is stored in the Keychain. Requests go only to the endpoint above; video frames and files are never uploaded. A full file path is sent only when the inspector's opt-in is on.",
+      comment: "Settings privacy note")
+    if configuration.isDeepSeek {
+      privacy += "\n\n" + NSLocalizedString(
+        "Reviews & discussion uses DeepSeek Search. A title, year and episode may be sent to DeepSeek; each successful search is billed by DeepSeek.",
+        comment: "Settings privacy note")
+    }
+    privacyNote.stringValue = privacy
   }
 
   private func populateModelHints() {
@@ -368,6 +382,7 @@ final class SettingsPageAssistant: SettingsPage {
   private func endpointChanged() {
     cancelModelLoading()
     refreshModelButton()
+    updatePrivacyNote(endpoint: endpointField.stringValue)
   }
 
   private func keyChanged() {

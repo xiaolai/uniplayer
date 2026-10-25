@@ -133,6 +133,37 @@ struct AssistantConfiguration: Equatable {
     return .init(profile: profile, baseURL: baseURL, apiKey: apiKey)
   }
 
+  /// DeepSeek exposes Search and Fetch beside its OpenAI-compatible chat API.
+  /// A custom endpoint that points at the same host gets the same capability.
+  var isDeepSeek: Bool {
+    guard provider == .openAICompatible, let base = baseURL,
+          base.scheme?.lowercased() == "https",
+          base.host?.lowercased() == "api.deepseek.com" else { return false }
+    // Search is documented only on the default HTTPS origin. A clear-text or
+    // nonstandard-port override is a different service.
+    return (base.port ?? 443) == 443
+  }
+
+  var deepSeekSearchURL: URL? {
+    guard isDeepSeek, let base = baseURL,
+          var components = URLComponents(url: base, resolvingAgainstBaseURL: false) else {
+      return nil
+    }
+    var path = components.percentEncodedPath
+    while path.hasSuffix("/") && path.count > 1 {
+      path.removeLast()
+    }
+    path += path.hasSuffix("/v1") ? "/tools/search" : "/v1/tools/search"
+    components.percentEncodedPath = path
+    return components.url
+  }
+
+  /// Web research is a DeepSeek-only capability because Search and Fetch live
+  /// on the same account as the chat endpoint.
+  var supportsResearch: Bool {
+    isConfigured && isDeepSeek && deepSeekSearchURL != nil
+  }
+
   /// The one-shot HTTP provider behind the connection test and model list.
   func makeHTTPProvider() throws -> HTTPProvider {
     guard provider == .openAICompatible, let baseURL else {
@@ -437,7 +468,7 @@ struct AssistantOrigin: Equatable {
   }
 }
 
-private final class AssistantRedirectGuard: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
+final class AssistantRedirectGuard: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
   let origin: AssistantOrigin
   private let lock = NSLock()
   private var refusedStorage = false

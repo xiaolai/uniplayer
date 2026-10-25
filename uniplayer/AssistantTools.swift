@@ -21,9 +21,12 @@ enum AssistantToolName: String, CaseIterable {
   case translateSubtitle
   case explainSelection
   case findRelatedItems
+  case searchWeb
 
-  var isStateChanging: Bool {
-    self == .seek
+  /// Seeking changes playback; web search spends money and sends a query to
+  /// an external service. Both wait for an explicit Allow.
+  var requiresConfirmation: Bool {
+    self == .seek || self == .searchWeb
   }
 
   var definition: AssistantToolDefinition {
@@ -85,6 +88,17 @@ enum AssistantToolName: String, CaseIterable {
           ],
           "required": ["query"],
         ])
+    case .searchWeb:
+      return AssistantToolDefinition(
+        name: rawValue,
+        description: "Search the web for current information when the user asks about reviews, reception, or facts not present in the playback context.",
+        parameters: [
+          "type": "object",
+          "properties": [
+            "query": ["type": "string", "description": "A focused search query, at most 128 characters."],
+          ],
+          "required": ["query"],
+        ])
     }
   }
 }
@@ -95,6 +109,7 @@ enum AssistantToolArguments: Equatable {
   case translateSubtitle(targetLanguage: String?)
   case explainSelection(text: String)
   case findRelatedItems(query: String)
+  case searchWeb(query: String)
 }
 
 struct AssistantTypedToolCall: Equatable {
@@ -102,7 +117,7 @@ struct AssistantTypedToolCall: Equatable {
   let tool: AssistantToolName
   let arguments: AssistantToolArguments
 
-  var requiresConfirmation: Bool { tool.isStateChanging }
+  var requiresConfirmation: Bool { tool.requiresConfirmation }
 }
 
 enum AssistantToolError: Error, Equatable, LocalizedError {
@@ -158,6 +173,15 @@ enum AssistantToolParser {
       }
       return AssistantTypedToolCall(
         id: call.id, tool: tool, arguments: .findRelatedItems(query: query))
+    case .searchWeb:
+      guard let query = string(json, "query"), !query.isEmpty,
+            query.count <= AssistantResearchPlanner.maxQueryLength else {
+        throw AssistantToolError.invalidArguments(
+          tool: tool.rawValue,
+          reason: "query must be 1–\(AssistantResearchPlanner.maxQueryLength) characters")
+      }
+      return AssistantTypedToolCall(
+        id: call.id, tool: tool, arguments: .searchWeb(query: query))
     }
   }
 
@@ -248,6 +272,10 @@ enum AssistantToolExecutor {
         return String(format: NSLocalizedString("No library items match “%@”.", comment: "Assistant tool result"), query)
       }
       return items.joined(separator: "\n")
+    case .searchWeb(let query):
+      return String(
+        format: NSLocalizedString("The host must perform web search for “%@”.", comment: "Assistant tool result"),
+        query)
     }
   }
 }

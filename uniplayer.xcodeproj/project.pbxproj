@@ -17,6 +17,9 @@
 		AF8700000000000000000006 /* TorrentInspection.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8600000000000000000006 /* TorrentInspection.swift */; };
 		AF8700000000000000000099 /* LoadingMediaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8600000000000000000099 /* LoadingMediaView.swift */; };
 		AF8700000000000000000098 /* SettingsMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8600000000000000000098 /* SettingsMode.swift */; };
+		AF87000000000000000000A1 /* DialogueBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF86000000000000000000A1 /* DialogueBuffer.swift */; };
+		AF87000000000000000000A2 /* AssistantResearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF86000000000000000000A2 /* AssistantResearch.swift */; };
+		AF87000000000000000000A3 /* AssistantPreset.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF86000000000000000000A3 /* AssistantPreset.swift */; };
 		AF8700000000000000000005 /* TorrentPlaybackStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8600000000000000000005 /* TorrentPlaybackStore.swift */; };
 		AF8700000000000000000004 /* ChannelTorrentBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8600000000000000000004 /* ChannelTorrentBridge.swift */; };
 		AF8700000000000000000003 /* TorrentMediaBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8600000000000000000003 /* TorrentMediaBridge.swift */; };
@@ -284,6 +287,7 @@
 		BF3000000000000000000003 /* ChannelTorrentResponseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF3000000000000000000004 /* ChannelTorrentResponseTests.swift */; };
 		BF3000000000000000000005 /* SubtitleExtensionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF3000000000000000000006 /* SubtitleExtensionTests.swift */; };
 		BF3000000000000000000007 /* SettingsModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF3000000000000000000008 /* SettingsModeTests.swift */; };
+		BF3000000000000000000009 /* AssistantCompanionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF300000000000000000000A /* AssistantCompanionTests.swift */; };
 		DD5000000000000000000002 /* LiveTranslationSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD5000000000000000000001 /* LiveTranslationSettings.swift */; };
 		DD6000000000000000000002 /* LiveTranslationPackInventory.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD6000000000000000000001 /* LiveTranslationPackInventory.swift */; };
 		DD7000000000000000000002 /* LiveTranslationPackDownloads.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7000000000000000000001 /* LiveTranslationPackDownloads.swift */; };
@@ -657,6 +661,9 @@
 		AF8600000000000000000006 /* TorrentInspection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TorrentInspection.swift; sourceTree = "<group>"; };
 		AF8600000000000000000099 /* LoadingMediaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingMediaView.swift; sourceTree = "<group>"; };
 		AF8600000000000000000098 /* SettingsMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsMode.swift; sourceTree = "<group>"; };
+		AF86000000000000000000A1 /* DialogueBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DialogueBuffer.swift; sourceTree = "<group>"; };
+		AF86000000000000000000A2 /* AssistantResearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantResearch.swift; sourceTree = "<group>"; };
+		AF86000000000000000000A3 /* AssistantPreset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantPreset.swift; sourceTree = "<group>"; };
 		AF8600000000000000000005 /* TorrentPlaybackStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TorrentPlaybackStore.swift; sourceTree = "<group>"; };
 		AF8600000000000000000004 /* ChannelTorrentBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelTorrentBridge.swift; sourceTree = "<group>"; };
 		AF8600000000000000000003 /* TorrentMediaBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TorrentMediaBridge.swift; sourceTree = "<group>"; };
@@ -1478,6 +1485,7 @@
 		BF3000000000000000000004 /* ChannelTorrentResponseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelTorrentResponseTests.swift; sourceTree = "<group>"; };
 		BF3000000000000000000006 /* SubtitleExtensionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleExtensionTests.swift; sourceTree = "<group>"; };
 		BF3000000000000000000008 /* SettingsModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsModeTests.swift; sourceTree = "<group>"; };
+		BF300000000000000000000A /* AssistantCompanionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantCompanionTests.swift; sourceTree = "<group>"; };
 		DD5000000000000000000001 /* LiveTranslationSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationSettings.swift; sourceTree = "<group>"; };
 		DD6000000000000000000001 /* LiveTranslationPackInventory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationPackInventory.swift; sourceTree = "<group>"; };
 		DD7000000000000000000001 /* LiveTranslationPackDownloads.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranslationPackDownloads.swift; sourceTree = "<group>"; };
@@ -2154,6 +2162,7 @@
 				BF3000000000000000000004 /* ChannelTorrentResponseTests.swift */,
 				BF3000000000000000000006 /* SubtitleExtensionTests.swift */,
 				BF3000000000000000000008 /* SettingsModeTests.swift */,
+				BF300000000000000000000A /* AssistantCompanionTests.swift */,
 				DDE000000000000000000001 /* LiveTranslationSettingsTests.swift */,
 				DDF300000000000000000001 /* LiveTranslationLanguageTests.swift */,
 				DDF700000000000000000001 /* LiveTranslationAudioTests.swift */,
@@ -2410,6 +2419,9 @@
 				AF8600000000000000000006 /* TorrentInspection.swift */,
 				AF8600000000000000000099 /* LoadingMediaView.swift */,
 				AF8600000000000000000098 /* SettingsMode.swift */,
+				AF86000000000000000000A1 /* DialogueBuffer.swift */,
+				AF86000000000000000000A2 /* AssistantResearch.swift */,
+				AF86000000000000000000A3 /* AssistantPreset.swift */,
 				AF8600000000000000000005 /* TorrentPlaybackStore.swift */,
 				AF8600000000000000000004 /* ChannelTorrentBridge.swift */,
 				AF8600000000000000000003 /* TorrentMediaBridge.swift */,
@@ -3286,6 +3298,7 @@
 				BF3000000000000000000003 /* ChannelTorrentResponseTests.swift in Sources */,
 				BF3000000000000000000005 /* SubtitleExtensionTests.swift in Sources */,
 				BF3000000000000000000007 /* SettingsModeTests.swift in Sources */,
+				BF3000000000000000000009 /* AssistantCompanionTests.swift in Sources */,
 				DDE000000000000000000002 /* LiveTranslationSettingsTests.swift in Sources */,
 				DDF300000000000000000002 /* LiveTranslationLanguageTests.swift in Sources */,
 				DDF700000000000000000002 /* LiveTranslationAudioTests.swift in Sources */,
@@ -3336,6 +3349,9 @@
 				AF8700000000000000000006 /* TorrentInspection.swift in Sources */,
 				AF8700000000000000000099 /* LoadingMediaView.swift in Sources */,
 				AF8700000000000000000098 /* SettingsMode.swift in Sources */,
+				AF87000000000000000000A1 /* DialogueBuffer.swift in Sources */,
+				AF87000000000000000000A2 /* AssistantResearch.swift in Sources */,
+				AF87000000000000000000A3 /* AssistantPreset.swift in Sources */,
 				AF8700000000000000000005 /* TorrentPlaybackStore.swift in Sources */,
 				AF8700000000000000000004 /* ChannelTorrentBridge.swift in Sources */,
 				AF8700000000000000000003 /* TorrentMediaBridge.swift in Sources */,

@@ -341,6 +341,10 @@ class PlayerCore: NSObject {
 
   lazy var info: PlaybackInfo = PlaybackInfo(self)
 
+  /// The recent subtitle lines the user actually saw, bounded for the
+  /// assistant context. Reset when a new file starts.
+  var dialogueBuffer = DialogueBuffer()
+
   /// AI subtitle translation for this player. Created in `init` so it observes
   /// file loads and settings changes from the start.
   lazy var subtitleTranslation: SubtitleTranslationController = {
@@ -2578,6 +2582,7 @@ class PlayerCore: NSObject {
   func fileStarted(path: String) {
     guard info.state.active else { return }
     log("File started")
+    dialogueBuffer.reset()
 
     Task { @MainActor in
       mainWindow.liveText.clearAnalysis()
@@ -3120,6 +3125,16 @@ class PlayerCore: NSObject {
 
   /// The text of the subtitle line mpv is currently displaying changed.
   func subTextChanged(_ text: String) {
+    // Callbacks can be queued behind a stop or shutdown. mpv must not be
+    // touched once the player is no longer active.
+    guard info.state.active else { return }
+    if info.isSubVisible {
+      // The UI's cached position can be stale when its timer is stopped;
+      // ask mpv at the moment the line changes instead.
+      dialogueBuffer.append(text: text, position: mpv.getDouble(MPVProperty.timePos))
+    } else {
+      dialogueBuffer.interrupt()
+    }
     subtitleTranslation.sourceTextChanged(text)
   }
 
