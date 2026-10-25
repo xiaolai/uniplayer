@@ -136,11 +136,13 @@ extension PlayerCore {
     // get info
     let pb = sender.draggingPasteboard
     guard let types = pb.types else { return [] }
+    if !isPlaylist, TorrentPreferences.enabled, let raw = pb.string(forType:.string), let url = URL(string:raw.trimmingCharacters(in:.whitespacesAndNewlines)), TorrentPlaybackCoordinator.recognizes(url) { return .copy }
 
     if types.contains(.nsFilenames) {
       guard var paths = pb.propertyList(forType: .nsFilenames) as? [String] else { return [] }
       paths = Utility.resolvePaths(paths)
       
+      if !isPlaylist && TorrentPreferences.enabled && paths.contains(where:{ $0.lowercasedPathExtension == "torrent" }) { return .copy }
       // check 3d lut files
       if paths.count == 1 && Utility.lut3dExt.contains(paths[0].lowercasedPathExtension) {
         return .copy
@@ -225,6 +227,7 @@ extension PlayerCore {
       openURLString(url[0])
       return true
     } else if let droppedString = pb.string(forType: .string) {
+      if TorrentPreferences.enabled, let url = URL(string:droppedString.trimmingCharacters(in:.whitespacesAndNewlines)), MainActor.assumeIsolated({ TorrentPlaybackCoordinator.shared.route(url) }) { return true }
       if Regex.url.matches(droppedString) || Regex.filePath.matches(droppedString) {
         openURLString(droppedString)
         return true

@@ -119,6 +119,7 @@ class OpenURLWindowController: NSWindowController, NSTextFieldDelegate, NSContro
 
   @IBAction func openBtnAction(_ sender: Any) {
     if let url = getURL().url {
+      if MainActor.assumeIsolated({ TorrentPlaybackCoordinator.shared.route(url) }) { window?.close(); return }
       if rememberPasswordCheckBox.state == .on,
          let host = url.host,
          !usernameField.stringValue.isEmpty {

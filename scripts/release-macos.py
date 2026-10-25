@@ -43,12 +43,16 @@ def notarize(path, profile, log, staple=None, keychain=None):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--build', required=True, type=int)
-    parser.add_argument('--profile', required=True)
+    parser.add_argument('--profile')
+    parser.add_argument('--sign-only', action='store_true', help='Create a local signed candidate; skip notarization and DMG')
+    parser.add_argument('--derived-data', type=Path, help='Use a named existing build with --skip-build')
     parser.add_argument('--keychain', type=Path, help='Explicit keychain containing the notary profile')
     parser.add_argument('--identity', default=os.environ.get('UNIPLAYER_SIGN_IDENTITY'))
     parser.add_argument('--output', type=Path)
     parser.add_argument('--skip-build', action='store_true', help='Resume from the existing Release build')
     args = parser.parse_args()
+    if not args.sign_only and not args.profile:
+        parser.error('--profile is required unless --sign-only is used')
     if args.build < 1:
         parser.error('build must be positive')
     root = Path(__file__).resolve().parents[1]
@@ -59,7 +63,7 @@ def main():
         parser.error('build must match Configs/Deployment.xcconfig')
     output = (args.output or root.parent/'release-artifacts'/version).resolve()
     output.mkdir(parents=True, exist_ok=True)
-    derived = output/'DerivedData'
+    derived = (args.derived_data or output/'DerivedData').resolve()
     if not args.identity:
         identities = subprocess.check_output(['security', 'find-identity', '-v', '-p', 'codesigning'], text=True)
         matches = [line.split('"')[1] for line in identities.splitlines() if '"Developer ID Application:' in line]
@@ -105,6 +109,10 @@ def main():
                 raise subprocess.CalledProcessError(result.returncode, command)
             print('Retrying Apple timestamp request', attempt + 1, flush=True)
 
+    runtime = app/'Contents/Resources/TorrentRuntime'
+    if not runtime.is_dir():
+        raise RuntimeError('TorrentRuntime is required in every candidate')
+    run('python3',root/'scripts/check-torrent-runtime-package.py',runtime)
     # Sign nested code from the inside out, without --deep signing or copying
     # app entitlements onto shared libraries. Bundle signing comes afterwards.
     bundles = [p for p in app.rglob('*') if p.is_dir() and not p.is_symlink()
@@ -129,12 +137,28 @@ def main():
             if stream.read(4) not in magic:
                 continue
         header = subprocess.check_output(['otool', '-hv', str(path)], text=True)
-        sign(path, app_entitlements if 'EXECUTE' in header else None)
+        helper = path.parent == app/'Contents/Resources/TorrentRuntime'
+        sign(path, app_entitlements if 'EXECUTE' in header and not helper else None)
+    runtime = app/'Contents/Resources/TorrentRuntime'
+    if not runtime.is_dir():
+        raise RuntimeError('TorrentRuntime disappeared during signing')
+    if runtime.is_dir():
+        import hashlib
+        manifest = json.loads((runtime/'manifest.json').read_text())
+        for name in ['transmission-daemon', 'TorrentRuntimeSupervisor']:
+            manifest['builtBinaries'][name]['sha256'] = hashlib.sha256((runtime/name).read_bytes()).hexdigest()
+        (runtime/'manifest.json').write_text(json.dumps(manifest, indent=2)+'\n')
+        run('python3', root/'scripts/check-torrent-runtime-package.py', runtime, '--signatures')
     for bundle in sorted(bundles, key=lambda p: len(p.parts), reverse=True):
         sign(bundle, extension_entitlements if bundle.suffix == '.appex' else
              app_entitlements if bundle.suffix in {'.app', '.xpc'} else None)
     sign(app, app_entitlements)
     run('codesign', '--verify', '--deep', '--strict', app)
+    if args.sign_only:
+        (output/'candidate.json').write_text(json.dumps({'app':str(app),'version':version,'build':args.build,
+            'architectures':architectures,'developerIDSigned':True,'notarized':False,'installed':False},indent=2)+'\n')
+        print(f'Local signed candidate: {app}',flush=True)
+        return
     archive = output/'UniPlayer-notary.zip'
     archive.unlink(missing_ok=True)
     run('ditto', '-c', '-k', '--keepParent', app, archive)

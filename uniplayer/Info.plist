@@ -3,7 +3,8 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDocumentTypes</key>
-	<array>
+  <array>
+    <dict><key>CFBundleTypeName</key><string>BitTorrent metainfo</string><key>CFBundleTypeExtensions</key><array><string>torrent</string></array><key>CFBundleTypeRole</key><string>Viewer</string><key>LSHandlerRank</key><string>Alternate</string></dict>
 		<dict>
 			<key>CFBundleTypeName</key>
 			<string>Folder</string>
@@ -591,7 +592,7 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleURLTypes</key>
-	<array>
+	<array><dict><key>CFBundleURLName</key><string>UniPlayer torrent history</string><key>CFBundleURLSchemes</key><array><string>uniplayer-torrent</string></array><key>CFBundleTypeRole</key><string>Viewer</string></dict>
 		<dict>
 			<key>CFBundleURLName</key>
 			<string>UniPlayer wrapper</string>

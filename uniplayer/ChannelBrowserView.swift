@@ -83,6 +83,7 @@ final class ChannelBrowserModel: NSObject, ObservableObject {
   private(set) var channel: Channel?
   let webView: WKWebView
   let netflixRatings = NetflixRatingsBridge()
+  let torrentActions = ChannelTorrentBridge()
 
   override init() {
     let configuration = WKWebViewConfiguration()
@@ -96,10 +97,15 @@ final class ChannelBrowserModel: NSObject, ObservableObject {
     configuration.applicationNameForUserAgent = "Version/27.0 Safari/605.1.15"
 
     netflixRatings.install(in: configuration)
+    torrentActions.install(in:configuration)
     webView = WKWebView(frame: .zero, configuration: configuration)
     super.init()
 
     netflixRatings.attach(to: webView)
+    torrentActions.attach(to:webView,channelID:{ [weak self] in self?.channel?.id })
+    torrentActions.present = { candidate, web, current in
+      TorrentPlaybackCoordinator.shared.present(candidate,web:web,isCurrent:current)
+    }
     webView.navigationDelegate = self
     webView.uiDelegate = self
     webView.allowsBackForwardNavigationGestures = true
@@ -117,6 +123,12 @@ final class ChannelBrowserModel: NSObject, ObservableObject {
     ]
   }
 
+  func returnToSourcePage(_ url:URL) {
+    guard webView.url != url else { return }
+    if let item = webView.backForwardList.backList.last(where:{ $0.url == url || TorrentPlaybackStore.sanitizedPage($0.url) == url }) {
+      webView.go(to:item)
+    } else { webView.load(URLRequest(url:url)) }
+  }
   func open(_ channel: Channel) {
     if self.channel?.id == channel.id, self.channel?.url == channel.url,
        isLoading || (hasDocument && errorMessage == nil) { return }
@@ -243,6 +255,7 @@ extension ChannelBrowserModel: WKNavigationDelegate {
       decisionHandler(.cancel)
       return
     }
+    if navigationAction.navigationType == .linkActivated, torrentActions.handleLink(url,in:webView) { decisionHandler(.cancel); return }
     if navigationAction.targetFrame?.isMainFrame == true { lastRequestedURL = url }
     switch url.scheme?.lowercased() {
     case "http", "https", "about", "blob", "data":
@@ -256,6 +269,7 @@ extension ChannelBrowserModel: WKNavigationDelegate {
   func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
     netflixRatings.navigationStarted()
     activeNavigation = navigation
+    torrentActions.navigationStarted()
     beginLoading()
   }
 
@@ -267,6 +281,7 @@ extension ChannelBrowserModel: WKNavigationDelegate {
   func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
     guard isCurrent(navigation) else { return }
     hasDocument = true
+    torrentActions.refresh()
     finishLoading()
   }
 
@@ -309,6 +324,7 @@ extension ChannelBrowserModel: WKUIDelegate {
     // Login and "open in new tab" links stay in the channel instead of
     // creating an unmanaged browser window.
     if navigationAction.targetFrame == nil, let url = navigationAction.request.url {
+      if torrentActions.handleLink(url, in: webView) { return nil }
       webView.load(URLRequest(url: url))
     }
     return nil

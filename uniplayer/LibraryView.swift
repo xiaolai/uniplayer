@@ -172,6 +172,7 @@ struct LibraryRootView: View {
     let open: (URL) -> Void = { [weak player] url in
       DispatchQueue.main.async {
         guard let player else { return }
+        if TorrentPlaybackCoordinator.shared.route(url) { return }
         player.presentInline(in: host)
         player.openURL(url)
       }
@@ -180,8 +181,10 @@ struct LibraryRootView: View {
       guard !urls.isEmpty else { return }
       DispatchQueue.main.async {
         guard let player else { return }
+        let media = urls.filter { !TorrentPlaybackCoordinator.shared.route($0) }
+        guard !media.isEmpty else { return }
         player.presentInline(in: host)
-        _ = player.openURLs(urls)
+        _ = player.openURLs(media)
       }
     }
     self.open = open
@@ -241,6 +244,17 @@ struct LibraryRootView: View {
     }
     .onReceive(NotificationCenter.default.publisher(for: .mediaSourcesShowRequested)) { _ in
       handleShowSources()
+    }
+    .onReceive(NotificationCenter.default.publisher(for:TorrentPlaybackCoordinator.returnToSource)) { note in
+      if let window = note.userInfo?["window"] as? NSWindow, window !== player.initialWindow.window { return }
+      if let record = note.object as? TorrentPlaybackRecord, let id = record.channelID, let channel = channels.channel(id:id) {
+        selection = .channel(id)
+        browser.open(channel)
+        if let source = record.sourcePage { browser.returnToSourcePage(source) }
+      } else if let candidate = note.object as? ChannelTorrentCandidate, let id = candidate.channelID, let channel = channels.channel(id:id) {
+        selection = .channel(id); browser.open(channel)
+        browser.webView.load(URLRequest(url:candidate.originURL))
+      }
     }
     .onReceive(NotificationCenter.default.publisher(for: .mediaSourcesEnabledDidChange)) { _ in
       handleSourcesEnabledChange()

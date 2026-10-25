@@ -661,6 +661,19 @@ enum Tokens {
 
   /// Spacing and inset values. The numeric names are the scale; the named
   /// aliases give the recurring roles a meaning.
+  /// Torrent action and native inspection surface; isolated from window chrome.
+  enum Torrent {
+    static let sheetWidth: CGFloat = 600
+    static let sheetHeight: CGFloat = 620
+    static let icon = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' aria-hidden='true'><path d='M9 6v12l10-6z' fill='currentColor'/><path d='M6 4H3v16h3' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round'/></svg>"
+    static let css = """
+    .uniplayer-torrent-action {display:inline-flex!important;align-items:center!important;justify-content:center!important;vertical-align:middle!important;width:32px!important;height:32px!important;margin:4px 6px!important;border:1px solid #ffffff30!important;border-radius:9px!important;background:#24262cf5!important;color:#f4c65c!important;cursor:pointer!important;box-shadow:0 2px 6px #0005!important;line-height:1!important;padding:5px!important;}
+    .uniplayer-torrent-action:hover {background:#3b3d44!important;color:#ffe19b!important;}
+    .uniplayer-torrent-action:focus-visible {outline:3px solid #71aaff!important;outline-offset:2px!important;}
+    .uniplayer-torrent-action svg {width:20px!important;height:20px!important;pointer-events:none!important;}
+    """
+  }
+
   enum Space {
     /// 0 pt.
     static let n0: CGFloat = 0
