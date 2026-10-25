@@ -1,5 +1,19 @@
 # Release notes
 
+## 0.2.10 (build 25)
+
+- Settings now has Simple and Advanced modes. Simple keeps the everyday pages:
+  General, Interface, Video, Audio, Subtitles, Live Translation and AI
+  Assistant. Advanced adds Network, Control, Key Bindings, Plugins, Utilities
+  and Advanced, grouped under Playback, Intelligence, Connections and System.
+- Advanced-only rows are hidden in Simple mode: Netflix Ratings, the on-screen
+  controller and thumbnail sections, Live Text and colour/HDR tuning, and the
+  ASS/font/encoding subtitle controls.
+- Search still covers every setting. A result hidden in Simple is marked
+  Advanced; selecting it switches modes and focuses the row.
+- The Settings sidebar has a Simple/Advanced switch, remembers the last page
+  per mode, and links to the existing About window.
+
 ## 0.2.9 (build 24)
 
 - Stop treating `.js` files as subtitles. A folder containing web assets no
