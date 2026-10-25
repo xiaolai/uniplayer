@@ -1,5 +1,19 @@
 # Release notes
 
+## 0.2.8 (build 23)
+
+- Torrent downloads a channel starts from a JavaScript button now reach
+  Check & Play. M-Team's 下載 control serves an `application/x-bittorrent`
+  response from its token endpoint; UniPlayer recognizes the response, reads
+  the metainfo in memory, and opens the normal inspection sheet.
+- The Open URL loading screen names the torrent, file and size, and shows live
+  connected seeds/peers, download speed, selected-file progress and an
+  availability hint while playback waits for pieces.
+- The HUD (mini player) shows the torrent source and inspection phase, starts
+  playback when the metadata is ready, and reports buffering progress. A
+  failed inspection hands the same model to the full Check & Play sheet, and
+  a second mini player no longer mirrors another player's status.
+
 ## 0.2.7 (build 22)
 
 - Pin the bundled Transmission runtime to 4.1.0. The 4.1.3 runtime is not
