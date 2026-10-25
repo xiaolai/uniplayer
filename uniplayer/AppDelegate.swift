@@ -993,16 +993,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     panel.canChooseFiles = true
     panel.canChooseDirectories = true
     panel.allowsMultipleSelection = true
-    if panel.runModal() == .OK {
+    // A blocking runModal() can leave the app waiting behind a panel that
+    // macOS places on another display or Space. A sheet stays with the
+    // visible window and keeps the app responsive.
+    let finish: (NSApplication.ModalResponse) -> Void = { [weak self] response in
+      guard response == .OK else { return }
       if Preference.bool(for: .recordRecentFiles) {
         for url in panel.urls {
-          noteNewRecentDocumentURL(url)
+          self?.noteNewRecentDocumentURL(url)
         }
       }
       let isAlternative = (sender as? NSMenuItem)?.tag == AlternativeMenuItemTag
       if PlayerCore.openURLs(panel.urls, invertOpenInNewWindow: isAlternative) == 0 {
         Utility.showAlert("nothing_to_open")
       }
+    }
+    if let window = NSApp.keyWindow ?? NSApp.mainWindow {
+      panel.beginSheetModal(for: window, completionHandler: finish)
+    } else {
+      panel.begin(completionHandler: finish)
     }
   }
 
