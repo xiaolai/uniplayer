@@ -9,7 +9,7 @@ for its author's own machines; there is no support commitment, no roadmap, and
 no promise that a change will suit anyone else's setup. Issues and pull
 requests may go unanswered.
 
-The current version is 0.2.10 (build 25). Release builds use Developer ID signing
+The current version is 0.3.0 (build 26). Release builds use Developer ID signing
 and Apple notarization.
 
 ## Install
@@ -41,6 +41,11 @@ Anthropic's compatibility layer, DeepSeek, Ollama, LM Studio, llama.cpp, Groq,
 OpenRouter, Gemini, xAI or Mistral), edit its base URL if needed, load the
 service's model list, and test the connection with one short request. The API
 key stays in the Keychain.
+
+The inspector offers context-aware presets for scene questions, translation,
+recaps and library discovery. With a DeepSeek profile, **Reviews & discussion**
+and **Is it worth continuing?** fetch reviews and discussion through DeepSeek
+Search and show their sources; those searches are billed by DeepSeek.
 
 Subtitle file translation can use that assistant connection, the reader's own
 signed-in Codex or Claude CLI, or Apple's on-device model. The CLI sources run

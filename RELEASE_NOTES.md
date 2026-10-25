@@ -1,5 +1,30 @@
 # Release notes
 
+## 0.3.0 (build 26)
+
+- The AI assistant now receives a richer, explicit context message: media
+  identity, playing or paused state, audio and subtitle tracks, the current
+  line, a bounded window of recent dialogue, the selection and library
+  metadata. Seeks and file changes cannot leave dialogue from a distant scene
+  attached to the current one.
+- Context-aware presets: What’s happening?, Who is this?, Explain this
+  reference, Translate this line, Recap what just happened, Reviews &
+  discussion, Is it worth continuing?, and Find similar in library. A preset
+  appears only when the context needed to answer it exists.
+- Reviews & discussion and Is it worth continuing? use DeepSeek Search with the
+  configured DeepSeek key. Results include clickable sources, are bounded
+  before they reach the model, and the prompt is spoiler-aware. Search is only
+  offered for the HTTPS `api.deepseek.com` origin.
+- The assistant can call a `searchWeb` tool. It requires an explicit Allow
+  before spending a search, validates the query length, and rechecks the media
+  and channel context around every asynchronous step.
+- Settings now discloses DeepSeek Search data sharing and billing when that
+  capability is available.
+- The Simple/Advanced Settings fixes from the previous audit are included:
+  hidden pages switch modes correctly, the outgoing mode keeps its remembered
+  page, and expanded rows, ASS selections and accessory content survive a
+  rebuild.
+
 ## 0.2.10 (build 25)
 
 - Settings now has Simple and Advanced modes. Simple keeps the everyday pages:
