@@ -174,6 +174,17 @@ class OpenURLWindowController: NSWindowController, NSTextFieldDelegate, NSContro
       return
     }
     let (url, hasScheme) = getURL()
+    if let url, TorrentPreferences.enabled, TorrentPlaybackCoordinator.recognizes(url) {
+      // A magnet carries its identity in the query, not a host. The Open
+      // action routes it through the torrent inspector instead.
+      errorMessageLabel.isHidden = true
+      urlField.textColor = Tokens.Palette.textPrimary.nsColor
+      openButton.isEnabled = true
+      urlStackView.setVisibilityPriority(.notVisible, for: httpPrefixTextField)
+      usernameField.stringValue = ""
+      passwordField.stringValue = ""
+      return
+    }
     if let url, let host = url.host {
       errorMessageLabel.isHidden = true
       urlField.textColor = Tokens.Palette.textPrimary.nsColor
