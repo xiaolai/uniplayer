@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		EF2000000000000000000004 /* SettingsWindowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE2000000000000000000004 /* SettingsWindowTests.swift */; };
 		EF2000000000000000000003 /* CloudPlaybackEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE2000000000000000000003 /* CloudPlaybackEngineTests.swift */; };
 		EF2000000000000000000001 /* CloudDriveFixtureServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE2000000000000000000001 /* CloudDriveFixtureServer.swift */; };
 		EF2000000000000000000002 /* CloudDriveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE2000000000000000000002 /* CloudDriveTests.swift */; };
@@ -659,6 +660,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		EE2000000000000000000004 /* SettingsWindowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowTests.swift; sourceTree = "<group>"; };
 		EE2000000000000000000003 /* CloudPlaybackEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudPlaybackEngineTests.swift; sourceTree = "<group>"; };
 		EE2000000000000000000001 /* CloudDriveFixtureServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudDriveFixtureServer.swift; sourceTree = "<group>"; };
 		EE2000000000000000000002 /* CloudDriveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudDriveTests.swift; sourceTree = "<group>"; };
@@ -2171,6 +2173,7 @@
 				EE2000000000000000000001 /* CloudDriveFixtureServer.swift */,
 				EE2000000000000000000002 /* CloudDriveTests.swift */,
 				EE2000000000000000000003 /* CloudPlaybackEngineTests.swift */,
+				EE2000000000000000000004 /* SettingsWindowTests.swift */,
 				AF8600000000000000000021 /* TorrentAuditRegressionTests.swift */,
 				AF8600000000000000000020 /* TorrentIntegrationTests.swift */,
 				AF8600000000000000000009 /* TorrentCoreTests.swift */,
@@ -3316,6 +3319,7 @@
 				EF2000000000000000000001 /* CloudDriveFixtureServer.swift in Sources */,
 				EF2000000000000000000002 /* CloudDriveTests.swift in Sources */,
 				EF2000000000000000000003 /* CloudPlaybackEngineTests.swift in Sources */,
+				EF2000000000000000000004 /* SettingsWindowTests.swift in Sources */,
 				AF8700000000000000000021 /* TorrentAuditRegressionTests.swift in Sources */,
 				AF8700000000000000000020 /* TorrentIntegrationTests.swift in Sources */,
 				AF8700000000000000000009 /* TorrentCoreTests.swift in Sources */,

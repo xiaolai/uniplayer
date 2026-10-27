@@ -291,6 +291,22 @@ class SettingsWindow: CommonWindow {
     self.makeKeyAndOrderFront(nil)
   }
 
+  /// Escape dismisses the settings window when no field editor is consuming
+  /// the key. A plain utility window has no other handler for it.
+  override func cancelOperation(_ sender: Any?) {
+    close()
+  }
+
+  /// A first responder that does not handle Escape passes the key up the
+  /// responder chain to the window; close here as a fallback to the action.
+  override func keyDown(with event: NSEvent) {
+    if event.keyCode == 53 {
+      close()
+      return
+    }
+    super.keyDown(with: event)
+  }
+
   /// Opens a specific settings page, used by the live-translation menu and
   /// failure states. The page is loaded before the window is shown so the
   /// first frame is the requested page, not the last visited one.
