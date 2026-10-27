@@ -700,7 +700,7 @@ class PlayerCore: NSObject {
             entryID: plan.entryID, mediaID: plan.mediaID, url: url,
             intent: plan.intent, startPosition: plan.startPosition,
             suppressWatchLater: plan.suppressWatchLater,
-            knownDuration: plan.knownDuration)
+            knownDuration: plan.knownDuration, http: plan.http)
         })
         return nil
       }
@@ -729,7 +729,7 @@ class PlayerCore: NSObject {
         entryID: plan.entryID, mediaID: plan.mediaID, url: firstURL,
         intent: plan.intent, startPosition: plan.startPosition,
         suppressWatchLater: plan.suppressWatchLater,
-        knownDuration: plan.knownDuration)
+        knownDuration: plan.knownDuration, http: plan.http)
     }
 
     // Open the first file. If that waits for a stop to finish, the playlist
@@ -747,8 +747,7 @@ class PlayerCore: NSObject {
       pendingPlaylistPlans = [:]
       playableFiles[1..<count].forEach { url in
         let tailPlan = plans?.first { $0.url == url }
-        mpv.playlistAppend(url.isFileURL ? url.path : url.absoluteString,
-                           options: PlaybackEngineOptions.loadfileOptions(for: tailPlan))
+        mpv.playlistAppend(url.isFileURL ? url.path : url.absoluteString, plan: tailPlan)
       }
       postNotification(.iinaPlaylistChanged)
       if count > 1 {
@@ -864,8 +863,12 @@ class PlayerCore: NSObject {
     // A catalog-linked load owns the start position. The file-local options
     // suppress mpv's watch-later resume and apply the catalog position on
     // load, so there is exactly one authority and no post-load seek race.
-    let loadArguments = PlaybackEngineOptions.loadfileArguments(path: path, plan: plan)
-    mpv.command(.loadfile, args: loadArguments, level: .verbose)
+    if PlaybackEngineOptions.requiresNodeLoad(plan) {
+      mpv.loadfileNode(path: path, plan: plan)
+    } else {
+      let loadArguments = PlaybackEngineOptions.loadfileArguments(path: path, plan: plan)
+      mpv.command(.loadfile, args: loadArguments, level: .verbose)
+    }
 
     if Preference.bool(for: .autoRepeat) {
        let loopMode = Preference.DefaultRepeatMode(rawValue: Preference.integer(for: .defaultRepeatMode))
@@ -2945,8 +2948,7 @@ class PlayerCore: NSObject {
           pendingPlaylistPlans = [:]
           tail.forEach { url in
             mpv.playlistAppend(url.isFileURL ? url.path : url.absoluteString,
-                               options: PlaybackEngineOptions.loadfileOptions(
-                                 for: tailPlans[url]))
+                               plan: tailPlans[url])
           }
           postNotification(.iinaPlaylistChanged)
           sendOSD(.addToPlaylist(tail.count + 1))

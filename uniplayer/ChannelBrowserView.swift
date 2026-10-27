@@ -85,6 +85,8 @@ final class ChannelBrowserModel: NSObject, ObservableObject {
   let webView: WKWebView
   let netflixRatings = NetflixRatingsBridge()
   let torrentActions = ChannelTorrentBridge()
+  let cloudDrive = CloudDriveBridge()
+  @Published private(set) var cloudDriveAvailable = false
 
   override init() {
     let configuration = WKWebViewConfiguration()
@@ -99,6 +101,7 @@ final class ChannelBrowserModel: NSObject, ObservableObject {
 
     netflixRatings.install(in: configuration)
     torrentActions.install(in:configuration)
+    cloudDrive.install(in: configuration)
     webView = WKWebView(frame: .zero, configuration: configuration)
     super.init()
 
@@ -106,6 +109,16 @@ final class ChannelBrowserModel: NSObject, ObservableObject {
     torrentActions.attach(to:webView,channelID:{ [weak self] in self?.channel?.id })
     torrentActions.present = { candidate, web, current in
       TorrentPlaybackCoordinator.shared.present(candidate,web:web,isCurrent:current)
+    }
+    cloudDrive.attach(to: webView)
+    cloudDrive.present = { source, web, current in
+      CloudDrivePlaybackCoordinator.shared.present(source, web: web, isCurrent: current)
+    }
+    cloudDrive.failure = { message in
+      CloudDrivePlaybackCoordinator.shared.fail(message)
+    }
+    cloudDrive.availabilityChanged = { [weak self] available in
+      self?.cloudDriveAvailable = available
     }
     webView.navigationDelegate = self
     webView.uiDelegate = self
@@ -203,6 +216,31 @@ final class ChannelBrowserModel: NSObject, ObservableObject {
       "document.querySelectorAll('video,audio').forEach((element) => element.pause())",
       completionHandler: nil)
     webView.stopLoading()
+  }
+
+  /// Asks the drive adapter to resolve the page's current selection. The
+  /// adapter presents each source asynchronously; failures arrive through the
+  /// shared coordinator so the panel can name the cause.
+  func playFromDrive() {
+    guard cloudDriveAvailable else { return }
+    CloudDrivePlaybackCoordinator.shared.begin()
+    let webView = self.webView
+    Task { @MainActor in
+      do {
+        _ = try await webView.callAsyncJavaScript(
+          """
+          if (!globalThis.uniPlayerCloudDrive) {
+            throw new Error('The drive adapter is not ready. Reload the page and try again.');
+          }
+          return await globalThis.uniPlayerCloudDrive.play();
+          """,
+          arguments: [:], in: nil, contentWorld: .page)
+      } catch {
+        let message = (error as NSError).userInfo["WKJavaScriptExceptionMessage"] as? String
+        CloudDrivePlaybackCoordinator.shared.fail(
+          message ?? "The drive page could not start the download-address request.")
+      }
+    }
   }
 
   func reload() {
@@ -333,6 +371,7 @@ extension ChannelBrowserModel: WKNavigationDelegate {
     guard isCurrent(navigation) else { return }
     hasDocument = true
     torrentActions.refresh()
+    cloudDrive.refresh()
     finishLoading()
   }
 
@@ -464,6 +503,7 @@ struct ChannelDetailView: View {
   @ObservedObject var chrome: LibraryChrome
   @State private var navigationPinned = false
   @ObservedObject var browser: ChannelBrowserModel
+  @ObservedObject private var cloudPlayback = CloudDrivePlaybackCoordinator.shared
   let channel: Channel
   let onUseContext: (ChannelPageContext) -> Void
 
@@ -567,9 +607,47 @@ struct ChannelDetailView: View {
         }
         .disabled(capturing || browser.isLoading)
         .help(channelL("Attach the page title and selected text to AI Assistant"))
+        if browser.cloudDriveAvailable {
+          Button {
+            browser.playFromDrive()
+          } label: {
+            Label(channelL("Play from Drive"), systemImage: "play.circle")
+          }
+          .disabled(cloudPlayback.state == .resolving)
+          .help(channelL("Play the selected video without downloading it"))
+          cloudDriveStatus
+        }
     }
     .padding(Tokens.Space.n12)
     .frame(width: Tokens.Inspector.idealWidth)
+  }
+
+  @ViewBuilder
+  private var cloudDriveStatus: some View {
+    VStack(alignment: .leading, spacing: Tokens.Space.n8) {
+      switch cloudPlayback.state {
+      case .idle:
+        EmptyView()
+      case .resolving:
+        HStack(spacing: Tokens.Space.n8) {
+          ProgressView().controlSize(.small)
+          Text(channelL("Resolving the download address…"))
+            .font(Tokens.Typography.caption.font)
+            .foregroundStyle(Tokens.Palette.textSecondary.color)
+        }
+      case .failed(let message):
+        Text(message)
+          .font(Tokens.Typography.caption.font)
+          .foregroundStyle(Tokens.Palette.destructive.color)
+          .fixedSize(horizontal: false, vertical: true)
+      }
+      if let note = cloudPlayback.expiryNote {
+        Text(note)
+          .font(Tokens.Typography.caption.font)
+          .foregroundStyle(Tokens.Palette.textSecondary.color)
+          .fixedSize(horizontal: false, vertical: true)
+      }
+    }
   }
 
   private func navigationButton(_ symbol: String, title: String,

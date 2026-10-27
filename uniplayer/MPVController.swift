@@ -84,6 +84,27 @@ struct MPVHookValue {
 
 // Global functions
 
+/// Command text reaches the log at verbose level. Media locators are already
+/// removed by `Logger`, but option values that carry a cookie, an
+/// authorization token or a header set are not URLs and must be dropped here.
+enum MPVCommandLog {
+  private static let sensitiveOptions = [
+    "http-header-fields=", "cookies=", "http-header-fields-set=", "authorization=",
+  ]
+
+  static func redact(_ argument: String) -> String {
+    let lowered = argument.lowercased()
+    if sensitiveOptions.contains(where: { lowered.contains($0) }) {
+      return "[redacted]"
+    }
+    return Logger.redactedMessage(argument)
+  }
+
+  static func arguments(_ args: [String?]) -> String {
+    args.compactMap { $0 }.map(redact).joined(separator: " ")
+  }
+}
+
 class MPVController: NSObject {
   struct UserData {
     static let screenshot: UInt64 = 1000000
@@ -791,7 +812,7 @@ class MPVController: NSObject {
   func command(_ command: MPVCommand, args: [String?] = [], checkError: Bool = true,
                level: Logger.Level = .debug, returnValueCallback: ((Int32) -> Void)? = nil) {
     guard mpv != nil else { return }
-    log("Run command: \(command.rawValue) \(args.compactMap{$0}.joined(separator: " "))", level: level)
+    log("Run command: \(command.rawValue) \(MPVCommandLog.arguments(args))", level: level)
     var cargs = makeCArgs(command, args).map { $0.flatMap { UnsafePointer<CChar>(strdup($0)) } }
     defer {
       for ptr in cargs {
@@ -809,8 +830,24 @@ class MPVController: NSObject {
   }
 
   func command(rawString: String, level: Logger.Level = .debug) -> Int32 {
-    log("Run command: \(rawString)", level: level)
+    log("Run command: \(MPVCommandLog.redact(rawString))", level: level)
     return mpv_command_string(mpv, rawString)
+  }
+
+  /// Load one file through `mpv_command_node`. A node map is the only safe way
+  /// to pass `http-header-fields`, whose values may contain commas that the
+  /// string form of `loadfile` would treat as option separators.
+  func loadfileNode(path: String, plan: PlaybackLoadPlan?, flags: String = "replace", index: Int = -1) {
+    guard mpv != nil else { return }
+    let arguments = PlaybackEngineOptions.loadfileNodeArguments(
+      path: path, plan: plan, flags: flags, index: index)
+    log("Run command: loadfile <node> \(flags)", level: .verbose)
+    guard var node = try? MPVNode.create(arguments) else {
+      log("Cannot encode loadfile arguments", level: .error)
+      return
+    }
+    defer { MPVNode.free(node) }
+    chkErr(mpv_command_node(mpv, &node, nil))
   }
 
   func asyncCommand(_ command: MPVCommand, args: [String?] = [], checkError: Bool = true,

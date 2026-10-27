@@ -16,6 +16,37 @@ enum PlaybackIntent: String, Sendable {
   case fromBeginning
 }
 
+/// One HTTP field required by a media URL. The name is already validated as an
+/// RFC 7230 token and the value contains no control characters and no
+/// backslash, so mpv's string-list parser cannot be confused.
+struct PlaybackHTTPHeader: Equatable, Sendable {
+  let name: String
+  let value: String
+}
+
+/// Headers a resolved network media source needs. `expiresAt` is advisory: it
+/// tells the UI how long the signed URL is expected to work, and later drives
+/// re-resolution for downloads.
+struct PlaybackHTTPOptions: Equatable, Sendable {
+  var userAgent: String?
+  var referrer: String?
+  var headers: [PlaybackHTTPHeader]
+  var expiresAt: Date?
+  /// The name mpv should show instead of the signed URL, whose query may carry
+  /// a token.
+  var title: String? = nil
+
+  /// The value for mpv's `http-header-fields` option. Commas separate fields
+  /// in that string-list option, so a comma inside a value is backslash
+  /// escaped. Backslashes are refused when the header is validated.
+  var headerFieldsValue: String? {
+    guard !headers.isEmpty else { return nil }
+    return headers
+      .map { "\($0.name): \($0.value.replacingOccurrences(of: ",", with: "\\,"))" }
+      .joined(separator: ",")
+  }
+}
+
 struct PlaybackLoadPlan: Equatable, Sendable {
   var entryID: UUID
   var mediaID: UUID?
@@ -24,10 +55,12 @@ struct PlaybackLoadPlan: Equatable, Sendable {
   var startPosition: Double
   var suppressWatchLater: Bool
   var knownDuration: Double?
+  var http: PlaybackHTTPOptions?
 
   init(entryID: UUID = UUID(), mediaID: UUID?, url: URL,
        intent: PlaybackIntent, startPosition: Double,
-       suppressWatchLater: Bool, knownDuration: Double? = nil) {
+       suppressWatchLater: Bool, knownDuration: Double? = nil,
+       http: PlaybackHTTPOptions? = nil) {
     self.entryID = entryID
     self.mediaID = mediaID
     self.url = url
@@ -35,6 +68,7 @@ struct PlaybackLoadPlan: Equatable, Sendable {
     self.startPosition = max(0, startPosition)
     self.suppressWatchLater = suppressWatchLater
     self.knownDuration = knownDuration
+    self.http = http
   }
 }
 
@@ -43,10 +77,57 @@ struct PlaybackLoadPlan: Equatable, Sendable {
 /// and `start=<position>` applies the catalog position on load. A spike against
 /// mpv 0.41 confirmed both options win over an existing watch-later `start`.
 enum PlaybackEngineOptions {
+  /// The complete set of file-local options, or nil when the plan needs none.
+  static func optionMap(for plan: PlaybackLoadPlan?) -> [String: String]? {
+    guard let plan else { return nil }
+    var options: [String: String] = [:]
+    if plan.suppressWatchLater {
+      options["resume-playback"] = "no"
+      options["start"] = String(plan.startPosition.isFinite ? max(0, plan.startPosition) : 0)
+    }
+    if let http = plan.http {
+      if let userAgent = http.userAgent, !userAgent.isEmpty {
+        options["user-agent"] = userAgent
+      }
+      if let referrer = http.referrer, !referrer.isEmpty {
+        options["referrer"] = referrer
+      }
+      if let fields = http.headerFieldsValue {
+        options["http-header-fields"] = fields
+      }
+      if let title = http.title, !title.isEmpty {
+        options["force-media-title"] = title
+      }
+    }
+    return options.isEmpty ? nil : options
+  }
+
+  /// The string form, kept for plans that carry no HTTP options. A plan with
+  /// HTTP headers must go through the node path; the string form cannot carry
+  /// a header set that contains commas without ambiguity.
   static func loadfileOptions(for plan: PlaybackLoadPlan?) -> String? {
     guard let plan, plan.suppressWatchLater else { return nil }
+    assert(plan.http == nil, "HTTP options require the node loadfile path")
     let start = String(plan.startPosition.isFinite ? max(0, plan.startPosition) : 0)
     return "resume-playback=no,start=\(start)"
+  }
+
+  /// A plan that carries HTTP headers must load through `mpv_command_node`;
+  /// the string form cannot carry a key-value map safely.
+  static func requiresNodeLoad(_ plan: PlaybackLoadPlan?) -> Bool {
+    plan?.http != nil
+  }
+
+  /// The complete argument array for `mpv_command_node`, command name
+  /// included. The layout matches mpv's textual form: loadfile <url> <flags>
+  /// <index> <options>.
+  static func loadfileNodeArguments(path: String, plan: PlaybackLoadPlan?,
+                                    flags: String = "replace", index: Int = -1) -> [Any?] {
+    var arguments: [Any?] = ["loadfile", path, flags, index]
+    if let options = optionMap(for: plan) {
+      arguments.append(options)
+    }
+    return arguments
   }
 
   static func loadfileArguments(path: String, plan: PlaybackLoadPlan?) -> [String] {

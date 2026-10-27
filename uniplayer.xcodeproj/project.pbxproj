@@ -7,6 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		EF2000000000000000000003 /* CloudPlaybackEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE2000000000000000000003 /* CloudPlaybackEngineTests.swift */; };
+		EF2000000000000000000001 /* CloudDriveFixtureServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE2000000000000000000001 /* CloudDriveFixtureServer.swift */; };
+		EF2000000000000000000002 /* CloudDriveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE2000000000000000000002 /* CloudDriveTests.swift */; };
+		EF0000000000000000000001 /* CloudDrives.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE0000000000000000000001 /* CloudDrives.swift */; };
+		EF0000000000000000000002 /* CloudDrivePreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE0000000000000000000002 /* CloudDrivePreferences.swift */; };
+		EF0000000000000000000003 /* CloudDriveBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE0000000000000000000003 /* CloudDriveBridge.swift */; };
+		EF0000000000000000000004 /* CloudDrivePlayback.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE0000000000000000000004 /* CloudDrivePlayback.swift */; };
+		EF1000000000000000000001 /* CloudDriveActions.js in Resources */ = {isa = PBXBuildFile; fileRef = EE1000000000000000000001 /* CloudDriveActions.js */; };
 		AF8700000000000000000022 /* TorrentProcessOwnership.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8600000000000000000022 /* TorrentProcessOwnership.swift */; };
 		AF8700000000000000000021 /* TorrentAuditRegressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8600000000000000000021 /* TorrentAuditRegressionTests.swift */; };
 		AF8700000000000000000020 /* TorrentIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF8600000000000000000020 /* TorrentIntegrationTests.swift */; };
@@ -651,6 +659,14 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		EE2000000000000000000003 /* CloudPlaybackEngineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudPlaybackEngineTests.swift; sourceTree = "<group>"; };
+		EE2000000000000000000001 /* CloudDriveFixtureServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudDriveFixtureServer.swift; sourceTree = "<group>"; };
+		EE2000000000000000000002 /* CloudDriveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudDriveTests.swift; sourceTree = "<group>"; };
+		EE0000000000000000000001 /* CloudDrives.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudDrives.swift; sourceTree = "<group>"; };
+		EE0000000000000000000002 /* CloudDrivePreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudDrivePreferences.swift; sourceTree = "<group>"; };
+		EE0000000000000000000003 /* CloudDriveBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudDriveBridge.swift; sourceTree = "<group>"; };
+		EE0000000000000000000004 /* CloudDrivePlayback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudDrivePlayback.swift; sourceTree = "<group>"; };
+		EE1000000000000000000001 /* CloudDriveActions.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = CloudDriveActions.js; sourceTree = "<group>"; };
 		AF8600000000000000000022 /* TorrentProcessOwnership.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TorrentProcessOwnership.swift; sourceTree = "<group>"; };
 		AF8600000000000000000021 /* TorrentAuditRegressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TorrentAuditRegressionTests.swift; sourceTree = "<group>"; };
 		AF8600000000000000000020 /* TorrentIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TorrentIntegrationTests.swift; sourceTree = "<group>"; };
@@ -2152,6 +2168,9 @@
 				D400B8E068CF9633E36BF126 /* SourceCoordinatorTests.swift */,
 				D400DAD7E8BD684EBCAAB875 /* MediaMigrationTests.swift */,
 				A10000000000000000000004 /* UniPlayerTests.swift */,
+				EE2000000000000000000001 /* CloudDriveFixtureServer.swift */,
+				EE2000000000000000000002 /* CloudDriveTests.swift */,
+				EE2000000000000000000003 /* CloudPlaybackEngineTests.swift */,
 				AF8600000000000000000021 /* TorrentAuditRegressionTests.swift */,
 				AF8600000000000000000020 /* TorrentIntegrationTests.swift */,
 				AF8600000000000000000009 /* TorrentCoreTests.swift */,
@@ -2424,6 +2443,11 @@
 				AF86000000000000000000A3 /* AssistantPreset.swift */,
 				AF8600000000000000000005 /* TorrentPlaybackStore.swift */,
 				AF8600000000000000000004 /* ChannelTorrentBridge.swift */,
+				EE0000000000000000000001 /* CloudDrives.swift */,
+				EE0000000000000000000002 /* CloudDrivePreferences.swift */,
+				EE0000000000000000000003 /* CloudDriveBridge.swift */,
+				EE0000000000000000000004 /* CloudDrivePlayback.swift */,
+				EE1000000000000000000001 /* CloudDriveActions.js */,
 				AF8600000000000000000003 /* TorrentMediaBridge.swift */,
 				AF8600000000000000000002 /* TransmissionRuntime.swift */,
 				AF8600000000000000000001 /* TorrentTypes.swift */,
@@ -3166,6 +3190,7 @@
 				8F49C36E213EFB7E0076C4F9 /* MiniPlayerWindowController.xib in Resources */,
 				348F33CA30650FDA0091E0C1 /* uniplayer_nightly.icon in Resources */,
 				AF870000000000000000000A /* ChannelTorrentActions.js in Resources */,
+				EF1000000000000000000001 /* CloudDriveActions.js in Resources */,
 				84A0BA951D2F9E9600BC8DA1 /* MainMenu.xib in Resources */,
 				AF8500000000000000000013 /* NetflixRatings.js in Resources */,
 				8400D5D81E1AB31B006785F5 /* AboutWindowController.xib in Resources */,
@@ -3288,6 +3313,9 @@
 				D5007BE8D899B0D8736F4389 /* SourceCoordinatorTests.swift in Sources */,
 				D5003EF1CE9142CDF2105124 /* MediaMigrationTests.swift in Sources */,
 				A10000000000000000000005 /* UniPlayerTests.swift in Sources */,
+				EF2000000000000000000001 /* CloudDriveFixtureServer.swift in Sources */,
+				EF2000000000000000000002 /* CloudDriveTests.swift in Sources */,
+				EF2000000000000000000003 /* CloudPlaybackEngineTests.swift in Sources */,
 				AF8700000000000000000021 /* TorrentAuditRegressionTests.swift in Sources */,
 				AF8700000000000000000020 /* TorrentIntegrationTests.swift in Sources */,
 				AF8700000000000000000009 /* TorrentCoreTests.swift in Sources */,
@@ -3328,6 +3356,10 @@
 				D300F65677ABF4EF122DAB26 /* CatalogDetailView.swift in Sources */,
 				D300A20EF1DD65328494880F /* MediaOrganizationStore.swift in Sources */,
 				D30091AEE1CF0E531F0B2FC1 /* PlaybackLoadPlan.swift in Sources */,
+				EF0000000000000000000001 /* CloudDrives.swift in Sources */,
+				EF0000000000000000000002 /* CloudDrivePreferences.swift in Sources */,
+				EF0000000000000000000003 /* CloudDriveBridge.swift in Sources */,
+				EF0000000000000000000004 /* CloudDrivePlayback.swift in Sources */,
 				D30060C7C6BB97DF70F3CE9F /* MediaCatalogMigration.swift in Sources */,
 				D30028CC6D6144E1A0A3E4E6 /* MediaScanner.swift in Sources */,
 				D30014D47687AE24D8C1C86B /* SourceCoordinator.swift in Sources */,

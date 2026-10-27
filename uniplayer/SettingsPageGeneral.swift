@@ -40,6 +40,11 @@ class SettingsPageGeneral: SettingsPage {
           SettingsItem.Custom().view(TorrentSettingsView())
         }
       }
+      section {
+        SettingsList(title: SettingsLocalization.Key("Cloud-Drive Playback")) {
+          SettingsItem.Custom().view(CloudDriveSettingsView())
+        }
+      }
       sectionHistory()
       sectionPlayList()
       sectionScreenshots()
