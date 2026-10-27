@@ -1,5 +1,17 @@
 # Release notes
 
+## 0.3.2 (build 28)
+
+- Cloud-drive channels (preview, off by default): a signed-in Quark or Aliyun
+  drive page can resolve a selected video's direct address and play it in the
+  native player, with the per-file HTTP headers that address requires.
+  Resolution runs only when you choose Play from Drive. Cookies stay in the
+  channel's WebKit store and never enter the page script.
+- Network playback can carry a user agent, referrer and header fields as
+  file-local options, and sensitive option values are redacted from logs.
+- The preview needs live-account qualification on real drives before it can be
+  relied on. Baidu, 123, UC and Xunlei stay hidden.
+
 ## 0.3.1 (build 27)
 
 - Open File now uses a sheet attached to the visible window instead of a
