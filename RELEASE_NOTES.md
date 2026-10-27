@@ -1,5 +1,11 @@
 # Release notes
 
+## 0.3.3 (build 29)
+
+- Escape now closes the Settings window. The window had no key handler, so the
+  key was swallowed. Field editors still consume it first, so cancelling an
+  edit or clearing a focused search field behaves as before.
+
 ## 0.3.2 (build 28)
 
 - Cloud-drive channels (preview, off by default): a signed-in Quark or Aliyun
