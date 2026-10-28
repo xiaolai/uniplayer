@@ -1,5 +1,11 @@
 # Release notes
 
+## 0.3.5 (build 31)
+
+- The channel navigation panel reads in the app's own text colours. Its
+  buttons drew in the system accent, which disappeared against the glass over a
+  page; Back and Forward now look dim, not active, when they cannot be used.
+
 ## 0.3.4 (build 30)
 
 - Library posters no longer stall behind a file Quick Look cannot read. A hung
