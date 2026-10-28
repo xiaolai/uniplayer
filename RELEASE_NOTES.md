@@ -1,5 +1,16 @@
 # Release notes
 
+## 0.3.4 (build 30)
+
+- Library posters no longer stall behind a file Quick Look cannot read. A hung
+  thumbnail request could hold one of four slots indefinitely and leave most of
+  Home on the placeholder; every stage now has a deadline, so the grid always
+  recovers.
+- MKV and M2TS files get a poster frame from the bundled FFmpeg instead of
+  Quick Look or AVFoundation, which do not decode those containers. Entries
+  without a local source, such as torrent streams or missing files, still show
+  the placeholder.
+
 ## 0.3.3 (build 29)
 
 - Escape now closes the Settings window. The window had no key handler, so the
