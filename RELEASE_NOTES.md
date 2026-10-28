@@ -1,5 +1,13 @@
 # Release notes
 
+## 0.3.6 (build 32)
+
+- Live translation now reads audio from MKV, TS and AVI files. Those formats
+  used to depend on system-audio capture, because the file decoder could not
+  open them, so translating one needed the screen recording permission, an
+  unmuted player and no other player window. The same files now work silently
+  from their own audio track, following the track you selected.
+
 ## 0.3.5 (build 31)
 
 - The channel navigation panel reads in the app's own text colours. Its
