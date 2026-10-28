@@ -76,3 +76,43 @@
 + (nullable NSDictionary *)probeVideoInfoForFile:(nonnull NSString *)file;
 
 @end
+
+@class AVAudioPCMBuffer;
+
+/// Decodes one audio track from any container libavformat can open.
+///
+/// This exists because AVFoundation has no Matroska demuxer: an MKV handed to
+/// `AVURLAsset` fails to load its tracks at all, which used to leave live
+/// translation depending on the system-audio tap. The decoder's output is
+/// float32 PCM at the track's own sample rate and channel count, planar, so
+/// the caller can feed it to `AVAudioConverter` for the resample and downmix
+/// rather than reimplementing them here.
+///
+/// Single consumer: one instance is read by one thread at a time, and `close`
+/// must not race a read.
+@interface FFmpegAudioDecoder : NSObject
+
+/// Opens `url` and prepares the audio track at `ordinal` (0 is the first audio
+/// track, matching mpv's aid ordering). `languageHint` (an ISO code such as
+/// "eng" or "jpn") wins over the ordinal when a track carries it.
++ (nullable instancetype)decoderWithURL:(nonnull NSURL *)url
+                           trackOrdinal:(NSInteger)ordinal
+                          languageHint:(nullable NSString *)hint
+                                 error:(NSError *_Nullable *_Nullable)error;
+
+/// Returns the next decoded chunk, or an empty (zero-frame) buffer at the end
+/// of the track. `seconds` is the chunk's presentation time in the track's own
+/// timebase. A nil return is always a failure with `error` set: "end of
+/// stream" is a buffer with no frames, because a nil return from an
+/// error-taking method reads to Swift as an error even when none was set.
+- (nullable AVAudioPCMBuffer *)nextBufferWithSeconds:(double *_Nullable)seconds
+                                               error:(NSError *_Nullable *_Nullable)error;
+
+
+/// Seeks to `seconds` and discards decoder state, so the next read starts at
+/// or just before that point.
+- (BOOL)seekToSeconds:(double)seconds error:(NSError *_Nullable *_Nullable)error;
+
+- (void)close;
+
+@end

@@ -90,7 +90,7 @@ final class LiveTranslationTranscriptionController {
     player.observe(.iinaPauseChanged) { [weak self] _ in self?.refresh() }
     player.observe(.iinaMuteChanged) { [weak self] _ in self?.restart() }
     player.observe(.iinaSpeedChanged) { [weak self] _ in
-      guard let self, self.audioSource is FileAudioSource else { return }
+      guard let self, self.audioSource?.isFileBacked == true else { return }
       self.restart()
     }
     player.observe(.iinaPlaybackRestarted) { [weak self] _ in self?.restart() }
@@ -105,7 +105,7 @@ final class LiveTranslationTranscriptionController {
     player.observe(.iinaTracklistChanged) { [weak self] _ in self?.refresh() }
     player.observe(.iinaAIDChanged) { [weak self] _ in
       guard let self else { return }
-      if self.audioSource is FileAudioSource {
+      if self.audioSource?.isFileBacked == true {
         self.restart()
       } else {
         self.refresh()
@@ -277,7 +277,7 @@ final class LiveTranslationTranscriptionController {
           return
         }
         self.audioSource = source
-        self.usesFileAudio = source is FileAudioSource
+        self.usesFileAudio = source.isFileBacked
         self.setFallbackNotice(notice)
         self.startFeeding(
           frames: frames, source: source, recognizer: recognizer,
@@ -385,9 +385,26 @@ final class LiveTranslationTranscriptionController {
             "Playback is muted; translating from the file audio track.",
             comment: "Live translation status") : nil)
         } catch {
+          Logger.log(
+            "Live translation AVFoundation decode failed; trying FFmpeg: \(error.localizedDescription)",
+            level: .debug)
+        }
+        // AVFoundation has no Matroska demuxer, so MKV, TS and AVI reach this
+        // point. The FFmpeg source decodes the same track from the file, which
+        // keeps the pipeline independent of the process tap and its permission.
+        do {
+          let source = FFmpegFileAudioSource(
+            url: file.url, targetFormat: Self.preferredFormat,
+            trackIndex: file.trackIndex,
+            languageHint: selectedTrackLanguage)
+          let frames = try await source.start(at: position, rate: rate)
+          return (source, frames, muted ? NSLocalizedString(
+            "Playback is muted; translating from the file audio track.",
+            comment: "Live translation status") : nil)
+        } catch {
           guard !muted else { throw error }
           Logger.log(
-            "Live translation file decode failed; falling back to the process tap: \(error.localizedDescription)",
+            "Live translation FFmpeg decode failed; falling back to the process tap: \(error.localizedDescription)",
             level: .debug)
         }
       }
@@ -446,9 +463,9 @@ final class LiveTranslationTranscriptionController {
                level: .debug)
 
     // A decoder failure after start is different from a start failure: the
-    // file played, but AVFoundation could not decode it. Try the process tap
+    // file played, but the decoder could not continue. Try the process tap
     // once, as the startup path does.
-    if source is FileAudioSource, case .failed = source.state,
+    if source.isFileBacked, case .failed = source.state,
        player.info.currentURL?.isFileURL == true, !player.info.isMuted,
        !didFallbackToTap, let recognizer {
       didFallbackToTap = true
@@ -540,7 +557,7 @@ final class LiveTranslationTranscriptionController {
     // A file source reaches EOF as soon as AVFoundation has decoded it. Flush
     // the analyzer so it can publish the final results instead of tearing the
     // session down mid-analysis.
-    if source is FileAudioSource, source.state == .idle, let recognizer {
+    if source.isFileBacked, source.state == .idle, let recognizer {
       Task { @MainActor in
         do {
           try await recognizer.flush()

@@ -7,6 +7,7 @@
 
 #import "FFmpegController.h"
 #import <Accelerate/Accelerate.h>
+#import <AVFoundation/AVFoundation.h>
 #import <Cocoa/Cocoa.h>
 
 #pragma clang diagnostic push
@@ -16,6 +17,8 @@
 #import <libswscale/swscale.h>
 #import <libavutil/imgutils.h>
 #import <libavutil/mastering_display_metadata.h>
+#import <libavutil/rational.h>
+#import <libavutil/samplefmt.h>
 #pragma clang diagnostic pop
 
 #import "UniPlayer-Swift.h"
@@ -1034,5 +1037,394 @@ cleanup:
   LOG_DEBUG(@"Height: %d", pFrame->height);
 }
 #endif
+
+@end
+
+// MARK: - Audio decoding for live translation
+
+static NSError *FFmpegAudioError(NSString *message) {
+  return [NSError errorWithDomain:@"uniplayer.ffmpeg.audio"
+                             code:1
+                         userInfo:@{NSLocalizedDescriptionKey: message}];
+}
+
+static BOOL FFmpegAudioIsSupportedFormat(enum AVSampleFormat format);
+static void FFmpegAudioCopySamples(const uint8_t *source, enum AVSampleFormat format,
+                                   ptrdiff_t stride, int count, float *destination);
+
+static NSString *FFmpegAudioPrimaryLanguage(NSString *raw) {
+  NSString *lower = [raw.lowercaseString stringByReplacingOccurrencesOfString:@"_"
+                                                                  withString:@"-"];
+  NSString *primary = [[lower componentsSeparatedByString:@"-"] firstObject] ?: lower;
+  // FFmpeg tags tracks with ISO 639-2 codes; mpv and the settings use the
+  // two-letter forms for these languages.
+  NSDictionary<NSString *, NSString *> *iso3 = @{
+    @"eng": @"en", @"jpn": @"ja", @"kor": @"ko", @"fra": @"fr", @"fre": @"fr",
+    @"deu": @"de", @"ger": @"de", @"spa": @"es", @"ita": @"it", @"por": @"pt",
+    @"rus": @"ru", @"zho": @"zh", @"chi": @"zh", @"cmn": @"zh", @"yue": @"yue",
+  };
+  return iso3[primary] ?: primary;
+}
+
+@implementation FFmpegAudioDecoder {
+  AVFormatContext *_format;
+  AVCodecContext *_codec;
+  AVPacket *_packet;
+  AVFrame *_frame;
+  int _streamIndex;
+  AVRational _timeBase;
+  BOOL _draining;
+}
+
++ (nullable instancetype)decoderWithURL:(nonnull NSURL *)url
+                           trackOrdinal:(NSInteger)ordinal
+                          languageHint:(nullable NSString *)hint
+                                 error:(NSError *_Nullable *_Nullable)error
+{
+  FFmpegAudioDecoder *decoder = [[FFmpegAudioDecoder alloc] init];
+  if (![decoder openURL:url ordinal:ordinal hint:hint error:error]) {
+    return nil;
+  }
+  return decoder;
+}
+
+- (BOOL)openURL:(NSURL *)url ordinal:(NSInteger)ordinal
+           hint:(NSString *)hint error:(NSError **)error
+{
+  if (avformat_open_input(&_format, url.fileSystemRepresentation, NULL, NULL) < 0 ||
+      _format == NULL) {
+    if (error) *error = FFmpegAudioError(
+      NSLocalizedString(@"The file could not be opened for audio.",
+                        @"Live translation audio error"));
+    return NO;
+  }
+  if (avformat_find_stream_info(_format, NULL) < 0) {
+    if (error) *error = FFmpegAudioError(
+      NSLocalizedString(@"The audio could not be read.",
+                        @"Live translation audio error"));
+    [self close];
+    return NO;
+  }
+
+  NSMutableArray<NSNumber *> *audioStreams = [NSMutableArray array];
+  for (unsigned index = 0; index < _format->nb_streams; index++) {
+    if (_format->streams[index]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+      [audioStreams addObject:@(index)];
+    }
+  }
+  if (audioStreams.count == 0) {
+    if (error) *error = FFmpegAudioError(
+      NSLocalizedString(@"This file has no audio track.",
+                        @"Live translation audio error"));
+    [self close];
+    return NO;
+  }
+
+  NSUInteger chosen = NSNotFound;
+  if (hint.length > 0) {
+    NSString *wanted = FFmpegAudioPrimaryLanguage(hint);
+    for (NSUInteger position = 0; position < audioStreams.count; position++) {
+      AVStream *stream = _format->streams[audioStreams[position].unsignedIntValue];
+      AVDictionaryEntry *entry = av_dict_get(stream->metadata, "language", NULL, 0);
+      if (entry && entry->value) {
+        NSString *tag = [NSString stringWithUTF8String:entry->value];
+        if (tag && [FFmpegAudioPrimaryLanguage(tag) isEqualToString:wanted]) {
+          chosen = position;
+          break;
+        }
+      }
+    }
+  }
+  if (chosen == NSNotFound) {
+    NSUInteger clamped = (NSUInteger)MAX((NSInteger)0, ordinal);
+    if (clamped >= audioStreams.count) {
+      LOG_DEBUG(@"Audio track %ld is out of range; using the first track", (long)ordinal);
+      clamped = 0;
+    }
+    chosen = clamped;
+  }
+
+  _streamIndex = audioStreams[chosen].intValue;
+  AVStream *stream = _format->streams[_streamIndex];
+  _timeBase = stream->time_base;
+
+  const AVCodec *decoder = avcodec_find_decoder(stream->codecpar->codec_id);
+  if (decoder == NULL) {
+    if (error) *error = FFmpegAudioError(
+      NSLocalizedString(@"The audio track could not be decoded.",
+                        @"Live translation audio error"));
+    [self close];
+    return NO;
+  }
+  _codec = avcodec_alloc_context3(decoder);
+  if (_codec == NULL ||
+      avcodec_parameters_to_context(_codec, stream->codecpar) < 0 ||
+      avcodec_open2(_codec, decoder, NULL) < 0) {
+    if (error) *error = FFmpegAudioError(
+      NSLocalizedString(@"The audio track could not be decoded.",
+                        @"Live translation audio error"));
+    [self close];
+    return NO;
+  }
+  _codec->pkt_timebase = stream->time_base;
+
+  _packet = av_packet_alloc();
+  _frame = av_frame_alloc();
+  if (_packet == NULL || _frame == NULL) {
+    if (error) *error = FFmpegAudioError(
+      NSLocalizedString(@"The audio track could not be decoded.",
+                        @"Live translation audio error"));
+    [self close];
+    return NO;
+  }
+  return YES;
+}
+
+- (nullable AVAudioPCMBuffer *)nextBufferWithSeconds:(double *_Nullable)seconds
+                                               error:(NSError *_Nullable *_Nullable)error
+{
+  if (_codec == NULL || _frame == NULL || _packet == NULL) {
+    if (error) *error = FFmpegAudioError(
+      NSLocalizedString(@"The audio track could not be decoded.",
+                        @"Live translation audio error"));
+    return nil;
+  }
+
+  for (;;) {
+    int status = avcodec_receive_frame(_codec, _frame);
+    if (status == 0) {
+      AVAudioPCMBuffer *buffer = [self bufferFromFrame:_frame seconds:seconds error:error];
+      av_frame_unref(_frame);
+      if (buffer == nil) {
+        // A frame that decoded but cannot be represented ends the stream
+        // rather than silently skipping audio the recognizer should have seen.
+        return nil;
+      }
+      return buffer;
+    }
+    if (status == AVERROR_EOF) {
+      return [self endBufferOrFail:error];
+    }
+    if (status != AVERROR(EAGAIN)) {
+      if (error) *error = FFmpegAudioError(
+        NSLocalizedString(@"The audio track could not be decoded.",
+                          @"Live translation audio error"));
+      return nil;
+    }
+    if (_draining) {
+      return [self endBufferOrFail:error];
+    }
+
+    int read = av_read_frame(_format, _packet);
+    if (read == AVERROR_EOF) {
+      avcodec_send_packet(_codec, NULL);
+      _draining = YES;
+      continue;
+    }
+    if (read < 0) {
+      if (error) *error = FFmpegAudioError(
+        NSLocalizedString(@"The audio could not be read.",
+                          @"Live translation audio error"));
+      return nil;
+    }
+    if (_packet->stream_index == _streamIndex) {
+      int sent = avcodec_send_packet(_codec, _packet);
+      av_packet_unref(_packet);
+      if (sent < 0 && sent != AVERROR(EAGAIN)) {
+        if (error) *error = FFmpegAudioError(
+          NSLocalizedString(@"The audio track could not be decoded.",
+                            @"Live translation audio error"));
+        return nil;
+      }
+    } else {
+      av_packet_unref(_packet);
+    }
+  }
+}
+
+- (BOOL)seekToSeconds:(double)seconds error:(NSError *_Nullable *_Nullable)error
+{
+  if (_format == NULL || _codec == NULL) {
+    if (error) *error = FFmpegAudioError(
+      NSLocalizedString(@"The audio track could not be decoded.",
+                        @"Live translation audio error"));
+    return NO;
+  }
+  if (seconds <= 0 || av_q2d(_timeBase) <= 0) {
+    return YES;
+  }
+  int64_t target = (int64_t)(seconds / av_q2d(_timeBase));
+  if (av_seek_frame(_format, _streamIndex, target, AVSEEK_FLAG_BACKWARD) < 0) {
+    if (error) *error = FFmpegAudioError(
+      NSLocalizedString(@"The audio could not be read.",
+                        @"Live translation audio error"));
+    return NO;
+  }
+  avcodec_flush_buffers(_codec);
+  _draining = NO;
+  return YES;
+}
+
+/// End of track, signalled without a nil return: see the header contract.
+- (nullable AVAudioPCMBuffer *)endBufferOrFail:(NSError **)error
+{
+  int rate = _codec ? _codec->sample_rate : 0;
+  int channels = _codec ? _codec->ch_layout.nb_channels : 1;
+  AVAudioFormat *format =
+    [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatFloat32
+                                    sampleRate:(rate > 0 ? rate : 48000)
+                                      channels:(AVAudioChannelCount)MAX(1, channels)
+                                   interleaved:NO];
+  AVAudioPCMBuffer *buffer =
+    format ? [[AVAudioPCMBuffer alloc] initWithPCMFormat:format
+                                          frameCapacity:0] : nil;
+  if (buffer == nil && error) {
+    *error = FFmpegAudioError(
+      NSLocalizedString(@"The audio format is not supported.",
+                        @"Live translation audio error"));
+  }
+  return buffer;
+}
+
+- (void)close
+{
+  if (_packet) { av_packet_free(&_packet); _packet = NULL; }
+  if (_frame) { av_frame_free(&_frame); _frame = NULL; }
+  if (_codec) { avcodec_free_context(&_codec); _codec = NULL; }
+  if (_format) { avformat_close_input(&_format); _format = NULL; }
+}
+
+- (void)dealloc
+{
+  [self close];
+}
+
+/// Copies one decoded frame into a float32 planar buffer without touching its
+/// sample rate or channel count; AVAudioConverter owns those conversions.
+- (nullable AVAudioPCMBuffer *)bufferFromFrame:(const AVFrame *)frame
+                                        seconds:(double *)seconds
+                                          error:(NSError **)error
+{
+  int channels = frame->ch_layout.nb_channels;
+  int frames = frame->nb_samples;
+  int rate = frame->sample_rate > 0 ? frame->sample_rate : (int)_codec->sample_rate;
+  enum AVSampleFormat format = (enum AVSampleFormat)frame->format;
+  if (channels <= 0 || frames <= 0 || rate <= 0) {
+    if (error) *error = FFmpegAudioError(
+      NSLocalizedString(@"The audio track could not be decoded.",
+                        @"Live translation audio error"));
+    return nil;
+  }
+  if (!FFmpegAudioIsSupportedFormat(format)) {
+    LOG_ERROR(@"Live translation cannot represent audio sample format %s",
+              av_get_sample_fmt_name(format));
+    if (error) *error = FFmpegAudioError(
+      NSLocalizedString(@"The audio format is not supported.",
+                        @"Live translation audio error"));
+    return nil;
+  }
+
+  BOOL planar = av_sample_fmt_is_planar(format);
+  AVAudioFormat *pcmFormat =
+    [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatFloat32
+                                    sampleRate:rate
+                                      channels:(AVAudioChannelCount)channels
+                                   interleaved:NO];
+  AVAudioPCMBuffer *buffer =
+    pcmFormat ? [[AVAudioPCMBuffer alloc] initWithPCMFormat:pcmFormat
+                                             frameCapacity:(AVAudioFrameCount)frames] : nil;
+  if (buffer == nil || buffer.floatChannelData == NULL) {
+    if (error) *error = FFmpegAudioError(
+      NSLocalizedString(@"The audio format is not supported.",
+                        @"Live translation audio error"));
+    return nil;
+  }
+  buffer.frameLength = (AVAudioFrameCount)frames;
+
+  size_t sampleBytes = (size_t)av_get_bytes_per_sample(format);
+  for (int channel = 0; channel < channels; channel++) {
+    const uint8_t *source = planar
+      ? frame->extended_data[channel]
+      : frame->extended_data[0] + (size_t)channel * sampleBytes;
+    FFmpegAudioCopySamples(source, format, planar ? 1 : (ptrdiff_t)channels,
+                           frames, buffer.floatChannelData[channel]);
+  }
+
+  if (seconds) {
+    int64_t pts = frame->best_effort_timestamp;
+    if (pts == AV_NOPTS_VALUE) pts = frame->pts;
+    *seconds = (pts == AV_NOPTS_VALUE) ? 0 : pts * av_q2d(_timeBase);
+  }
+  return buffer;
+}
+
+static BOOL FFmpegAudioIsSupportedFormat(enum AVSampleFormat format)
+{
+  switch (format) {
+    case AV_SAMPLE_FMT_U8:
+    case AV_SAMPLE_FMT_U8P:
+    case AV_SAMPLE_FMT_S16:
+    case AV_SAMPLE_FMT_S16P:
+    case AV_SAMPLE_FMT_S32:
+    case AV_SAMPLE_FMT_S32P:
+    case AV_SAMPLE_FMT_FLT:
+    case AV_SAMPLE_FMT_FLTP:
+    case AV_SAMPLE_FMT_DBL:
+    case AV_SAMPLE_FMT_DBLP:
+      return YES;
+    default:
+      return NO;
+  }
+}
+
+static void FFmpegAudioCopySamples(const uint8_t *source, enum AVSampleFormat format,
+                                   ptrdiff_t stride, int count, float *destination)
+{
+  switch (format) {
+    case AV_SAMPLE_FMT_U8:
+    case AV_SAMPLE_FMT_U8P: {
+      const uint8_t *samples = (const uint8_t *)source;
+      for (int index = 0; index < count; index++) {
+        destination[index] = ((float)samples[index * stride] - 128.0f) / 128.0f;
+      }
+      break;
+    }
+    case AV_SAMPLE_FMT_S16:
+    case AV_SAMPLE_FMT_S16P: {
+      const int16_t *samples = (const int16_t *)source;
+      for (int index = 0; index < count; index++) {
+        destination[index] = samples[index * stride] / 32768.0f;
+      }
+      break;
+    }
+    case AV_SAMPLE_FMT_S32:
+    case AV_SAMPLE_FMT_S32P: {
+      const int32_t *samples = (const int32_t *)source;
+      for (int index = 0; index < count; index++) {
+        destination[index] = (float)(samples[index * stride] / 2147483648.0);
+      }
+      break;
+    }
+    case AV_SAMPLE_FMT_FLT:
+    case AV_SAMPLE_FMT_FLTP: {
+      const float *samples = (const float *)source;
+      for (int index = 0; index < count; index++) {
+        destination[index] = samples[index * stride];
+      }
+      break;
+    }
+    case AV_SAMPLE_FMT_DBL:
+    case AV_SAMPLE_FMT_DBLP: {
+      const double *samples = (const double *)source;
+      for (int index = 0; index < count; index++) {
+        destination[index] = (float)samples[index * stride];
+      }
+      break;
+    }
+    default:
+      memset(destination, 0, sizeof(float) * (size_t)count);
+      break;
+  }
+}
 
 @end

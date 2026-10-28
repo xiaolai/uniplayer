@@ -2,12 +2,13 @@
 //  LiveTranslationFileAudioSource.swift
 //  uniplayer
 //
-//  Fallback when the process tap is denied or muted: decode a local file
-//  through AVFoundation. This covers AVFoundation containers; formats that
-//  only FFmpeg can decode (MKV with unusual codecs, for example) fail here and
-//  the failure is reported, never silently treated as silence. Decoding is
-//  paced to the playback rate so captions track the video instead of racing
-//  ahead through the whole file.
+//  Fallback when the process tap is denied, muted or unusable: decode a local
+//  file instead of capturing output. `FileAudioSource` uses AVFoundation and
+//  covers its containers; `FFmpegFileAudioSource` covers what AVFoundation
+//  cannot open at all, Matroska above all. Either way a decode failure is
+//  reported, never silently treated as silence, and decoding is paced to the
+//  playback rate so captions track the video instead of racing ahead through
+//  the whole file.
 //
 
 import AVFoundation
@@ -39,6 +40,7 @@ final class FileAudioSource: AudioCapturing {
     return _state
   }
   var onStateChange: ((AudioCaptureState) -> Void)?
+  let isFileBacked = true
 
   init(url: URL, targetFormat: AVAudioFormat, trackIndex: Int = 0,
        languageHint: String? = nil) {
@@ -352,5 +354,271 @@ final class FileAudioSource: AudioCapturing {
         callback(state)
       }
     }
+  }
+}
+
+/// Decodes the selected audio track with the bundled FFmpeg.
+///
+/// `FileAudioSource` exists for the same job but depends on AVFoundation,
+/// which has no Matroska demuxer: an MKV failed to load its tracks at all, so
+/// live translation could only work while the system-audio tap was permitted.
+/// This source opens any container libavformat understands, so MKV, TS and AVI
+/// behave like MP4 and stop depending on the tap. Samples arrive as float32 at
+/// the track's own rate; `AVAudioConverter` does the resample and downmix,
+/// because reimplementing those would put audio quality at risk.
+final class FFmpegFileAudioSource: AudioCapturing {
+  private let url: URL
+  private let targetFormat: AVAudioFormat
+  private let trackIndex: Int
+  private let languageHint: String?
+
+  private let stateLock = NSLock()
+  private let dataLock = NSLock()
+
+  private var task: Task<Void, Never>?
+  private var continuation: AsyncStream<AudioFrame>.Continuation?
+  private var generation = 0
+
+  private var _state: AudioCaptureState = .idle
+  var state: AudioCaptureState {
+    stateLock.lock()
+    defer { stateLock.unlock() }
+    return _state
+  }
+  var onStateChange: ((AudioCaptureState) -> Void)?
+  let isFileBacked = true
+
+  init(url: URL, targetFormat: AVAudioFormat, trackIndex: Int = 0,
+       languageHint: String? = nil) {
+    self.url = url
+    self.targetFormat = targetFormat
+    self.trackIndex = max(0, trackIndex)
+    self.languageHint = languageHint
+  }
+
+  func start() async throws -> AsyncStream<AudioFrame> {
+    try await start(at: 0, rate: 1)
+  }
+
+  func start(at seconds: TimeInterval,
+             rate: Double = 1) async throws -> AsyncStream<AudioFrame> {
+    guard beginStarting() else {
+      throw AudioCaptureError.alreadyRunning
+    }
+    dataLock.lock()
+    generation += 1
+    let attempt = generation
+    dataLock.unlock()
+
+    let decoder: FFmpegAudioDecoder
+    do {
+      decoder = try FFmpegAudioDecoder(
+        url: url, trackOrdinal: trackIndex, languageHint: languageHint)
+    } catch {
+      guard isCurrent(attempt) else { throw CancellationError() }
+      let message = error.localizedDescription
+      setState(.failed(message))
+      throw AudioCaptureError.readerFailed(message)
+    }
+    if seconds > 0 {
+      do {
+        try decoder.seek(toSeconds: seconds)
+      } catch {
+        decoder.close()
+        guard isCurrent(attempt) else { throw CancellationError() }
+        let message = error.localizedDescription
+        setState(.failed(message))
+        throw AudioCaptureError.readerFailed(message)
+      }
+    }
+
+    guard isCurrent(attempt) else {
+      decoder.close()
+      throw CancellationError()
+    }
+
+    let currentGeneration = attempt
+    let stream = AsyncStream<AudioFrame>(
+      bufferingPolicy: .bufferingNewest(16)) { continuation in
+      dataLock.lock()
+      self.continuation = continuation
+      dataLock.unlock()
+      continuation.onTermination = { [weak self] _ in
+        self?.stop()
+      }
+    }
+
+    guard isCurrent(attempt) else {
+      decoder.close()
+      throw CancellationError()
+    }
+    setState(.running)
+
+    task = Task.detached(priority: .userInitiated) { [weak self] in
+      guard let self else { return }
+      defer { decoder.close() }
+      let playbackRate = max(0.1, rate)
+      let clockStart = ContinuousClock.now
+      let origin = seconds
+      var yielded = 0
+      var decodeFailure: String?
+      // Built from the first decoded frame and owned by this task alone: the
+      // input format is only known once libavcodec produced one, and it does
+      // not change mid-track. Keeping it here rather than on the object means
+      // stop() cannot race the conversion.
+      var chunkConverter: AudioBufferConverter?
+      var chunkConverterFormat: AVAudioFormat?
+      let targetFormat = self.targetFormat
+
+      while !Task.isCancelled, self.isCurrent(currentGeneration) {
+        var chunkSeconds = 0.0
+        let chunk: AVAudioPCMBuffer?
+        do {
+          chunk = try decoder.nextBuffer(withSeconds: &chunkSeconds)
+        } catch {
+          decodeFailure = error.localizedDescription
+          break
+        }
+        // The decoder signals the end of the track with an empty buffer; nil
+        // means it threw, so reaching here with nil is the end of the file.
+        guard let chunk else { break }
+        if chunk.frameLength == 0 { break }
+
+        let frame: AudioFrame
+        do {
+          if chunkConverter == nil || chunkConverterFormat != chunk.format {
+            guard let created = AudioBufferConverter(
+              inputFormat: chunk.format, outputFormat: targetFormat) else {
+              throw AudioCaptureError.unsupportedFormat
+            }
+            chunkConverter = created
+            chunkConverterFormat = chunk.format
+          }
+          guard let converter = chunkConverter else {
+            throw AudioCaptureError.unsupportedFormat
+          }
+          frame = AudioFrame(buffer: try converter.convert(chunk), time: nil)
+        } catch {
+          decodeFailure = error.localizedDescription
+          break
+        }
+        yielded += 1
+
+        // Pace decoded audio to the playback clock, exactly as the
+        // AVFoundation source does: the presentation time is media time, so
+        // subtract the requested start position and keep an initial gap a gap.
+        let elapsed = chunkSeconds - origin
+        if elapsed.isFinite, elapsed > 0 {
+          let target = clockStart.advanced(by: .seconds(elapsed / playbackRate))
+          if target > ContinuousClock.now {
+            try? await Task.sleep(until: target, clock: .continuous)
+          }
+          if Task.isCancelled { break }
+        }
+
+        self.dataLock.lock()
+        guard currentGeneration == self.generation else {
+          self.dataLock.unlock()
+          return
+        }
+        let continuation = self.continuation
+        self.dataLock.unlock()
+        continuation?.yield(frame)
+      }
+
+      self.dataLock.lock()
+      guard currentGeneration == self.generation else {
+        self.dataLock.unlock()
+        return
+      }
+      let pending = self.continuation
+      self.continuation = nil
+      // Publish the terminal state before the consumer observes end of
+      // stream, so it reads the outcome instead of .running.
+      if let decodeFailure {
+        self.publishState(.failed(decodeFailure))
+      } else if !self.hasFailed {
+        self.publishState(.idle)
+      }
+      self.dataLock.unlock()
+      pending?.onTermination = nil
+      pending?.finish()
+      Logger.log("Live translation FFmpeg audio stream ended after \(yielded) frames",
+                 level: .debug)
+    }
+
+    return stream
+  }
+
+  func stop() {
+    dataLock.lock()
+    generation += 1
+    let pending = continuation
+    continuation = nil
+    dataLock.unlock()
+    pending?.onTermination = nil
+    pending?.finish()
+    // The decoding task owns the decoder and closes it on the way out, so a
+    // read in flight never runs against freed libav contexts.
+    task?.cancel()
+    task = nil
+    if !hasFailed {
+      setState(.idle)
+    }
+  }
+
+  private func isCurrent(_ generation: Int) -> Bool {
+    dataLock.lock()
+    defer { dataLock.unlock() }
+    return generation == self.generation
+  }
+
+  private func beginStarting() -> Bool {
+    stateLock.lock()
+    switch _state {
+    case .idle, .failed:
+      _state = .starting
+      let callback = onStateChange
+      stateLock.unlock()
+      if let callback {
+        DispatchQueue.main.async {
+          callback(.starting)
+        }
+      }
+      return true
+    default:
+      stateLock.unlock()
+      return false
+    }
+  }
+
+  private var hasFailed: Bool {
+    stateLock.lock()
+    defer { stateLock.unlock() }
+    if case .failed = _state { return true }
+    return false
+  }
+
+  /// State write for the terminal path, which already holds `dataLock`: the
+  /// same lock makes the generation check and the state change atomic against
+  /// `start` and `stop`.
+  private func publishState(_ state: AudioCaptureState) {
+    stateLock.lock()
+    let changed = _state != state
+    _state = state
+    let callback = onStateChange
+    stateLock.unlock()
+    guard changed, let callback else { return }
+    if Thread.isMainThread {
+      callback(state)
+    } else {
+      DispatchQueue.main.async {
+        callback(state)
+      }
+    }
+  }
+
+  private func setState(_ state: AudioCaptureState) {
+    publishState(state)
   }
 }

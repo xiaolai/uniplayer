@@ -78,8 +78,18 @@ enum AudioCaptureError: LocalizedError, Equatable {
 protocol AudioCapturing: AnyObject {
   var state: AudioCaptureState { get }
   var onStateChange: ((AudioCaptureState) -> Void)? { get set }
+  /// True when the source decodes the file's own audio track instead of
+  /// capturing this process's output. Callers use it to decide whether system
+  /// audio permission, mute and other-player rules apply at all; asking the
+  /// concrete type instead means every new file source is one forgotten
+  /// `is` check away from being reported as tap-backed.
+  var isFileBacked: Bool { get }
   func start() async throws -> AsyncStream<AudioFrame>
   func stop()
+}
+
+extension AudioCapturing {
+  var isFileBacked: Bool { false }
 }
 
 /// Detects a tap that is delivering digital silence because the system
