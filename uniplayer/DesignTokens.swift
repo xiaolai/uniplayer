@@ -1159,6 +1159,9 @@ enum Tokens {
     static let gridMinimum: CGFloat = 200
     /// The maximum adaptive grid item.
     static let gridMaximum: CGFloat = 280
+    /// Decoded width of a library poster frame: the widest grid card at 3×
+    /// backing, so artwork stays sharp when a card grows or a display scales.
+    static let posterFrameWidth: CGFloat = 640
     /// The library search field's width.
     static let searchFieldWidth: CGFloat = 420
     /// The floating OSC's width.

@@ -570,6 +570,7 @@ motion that honours Reduce Motion and the app's own animation setting.
 | `cardHeight` | `static let cardHeight: CGFloat = 151` | The library card's height. |
 | `gridMinimum` | `static let gridMinimum: CGFloat = 200` | The minimum adaptive grid item. |
 | `gridMaximum` | `static let gridMaximum: CGFloat = 280` | The maximum adaptive grid item. |
+| `posterFrameWidth` | `static let posterFrameWidth: CGFloat = 640` | Decoded width of a library poster frame: the widest grid card at 3× backing, so artwork stays sharp when a card grows or a display scales. |
 | `searchFieldWidth` | `static let searchFieldWidth: CGFloat = 420` | The library search field's width. |
 | `oscFloatingWidth` | `static let oscFloatingWidth: CGFloat = 460` | The floating OSC's width. |
 | `imagePreviewWidth` | `static let imagePreviewWidth: CGFloat = 480 * 0.22` | The settings screenshot preview's width. |

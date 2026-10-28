@@ -559,6 +559,8 @@ struct ChannelDetailView: View {
           HStack {
             Text(contextStatus).font(Tokens.Typography.caption.font)
             Button(channelL("Dismiss")) { self.contextStatus = nil }
+              .buttonStyle(.borderless)
+              .foregroundStyle(Tokens.Palette.textPrimary.color)
           }
           .padding(Tokens.Space.n12)
           .glassEffect(.regular, in: .capsule)
@@ -575,15 +577,17 @@ struct ChannelDetailView: View {
   private var navigationPanel: some View {
     VStack(alignment: .leading, spacing: Tokens.Space.n12) {
       HStack(spacing: Tokens.Space.n8) {
-        navigationButton("chevron.left", title: "Back", action: browser.goBack).disabled(!browser.canGoBack)
-        navigationButton("chevron.right", title: "Forward", action: browser.goForward).disabled(!browser.canGoForward)
-        navigationButton("arrow.clockwise", title: "Reload", action: browser.reload)
-        navigationButton("house", title: "Channel Home", action: browser.goHome)
-        navigationButton("safari", title: "Open in Browser", action: browser.openInBrowser)
+        navigationButton("chevron.left", title: "Back", enabled: browser.canGoBack, action: browser.goBack)
+        navigationButton("chevron.right", title: "Forward", enabled: browser.canGoForward, action: browser.goForward)
+        navigationButton("arrow.clockwise", title: "Reload", enabled: true, action: browser.reload)
+        navigationButton("house", title: "Channel Home", enabled: true, action: browser.goHome)
+        navigationButton("safari", title: "Open in Browser", enabled: true, action: browser.openInBrowser)
         Spacer()
         Button { navigationPinned.toggle(); chrome.channelNavigationPresented = false } label: {
           Image(systemName: navigationPinned ? "pin.slash" : "pin")
+            .foregroundStyle(Tokens.Palette.textPrimary.color)
         }
+        .buttonStyle(.plain)
         .help(channelL(navigationPinned ? "Unpin Navigation" : "Pin Navigation"))
         .accessibilityLabel(channelL(navigationPinned ? "Unpin Navigation" : "Pin Navigation"))
       }
@@ -604,7 +608,12 @@ struct ChannelDetailView: View {
           }
         } label: {
           Label(channelL("Attach Context"), systemImage: "sparkles")
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .foregroundStyle((capturing || browser.isLoading)
+              ? Tokens.Palette.textSecondary.color
+              : Tokens.Palette.textPrimary.color)
         }
+        .buttonStyle(.plain)
         .disabled(capturing || browser.isLoading)
         .help(channelL("Attach the page title and selected text to AI Assistant"))
         if browser.cloudDriveAvailable {
@@ -612,7 +621,12 @@ struct ChannelDetailView: View {
             browser.playFromDrive()
           } label: {
             Label(channelL("Play from Drive"), systemImage: "play.circle")
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .foregroundStyle(cloudPlayback.state == .resolving
+                ? Tokens.Palette.textSecondary.color
+                : Tokens.Palette.textPrimary.color)
           }
+          .buttonStyle(.plain)
           .disabled(cloudPlayback.state == .resolving)
           .help(channelL("Play the selected video without downloading it"))
           cloudDriveStatus
@@ -650,15 +664,23 @@ struct ChannelDetailView: View {
     }
   }
 
-  private func navigationButton(_ symbol: String, title: String,
+  private func navigationButton(_ symbol: String, title: String, enabled: Bool,
                                 action: @escaping () -> Void) -> some View {
     Button {
       action()
       if !navigationPinned { chrome.channelNavigationPresented = false }
     } label: {
-      Image(systemName: symbol).frame(width: Tokens.Size.n30, height: Tokens.Size.n30)
+      Image(systemName: symbol)
+        .frame(width: Tokens.Size.n30, height: Tokens.Size.n30)
+        // The popover draws glass over the page, so an accent-tinted glyph is
+        // unreadable there. Use the text tokens the rest of the panel uses,
+        // and keep an unavailable control visibly dimmer than a live one.
+        .foregroundStyle(enabled
+          ? Tokens.Palette.textPrimary.color
+          : Tokens.Palette.textSecondary.color)
     }
-    .buttonStyle(.borderless)
+    .buttonStyle(.plain)
+    .disabled(!enabled)
     .help(channelL(title))
     .accessibilityLabel(channelL(title))
   }

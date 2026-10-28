@@ -594,7 +594,8 @@ final class PosterStore {
 
   private static func ffmpegFrame(_ url: URL) async -> NSImage? {
     await Task.detached(priority: .utility) {
-      FFmpegController.readFrame(from: url, at: 0, maxWidth: 640)
+      FFmpegController.readFrame(
+        from: url, at: 0, maxWidth: Int32(Tokens.Size.posterFrameWidth))
     }.value
   }
 
