@@ -450,10 +450,25 @@ final class LibraryModel: ObservableObject {
 
 /// Loads one still per file, so a card shows the video rather than a file icon.
 ///
-/// The order is deliberate: Quick Look is fast and uses the system's own cache,
-/// AVFoundation covers the formats it knows, and a drawn placeholder covers
-/// everything else. A failure is not surfaced — a poster is decoration, and the
-/// card remains usable without one.
+/// Every attempt is bounded. Quick Look can hang on containers it does not
+/// understand (an MKV was observed to exceed a minute), and an unbounded wait
+/// would hold one of the four gate permits forever, starving every later card.
+/// Formats AVFoundation cannot decode fall through to the bundled FFmpeg.
+/// Resumes a poster continuation exactly once, whether the work finishes or
+/// the deadline fires first.
+private final class PosterResume: @unchecked Sendable {
+  private let lock = NSLock()
+  private var finished = false
+
+  func resume(_ continuation: CheckedContinuation<NSImage?, Never>, with image: NSImage?) {
+    lock.lock()
+    defer { lock.unlock() }
+    guard !finished else { return }
+    finished = true
+    continuation.resume(returning: image)
+  }
+}
+
 private actor AsyncGate {
   private var available: Int
   private var waiters: [CheckedContinuation<Void, Never>] = []
@@ -539,14 +554,48 @@ final class PosterStore {
     Int(max(1, image.size.width * image.size.height * 4))
   }
 
+  /// Resolves one poster with a hard deadline per stage. The caller's gate is
+  /// therefore always released, even when a system service never answers.
   private static func load(_ url: URL) async -> NSImage? {
-    if let artwork = await embeddedArtwork(url) {
+    if let artwork = await withTimeout(5, { await embeddedArtwork(url) }) {
       return artwork
     }
-    if let image = await quickLook(url) {
-      return image
+    let extensionName = url.pathExtension.lowercased()
+    let avFoundationFirst: Set<String> = [
+      "mp4", "m4v", "mov", "m4a", "mp3", "aac", "wav", "aif", "aiff", "caf",
+    ]
+    if avFoundationFirst.contains(extensionName) {
+      if let image = await quickLook(url) { return image }
+      if let image = await withTimeout(8, { await videoFrame(url) }) { return image }
     }
-    return await videoFrame(url)
+    if let image = await withTimeout(15, { await ffmpegFrame(url) }) { return image }
+    if !avFoundationFirst.contains(extensionName) {
+      if let image = await quickLook(url) { return image }
+      if let image = await withTimeout(8, { await videoFrame(url) }) { return image }
+    }
+    return nil
+  }
+
+  /// Runs an operation with a deadline. The operation may keep running after
+  /// the deadline; the point is that the caller and the poster gate do not.
+  private static func withTimeout(_ seconds: Double,
+                                  _ operation: @escaping @Sendable () async -> NSImage?) async -> NSImage? {
+    await withCheckedContinuation { continuation in
+      let gate = PosterResume()
+      Task {
+        let image = await operation()
+        gate.resume(continuation, with: image)
+      }
+      DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + seconds) {
+        gate.resume(continuation, with: nil)
+      }
+    }
+  }
+
+  private static func ffmpegFrame(_ url: URL) async -> NSImage? {
+    await Task.detached(priority: .utility) {
+      FFmpegController.readFrame(from: url, at: 0, maxWidth: 640)
+    }.value
   }
 
   private static func embeddedArtwork(_ url: URL) async -> NSImage? {
@@ -592,8 +641,14 @@ final class PosterStore {
       representationTypes: .thumbnail)
 
     return await withCheckedContinuation { continuation in
+      let gate = PosterResume()
       QLThumbnailGenerator.shared.generateBestRepresentation(for: request) { representation, _ in
-        continuation.resume(returning: representation?.nsImage)
+        gate.resume(continuation, with: representation?.nsImage)
+      }
+      // Some containers make Quick Look hang instead of failing. Release the
+      // caller after four seconds; the late answer is ignored.
+      DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 4) {
+        gate.resume(continuation, with: nil)
       }
     }
   }

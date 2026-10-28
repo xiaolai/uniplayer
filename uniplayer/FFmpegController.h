@@ -63,6 +63,16 @@
 /// - Returns: An initialized NSImage object containing the artwork or null if no artwork was found.
 + (nullable NSImage *)readArtworkFromURL:(nonnull NSURL *)url;
 
+/// Read one video frame for a poster.
+///
+/// Seeks to `seconds` (0 means 10% of the duration, clamped to one second and
+/// sixty seconds), decodes the first available frame and returns it scaled to
+/// `maxWidth`. This covers containers AVFoundation does not support, such as
+/// MKV and M2TS.
++ (nullable NSImage *)readFrameFromURL:(nonnull NSURL *)url
+                                    at:(double)seconds
+                              maxWidth:(int)maxWidth;
+
 + (nullable NSDictionary *)probeVideoInfoForFile:(nonnull NSString *)file;
 
 @end

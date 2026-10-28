@@ -865,6 +865,155 @@ cleanup:
   }
 }
 
++ (nullable NSImage *)readFrameFromURL:(nonnull NSURL *)url
+                                    at:(double)seconds
+                              maxWidth:(int)maxWidth
+{
+  AVFormatContext *format = NULL;
+  AVCodecContext *codec = NULL;
+  AVFrame *frame = NULL;
+  AVFrame *rgba = NULL;
+  struct SwsContext *scaler = NULL;
+  AVPacket *packet = NULL;
+  uint8_t *buffer = NULL;
+  CGColorSpaceRef colorSpace = NULL;
+  CGContextRef context = NULL;
+  CGImageRef cgImage = NULL;
+  NSImage *image = nil;
+  AVStream *stream = NULL;
+  const AVCodec *decoder = NULL;
+  int videoIndex = -1;
+  int outWidth = 0;
+  int outHeight = 0;
+  BOOL decoded = NO;
+
+  if (avformat_open_input(&format, url.fileSystemRepresentation, NULL, NULL) < 0 || !format) {
+    LOG_ERROR(@"Cannot open %@ for a poster frame", url.lastPathComponent);
+    goto cleanup;
+  }
+  if (avformat_find_stream_info(format, NULL) < 0) {
+    LOG_ERROR(@"Cannot read stream info from %@ for a poster frame", url.lastPathComponent);
+    goto cleanup;
+  }
+  videoIndex = av_find_best_stream(format, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
+  if (videoIndex < 0) {
+    goto cleanup;
+  }
+  stream = format->streams[videoIndex];
+  decoder = avcodec_find_decoder(stream->codecpar->codec_id);
+  if (!decoder) {
+    goto cleanup;
+  }
+  codec = avcodec_alloc_context3(decoder);
+  if (!codec || avcodec_parameters_to_context(codec, stream->codecpar) < 0 ||
+      avcodec_open2(codec, decoder, NULL) < 0) {
+    goto cleanup;
+  }
+
+  double seekSeconds = seconds;
+  if (seekSeconds <= 0 && format->duration > 0) {
+    seekSeconds = format->duration / (double)AV_TIME_BASE * 0.1;
+    seekSeconds = MIN(MAX(seekSeconds, 1.0), 60.0);
+  }
+  if (seekSeconds > 0) {
+    av_seek_frame(format, -1, (int64_t)(seekSeconds * AV_TIME_BASE), AVSEEK_FLAG_BACKWARD);
+  }
+
+  packet = av_packet_alloc();
+  frame = av_frame_alloc();
+  if (!packet || !frame) {
+    goto cleanup;
+  }
+  while (av_read_frame(format, packet) >= 0) {
+    if (packet->stream_index != videoIndex) {
+      av_packet_unref(packet);
+      continue;
+    }
+    int sent = avcodec_send_packet(codec, packet);
+    av_packet_unref(packet);
+    if (sent < 0 && sent != AVERROR(EAGAIN)) {
+      continue;
+    }
+    while (avcodec_receive_frame(codec, frame) == 0) {
+      decoded = YES;
+      break;
+    }
+    if (decoded) {
+      break;
+    }
+  }
+  if (!decoded) {
+    avcodec_send_packet(codec, NULL);
+    if (avcodec_receive_frame(codec, frame) == 0) {
+      decoded = YES;
+    }
+  }
+  if (!decoded || frame->width <= 0 || frame->height <= 0) {
+    goto cleanup;
+  }
+
+  outWidth = maxWidth > 0 ? MIN(frame->width, maxWidth) : frame->width;
+  outHeight = MAX(1, (int)lround((double)frame->height * outWidth / frame->width));
+  scaler = sws_getContext(frame->width, frame->height, (enum AVPixelFormat)frame->format,
+                          outWidth, outHeight, AV_PIX_FMT_RGBA,
+                          SWS_BILINEAR, NULL, NULL, NULL);
+  if (!scaler) {
+    goto cleanup;
+  }
+  buffer = av_malloc((size_t)outWidth * (size_t)outHeight * 4);
+  rgba = av_frame_alloc();
+  if (!buffer || !rgba ||
+      av_image_fill_arrays(rgba->data, rgba->linesize, buffer, AV_PIX_FMT_RGBA,
+                           outWidth, outHeight, 1) < 0) {
+    goto cleanup;
+  }
+  sws_scale(scaler, (const uint8_t * const *)frame->data, frame->linesize, 0,
+            frame->height, rgba->data, rgba->linesize);
+
+  colorSpace = CGColorSpaceCreateDeviceRGB();
+  context = colorSpace ? CGBitmapContextCreate(rgba->data[0], outWidth, outHeight, 8,
+                                               rgba->linesize[0], colorSpace,
+                                               kCGImageAlphaPremultipliedLast) : NULL;
+  cgImage = context ? CGBitmapContextCreateImage(context) : NULL;
+  if (cgImage) {
+    image = [[NSImage alloc] initWithCGImage:cgImage
+                                        size:NSMakeSize(outWidth, outHeight)];
+  }
+
+cleanup:
+  if (cgImage) {
+    CGImageRelease(cgImage);
+  }
+  if (context) {
+    CGContextRelease(context);
+  }
+  if (colorSpace) {
+    CGColorSpaceRelease(colorSpace);
+  }
+  if (packet) {
+    av_packet_free(&packet);
+  }
+  if (rgba) {
+    av_frame_free(&rgba);
+  }
+  if (frame) {
+    av_frame_free(&frame);
+  }
+  if (codec) {
+    avcodec_free_context(&codec);
+  }
+  if (format) {
+    avformat_close_input(&format);
+  }
+  if (scaler) {
+    sws_freeContext(scaler);
+  }
+  if (buffer) {
+    av_freep(&buffer);
+  }
+  return image;
+}
+
 // MARK: - Logging
 
 #if DEBUG
