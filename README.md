@@ -72,13 +72,3 @@ in [`uniplayer/Credits.rtf`](uniplayer/Credits.rtf) are retained.
 **GPL-3.0-or-later.** See [LICENSE](LICENSE). UniPlayer is derived from IINA,
 copyright Collider LI and contributors. If you distribute a build, you must
 publish the corresponding source under the GPL.
-
-## Release
-
-From the workspace root, run `./scripts/release.sh`. It prepares the local
-notarization profile, then builds, signs, notarizes, staples and verifies the
-universal app and DMG. It uses this Mac's Keychain; it does not publish.
-
-Publish the verified DMG/checksum with `gh release`, then update the Homebrew
-cask's version and SHA-256. Verify the new release and cask before deleting older
-published releases. Keep Git tags.
