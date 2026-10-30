@@ -1,5 +1,16 @@
 # Release notes
 
+## 0.3.7 (build 33)
+
+- Torrent and magnet playback works on any site, not only Mini4K and M-Team.
+  Any channel page where a link has a torrent-shaped address
+  (`/torrents/<id>`) or a torrent label — including 磁力 and 种子 — offers
+  Check & Play, and a link that returns a torrent file is recognised when you
+  follow it. Check fetches one bounded page from the same origin and accepts
+  only a torrent file or exactly one magnet or `.torrent` link. The app no
+  longer keeps a list of sites, so a tracker moving to a new domain keeps its
+  buttons; Mini4K's move from mini4k.com to mini4k.io needed no update.
+
 ## 0.3.6 (build 32)
 
 - Live translation now reads audio from MKV, TS and AVI files. Those formats
