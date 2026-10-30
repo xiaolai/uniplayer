@@ -7,7 +7,17 @@
   const wake = new MessageChannel(); let started = performance.now(), maxChunk = 0, finished = started; wake.port1.onmessage = () => work();
   let enabled = false, timer = null, queued = new Set(), sweeping = false;
   const style = document.createElement('style'); style.textContent = globalThis.uniPlayerTorrentCSS; document.head.append(style);
-  const mini = /(^|\.)mini4k\.com$/i.test(location.hostname);
+  // A resource link is evidence, not site identity: a torrent-shaped path or a
+  // torrent label on any same-origin link. The native resolver verifies the
+  // fetched bytes before anything is played, so the site needs no allowlist.
+  const torrentWord = /(?:^|[^a-z])(?:torrents?|magnets?)(?:[^a-z]|$)|磁力|种子|種子/i;
+  function resourceLink(anchor, url) {
+    if (url.origin !== location.origin) return false;
+    if (url.pathname === location.pathname && url.search === location.search) return false;
+    if (/\/(?:torrents?|magnets?)\/[^/]+\/?$/i.test(url.pathname)) return true;
+    const label = `${anchor.textContent || ''} ${anchor.getAttribute('aria-label') || ''} ${anchor.getAttribute('title') || ''}`;
+    return torrentWord.test(label);
+  }
   const own = '.uniplayer-torrent-action';
   function source(anchor) {
     const raw = anchor.getAttribute('href') || '';
@@ -16,14 +26,7 @@
       if (url.protocol === 'magnet:' && url.searchParams.getAll('xt').some(x => /^urn:(btih|btmh):/i.test(x))) return { url:url.href, kind:'magnet' };
       if (!/^https?:$/.test(url.protocol)) return null;
       if (/\.torrent$/i.test(url.pathname)) return { url:url.href, kind:'torrent' };
-      if (mini && globalThis.uniPlayerTorrentMini4KPosts && /(^|\.)mini4k\.com$/i.test(url.hostname) && /^\/torrents\/\d+\/?$/.test(url.pathname)) {
-        const row = anchor.closest('tr, [data-torrent-id], .resource-row');
-        // Cloud-only markers are conservative; an unknown resource post is a
-        // candidate to resolve, not evidence that its movie is playable.
-        if (row && row.querySelector('.link-node') && !row.querySelector('.link-user')) return null;
-        if (row && [...row.querySelectorAll('a[href]')].some(a => /^(pan\.(baidu|quark|xunlei)|www\.alipan)\.com$/i.test(new URL(a.href,document.baseURI).hostname)) && !row.querySelector('a[href^="magnet:"],a[href$=".torrent"],.link-user')) return null;
-        return { url:url.href, kind:'resource' };
-      }
+      if (globalThis.uniPlayerTorrentResourcePosts && resourceLink(anchor, url)) return { url:url.href, kind:'resource' };
     } catch {}
     return null;
   }
@@ -78,17 +81,19 @@
     let cleanup = false;
     for (const change of changes) {
       if ((change.target instanceof Element ? change.target : change.target.parentElement)?.closest(own)) continue;
-      if (change.type === 'attributes') { const row=change.target.closest?.('tr, [data-torrent-id], .resource-row');if(row)enqueue(row);else if(change.target instanceof HTMLAnchorElement)enqueue(change.target); }
-      else {
-        const row=change.target.closest?.('tr, [data-torrent-id], .resource-row');if(row)enqueue(row);
-        for (const node of change.addedNodes) if (node instanceof Element && !node.matches(own)) enqueue(node);
-        if (change.removedNodes.length && ![...change.removedNodes].every(n=>n instanceof Element && n.matches(own))) cleanup = true;
-      }
+      const element = change.target instanceof Element ? change.target : change.target.parentElement;
+      const anchor = element?.closest?.('a[href]');
+      if (anchor) enqueue(anchor);
+      const row = element?.closest?.('tr, [data-torrent-id], .resource-row');
+      if (row) enqueue(row);
+      if (change.type === 'attributes') continue;
+      for (const node of change.addedNodes) if (node instanceof Element && !node.matches(own)) enqueue(node);
+      if (change.removedNodes.length && ![...change.removedNodes].every(n=>n instanceof Element && n.matches(own))) cleanup = true;
     }
     // Unrelated body/container class changes do not schedule a scan.
     if(queued.size || cleanup)schedule(cleanup);
   });
-  observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['href','class']});
+  observer.observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['href','class','title','aria-label']});
   globalThis.uniPlayerTorrentActions = {
     enable(value) {
       enabled = value;

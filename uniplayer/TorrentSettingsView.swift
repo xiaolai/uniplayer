@@ -3,7 +3,7 @@ import SwiftUI
 
 struct TorrentSettingsContent: View {
   @AppStorage(TorrentPreferences.enabledKey) private var enabled = true
-  @AppStorage(TorrentPreferences.mini4KPosts) private var mini4KPosts = true
+  @AppStorage(TorrentPreferences.resourcePosts) private var resourcePosts = true
   @AppStorage(TorrentPreferences.quotaGiB) private var quota = 50
   @ObservedObject private var store = TorrentPlaybackStore.shared
   @State private var jobs: [TorrentTransferSummary] = []
@@ -17,10 +17,10 @@ struct TorrentSettingsContent: View {
         .onChange(of:enabled) { _, _ in NotificationCenter.default.post(name:TorrentPreferences.changed,object:nil) }
       Text("Adds Check & Play next to magnet and torrent links. Nothing is fetched until you activate an action. Public magnet inspection may download metadata and small test pieces. Transfers stop when UniPlayer quits.")
         .font(Tokens.Typography.caption.font).foregroundStyle(Tokens.Palette.textSecondary.color)
-      Toggle("Enable Mini4K resource-post actions (experimental)",isOn:$mini4KPosts)
+      Toggle("Enable resource-link actions (experimental)",isOn:$resourcePosts)
         .disabled(!enabled)
-        .onChange(of:mini4KPosts) { _, _ in NotificationCenter.default.post(name:TorrentPreferences.changed,object:nil) }
-      Text("Mini4K’s current resource-post layout and protected downloads still need site validation. Direct magnet links work independently.")
+        .onChange(of:resourcePosts) { _, _ in NotificationCenter.default.post(name:TorrentPreferences.changed,object:nil) }
+      Text("On any site, a link labelled as a torrent or shaped like a torrent post is checked when you press Check; only a single unambiguous magnet or .torrent is used. Cloud-only posts, sign-in and challenge pages still require the original site. Direct magnet and .torrent links work independently.")
         .font(Tokens.Typography.caption.font).foregroundStyle(Tokens.Palette.textSecondary.color)
       Text("Transmission \(TransmissionRuntime.requiredVersion) · Unmodified runtime · v1 torrents")
       Picker("Cache budget",selection:$quota) {

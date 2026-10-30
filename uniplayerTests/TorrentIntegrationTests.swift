@@ -117,6 +117,11 @@ final class TorrentMediaBridgeTests: XCTestCase {
     let identity = TorrentIdentity(hash:String(repeating:"a",count:40),fileIndex:1)
     let page = TorrentPlaybackStore.sanitizedPage(URL(string:"https://www.mini4k.com/movies/123?passkey=secret#token"))
     XCTAssertEqual(page?.absoluteString,"https://www.mini4k.com/movies/123")
+    let mirror = TorrentPlaybackStore.sanitizedPage(URL(string:"https://www.mini4k.io/torrents/9?passkey=secret#token"))
+    XCTAssertEqual(mirror?.absoluteString,"https://www.mini4k.io/torrents/9")
+    let generic = TorrentPlaybackStore.sanitizedPage(URL(string:"https://tracker.example/torrents/9?passkey=secret#token"))
+    XCTAssertEqual(generic?.absoluteString,"https://tracker.example/torrents/9")
+    XCTAssertNil(TorrentPlaybackStore.sanitizedPage(URL(string:"https://tracker.example/movies/not-an-id?passkey=secret")))
     XCTAssertNil(TorrentPlaybackStore.sanitizedPage(URL(string:"https://example.test/download/secret.torrent?key=secret")))
     let record = TorrentPlaybackRecord(identity:identity,file:TorrentFile(index:1,name:"season/episode1.mkv",length:100,offset:33),title:"Episode",position:44,duration:100,channelID:"mini",sourcePage:page,continueAfterClose:true,isPrivate:true)
     XCTAssertTrue(store.save(record)); XCTAssertEqual(TorrentPlaybackStore(file:file).record(identity),record)
@@ -127,10 +132,10 @@ final class TorrentMediaBridgeTests: XCTestCase {
 }
 
 @MainActor final class ChannelTorrentAdapterTests: XCTestCase {
-  func testIsolatedDOMActionsDynamicDedupCloudAndUntrustedClick() async throws {
-    let oldPostFlag = UserDefaults.standard.object(forKey:TorrentPreferences.mini4KPosts)
-    UserDefaults.standard.set(true,forKey:TorrentPreferences.mini4KPosts)
-    defer { UserDefaults.standard.set(oldPostFlag,forKey:TorrentPreferences.mini4KPosts) }
+  func testIsolatedDOMActionsDynamicDedupAndUntrustedClick() async throws {
+    let oldPostFlag = UserDefaults.standard.object(forKey:TorrentPreferences.resourcePosts)
+    UserDefaults.standard.set(true,forKey:TorrentPreferences.resourcePosts)
+    defer { UserDefaults.standard.set(oldPostFlag,forKey:TorrentPreferences.resourcePosts) }
     let old = UserDefaults.standard.object(forKey:TorrentPreferences.enabledKey)
     UserDefaults.standard.set(true,forKey:TorrentPreferences.enabledKey)
     defer { if let old { UserDefaults.standard.set(old,forKey:TorrentPreferences.enabledKey) } else { UserDefaults.standard.removeObject(forKey:TorrentPreferences.enabledKey) } }
@@ -139,18 +144,45 @@ final class TorrentMediaBridgeTests: XCTestCase {
     let web = WKWebView(frame:.zero,configuration:config); bridge.attach(to:web,channelID:{"fixture"})
     var calls = 0; bridge.present = { _,_,_ in calls += 1 }
     web.loadHTMLString("<html><head></head><body><table><tr id='torrent'><td><a class='link-user' href='/torrents/123'>Movie</a><a href='/torrents/123'>Again</a></td></tr><tr><td><a class='link-node' href='/torrents/456'>Cloud</a></td></tr></table><a href='magnet:?xt=urn:btih:\(String(repeating:"a",count:40))'>Magnet</a></body></html>",baseURL:URL(string:"https://www.mini4k.com/movies/123"))
-    try await wait(web,"document.querySelectorAll('.uniplayer-torrent-action').length===2")
+    try await wait(web,"document.querySelectorAll('.uniplayer-torrent-action').length===3")
     let svgNamespace = try await web.evaluateJavaScript("document.querySelector('.uniplayer-torrent-action svg')?.namespaceURI") as? String
     XCTAssertEqual(svgNamespace,"http://www.w3.org/2000/svg")
     _ = try await web.evaluateJavaScript("document.querySelector('.uniplayer-torrent-action').click()")
     XCTAssertEqual(calls,0)
     _ = try await web.evaluateJavaScript("document.querySelector('#torrent a').remove()")
-    try await wait(web,"document.querySelectorAll('.uniplayer-torrent-action').length===2")
-    _ = try await web.evaluateJavaScript("document.body.insertAdjacentHTML('beforeend','<a href=\"https://example.test/file.torrent?key=private\">File</a>')")
     try await wait(web,"document.querySelectorAll('.uniplayer-torrent-action').length===3")
+    _ = try await web.evaluateJavaScript("document.body.insertAdjacentHTML('beforeend','<a href=\"https://example.test/file.torrent?key=private\">File</a>')")
+    try await wait(web,"document.querySelectorAll('.uniplayer-torrent-action').length===4")
     bridge.refresh()
     _ = try await web.evaluateJavaScript("globalThis.uniPlayerTorrentActions?.enable(false)",in:nil,in:ChannelTorrentBridge.world)
     try await wait(web,"document.querySelectorAll('.uniplayer-torrent-action').length===0")
+  }
+  func testResourceLinkActionsAreSiteAgnostic() async throws {
+    let oldPostFlag = UserDefaults.standard.object(forKey:TorrentPreferences.resourcePosts)
+    UserDefaults.standard.set(true,forKey:TorrentPreferences.resourcePosts)
+    defer { UserDefaults.standard.set(oldPostFlag,forKey:TorrentPreferences.resourcePosts) }
+    let old = UserDefaults.standard.object(forKey:TorrentPreferences.enabledKey)
+    UserDefaults.standard.set(true,forKey:TorrentPreferences.enabledKey)
+    defer { if let old { UserDefaults.standard.set(old,forKey:TorrentPreferences.enabledKey) } else { UserDefaults.standard.removeObject(forKey:TorrentPreferences.enabledKey) } }
+    let config = WKWebViewConfiguration(); config.websiteDataStore = .nonPersistent()
+    let bridge = ChannelTorrentBridge(); bridge.install(in:config)
+    let web = WKWebView(frame:.zero,configuration:config); bridge.attach(to:web,channelID:{"fixture"})
+    var calls = 0; bridge.present = { _,_,_ in calls += 1 }
+    // Evidence in the link, not in the host: a torrent-shaped path and a
+    // torrent label qualify; an ordinary link and a cross-origin link do not.
+    // Labels cover plurals, Chinese words, query endpoints and shallow paths.
+    web.loadHTMLString("<html><head></head><body><a href='/torrents/123'>Movie</a><a href='/about/contact'>About</a><a href='https://other.example/torrents/9'>External</a><a href='/series/9'>Torrents</a><a href='/download.php?id=9'>磁力下载</a><a href='/library'>Torrents</a><a href='/help'>Help</a></body></html>",baseURL:URL(string:"https://fixture.example/movies/1"))
+    try await wait(web,"document.querySelectorAll('.uniplayer-torrent-action').length===4")
+    // A label that appears after the scan is picked up; one that disappears
+    // removes its action.
+    _ = try await web.evaluateJavaScript("document.querySelector('a[href=\"/about/contact\"]').textContent='Torrent'")
+    try await wait(web,"document.querySelectorAll('.uniplayer-torrent-action').length===5")
+    _ = try await web.evaluateJavaScript("document.querySelector('a[href=\"/help\"]').setAttribute('aria-label','magnet')")
+    try await wait(web,"document.querySelectorAll('.uniplayer-torrent-action').length===6")
+    _ = try await web.evaluateJavaScript("document.querySelector('a[href=\"/library\"]').textContent='Library'")
+    try await wait(web,"document.querySelectorAll('.uniplayer-torrent-action').length===5")
+    _ = try await web.evaluateJavaScript("document.querySelector('.uniplayer-torrent-action').click()")
+    XCTAssertEqual(calls,0)
   }
   private func wait(_ web:WKWebView,_ condition:String) async throws {
     let until = Date().addingTimeInterval(8)
@@ -179,10 +211,16 @@ final class TorrentMediaBridgeTests: XCTestCase {
     XCTAssertEqual(requests,0)
   }
   func testCandidateValidationAndRouting() {
-    let origin = URL(string:"https://www.mini4k.com/movies/123")!
-    func candidate(_ url:String,_ kind:String)->ChannelTorrentCandidate? { ChannelTorrentCandidate(body:["version":1,"action":"inspect","url":url,"kind":kind,"title":"Fixture"],originURL:origin,channelID:"mini",generation:1) }
-    XCTAssertNotNil(candidate("https://www.mini4k.com/torrents/123","resource"))
-    XCTAssertNil(candidate("https://example.test/torrents/123","resource"))
+    func candidate(_ url:String,_ kind:String,from page:URL = URL(string:"https://tracker.example/torrents/9")!) -> ChannelTorrentCandidate? {
+      ChannelTorrentCandidate(body:["version":1,"action":"inspect","url":url,"kind":kind,"title":"Fixture"],originURL:page,channelID:"fixture",generation:1)
+    }
+    XCTAssertNotNil(candidate("https://tracker.example/torrents/123","resource"))
+    XCTAssertNotNil(candidate("https://tracker.example:443/torrents/123","resource"))
+    XCTAssertNotNil(candidate("https://tracker.example/post/9","resource"))
+    XCTAssertNotNil(candidate("https://www.mini4k.io/torrents/9","resource",from:URL(string:"https://www.mini4k.io/movies/1")!))
+    XCTAssertNil(candidate("https://other.example/torrents/123","resource"))
+    XCTAssertNil(candidate("https://tracker.example.evil.test/torrents/123","resource"))
+    XCTAssertNil(candidate("http://tracker.example/torrents/123","resource"))
     XCTAssertNil(candidate("javascript:alert(1)","torrent"))
     XCTAssertNil(candidate("https://user:secret@example.test/file.torrent","torrent"))
     XCTAssertTrue(TorrentPlaybackCoordinator.recognizes(URL(string:"magnet:?xt=urn:btih:bad")!))

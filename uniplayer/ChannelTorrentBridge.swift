@@ -14,13 +14,20 @@ struct ChannelTorrentCandidate {
       guard ["https","http"].contains(url.scheme?.lowercased() ?? ""), url.user == nil, url.password == nil, url.host != nil else { return nil }
       if kind == "torrent" { guard url.pathExtension.lowercased() == "torrent" else { return nil } }
       if kind == "resource" {
-        guard Self.isMini4K(originURL), Self.isMini4K(url), url.path.range(of:#"^/torrents/[0-9]+/?$"#,options:.regularExpression) != nil else { return nil }
+        // A resource link is resolved with the user's own same-origin session;
+        // the site is irrelevant, the origin is not.
+        guard Self.sameOrigin(originURL, url) else { return nil }
       }
     }
     self.url = url; self.title = title.isEmpty ? "Torrent source" : title; self.kind = kind
     self.originURL = originURL; self.channelID = channelID; documentGeneration = generation
   }
-  static func isMini4K(_ url: URL) -> Bool { let host = url.host?.lowercased() ?? ""; return host == "mini4k.com" || host.hasSuffix(".mini4k.com") }
+  static func sameOrigin(_ a: URL, _ b: URL) -> Bool {
+    func port(_ url: URL) -> Int? {
+      switch url.scheme?.lowercased() { case "https": return url.port ?? 443; case "http": return url.port ?? 80; default: return url.port }
+    }
+    return a.scheme?.lowercased() == b.scheme?.lowercased() && a.host?.lowercased() == b.host?.lowercased() && port(a) == port(b)
+  }
 }
 
 @MainActor
@@ -43,8 +50,8 @@ final class ChannelTorrentBridge: NSObject, WKScriptMessageHandlerWithReply {
   var present: ((ChannelTorrentCandidate, WKWebView, @escaping () -> Bool) -> Void)?
   static var script: String {
     let source = Bundle.main.url(forResource:"ChannelTorrentActions",withExtension:"js").flatMap { try? String(contentsOf:$0,encoding:.utf8) } ?? ""
-    func json(_ value: String) -> String { String(data:try! JSONEncoder().encode(value),encoding:.utf8)! }
-    return "globalThis.uniPlayerTorrentMini4KPosts=\(TorrentPreferences.mini4KPostsEnabled);globalThis.uniPlayerTorrentEnabled=\(TorrentPreferences.enabled);globalThis.uniPlayerTorrentDisabledHosts=\(String(data:try! JSONEncoder().encode(UserDefaults.standard.stringArray(forKey:"torrent.playback.disabledHosts.v1") ?? []),encoding:.utf8)!);globalThis.uniPlayerTorrentCSS=\(json(Tokens.Torrent.css));globalThis.uniPlayerTorrentIcon=\(json(Tokens.Torrent.icon));\n" + source
+    func json<T: Encodable>(_ value: T) -> String { String(data:try! JSONEncoder().encode(value),encoding:.utf8)! }
+    return "globalThis.uniPlayerTorrentResourcePosts=\(TorrentPreferences.resourcePostsEnabled);globalThis.uniPlayerTorrentEnabled=\(TorrentPreferences.enabled);globalThis.uniPlayerTorrentDisabledHosts=\(String(data:try! JSONEncoder().encode(UserDefaults.standard.stringArray(forKey:"torrent.playback.disabledHosts.v1") ?? []),encoding:.utf8)!);globalThis.uniPlayerTorrentCSS=\(json(Tokens.Torrent.css));globalThis.uniPlayerTorrentIcon=\(json(Tokens.Torrent.icon));\n" + source
   }
   func install(in configuration: WKWebViewConfiguration) {
     configuration.userContentController.addScriptMessageHandler(self,contentWorld:Self.world,name:"torrentActions")
@@ -81,7 +88,7 @@ final class ChannelTorrentBridge: NSObject, WKScriptMessageHandlerWithReply {
     let views = [webView].compactMap { $0 } + popups.values.compactMap(\.web)
     for web in views {
       let enabled = TorrentPreferences.enabled && owns(web) && TorrentPreferences.allowed(host:web.url?.host ?? "")
-      web.evaluateJavaScript("globalThis.uniPlayerTorrentMini4KPosts=\(TorrentPreferences.mini4KPostsEnabled);globalThis.uniPlayerTorrentActions?.enable(\(enabled))",in:nil,in:Self.world,completionHandler:nil)
+      web.evaluateJavaScript("globalThis.uniPlayerTorrentResourcePosts=\(TorrentPreferences.resourcePostsEnabled);globalThis.uniPlayerTorrentActions?.enable(\(enabled))",in:nil,in:Self.world,completionHandler:nil)
     }
   }
   func handleLink(_ url:URL,in web:WKWebView) -> Bool { false }
@@ -108,6 +115,23 @@ final class ChannelTorrentBridge: NSObject, WKScriptMessageHandlerWithReply {
 
 @MainActor
 final class ChannelTorrentResolver {
+  private static let base64Script = """
+  function torrentBase64(bytes){let binary='';for(let i=0;i<bytes.length;i+=16384)binary+=String.fromCharCode(...bytes.subarray(i,i+16384));return btoa(binary)}
+  """
+  /// Cloud-drive page hosts come from the provider registry so a new drive or
+  /// a corrected domain cannot drift from a duplicated literal list here.
+  private static var cloudPageHosts: String {
+    let rules = CloudDrives.providers.flatMap(\.pageHosts).map { rule -> [String:String] in
+      switch rule { case .exact(let host): return ["exact":host]; case .suffix(let host): return ["suffix":host] }
+    }
+    return String(data:try! JSONEncoder().encode(rules),encoding:.utf8)!
+  }
+  /// One bounded base64 decode for every script-supplied metainfo payload.
+  static func metainfo(fromBase64 text: String?) throws -> Data {
+    guard let text, text.utf8.count <= 14*1024*1024, let data = Data(base64Encoded:text),
+          !data.isEmpty, data.count <= 10*1024*1024 else { throw TorrentFailure.invalidMetainfo }
+    return data
+  }
   private weak var web: WKWebView?
   private var download: TorrentSourceDownload?
   private var cancelled = false
@@ -123,19 +147,25 @@ final class ChannelTorrentResolver {
     defer { withExtendedLifetime(web) {} }
     var source = candidate.url
     if candidate.kind == "resource" {
-      guard TorrentPreferences.mini4KPostsEnabled else { throw TorrentFailure.unavailable("Mini4K resource-post resolution is under site validation. Enable its experimental option in Torrent Playback settings, or open the resource page and use its direct magnet link.") }
-      let script = """
+      guard TorrentPreferences.resourcePostsEnabled else { throw TorrentFailure.unavailable("Torrent resource-link actions are off. Enable the experimental option in Torrent Playback settings, or open the resource page and use its direct magnet link.") }
+      let script = Self.base64Script + """
+      const cloudRules=\(Self.cloudPageHosts);
+      const isCloud=host=>cloudRules.some(r=>r.exact?host===r.exact:host===r.suffix||host.endsWith('.'+r.suffix));
       const target = new URL(url,location.href);
       if(target.origin!==location.origin) return {error:'origin'};
       const controller=new AbortController();globalThis.uniPlayerTorrentFetch=controller;
-      const timeout=setTimeout(()=>controller.abort(),15000);
+      const timeout=setTimeout(()=>controller.abort(),20000);
       try {
         const response=await fetch(target.href,{credentials:'same-origin',signal:controller.signal,cache:'no-store'});
         if(new URL(response.url).origin!==location.origin || !response.ok) return {error:'verification'};
+        const type=(response.headers.get('content-type')||'').toLowerCase();
+        const limit=type.includes('html')?2097152:10485760;
         const reader=response.body.getReader();let chunks=[],length=0;
-        while(true){const {done,value}=await reader.read();if(done)break;length+=value.length;if(length>2097152){controller.abort();return {error:'large'}};chunks.push(value)}
+        while(true){const {done,value}=await reader.read();if(done)break;length+=value.length;if(length>limit){controller.abort();return {error:'large'}};chunks.push(value)}
         const bytes=new Uint8Array(length);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length}
-        const html=new TextDecoder().decode(bytes),doc=new DOMParser().parseFromString(html,'text/html');
+        if(!type.includes('html') && /^d\\d+:/.test(new TextDecoder().decode(bytes.subarray(0,512)).trimStart())) return {kind:'metainfo',base64:torrentBase64(bytes)};
+        if(length>2097152){controller.abort();return {error:'large'}}
+        const doc=new DOMParser().parseFromString(new TextDecoder().decode(bytes),'text/html');
         const links=[...doc.querySelectorAll('a[href]')].map(a=>{try{return new URL(a.getAttribute('href'),target.href).href}catch{return ''}});
         const magnets=[...new Set(links.filter(u=>u.startsWith('magnet:')))];
         if(magnets.length===1)return {kind:'magnet',url:magnets[0]};
@@ -144,6 +174,7 @@ final class ChannelTorrentResolver {
         if(torrents.length===1)return {kind:'torrent',url:torrents[0]};
         if(torrents.length>1)return {error:'multiple'};
         if(doc.querySelector('input[type=password],#challenge-form,.cf-turnstile') || /Just a moment|Performing security verification/i.test(doc.title))return {error:'verification'};
+        if([...doc.querySelectorAll('a[href]')].some(a=>{try{return isCloud(new URL(a.getAttribute('href'),target.href).hostname.toLowerCase())}catch{return false}}))return {error:'cloud'};
         return {error:'unsupported'};
       } finally {clearTimeout(timeout);globalThis.uniPlayerTorrentFetch=null}
       """
@@ -153,14 +184,18 @@ final class ChannelTorrentResolver {
       if let error = value["error"] as? String {
         if error == "verification" { throw TorrentFailure.needsVerification }
         if error == "multiple" { throw TorrentFailure.unavailable("This post has multiple sources. Open its page and select the specific magnet or torrent link.") }
+        if error == "cloud" { throw TorrentFailure.unavailable("This post offers cloud-drive links only. Open it on the site and use its direct magnet link if it has one.") }
         if error == "unsupported" { throw TorrentFailure.unsupportedMedia }; throw TorrentFailure.invalidSource
+      }
+      if value["kind"] as? String == "metainfo" {
+        return try TorrentRuntimeSource(metainfo:try Self.metainfo(fromBase64:value["base64"] as? String))
       }
       guard let raw = value["url"] as? String, raw.utf8.count <= 65536, let resolved = URL(string:raw) else { throw TorrentFailure.invalidSource }
       if value["kind"] as? String == "magnet" { return try TorrentRuntimeSource(magnet:raw) }
       source = resolved
     }
     guard ["https","http"].contains(source.scheme?.lowercased() ?? ""), source.user == nil, source.password == nil else { throw TorrentFailure.invalidSource }
-    if let origin = web.url, source.scheme == origin.scheme, source.host == origin.host, source.port == origin.port {
+    if let origin = web.url, ChannelTorrentCandidate.sameOrigin(source, origin) {
       let data = try await fetchMetainfo(source,in:web)
       guard !cancelled, isCurrent() else { throw TorrentFailure.cancelled }
       return try TorrentRuntimeSource(metainfo:data)
@@ -177,7 +212,7 @@ final class ChannelTorrentResolver {
     return try TorrentRuntimeSource(metainfo:data)
   }
   private func fetchMetainfo(_ url:URL,in web:WKWebView) async throws -> Data {
-    let script = """
+    let script = Self.base64Script + """
     const target=new URL(url,location.href);if(target.origin!==location.origin)return {error:'origin'};
     const controller=new AbortController();globalThis.uniPlayerTorrentFetch=controller;
     const timeout=setTimeout(()=>controller.abort(),20000);
@@ -188,16 +223,15 @@ final class ChannelTorrentResolver {
       if(Number(response.headers.get('content-length')||0)>10485760)return {error:'large'};
       const reader=response.body.getReader(),chunks=[];let length=0;
       while(true){const {done,value}=await reader.read();if(done)break;length+=value.length;if(length>10485760){controller.abort();return {error:'large'}}chunks.push(value)}
-      if(chunks.length && new TextDecoder().decode(chunks[0].subarray(0,512)).trimStart().startsWith('<'))return {error:'verification'};
-      let binary='';for(const chunk of chunks)for(let i=0;i<chunk.length;i+=16384)binary+=String.fromCharCode(...chunk.subarray(i,i+16384));
-      return {base64:btoa(binary)};
+      const bytes=new Uint8Array(length);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length}
+      if(new TextDecoder().decode(bytes.subarray(0,512)).trimStart().startsWith('<'))return {error:'verification'};
+      return {base64:torrentBase64(bytes)};
     } finally {clearTimeout(timeout);globalThis.uniPlayerTorrentFetch=null}
     """
     let raw = try await web.callAsyncJavaScript(script,arguments:["url":url.absoluteString],in:nil,contentWorld:ChannelTorrentBridge.world)
     guard let result = raw as? [String:Any] else { throw TorrentFailure.invalidMetainfo }
     if result["error"] as? String == "verification" { throw TorrentFailure.needsVerification }
-    guard let text = result["base64"] as? String, text.utf8.count <= 14*1024*1024, let bytes = Data(base64Encoded:text), !bytes.isEmpty, bytes.count <= 10*1024*1024 else { throw TorrentFailure.invalidMetainfo }
-    return bytes
+    return try Self.metainfo(fromBase64:result["base64"] as? String)
   }
 
 }

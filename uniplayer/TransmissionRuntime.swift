@@ -404,7 +404,9 @@ actor TransmissionRuntime {
 }
 
 enum TorrentPreferences {
-  static let mini4KPosts = "torrent.playback.mini4KPosts.experimental.v1"
+  /// Keeps its original Mini4K-era key so an existing choice survives; the
+  /// switch now gates site-agnostic resource-link resolution.
+  static let resourcePosts = "torrent.playback.mini4KPosts.experimental.v1"
   static let crossOriginDownloads = "torrent.playback.crossOriginDownloads.unqualified.v1"
   static let enabledKey = "torrent.playback.enabled.v1"
   static let quotaGiB = "torrent.playback.quotaGiB.v1"
@@ -415,10 +417,10 @@ enum TorrentPreferences {
     guard defaults.object(forKey: enabledKey) != nil else { return true }
     return defaults.bool(forKey: enabledKey)
   }
-  static var mini4KPostsEnabled: Bool {
+  static var resourcePostsEnabled: Bool {
     let defaults = UserDefaults.standard
-    guard defaults.object(forKey: mini4KPosts) != nil else { return true }
-    return defaults.bool(forKey: mini4KPosts)
+    guard defaults.object(forKey: resourcePosts) != nil else { return true }
+    return defaults.bool(forKey: resourcePosts)
   }
   static func allowed(host: String) -> Bool { let key = "torrent.playback.disabledHosts.v1"; return !(UserDefaults.standard.stringArray(forKey:key) ?? []).contains(host.lowercased()) }
 }

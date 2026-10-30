@@ -35,8 +35,11 @@ struct TorrentPlaybackRecord: Codable, Equatable, Identifiable {
     }
   }
 
+  /// Persists a source page only when its path carries no secret: an
+  /// identifier-only path, with query, fragment and userinfo removed. The site
+  /// is irrelevant.
   static func sanitizedPage(_ url: URL?) -> URL? {
-    guard let url, ChannelTorrentCandidate.isMini4K(url), url.path.range(of:#"^/(movies|torrents)/[0-9]+/?$"#,options:.regularExpression) != nil,
+    guard let url, ["http","https"].contains(url.scheme?.lowercased() ?? ""), url.path.range(of:#"^/(movies|torrents)/[0-9]+/?$"#,options:.regularExpression) != nil,
           var parts = URLComponents(url:url,resolvingAgainstBaseURL:false) else { return nil }
     parts.query = nil; parts.fragment = nil; parts.user = nil; parts.password = nil; return parts.url
   }
