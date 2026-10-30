@@ -12,6 +12,7 @@ from pathlib import Path
 import plistlib
 import shutil
 import subprocess
+import time
 
 
 def run(*args, **kwargs):
@@ -21,16 +22,31 @@ def run(*args, **kwargs):
 
 def notarize(path, profile, log, staple=None, keychain=None):
     keychain_options = ['--keychain', str(keychain)] if keychain else []
-    result = subprocess.run(['xcrun', 'notarytool', 'submit', str(path),
-                             '--keychain-profile', profile, '--wait',
-                             '--timeout', '20m', '--output-format', 'json'] + keychain_options,
-                            text=True, capture_output=True)
-    log.write_text(result.stdout)
-    if result.returncode:
-        raise RuntimeError(f'Notary submission failed; inspect {log}: {result.stderr}')
+    # Apple's notary endpoints intermittently time out or reset TLS; both the
+    # submission and the log fetch are safe to retry.
+    command = ['xcrun', 'notarytool', 'submit', str(path),
+               '--keychain-profile', profile, '--wait',
+               '--timeout', '20m', '--output-format', 'json'] + keychain_options
+    for attempt in range(4):
+        result = subprocess.run(command, text=True, capture_output=True)
+        log.write_text(result.stdout)
+        if result.returncode == 0:
+            break
+        if attempt == 3:
+            raise RuntimeError(f'Notary submission failed; inspect {log}: {result.stderr}')
+        print('Retrying notarization submission after a network failure', attempt + 1, flush=True)
+        time.sleep(10 * (attempt + 1))
     report = json.loads(result.stdout)
     issues_log = log.with_suffix('.issues.json')
-    run('xcrun', 'notarytool', 'log', report['id'], '--keychain-profile', profile, *keychain_options, issues_log)
+    for attempt in range(4):
+        try:
+            run('xcrun', 'notarytool', 'log', report['id'], '--keychain-profile', profile, *keychain_options, issues_log)
+            break
+        except subprocess.CalledProcessError:
+            if attempt == 3:
+                raise
+            print('Retrying notarization log fetch after a network failure', attempt + 1, flush=True)
+            time.sleep(10 * (attempt + 1))
     if report.get('status') != 'Accepted':
         raise RuntimeError(f'Notarization status: {report.get("status")}; inspect {issues_log}')
     if json.loads(issues_log.read_text()).get('issues'):
