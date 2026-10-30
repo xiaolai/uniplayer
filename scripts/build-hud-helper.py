@@ -12,6 +12,7 @@ import argparse
 import plistlib
 import shutil
 import subprocess
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -99,8 +100,19 @@ def main() -> None:
     if args.identity == '-':
         run('codesign', '--force', '--sign', '-', args.output)
     else:
-        run('codesign', '--force', '--options', 'runtime', '--timestamp',
-            '--sign', args.identity, args.output)
+        command = ['codesign', '--force', '--options', 'runtime', '--timestamp',
+                   '--sign', args.identity, str(args.output)]
+        for attempt in range(5):
+            result = subprocess.run(command, text=True, capture_output=True)
+            print(result.stdout, result.stderr, end='', flush=True)
+            if result.returncode == 0:
+                break
+            # Apple's timestamp service intermittently refuses a request that
+            # follows a burst of bundle signatures; a short backoff recovers.
+            if 'timestamp' not in result.stderr.lower() or attempt == 4:
+                raise subprocess.CalledProcessError(result.returncode, command)
+            print(f'Retrying Apple timestamp request {attempt + 1}', flush=True)
+            time.sleep(2 * (attempt + 1))
     run('codesign', '--verify', '--strict', '--deep', args.output)
 
     if args.register:
